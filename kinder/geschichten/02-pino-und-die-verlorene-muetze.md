@@ -1,6 +1,6 @@
 # Pino und die verlorene Mütze
 
-Gute-Nacht-Geschichte 2. Zielalter 4 bis 7. Etwa 900 Wörter, 7 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 2. Zielalter 4 bis 7. Etwa 750 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 1.
 
 ---
 

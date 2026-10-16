@@ -1,6 +1,6 @@
 # Pino und das Licht, das nicht schlief
 
-Gute-Nacht-Geschichte 3. Zielalter 4 bis 7. Etwa 900 Wörter, 7 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 3. Zielalter 4 bis 7. Etwa 600 Wörter, 5 Minuten. Stand 16.10.2026, Entwurf 1.
 
 ---
 

@@ -1,6 +1,6 @@
 # Pino und Kikis Geheimnis
 
-Gute-Nacht-Geschichte 5. Zielalter 4 bis 7. Etwa 950 Wörter, 7 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 5. Zielalter 4 bis 7. Etwa 700 Wörter, 5 bis 6 Minuten. Stand 16.10.2026, Entwurf 1.
 
 ---
 

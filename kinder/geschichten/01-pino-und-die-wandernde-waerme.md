@@ -1,6 +1,6 @@
 # Pino und die wandernde Wärme
 
-Gute-Nacht-Geschichte 1. Zielalter 4 bis 7. Etwa 950 Wörter, 7 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 1. Zielalter 4 bis 7. Etwa 800 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 1.
 
 ---
 
