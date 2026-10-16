@@ -39,7 +39,7 @@ Pino ist eine Figur von [Name/Marke]. Text und Bilder entstehen mit Unterstützu
 
 Eine Geschichte pro Woche, fester Tag (Vorschlag Sonntag 18:00, vor dem Zubettgehen). Die ersten 5 Geschichten sind geschrieben, also 5 Wochen Vorsprung.
 
-## Bild-Prompts für Logo und Banner (Flux)
+## Bild-Prompts für Logo und Banner (Gemini-Bildmodell, mit Pino-Referenzbild)
 
 Logo (quadratisch, 800x800):
 `Pino, a small chubby baby penguin with a big round head, black back and white belly, a white heart-shaped patch on his chest, big round dark eyes, small orange beak, pink cheek spots, wearing a red knitted beanie with a white pompom, face and shoulders only, smiling sleepily, centered, soft blue circular background, children's picture book illustration, thick clean outlines, flat colors, no text.`

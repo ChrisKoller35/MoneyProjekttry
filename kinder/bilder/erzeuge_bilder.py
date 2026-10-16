@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
-"""Erzeugt Pino-Bilder über die Replicate-API (Flux).
+"""Erzeugt Pino-Bilder über die Google-Gemini-API (Bildmodell).
 
 Nutzung:
-  REPLICATE_API_TOKEN=... python3 erzeuge_bilder.py test        # 5 Testbilder
-  REPLICATE_API_TOKEN=... python3 erzeuge_bilder.py 1            # Bilder für Geschichte 1
-  REPLICATE_API_TOKEN=... python3 erzeuge_bilder.py 1 --ref referenz.png   # mit Referenzbild (Flux Kontext)
+  GOOGLE_API_KEY=... python3 erzeuge_bilder.py test                 # 5 Testbilder
+  GOOGLE_API_KEY=... python3 erzeuge_bilder.py 1                    # Bilder für Geschichte 1
+  GOOGLE_API_KEY=... python3 erzeuge_bilder.py 1 --ref testbilder/test-1.png   # mit Referenzbild für konsistente Figur
+  python3 erzeuge_bilder.py test --dry-run                          # nur Prompts anzeigen
 
-Ohne Token macht das Skript nichts ausser die Prompts anzuzeigen (--dry-run ist dann automatisch).
-Kosten: Flux Schnell ca. 0.003 USD pro Bild, Flux Kontext Pro ca. 0.04 USD pro Bild (Stand beim Einrichten prüfen).
+Ohne GOOGLE_API_KEY zeigt das Skript nur die Prompts (automatisch --dry-run).
+Modell: Standard ist das Gemini-Bildmodell (Text und Bild rein, Bild raus); mit --modell lässt es sich ändern,
+falls Google den Namen geändert hat. Preise und Modellnamen beim ersten Lauf unter ai.google.dev prüfen.
 Keine Fremdbibliotheken nötig, nur urllib.
 """
-import json, os, sys, time, urllib.request, pathlib
+import base64, json, mimetypes, os, pathlib, sys, time, urllib.request
 
 PINO = ("Pino, a small chubby baby penguin with a big round head, black back and white belly, "
         "a white heart-shaped patch on his chest, big round dark eyes with a white highlight, "
         "small rounded orange beak, orange oversized feet, pink cheek spots, wearing a slightly "
         "tilted red knitted beanie with a white pompom.")
 STIL = ("Children's picture book illustration, soft rounded shapes, thick clean outlines, "
-        "flat colors, minimal shading, warm and cozy, no text.")
+        "flat colors, minimal shading, warm and cozy, 16:9 landscape, no text, no watermark, "
+        "not realistic, not 3D.")
+REF_HINWEIS = ("Use the attached image as the exact character reference: same penguin, same beanie, "
+               "same proportions, same drawing style. Only the scene changes.")
 
 SZENEN = {
     "test": [
@@ -54,45 +59,45 @@ SZENEN = {
     ],
 }
 
-MODELL_OHNE_REF = "black-forest-labs/flux-schnell"
-MODELL_MIT_REF = "black-forest-labs/flux-kontext-pro"
+STANDARD_MODELL = "gemini-2.5-flash-image"
+BASIS = "https://generativelanguage.googleapis.com/v1beta/models/"
 
 
-def api(pfad, daten=None, token=None):
-    req = urllib.request.Request("https://api.replicate.com/v1/" + pfad,
-                                 data=json.dumps(daten).encode() if daten else None,
-                                 headers={"Authorization": "Bearer " + token,
-                                          "Content-Type": "application/json",
-                                          "Prefer": "wait"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.load(r)
-
-
-def erzeuge(prompt, token, ref_url=None):
-    if ref_url:
-        body = {"input": {"prompt": prompt, "input_image": ref_url, "aspect_ratio": "16:9", "output_format": "png"}}
-        modell = MODELL_MIT_REF
-    else:
-        body = {"input": {"prompt": prompt, "aspect_ratio": "16:9", "output_format": "png", "num_outputs": 1}}
-        modell = MODELL_OHNE_REF
-    pred = api(f"models/{modell}/predictions", body, token)
-    while pred["status"] not in ("succeeded", "failed", "canceled"):
-        time.sleep(2)
-        pred = api(f"predictions/{pred['id']}", token=token)
-    if pred["status"] != "succeeded":
-        raise RuntimeError(pred.get("error") or pred["status"])
-    out = pred["output"]
-    return out[0] if isinstance(out, list) else out
+def erzeuge(prompt, key, modell, ref_pfad=None):
+    teile = [{"text": prompt}]
+    if ref_pfad:
+        mime = mimetypes.guess_type(ref_pfad)[0] or "image/png"
+        daten = base64.b64encode(pathlib.Path(ref_pfad).read_bytes()).decode()
+        teile = [{"text": REF_HINWEIS + " " + prompt}, {"inline_data": {"mime_type": mime, "data": daten}}]
+    body = {"contents": [{"parts": teile}],
+            "generationConfig": {"responseModalities": ["IMAGE"]}}
+    req = urllib.request.Request(f"{BASIS}{modell}:generateContent",
+                                 data=json.dumps(body).encode(),
+                                 headers={"x-goog-api-key": key, "Content-Type": "application/json"})
+    for versuch in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                antwort = json.load(r)
+            break
+        except urllib.error.HTTPError as e:
+            fehler = e.read().decode(errors="replace")
+            if e.code in (429, 500, 503) and versuch < 2:
+                time.sleep(10 * (versuch + 1))
+                continue
+            raise RuntimeError(f"HTTP {e.code}: {fehler[:500]}")
+    for teil in antwort["candidates"][0]["content"]["parts"]:
+        if "inlineData" in teil:
+            return base64.b64decode(teil["inlineData"]["data"]), teil["inlineData"].get("mimeType", "image/png")
+    raise RuntimeError("Antwort enthielt kein Bild: " + json.dumps(antwort)[:500])
 
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     satz = args[0] if args else "test"
-    ref = None
-    if "--ref" in sys.argv:
-        ref = sys.argv[sys.argv.index("--ref") + 1]
-    token = os.environ.get("REPLICATE_API_TOKEN")
-    dry = "--dry-run" in sys.argv or not token
+    ref = sys.argv[sys.argv.index("--ref") + 1] if "--ref" in sys.argv else None
+    modell = sys.argv[sys.argv.index("--modell") + 1] if "--modell" in sys.argv else STANDARD_MODELL
+    key = os.environ.get("GOOGLE_API_KEY")
+    dry = "--dry-run" in sys.argv or not key
     ziel = pathlib.Path(__file__).parent / ("testbilder" if satz == "test" else f"geschichte-{satz}")
     ziel.mkdir(exist_ok=True)
     for i, szene in enumerate(SZENEN[satz], 1):
@@ -100,12 +105,13 @@ def main():
         print(f"[{satz}.{i}] {prompt}")
         if dry:
             continue
-        url = erzeuge(prompt, token, ref)
-        datei = ziel / f"{satz}-{i}.png"
-        urllib.request.urlretrieve(url, datei)
+        bild, mime = erzeuge(prompt, key, modell, ref)
+        endung = ".jpg" if "jpeg" in mime else ".png"
+        datei = ziel / f"{satz}-{i}{endung}"
+        datei.write_bytes(bild)
         print("   ->", datei)
     if dry:
-        print("\nKein REPLICATE_API_TOKEN gesetzt oder --dry-run: nur Prompts angezeigt.")
+        print("\nKein GOOGLE_API_KEY gesetzt oder --dry-run: nur Prompts angezeigt.")
 
 
 if __name__ == "__main__":
