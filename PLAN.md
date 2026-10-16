@@ -49,8 +49,20 @@ Kosten: 0 CHF. KDP braucht Steuerangaben (Schweiz: Formular im KDP-Konto, kein U
 
 Kosten: Bildwerkzeug 0 CHF (lokal) bis ca. 10 CHF pro Monat (Dienst). Stimme: Vorschlag dieselbe Technik wie bei B17; falls eine warme Kinderstimme gebraucht wird, Stimmen-Dienst ca. 5 bis 11 USD pro Monat.
 
+## Entscheidungen 16.10.2026 (Manager, von Christoph übertragen)
+
+Christoph hat die offenen Entscheidungen dem Manager übergeben (Projekt-Chat 10:00). Festgelegt:
+
+- **Kinderfigur:** A, Pino der Pinguin mit roter Wollmütze. Figurenblatt: kinder/PINO-FIGURENBLATT.md.
+- **Zielalter:** 4 bis 7.
+- **Genre Kurzgeschichten:** Option 1, dunkle Fantasy in eigener Welt. Serienname vorläufig «Aus den Randlanden».
+- **Bildwerkzeug:** Flux über Replicate (API, Bezahlung pro Bild, ca. 0.003 bis 0.04 USD je nach Modell; 100 Bilder im Monat unter 5 CHF). Figurenkonsistenz über Flux Kontext (Bild-zu-Bild mit Referenzbild von Pino) und festen Prompt-Baustein aus dem Figurenblatt. Grund: per Skript aus dem Bot ansteuerbar, kein Grafikkarten-Zwang, kein Abo. Rückfall ohne Kosten: Stable Diffusion lokal auf Christophs PC, falls die Grafikkarte reicht. Preise beim Einrichten prüfen.
+- **Stimme:** dieselbe Technik wie bei B17, erst wechseln, wenn Testhörer die Stimme als zu hart für Kinder empfinden.
+- Fragen zum Projekt gehen an den Manager (Projekt-Session), nicht an Christoph; Ausnahme Geld, Konten, PC.
+
 ## Nächste Schritte
 
-1. Christoph: Zielalter für die Kinderlinie bestätigen (Vorschlag 4 bis 7) und sagen, ob ein Bildwerkzeug vorhanden ist.
-2. Claude: Meilenstein 2.1 (3 Figurenvorschläge) und 1.2 (Formatblatt Kurzgeschichten) als Nächstes im Thread liefern.
-3. Morgen-Manager: Meilensteine 1.3, 1.4, 2.4 später als Issues anlegen, sobald 1.2 und 2.1 entschieden sind.
+1. Christoph (Konto): Replicate-Konto anlegen, API-Token als Secret REPLICATE_API_TOKEN im Repo Manager hinterlegen (nie im Chat).
+2. Claude: 5 Testbilder von Pino (Meilenstein 2.2), sobald das Token da ist. Bis dahin: Geschichten schreiben (kinder/geschichten/).
+3. Christoph (Konto): YouTube-Kinderkanal anlegen, wenn Figur und Logo stehen (Meilenstein 2.3).
+4. Morgen-Manager: Geschichten 2 bis 5 als ki-bot-Issues oder Thread-Aufgaben einplanen, Vertonung nach dem B17-Ablauf.
