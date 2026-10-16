@@ -19,7 +19,11 @@ Pino ist ein kleiner Pinguin, der immer friert. Er trägt eine rote Wollmütze, 
 9. Kein weiteres Kleidungsstück. Im Winter manchmal ein roter Schal, derselbe Rotton wie die Mütze.
 10. Stil: weiche Formen, dicke Umrisslinien, flache Farben, wenig Schatten (Bilderbuch, kein 3D, kein Foto).
 
-## Prompt-Baustein (Englisch, für Flux)
+## Referenzbild (verbindlich seit 16.10.2026)
+
+`kinder/bilder/pino-referenz.png` ist Pinos fester Look. Jedes neue Bild wird mit diesem Referenzbild erzeugt (`erzeuge_bilder.py --ref kinder/bilder/pino-referenz.png`, Modell gemini-3.1-flash-image). Weicht ein Bild sichtbar ab (Mütze, Herzfleck, Kopfform), wird es neu erzeugt, nicht das Referenzbild geändert. Zusätze aus den Testläufen: bei anderen Pinguinen im Bild immer anhängen, dass nur Pino Wangen, Herzfleck und Mütze hat; Leuchtturm immer als «tall lighthouse with clear red and white stripes» beschreiben.
+
+## Prompt-Baustein (Englisch, Gemini-Bildmodell)
 
 `Pino, a small chubby baby penguin with a big round head, black back and white belly, a white heart-shaped patch on his chest, big round dark eyes with a white highlight, small rounded orange beak, orange oversized feet, pink cheek spots, wearing a slightly tilted red knitted beanie with a white pompom. Children's picture book illustration, soft rounded shapes, thick clean outlines, flat colors, minimal shading, warm and cozy, no text.`
 
