@@ -11,6 +11,12 @@ Zwei Linien, beide: zuerst Publikum, dann Verkauf. Ideen zur Auswahl siehe IDEEN
 
 Gestrichen: Charakterbögen, Web-Generatoren. One-Shots als PDF gehören als Shop-Vorschlag zu TAEHRON (nur mit Christophs Okay).
 
+## Beilage: One-Shots und D&D-Lizenz (für TAEHRON)
+
+- **Nur SRD-Inhalte (5.1 und 5.2, CC-BY-4.0):** frei nutzbar, auch kommerziell, in jedem Shop (eigener Shop, DriveThruRPG, itch.io), Erlös bleibt bis auf die Shop-Gebühr (0 bis 35 %) bei uns. Pflicht: Hinweistext auf Wizards of the Coast und CC-BY. Verboten: der Name «Dungeons & Dragons», Logos, Welten (Forgotten Realms), geschützte Wesen (Beholder, Mind Flayer, Displacer Beast u.a.) und geschützte Figuren.
+- **Volle D&D-Inhalte:** nur über die DMs Guild. Dort sind Welten und Namen erlaubt, aber Wizards und die Plattform nehmen 50 %, und das Produkt darf nirgends sonst verkauft werden.
+- **Empfehlung:** SRD-Weg mit eigener Welt, dann sind die Produkte überall verkaufbar und passen zur TAEHRON-App.
+
 ## Regeln
 
 - Ideen, Planung und Marketing: Claude Fable 5.1, mindestens Effort mittel. Klar definierte Umsetzungsschritte dürfen an Opus 5.5 oder den Bot.
