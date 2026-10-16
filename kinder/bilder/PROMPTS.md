@@ -1,6 +1,6 @@
 # Bild-Prompts für die Testbilder und Geschichten 1 bis 5
 
-Stand: 16.10.2026. Alle Prompts beginnen mit dem festen Pino-Baustein aus PINO-FIGURENBLATT.md (unten «PINO»). Für Konsistenz: zuerst Testbild 1 erzeugen, das beste als Referenzbild für Flux Kontext verwenden, alle weiteren Bilder damit erzeugen.
+Stand: 16.10.2026. Alle Prompts beginnen mit dem festen Pino-Baustein aus PINO-FIGURENBLATT.md (unten «PINO»). Bildwerkzeug: Google Gemini-Bildmodell über Christophs Google-API-Key (Variable GOOGLE_API_KEY in der Projekt-Cloud-Umgebung, Domain generativelanguage.googleapis.com). Für Konsistenz: zuerst Testbild 1 erzeugen, das beste als Referenzbild mitschicken (`--ref`), alle weiteren Bilder damit erzeugen. Skript: erzeuge_bilder.py.
 
 PINO = `Pino, a small chubby baby penguin with a big round head, black back and white belly, a white heart-shaped patch on his chest, big round dark eyes with a white highlight, small rounded orange beak, orange oversized feet, pink cheek spots, wearing a slightly tilted red knitted beanie with a white pompom.`
 STIL = `Children's picture book illustration, soft rounded shapes, thick clean outlines, flat colors, minimal shading, warm and cozy, no text.`

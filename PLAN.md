@@ -58,13 +58,13 @@ Christoph hat die offenen Entscheidungen dem Manager übergeben (Projekt-Chat 10
 - **Kinderfigur:** A, Pino der Pinguin mit roter Wollmütze. Figurenblatt: kinder/PINO-FIGURENBLATT.md.
 - **Zielalter:** 4 bis 7.
 - **Genre Kurzgeschichten:** Option 1, dunkle Fantasy in eigener Welt. Serienname vorläufig «Aus den Randlanden».
-- **Bildwerkzeug:** Flux über Replicate (API, Bezahlung pro Bild, ca. 0.003 bis 0.04 USD je nach Modell; 100 Bilder im Monat unter 5 CHF). Figurenkonsistenz über Flux Kontext (Bild-zu-Bild mit Referenzbild von Pino) und festen Prompt-Baustein aus dem Figurenblatt. Grund: per Skript aus dem Bot ansteuerbar, kein Grafikkarten-Zwang, kein Abo. Rückfall ohne Kosten: Stable Diffusion lokal auf Christophs PC, falls die Grafikkarte reicht. Preise beim Einrichten prüfen.
+- **Bildwerkzeug (geändert 16.10. abends):** Google Gemini-Bildmodell mit Christophs Google-API-Key statt Replicate. Key als Variable GOOGLE_API_KEY in der Projekt-Cloud-Umgebung (nie im Chat), Domain generativelanguage.googleapis.com freigeben. Figurenkonsistenz über Referenzbild (Testbild 1 wird bei jedem weiteren Bild mitgeschickt) und festen Prompt-Baustein aus dem Figurenblatt. Skript kinder/bilder/erzeuge_bilder.py, Bildgenerierung läuft in einem eigenen Thread mit dieser Umgebung. Preise und Modellname beim ersten Lauf prüfen.
 - **Stimme:** dieselbe Technik wie bei B17, erst wechseln, wenn Testhörer die Stimme als zu hart für Kinder empfinden.
 - Fragen zum Projekt gehen an den Manager (Projekt-Session), nicht an Christoph; Ausnahme Geld, Konten, PC.
 
 ## Nächste Schritte
 
-1. Christoph (Konto): Replicate-Konto anlegen, API-Token als Secret REPLICATE_API_TOKEN im Repo Manager hinterlegen (nie im Chat).
-2. Claude: 5 Testbilder von Pino (Meilenstein 2.2), sobald das Token da ist. Bis dahin: Geschichten schreiben (kinder/geschichten/).
+1. Christoph: GOOGLE_API_KEY in der Projekt-Cloud-Umgebung hinterlegen und Domain generativelanguage.googleapis.com freigeben (nie im Chat). Erledigt: main-Branch angelegt 16.10.
+2. Claude: 5 Testbilder von Pino (Meilenstein 2.2) im Bild-Thread, sobald der Key da ist. Geschichten 1 bis 5 sind geschrieben.
 3. Christoph (Konto): YouTube-Kinderkanal anlegen, wenn Figur und Logo stehen (Meilenstein 2.3).
 4. Morgen-Manager: Geschichten 2 bis 5 als ki-bot-Issues oder Thread-Aufgaben einplanen, Vertonung nach dem B17-Ablauf.
