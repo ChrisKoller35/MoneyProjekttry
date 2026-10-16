@@ -1,8 +1,10 @@
 # Pino und das Licht, das nicht schlief
 
-Gute-Nacht-Geschichte 3. Zielalter 4 bis 7. Etwa 600 Wörter, 5 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 3. Stufe Spielgruppe bis Kindergarten (3 bis 5). Lernelement: Farben rot und weiss, Tag und Nacht, was ein Leuchtturm tut. Etwa 650 Wörter, 5 Minuten. Stand 16.10.2026, Entwurf 2.
 
 ---
+
+Brrr! Seid ihr alle da? Dann rückt ganz nah zusammen. Pino auch.
 
 Alle in der Eisbucht schliefen.
 
@@ -13,6 +15,8 @@ Nur einer schlief nicht.
 Der Leuchtturm.
 
 Einmal rot. Einmal weiss. Einmal rot. Einmal weiss. Die ganze Nacht.
+
+Welche Farbe kommt jetzt? Rot. Und jetzt? Weiss. Genau.
 
 Und Pino schlief auch nicht. Er lag in der Mitte des Haufens, warm von allen Seiten, und schaute durch eine Lücke zwischen zwei Bäuchen nach oben.
 
@@ -26,7 +30,7 @@ Niemand antwortete. Alle schliefen ja.
 
 ---
 
-Pino schob sich vorsichtig aus dem Haufen. Links ein Bauch, rechts ein Bauch, und dann war er draussen. Es war kalt. Die Mütze half.
+Pino schob sich vorsichtig aus dem Haufen. Links ein Bauch, rechts ein Bauch, und dann war er draussen. Plumps. Er fiel auf den Bommel. Der Bommel war weich. Es war kalt. Die Mütze half.
 
 Er watschelte zum Leuchtturm. Ganz nah. Er legte den Kopf in den Nacken.
 
@@ -60,7 +64,7 @@ Flo schaute dem Licht nach. «Da draussen», sagte er, «sind die, die noch unte
 
 «Und das Licht?»
 
-«Das Licht sagt: Hier ist die Bucht. Hier geht es nach Hause. Das sagt es die ganze Nacht, damit es keiner verpasst.»
+«Das Licht sagt: Hier ist die Bucht. Hier geht es nach Hause. Das sagt es die ganze Nacht, damit es keiner verpasst. Am Tag braucht es das nicht. Am Tag sieht man die Bucht von allein. Nachts ist alles schwarz, und dann braucht man ein Licht.»
 
 Pino schaute dem Licht lange nach.
 
@@ -114,6 +118,10 @@ Aber das hörte schon keiner mehr.
 - **Bild 2:** Pino am Eisrand, Flo im Wasser, Lichtstreifen über den Wellen bis in die Dunkelheit.
 - **Bild 3 (Schluss):** Pino im Haufen, durch eine Lücke sieht man den Leuchtturm.
 - Erzähler sehr ruhig, das «Rot. Weiss.» immer gleich langsam wie ein Atemrhythmus. Letzte drei Sätze geflüstert.
+
+## Lernelement
+
+Farben rot und weiss als Rhythmus (die Kinder sagen die Farbe mit), Tag und Nacht (am Tag sieht man, nachts braucht man Licht), Sachwissen: ein Leuchtturm zeigt den Weg nach Hause. Für die Spielgruppe wird die «Rot. Weiss.»-Stelle beim Vorlesen wiederholt.
 
 ## Prüfliste (Weltregeln)
 

@@ -1,8 +1,10 @@
 # Pino und Kikis Geheimnis
 
-Gute-Nacht-Geschichte 5. Zielalter 4 bis 7. Etwa 700 Wörter, 5 bis 6 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 5. Stufe 1./2. Klasse (6 bis 8). Lernelement: Unterschied zwischen Geschichte erfinden und Lügen, zuhören ohne zu fragen, Sachwissen fliegende Fische. Etwa 800 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 2.
 
 ---
+
+Brrr! Seid ihr alle da? Dann rückt ganz nah zusammen. Pino auch.
 
 Kiki war heute anders.
 
@@ -46,6 +48,8 @@ Pino ging zu Oma Robbe.
 
 Nichts fragen. Das war für Pino das Schwerste auf der ganzen Welt.
 
+Könnt ihr das? Ganz lange nichts fragen? Probiert es mal, bis die Geschichte fertig ist.
+
 ---
 
 Pino watschelte zum Leuchtturm. Er konnte nicht hinauffliegen. Aber er konnte sich unten hinsetzen. Direkt an die Mauer. So, dass Kiki ihn von oben sehen konnte.
@@ -56,7 +60,7 @@ Es war schwer. Er hatte so viele Fragen. Sie drückten von innen gegen den Schna
 
 Der Wind kam vorbei und zupfte an seiner Mütze. Pino hielt sie fest und sagte trotzdem nichts.
 
-Nach einer langen Zeit hörte er ein Flattern. Kiki landete neben ihm. Sie sagte auch nichts.
+Nach einer langen Zeit hörte er ein Flattern. Kiki landete neben ihm. Ein bisschen schief, auf einem Bein, und fiel dann auf den Hintern. Pino hielt den Schnabel zu, auch das Lachen. Kiki sagte auch nichts.
 
 Sie sassen beide da. Ein Pinguin mit roter Mütze und eine Möwe. Vor ihnen das Wasser. Über ihnen das Licht, das anfing zu blinken, weil es Abend wurde.
 
@@ -78,7 +82,7 @@ Jetzt durfte Pino etwas sagen. Das spürte er.
 
 «Das ist etwas anderes», sagte Kiki. «Bei dir wissen alle, dass es nicht stimmt.»
 
-Pino dachte nach. Das stimmte. Vielleicht.
+Pino dachte nach. Das stimmte. Eine Geschichte erfinden ist in Ordnung, wenn alle wissen, dass es eine Geschichte ist. Lügen ist, wenn jemand es glauben soll. Der Unterschied ist klein. Aber er ist da.
 
 «Dann sagst du es ihm», sagte Pino. «Dem kleinen Pinguin. Morgen. Dass es den Fisch nicht gibt, aber dass die Geschichte trotzdem schön war.»
 
@@ -96,7 +100,7 @@ Flo tauchte auf. «Ihr seid noch wach», sagte er.
 
 «Flo», sagte Kiki, «gibt es Fische, die fliegen können?»
 
-Flo überlegte. «Weit weg, in warmen Meeren, soll es welche geben, die aus dem Wasser springen und ein Stück gleiten. Richtig fliegen nicht. Aber fast.»
+Flo überlegte. «Weit weg, in warmen Meeren, gibt es welche. Sie springen aus dem Wasser und gleiten mit ihren Flossen ein Stück über die Wellen, wie ein Papierflieger. Richtig fliegen nicht. Aber fast.»
 
 Kiki riss die Augen auf. «Dann war es gar nicht ganz gelogen!»
 
@@ -144,6 +148,10 @@ Aber das hörte schon keiner mehr.
 - **Bild 2:** Pino und Kiki nebeneinander an der Mauer, Flos Kopf im Wasser, Leuchtturm blinkt.
 - **Bild 3 (Schluss):** Pino im Haufen, Kiki auf einem Pinguinrücken direkt daneben.
 - Erzähler sehr ruhig bei «Er setzte sich. Er sagte nichts.» Lange Pausen erlaubt.
+
+## Lernelement
+
+Unterschied Geschichte und Lüge (ob die anderen wissen, dass es erfunden ist), zuhören und dableiben statt fragen, Sachwissen: fliegende Fische gibt es wirklich, sie gleiten. Mitmach-Stelle: Könnt ihr ganz lange nichts fragen?
 
 ## Prüfliste (Weltregeln)
 

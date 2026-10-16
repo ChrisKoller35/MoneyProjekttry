@@ -64,6 +64,28 @@ Regeln der Welt (10):
 9. Jede Geschichte 700 bis 1100 Wörter, das sind 5 bis 8 Minuten Vorlesezeit.
 10. Der Wind hat am Ende immer ein letztes Wort, ganz leise.
 
+## Tonfall: wie die Klassiker (Input Christoph 16.10.)
+
+Vorbilder für den Ton, nicht für Figuren oder Namen: Pingu (kleine Alltagspannen, Slapstick, Familie), Globi (frech, witzig, hilfsbereit), Kasperlitheater (der Erzähler spricht die Kinder direkt an, Frage und Antwort), Schellen-Ursli und Papa Moll (Alltag, Wärme, kleine Abenteuer mit gutem Ende).
+
+Daraus feste Elemente:
+- **Anfangsformel** in jeder Geschichte, wie beim Kasperli: «Brrr! Seid ihr alle da? Dann rückt ganz nah zusammen. Pino auch.» Die Kinder dürfen antworten.
+- **Mitmach-Stellen:** ein- bis zweimal pro Geschichte fragt der Erzähler die Kinder etwas (Wisst ihr, was Pino jetzt macht? Zählt ihr mit?). Kurze Pause im Ton.
+- **Ein Lacher pro Geschichte:** eine kleine Panne wie bei Pingu (ausrutschen, Bommel im Gesicht, Kiki landet schief). Nie auf Kosten von jemandem.
+- **Schlussformel** bleibt: Pino schläft ein, der Wind sagt Gute Nacht, «Aber das hörte schon keiner mehr.»
+
+## Altersstufen und Lernelement (Input Christoph 16.10.)
+
+Jede Geschichte bekommt im Kopf eine Altersstufe und ein Lernelement. Unterhaltung steht vorne, das Lernen fliesst in die Handlung ein, nie belehrend.
+
+| Stufe | Alter | Satzlänge | Wortschatz | Lernelemente |
+|---|---|---|---|---|
+| Spielgruppe | 3 bis 4 | bis 8 Wörter, viele Wiederholungen | nur bekannte Wörter | Farben, Zählen bis 3, Körperteile, warm/kalt, Tag/Nacht |
+| Kindergarten | 4 bis 6 | bis 10 Wörter | ein neues Wort pro Geschichte, im Text erklärt | Zählen bis 10, Gefühle benennen, Reihenfolgen, einfache Natur (Wind, Eis, Tiere) |
+| 1./2. Klasse | 6 bis 8 | bis 12 Wörter | zwei neue Wörter, im Text erklärt | Sachwissen (Leuchtturm, Strömung, Tiere), Wahrheit und Erfinden, Warten und Geduld, Verantwortung |
+
+Regeln: Das Lernelement kommt höchstens dreimal vor und immer in der Handlung (Pino zählt, weil er zählen muss, nicht weil der Erzähler es will). Keine Frage am Schluss im Stil «Was haben wir gelernt?». Jede Stufe soll über die Serie etwa gleich oft vorkommen.
+
 ## Stimme und Ton
 
 - Erzähler ruhig, warm, langsam, Vorlese-Tempo. Keine Musik unter dem Text, nur leiser Wind am Anfang und Ende.

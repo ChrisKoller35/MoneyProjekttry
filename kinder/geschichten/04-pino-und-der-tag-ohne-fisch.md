@@ -1,8 +1,10 @@
 # Pino und der Tag ohne Fisch
 
-Gute-Nacht-Geschichte 4. Zielalter 4 bis 7. Etwa 700 Wörter, 5 bis 6 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 4. Stufe 1./2. Klasse (6 bis 8). Lernelement: Warten und Geduld, zählen bis fünf, Sachwissen Strömung. Neues Wort: Strömung. Etwa 750 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 2.
 
 ---
+
+Brrr! Seid ihr alle da? Dann rückt ganz nah zusammen. Pino auch.
 
 Es war ein ganz gewöhnlicher Tag in der Eisbucht. Bis zum Mittag.
 
@@ -46,7 +48,7 @@ Pino setzte sich an den Eisrand und wartete auf Flo. Flo kam. Er sah dünner aus
 
 «Flo, wo sind die Fische?»
 
-«Weiter draussen», sagte Flo. «Hinter dem grossen Eisberg ist eine warme Strömung. Dort sind sie alle hin. Ich bin nur geblieben, weil ich dich nicht alleinlassen wollte.»
+«Weiter draussen», sagte Flo. «Hinter dem grossen Eisberg ist eine warme Strömung. Eine Strömung ist ein Fluss im Meer. Man sieht ihn nicht, aber das Wasser wandert darin, und die Fische wandern mit. Dort sind sie alle hin. Ich bin nur geblieben, weil ich dich nicht alleinlassen wollte.»
 
 Pino bekam ganz warme Wangen. «Danke», sagte er. «Aber die anderen können nicht so weit schwimmen. Die Kleinen nicht. Und Oma Robbe nicht.»
 
@@ -72,11 +74,13 @@ Das hatte Oma Robbe nicht gesagt. Aber Pino übertrieb gern ein bisschen.
 
 Ein grosser Pinguin lachte. Nur kurz. Dann noch einer.
 
-«Also gut», sagte Papa. «Ich fange an. Es war einmal ein Eisberg, der war tausend Meter hoch…»
+«Also gut», sagte Papa. «Ich fange an.» Er räusperte sich so laut, dass ein Pinguin hinter ihm vor Schreck auf dem Eis ausrutschte und mit dem Bauch voran bis zum Wasser schlitterte. Alle schauten ihm nach. Dann sagte Papa: «Es war einmal ein Eisberg, der war tausend Meter hoch…»
 
 «Das ist meine Geschichte!», rief Pino.
 
 Alle lachten. Und dann erzählte Papa weiter, und dann Mama, und dann ein Pinguin, den Pino gar nicht kannte. Kiki kam vom Leuchtturm herunter und erzählte von einem Fisch, der fliegen konnte. Das stimmte bestimmt nicht, aber es war schön.
+
+Pino zählte die Erzähler an den Flügelspitzen ab. Papa, eins. Mama, zwei. Der fremde Pinguin, drei. Kiki, vier. Und er selbst, das war fünf. Fünf Geschichten statt fünf Fische. Zählt ihr nach?
 
 Der Bauch knurrte immer noch. Aber er knurrte leiser.
 
@@ -118,6 +122,10 @@ Aber das hörte schon keiner mehr.
 - **Bild 2:** Pino in der Mitte, die Pinguine im Kreis, Kiki landet gerade, alle lachen.
 - **Bild 3 (Schluss):** Pino schläft im Haufen, Papa über ihm, hinten am Horizont ein heller Streifen (die Strömung).
 - Erzähler bei den Geschichten im Kreis etwas lebhafter, dann ab «Es wurde Abend» wieder ruhig.
+
+## Lernelement
+
+Warten können, wenn man etwas nicht ändern kann (Geduld), Zählen bis fünf an den Erzählern, Sachwissen: eine Strömung ist ein Fluss im Meer, Fische ziehen mit. Neues Wort «Strömung», im Text erklärt. Mitmach-Stelle: Zählt ihr nach?
 
 ## Prüfliste (Weltregeln)
 

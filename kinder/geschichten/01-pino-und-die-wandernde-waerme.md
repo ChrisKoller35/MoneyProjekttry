@@ -1,8 +1,10 @@
 # Pino und die wandernde Wärme
 
-Gute-Nacht-Geschichte 1. Zielalter 4 bis 7. Etwa 800 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 1. Stufe Kindergarten (4 bis 6). Lernelement: warm und kalt, zählen bis drei, «allein» und «zusammen» benennen. Etwa 850 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 2.
 
 ---
+
+Brrr! Seid ihr alle da? Dann rückt ganz nah zusammen. Pino auch.
 
 In der Eisbucht wurde es Abend.
 
@@ -20,7 +22,7 @@ Er stand ja auch auf einem Eiswürfel. Die ganze Bucht war ein grosser Eiswürfe
 
 «Ich suche mir Wärme», sagte Pino zu sich selbst. «Irgendwo muss sie doch sein.»
 
-Und er watschelte los.
+Und er watschelte los. Beim dritten Schritt rutschte er aus und sass auf dem Po. Der Bommel hing ihm vor den Augen. «Das zählt nicht», sagte Pino, stand auf und ging weiter.
 
 ---
 
@@ -106,13 +108,15 @@ Pino sagte nichts. Er war viel zu beschäftigt.
 
 Er wurde nämlich warm.
 
-Zuerst der Bauch. Dann die Flügel. Dann sogar die Füsse, ganz langsam, Zeh für Zeh.
+Zuerst der Bauch. Das war eins. Dann die Flügel. Das war zwei. Dann sogar die Füsse, ganz langsam, Zeh für Zeh. Das war drei.
+
+Zählt ihr mit? Eins, der Bauch. Zwei, die Flügel. Drei, die Füsse. Alles warm.
 
 «Mama», flüsterte Pino. «Ich weiss jetzt, wohin die Wärme nachts wandert.»
 
 «Wohin denn?»
 
-«Zu uns. Sie ist zwischen uns. Man muss nur in die Mitte.»
+«Zu uns. Sie ist zwischen uns. Man muss nur in die Mitte.» Pino überlegte noch. «Allein ist kalt», sagte er. «Zusammen ist warm.»
 
 Mama lachte ganz leise. «Das hat dir sicher Oma Robbe erzählt.»
 
@@ -145,6 +149,10 @@ Aber das hörte schon keiner mehr.
 - **Bild 3 (Schluss):** Pino schlafend in der Mitte der Pinguine, Mamas Flügel auf der Mütze, warmes Orange-Licht.
 - Erzähler wird ab «Der Leuchtturm blinkte» langsamer, die letzten drei Sätze fast geflüstert.
 - Wind: leise am Anfang, weg in der Mitte, zurück am Ende.
+
+## Lernelement
+
+Warm und kalt am eigenen Körper (Bauch, Flügel, Füsse), Zählen bis drei beim Warmwerden, die Wörter «allein» und «zusammen». Mitmach-Stelle: Zählt ihr mit?
 
 ## Prüfliste (Weltregeln)
 

@@ -22,7 +22,9 @@ Gestrichen: Charakterbögen, Web-Generatoren. One-Shots als PDF gehören als Sho
 - Ideen, Planung und Marketing: Claude Fable 5.1, mindestens Effort mittel. Klar definierte Umsetzungsschritte dürfen an Opus 5.5 oder den Bot.
 - Christoph entscheidet über Veröffentlichung und Verkauf. Konten (YouTube, KDP, Zahlung) legt er an, Claude liefert Texte, Bilder, Dateien.
 - Kein Riesendateien-Problem wiederholen: ein Kapitel oder eine Geschichte = eine Datei = ein Video.
-- Kinderinhalte: Videos als «für Kinder» markieren, keine Kommentare, keine Gewalt, keine Werbung in der Geschichte, Figur und Ton altersgerecht (Zielalter festlegen, Vorschlag 4 bis 7).
+- Kinderinhalte: Videos als «für Kinder» markieren, keine Kommentare, keine Gewalt, keine Werbung in der Geschichte, Figur und Ton altersgerecht (Zielalter 4 bis 7).
+- Ton wie die Schweizer Klassiker (Pingu, Globi, Kasperli, Schellen-Ursli, Papa Moll): warm, humorvoll, kleine Alltagsabenteuer, Erzähler spricht die Kinder an. Keine Kopie von Figuren oder Namen. (Input Christoph 16.10.)
+- Jede Geschichte hat eine Altersstufe (Spielgruppe, Kindergarten, 1./2. Klasse) mit passender Satzlänge und ein dezentes Lernelement in der Handlung. Tabelle und Regeln im Figurenblatt. (Input Christoph 16.10.)
 
 ## Projekt 1 – Geschichten für Erwachsene
 

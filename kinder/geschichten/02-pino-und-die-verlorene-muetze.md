@@ -1,8 +1,10 @@
 # Pino und die verlorene Mütze
 
-Gute-Nacht-Geschichte 2. Zielalter 4 bis 7. Etwa 750 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 1.
+Gute-Nacht-Geschichte 2. Stufe 1./2. Klasse (6 bis 8). Lernelement: Angst benennen und trotzdem handeln, Hilfe holen. Neues Wort: Tang. Etwa 800 Wörter, 6 Minuten. Stand 16.10.2026, Entwurf 2.
 
 ---
+
+Brrr! Seid ihr alle da? Dann rückt ganz nah zusammen. Pino auch.
 
 Der Wind war heute laut.
 
@@ -14,7 +16,7 @@ Pino stand auf dem Robbenfelsen und hielt seine Mütze fest.
 
 Der Wind antwortete nicht. Er pfiff nur.
 
-Da sah Pino etwas im Wasser. Etwas Silbernes. Flo? Nein, Flo war grösser. Es war ein kleiner Fisch, ein ganz kleiner, und er zappelte in einem Stück Tang. Er kam nicht los.
+Da sah Pino etwas im Wasser. Etwas Silbernes. Flo? Nein, Flo war grösser. Es war ein kleiner Fisch, ein ganz kleiner, und er zappelte in einem Stück Tang. Tang, das sind lange grüne Meerpflanzen, glitschig wie nasse Bänder. Der Fisch kam nicht los.
 
 «Warte!», rief Pino. «Ich helfe dir!»
 
@@ -42,7 +44,7 @@ Der grosse Eisberg war weit. Und blau. Und voller Höhlen. Pino war noch nie dor
 
 Sie flog los. Pino wartete. Der Wind pfiff ihm um den nackten Kopf. Ohne Mütze war der Kopf das Kälteste an ihm. Kälter als die Füsse. Kälter als alles.
 
-Kiki kam zurück. Ohne Mütze.
+Kiki kam zurück. Sie landete etwas zu schnell, rutschte über das Eis und blieb mit dem Schnabel im Schnee stecken. Sie schüttelte sich. Ohne Mütze.
 
 «Sie ist in eine Höhle getrieben», sagte sie leise. «Da komme ich nicht rein. Zu eng für Flügel.»
 
@@ -62,7 +64,9 @@ Oma Robbe nickte langsam. «Dann holst du sie.»
 
 «Ich habe Angst.»
 
-«Ja», sagte Oma Robbe. «Das ist auch wahr.» Sie schaute Pino lange an. «Und was ist noch wahr?»
+«Ja», sagte Oma Robbe. «Das ist auch wahr. Und es ist gut, dass du es sagst. Angst, die man sagt, ist schon ein bisschen kleiner.»
+
+Wisst ihr, wovor Pino Angst hat? Vor dem tiefen Wasser und vor der dunklen Höhle. Beides zusammen. Das ist viel für einen kleinen Pinguin. Sie schaute Pino lange an. «Und was ist noch wahr?»
 
 Pino dachte nach. Er dachte an den kleinen Fisch, der frei war. Er dachte an die Mütze. Er dachte an seinen kalten Kopf.
 
@@ -130,6 +134,10 @@ Aber das hörte schon keiner mehr.
 - **Bild 2:** Pino im Wasser vor dem blauen Eisberg, Flo neben ihm, Kiki über ihm.
 - **Bild 3 (Schluss):** Pino schläft an Oma Robbe, Flosse über dem Kopf, rote Mütze auf ihrem Bauch.
 - Wind laut am Anfang, weg in der Höhle, ganz leise am Ende.
+
+## Lernelement
+
+Angst benennen («Ich habe Angst») macht sie kleiner; mutig sein heisst nicht ohne Angst sein, sondern trotzdem gehen; Hilfe holen (Flo und Kiki) ist erlaubt. Neues Wort «Tang», im Text erklärt. Mitmach-Stelle: Wisst ihr, wovor Pino Angst hat?
 
 ## Prüfliste (Weltregeln)
 
