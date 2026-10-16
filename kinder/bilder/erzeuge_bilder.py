@@ -17,7 +17,7 @@ import base64, json, mimetypes, os, pathlib, sys, time, urllib.request
 PINO = ("Pino, a small chubby baby penguin with a big round head, black back and white belly, "
         "a white heart-shaped patch on his chest, big round dark eyes with a white highlight, "
         "small rounded orange beak, orange oversized feet, pink cheek spots, wearing a slightly "
-        "tilted red knitted beanie with a white pompom.")
+        "tilted bright red knitted beanie with a white pompom.")
 STIL = ("Children's picture book illustration, soft rounded shapes, thick clean outlines, "
         "flat colors, minimal shading, warm and cozy, 16:9 landscape, no text, no watermark, "
         "not realistic, not 3D.")
@@ -59,7 +59,7 @@ SZENEN = {
     ],
 }
 
-STANDARD_MODELL = "gemini-2.5-flash-image"
+STANDARD_MODELL = "gemini-3.1-flash-image"
 BASIS = "https://generativelanguage.googleapis.com/v1beta/models/"
 
 
