@@ -45,7 +45,7 @@ Kosten: 0 CHF. KDP braucht Steuerangaben (Schweiz: Formular im KDP-Konto, kein U
 | 2.1 | Figur und Welt: 3 Vorschläge (Name, Aussehen, Grundidee, Zielalter), Christoph wählt | Claude Fable 5.1 | Figurenblatt im Repo |
 | 2.2 | ERLEDIGT 16.10.: Bildwerkzeug Gemini (gemini-3.1-flash-image), 5 Testbilder, Referenzbild kinder/bilder/pino-referenz.png verbindlich (PR #3) | KI | erledigt |
 | 2.3 | Kanal-Setup: Name, Logo, Banner, Beschreibung; Kanal legt Christoph an, «für Kinder» markieren | KI liefert, Christoph richtet ein | Kanal steht |
-| 2.4 | 5 Gute-Nacht-Geschichten (je 5 bis 8 Minuten) schreiben, vertonen, Video, hochladen; Rhythmus 1 pro Woche | KI | 5 Videos online |
+| 2.4 | 5 Gute-Nacht-Geschichten (je 5 bis 8 Minuten) schreiben, vertonen, Video, hochladen; Rhythmus 1 pro Woche. Stand 17.10.: Texte (Entwurf 2), 15 Bilder (PR #5) und Vertonungsvorbereitung (kinder/vertonung/: Sprechfassungen, Aussprache, Stimmvorschlag, Video-Vorlage, YouTube-Texte 1) fertig; offen Stimmprobe, Einsprechen, Schnitt | KI | 5 Videos online |
 | 2.5 | Nach 10 Videos: Aufrufe, Wiedergabezeit, Abos auswerten; Entscheid Buch/Malbuch | KI wertet aus, Christoph entscheidet | Entscheid im Repo |
 | 2.6 | Wenn ja: Malbuch (30 Seiten) und Bilderbuch (Band 1) zur Figur auf KDP, mit KI-Angabe | KI liefert, Christoph stellt ein | Produkte kaufbar |
 
@@ -65,6 +65,8 @@ Christoph hat die offenen Entscheidungen dem Manager übergeben (Projekt-Chat 10
 ## Nächste Schritte
 
 1. Christoph: GOOGLE_API_KEY in der Projekt-Cloud-Umgebung hinterlegen und Domain generativelanguage.googleapis.com freigeben (nie im Chat). Erledigt: main-Branch angelegt 16.10.
-2. Claude: alle 15 Geschichtenbilder (3 pro Geschichte) mit dem Referenzbild erzeugen, je Geschichte prüfen, in kinder/bilder/geschichte-N/ ablegen. Testbilder und Referenzbild sind fertig (16.10., PR #3).
+2. ERLEDIGT 17.10.: alle 15 Geschichtenbilder in kinder/bilder/01- bis 05- (PR #5).
+2a. Thread mit ElevenLabs-Key: drei Pino-Stimmproben nach kinder/vertonung/STIMME.md (Lea, Clemens, Christian), dann Geschichte 1 mit sprechen_kinder.py einsprechen. Achtung Zeichenbudget: Oktober reicht für Proben plus 2 bis 3 Geschichten; Abo-Stufe ist Christophs Entscheid.
+2b. Schnitt-Skript aus dem B17-Projekt übernehmen, Video 1 nach kinder/vertonung/VIDEO-VORLAGE.md bauen.
 3. Christoph (Konto): YouTube-Kinderkanal anlegen, wenn Figur und Logo stehen (Meilenstein 2.3).
 4. Morgen-Manager: Geschichten 2 bis 5 als ki-bot-Issues oder Thread-Aufgaben einplanen, Vertonung nach dem B17-Ablauf.
