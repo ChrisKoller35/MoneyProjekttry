@@ -593,7 +593,10 @@ window.A = window.A || {};
         const w = m.elite ? 18 : 14, bx = Math.round(dx - w / 2), by = Math.round(top - 3);
         b.fillStyle = '#181425'; b.fillRect(bx - 1, by - 1, w + 2, 4);
         b.fillStyle = '#3e2731'; b.fillRect(bx, by, w, 2);
-        b.fillStyle = m.elite ? '#feae34' : '#e43b44'; b.fillRect(bx, by, Math.max(1, Math.round(w * m.hp / m.maxHp)), 2);
+        // heller Rest, der langsam nachläuft, zeigt den gerade verlorenen Teil
+        const fr = m.hp / m.maxHp; if (m._hpT == null || m._hpT < fr) m._hpT = fr; else m._hpT = Math.max(fr, m._hpT - (this.dt || 0.016) * 0.8);
+        b.fillStyle = '#ffffff'; b.fillRect(bx, by, Math.round(w * m._hpT), 2);
+        b.fillStyle = m.elite ? '#feae34' : '#e43b44'; b.fillRect(bx, by, Math.max(1, Math.round(w * fr)), 2);
         if (m.shield > 0) { b.fillStyle = '#2ce8f5'; b.fillRect(bx, by + 2, Math.round(w * Math.min(1, m.shield / m.maxHp)), 1); }
       }
       if (m.effects && m.effects.length && Math.floor(this.t * 4) % 2) { b.fillStyle = m.effects[0].kind === 'poison' ? '#63c74d' : '#f77622'; b.fillRect(Math.round(dx - 1), Math.round(top - 8), 2, 2); }
@@ -757,9 +760,12 @@ window.A = window.A || {};
       // Schwebende Zahlen
       for (const f of W.floats) {
         const age = (f.max || 1) - f.life, pop = age < 0.12 ? 1 + (1 - age / 0.12) * 0.7 : 1;
-        const [x, y] = toS(f.x, f.y);
+        let [x, y] = toS(f.x, f.y);
+        // Schadenszahlen springen seitlich weg und fallen leicht zurück; Volltreffer zittern
+        if (!f.icon && /^-?\d+!?$/.test(f.text)) { if (f.dx == null) f.dx = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.6); x += f.dx * age * 55 * d; y += (age * age * 90 - age * 20) * d; }
+        const crit = f.text.endsWith('!'); if (crit && age < 0.35) { x += (Math.random() - 0.5) * 3 * d; y += (Math.random() - 0.5) * 3 * d; }
         c.globalAlpha = clamp(f.life * 2, 0, 1);
-        const size = f.size * d * 1.15 * pop;
+        const size = f.size * d * 1.15 * pop * (crit ? 1.15 : 1);
         c.font = this.font(size); c.lineWidth = Math.max(3, size * 0.22); c.strokeStyle = '#181425';
         let tx = x;
         if (f.icon) { const ic = A.Art.sprite(f.icon); const ih = size * 0.85, iw = ic.w * ih / ic.h; const tw = c.measureText(f.text).width; tx = x - iw / 2 - 2; c.imageSmoothingEnabled = false; c.drawImage(ic.img, Math.round(tx + tw / 2 + 2), Math.round(y - ih / 2), Math.round(iw), Math.round(ih)); }
@@ -773,6 +779,8 @@ window.A = window.A || {};
         c.font = `${Math.round(26 * d)}px "Jacquard 24", serif`; c.lineWidth = 4 * d; c.strokeStyle = '#181425'; c.strokeText(boss.name, dw / 2, y0 - 16 * d); c.fillStyle = '#feae34'; c.fillText(boss.name, dw / 2, y0 - 16 * d);
         c.fillStyle = '#181425'; c.fillRect(x0 - 3 * d, y0 - 3 * d, bwid + 6 * d, hh + 6 * d);
         c.fillStyle = '#3e2731'; c.fillRect(x0, y0, bwid, hh);
+        const bfr = boss.hp / boss.maxHp; if (boss._hpT == null || boss._hpT < bfr) boss._hpT = bfr; else boss._hpT = Math.max(bfr, boss._hpT - (this.dt || 0.016) * 0.35);
+        c.fillStyle = '#f6757a'; c.fillRect(x0, y0, bwid * boss._hpT, hh);
         c.fillStyle = '#a22633'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh);
         c.fillStyle = '#e43b44'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh * 0.5);
         c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, d);
