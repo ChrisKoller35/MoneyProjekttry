@@ -8,7 +8,7 @@ A.FX = (function () {
   const flashes = [];      // kurze Lichter
   const banners = [];      // grosse Einblendungen
   let decals = [];         // Flecken, die der Zeichner in den Boden malt
-  let trauma = 0, stopT = 0, slowT = 0, hurtT = 0, healT = 0, lowFx = false, t = 0;
+  let trauma = 0, stopT = 0, slowT = 0, hurtT = 0, healT = 0, lowFx = false, t = 0, combo = 0, comboT = -9;
   const MAX = 420;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const S = () => A.Sound;
@@ -85,6 +85,9 @@ A.FX = (function () {
         flash(e.x, e.y, 60 * big, g[0], 0.18);
         shake(e.boss ? 1 : 0.22); freeze(e.boss ? 0.2 : 0.05); if (e.boss) slowT = 1.3;
         S().die(e.boss);
+        // Kombo: mehrere Gegner kurz nacheinander besiegt
+        const now = t; combo = now - comboT < 1.6 ? combo + 1 : 1; comboT = now;
+        if (combo >= 3 && A.World && A.World.W) { const h = A.World.W.hero; A.World.float(h.x, h.y - 60, (A.LANG === 'de' ? combo + 'er-Kombo!' : combo + 'x Combo!'), combo >= 5 ? '#f77622' : '#fee761', 13 + Math.min(combo, 8)); if (combo >= 5) shake(0.15); }
         return;
       }
       case 'spawn': { const m = d.m; part({ kind: 'rune', x: m.x, y: m.y + 8, life: 0.7, size: m.boss ? 22 : 12, color: m.boss ? '#e43b44' : '#b55088', add: true }); smoke(m.x, m.y, 3, '#68386c', 4); if (once('spawn', 200)) S().spawn(); return; }
