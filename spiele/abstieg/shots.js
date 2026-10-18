@@ -1,9 +1,10 @@
 // Bildschirmfotos für Vorher/Nachher-Vergleiche: Titel, Heldenwahl, Kampf, Beute, Heldenblatt – am Handy und am PC.
-// Aufruf: node shots.js <html-datei> <bilder-ordner> [handy|pc|beide]
+// Aufruf: node shots.js <html-datei> <bilder-ordner> [handy|pc|beide] [retro|3d]
 const path = require('path'), fs = require('fs');
 const file = 'file://' + path.resolve(process.argv[2] || path.join(__dirname, 'dist', 'index.html'));
 const out = process.argv[3] || '.';
 const which = process.argv[4] || 'beide';
+const look = process.argv[5] || 'retro';
 const pw = require('/opt/node-tools/node_modules/playwright');
 const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 fs.mkdirSync(out, { recursive: true });
@@ -15,7 +16,7 @@ async function session(browser, tag, vp) {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('dialog', d => d.accept());
   const shot = (n) => page.screenshot({ path: `${out}/${tag}-${n}.png` });
-  await page.goto(file); await page.waitForTimeout(900);
+  await page.goto(file + '?look=' + look); await page.waitForTimeout(900);
   await shot('1-titel');
   await page.click('#bNew'); await page.waitForTimeout(500);
   await shot('2-held');
@@ -63,7 +64,7 @@ async function session(browser, tag, vp) {
 }
 
 (async () => {
-  const browser = await pw.chromium.launch({ executablePath: exe });
+  const browser = await pw.chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const errs = [];
   if (which !== 'pc') errs.push(...await session(browser, 'handy', { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true, locale: 'de-CH' }));
   if (which !== 'handy') errs.push(...await session(browser, 'pc', { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1, locale: 'de-CH' }));
