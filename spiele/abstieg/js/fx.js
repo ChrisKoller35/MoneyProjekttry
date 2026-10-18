@@ -39,6 +39,10 @@ A.FX = (function () {
     }
   }
   function smoke(x, y, n, color, size) { for (let i = 0; i < n; i++) part({ kind: 'smoke', x: x + rnd(-6, 6), y: y + rnd(-4, 4), vx: rnd(-20, 20), vy: rnd(-25, -5), life: rnd(0.35, 0.6), size: size || rnd(3, 5), grow: 8, color: color || '#8b9bb4', drag: 3 }); }
+  // Geröll von der Decke: Steinchen fallen mit Schatten, prallen auf und stauben
+  function rocks(x, y, n, spread, cols) {
+    for (let i = 0; i < n; i++) part({ kind: 'px', rock: true, x: x + rnd(-spread, spread), y: y + rnd(-spread * 0.6, spread * 0.6), z: rnd(90, 170), vz: rnd(-40, 0), g: 560, drag: 0.5, life: rnd(1.3, 1.8), size: Math.random() < 0.4 ? 4 : 3, color: (cols || ['#8b9bb4', '#5a6988', '#c0cbdc'])[Math.floor(Math.random() * 3)] });
+  }
   function flash(x, y, r, color, life) { flashes.push({ x, y, r, color, life, max: life }); }
   function shake(a) { trauma = Math.min(1, trauma + a); }
   function freeze(s) { stopT = Math.max(stopT, s); }
@@ -92,7 +96,7 @@ A.FX = (function () {
         return;
       }
       case 'spawn': { const m = d.m; part({ kind: 'rune', x: m.x, y: m.y + 8, life: 0.7, size: m.boss ? 22 : 12, color: m.boss ? '#e43b44' : '#b55088', add: true }); smoke(m.x, m.y, 3, '#68386c', 4); if (once('spawn', 200)) S().spawn(); return; }
-      case 'appear': { const m = d.m; burst(m.x, m.y - 6, 10, { color: ['#b55088', '#f6757a', '#68386c'], smin: 30, smax: 120, life: 0.5, add: true, kind: 'spark' }); smoke(m.x, m.y, 4, '#3a4466', 5); return; }
+      case 'appear': { const m = d.m; if (m.boss) { rocks(m.x, m.y, 18, 160); shake(0.6); S().lock(); } burst(m.x, m.y - 6, 10, { color: ['#b55088', '#f6757a', '#68386c'], smin: 30, smax: 120, life: 0.5, add: true, kind: 'spark' }); smoke(m.x, m.y, 4, '#3a4466', 5); return; }
       case 'lock': shake(0.35); S().lock(); return;
       case 'cleared': S().cleared(); setTimeout(() => S().open(), 250); banner(A.LANG === 'de' ? 'Raum gesäubert' : 'Room cleared', null, '#fee761', 1.4); return;
       case 'swing': if (d.magic) S().cast(); else S().swing(); return;
@@ -137,7 +141,7 @@ A.FX = (function () {
       case 'windup': if (once('windup', 160)) S().windup(); return;
       case 'strike': { // Gegner schlägt zu: Staub am Boden, beim Boss Erdstoss mit Wackeln
         const m = d.m; smoke(m.x + m.fx * 14, m.y + 10, m.boss ? 8 : 2, '#8b9bb4', m.boss ? 6 : 3);
-        if (m.boss) { part({ kind: 'ring', x: m.x + m.fx * 20, y: m.y + 10, life: 0.4, size: 90, color: '#feae34', add: true }); burst(m.x + m.fx * 20, m.y + 6, 14, { color: ['#c0cbdc', '#8b9bb4', '#733e39'], smin: 60, smax: 180, life: 0.6, z: 2, vz: 120, g: 420 }); shake(0.45); }
+        if (m.boss) { rocks(m.x, m.y, 7, 110); part({ kind: 'ring', x: m.x + m.fx * 20, y: m.y + 10, life: 0.4, size: 90, color: '#feae34', add: true }); burst(m.x + m.fx * 20, m.y + 6, 14, { color: ['#c0cbdc', '#8b9bb4', '#733e39'], smin: 60, smax: 180, life: 0.6, z: 2, vz: 120, g: 420 }); shake(0.45); }
         return;
       }
       case 'ignite': S().ignite(); return;
@@ -152,7 +156,7 @@ A.FX = (function () {
     for (const p of P) {
       p.life -= dt;
       p.x += p.vx * dt; p.y += p.vy * dt; const k = Math.max(0, 1 - p.drag * dt); p.vx *= k; p.vy *= k;
-      if (p.g) { p.vz -= p.g * dt; p.z += p.vz * dt; if (p.z <= 0 && p.g > 0) { if (p.stick) { decal(p.x, p.y, 'drop', p.color, p.size); p.life = 0; } else { p.z = 0; p.vz = -p.vz * 0.4; } } }
+      if (p.g) { p.vz -= p.g * dt; p.z += p.vz * dt; if (p.z <= 0 && p.g > 0) { if (p.rock && !p.landed) { p.landed = 1; smoke(p.x, p.y, 1, '#8b9bb4', 2); } if (p.stick) { decal(p.x, p.y, 'drop', p.color, p.size); p.life = 0; } else { p.z = 0; p.vz = -p.vz * 0.4; } } }
       else if (p.vz) p.z += p.vz * dt;
       if (p.grow) p.size += p.grow * dt;
     }
@@ -170,7 +174,7 @@ A.FX = (function () {
   function reset() { P.length = 0; flashes.length = 0; banners.length = 0; decals = []; trauma = 0; stopT = 0; slowT = 0; hurtT = 0; }
   function takeDecals() { const d = decals; decals = []; return d; }
   return {
-    P, flashes, banners, flyers, ev, update, simDt, reset, takeDecals, burst, smoke, part, flash, shake, freeze, banner, decal,
+    P, flashes, banners, flyers, ev, rocks, update, simDt, reset, takeDecals, burst, smoke, part, flash, shake, freeze, banner, decal,
     get trauma() { return trauma; }, get hurt() { return hurtT; }, get healGlow() { return healT; },
     set low(v) { lowFx = v; }, get low() { return lowFx; },
   };

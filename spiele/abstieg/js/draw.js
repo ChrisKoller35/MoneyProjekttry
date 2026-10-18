@@ -334,6 +334,12 @@ window.A = window.A || {};
       // Teilchen (normal)
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind !== 'px' || p.add) continue; const a = clamp(p.life / p.max * 1.5, 0, 1);
+        if (p.rock) { // Stein mit dunklem Rand, Staubfahne beim Fallen, Schatten am Boden
+          const X = Math.round(p.x / PX - cx), Y = Math.round((p.y - p.z) / PX - cy), sz = p.size;
+          if (p.z > 2) { b.globalAlpha = 0.45 * a; b.fillStyle = '#08060e'; b.fillRect(X - 1, Math.round(p.y / PX - cy) + 1, sz + 2, 1); b.globalAlpha = 0.25 * a; b.fillStyle = '#c0cbdc'; b.fillRect(X + 1, Y - 6, 1, 6); }
+          b.globalAlpha = a; b.fillStyle = '#181425'; b.fillRect(X - 1, Y - 1, sz + 2, sz + 2); b.fillStyle = p.color; b.fillRect(X, Y, sz, sz); b.fillStyle = '#ffffff'; b.globalAlpha = 0.5 * a; b.fillRect(X, Y, 1, 1);
+          continue;
+        }
         b.globalAlpha = a; b.fillStyle = p.color; b.fillRect(Math.round(p.x / PX - cx), Math.round((p.y - p.z) / PX - cy), p.size, p.size);
       }
       b.globalAlpha = 1;
@@ -592,6 +598,7 @@ window.A = window.A || {};
         for (let i = 0; i < 4; i++) { const a = this.t * 7 + i * 1.57, rr = (1 - ((this.t * 3 + i * 0.25) % 1)) * 9; g.fillStyle = col; g.fillRect(Math.round(ox2 + Math.cos(a) * rr), Math.round(oy2 + Math.sin(a) * rr), 1, 1); }
         g.globalAlpha = 1;
       }
+      if (m.boss && A.FX && Math.random() < (this.dt || 0.016) * (m.hp < m.maxHp * 0.5 ? 1.6 : 0.7)) { const W2 = A.World.W, h2 = W2 && W2.hero; if (h2) A.FX.rocks(h2.x + (Math.random() - 0.5) * 260, h2.y + (Math.random() - 0.5) * 160, 1 + Math.floor(Math.random() * 2), 12); }
       if (m.boss) { const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(dx - cr.w / 2 + (flip ? -2 : 2)), Math.round(dy - spr.h * sy - cr.h + 5)); }
       const top = dy - spr.h * sy - 2;
       if (m.state === 'windup') { const al = A.Art.sprite('u_alert'); b.drawImage(al.img, Math.round(dx - al.w / 2), Math.round(top - al.h - 2 + Math.sin(this.t * 20))); }
