@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Turmstapler – tippe im richtigen Moment und baue den höchsten Turm.">
+<title>Turmstapler</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1a1f3a; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+
+// ---------- Portal-Anbindung (Platzhalter) ----------
+// Beim Einreichen auf ein Portal wird dieses Objekt durch die Portal-Schnittstelle ersetzt.
+// Die Aufrufe stehen schon an den richtigen Stellen im Spiel.
+const Portal = window.TurmstaplerPortal || {
+  gameplayStart() {},
+  gameplayStop() {},
+  happytime() {},
+  showAd(onDone) { onDone(); },
+};
+const AD_EVERY_N_GAMES = 3;
+
+// ---------- Grundlagen ----------
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const BLOCK_H = 28;
+const PERFECT_TOL = 5;
+const MAX_WIDTH_FACTOR = 0.68;
+const MIN_WIDTH_FACTOR = 0.34;
+const playW = () => Math.min(W, 480);          // Spielfeld-Breite: auf breiten Bildschirmen eine Spalte in der Mitte
+const playX = () => (W - playW()) / 2;
+const baseWidth = () => playW() * MAX_WIDTH_FACTOR;
+const groundY = () => H * 0.82;
+const topTargetY = () => H * 0.42;
+
+const storage = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+
+// ---------- Ton (kleine Töne aus Code) ----------
+let audioCtx = null;
+let soundOn = storage.get('turmstapler.sound', true);
+function beep(freq, dur, type, vol) {
+  if (!soundOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || 0.08, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+const sfx = {
+  place() { beep(320, 0.08, 'triangle', 0.07); },
+  perfect(combo) { beep(520 + combo * 60, 0.12, 'sine', 0.09); setTimeout(() => beep(780 + combo * 60, 0.16, 'sine', 0.07), 60); },
+  fail() { beep(110, 0.4, 'sawtooth', 0.09); },
+  tap() { beep(440, 0.05, 'square', 0.03); },
+};
+
+// ---------- Spielzustand ----------
+const STATE = { START: 0, PLAY: 1, OVER: 2 };
+let state = STATE.START;
+let blocks = [];        // { x, w, y, hue }  (y = Oberkante in Weltkoordinaten, 0 = Boden)
+let mover = null;       // { x, w, y, dir, speed, hue }
+let debris = [];        // herabfallende Abschnitte { x, y, w, h, vx, vy, rot, vr, hue, life }
+let particles = [];     // Funken bei perfekten Treffern
+let rings = [];         // Ringe bei perfekten Treffern
+let score = 0;
+let best = storage.get('turmstapler.best', 0);
+let combo = 0;
+let camY = 0;           // Kamera-Verschiebung (Weltkoordinate, die bei topTargetY erscheint)
+let hueBase = Math.random() * 360;
+let shake = 0;
+let lastInput = 0;
+let gamesPlayed = 0;
+let overTime = 0;
+let flash = 0;
+let timeSec = 0;
+
+function worldToScreenY(y) { return groundY() - (y - camY); }
+
+function startGame() {
+  blocks = []; debris = []; particles = []; rings = [];
+  score = 0; combo = 0; camY = 0; shake = 0; flash = 0;
+  hueBase = Math.random() * 360;
+  const w = baseWidth();
+  blocks.push({ x: W / 2 - w / 2, w, y: 0, hue: hueBase });
+  spawnMover();
+  state = STATE.PLAY;
+  Portal.gameplayStart();
+}
+
+function spawnMover() {
+  const top = blocks[blocks.length - 1];
+  const dir = blocks.length % 2 === 0 ? 1 : -1;
+  const speed = Math.min(2.2 + blocks.length * 0.12, 7.5) * (playW() / 400);
+  mover = {
+    x: dir > 0 ? playX() - top.w : playX() + playW(),
+    w: top.w,
+    y: top.y + BLOCK_H,
+    dir, speed,
+    hue: hueBase + blocks.length * 7,
+  };
+}
+
+function drop() {
+  if (!mover) return;
+  const top = blocks[blocks.length - 1];
+  const left = Math.max(mover.x, top.x);
+  const right = Math.min(mover.x + mover.w, top.x + top.w);
+  const overlap = right - left;
+  const diff = mover.x - top.x;
+
+  if (overlap <= 0) {
+    // ganz daneben: Block fällt, Spiel vorbei
+    debris.push({ x: mover.x, y: mover.y, w: mover.w, h: BLOCK_H, vx: mover.dir * 1.5, vy: -1, rot: 0, vr: mover.dir * 0.08, hue: mover.hue, life: 1 });
+    mover = null;
+    gameOver();
+    return;
+  }
+
+  if (Math.abs(diff) <= PERFECT_TOL) {
+    // perfekt: exakt aufsetzen, Kombo zählt, Turm wird etwas breiter
+    combo++;
+    let w = top.w;
+    if (combo >= 2) w = Math.min(top.w + 6, baseWidth());
+    const nx = top.x + top.w / 2 - w / 2;
+    blocks.push({ x: nx, w, y: mover.y, hue: mover.hue });
+    sfx.perfect(Math.min(combo, 6));
+    burst(nx + w / 2, mover.y + BLOCK_H / 2, mover.hue, 18 + combo * 4);
+    rings.push({ x: nx + w / 2, y: mover.y + BLOCK_H / 2, r: w / 2, life: 1 });
+    flash = 0.35;
+    if (combo >= 3) Portal.happytime();
+  } else {
+    combo = 0;
+    // Abschnitt fällt herunter
+    if (diff > 0) {
+      debris.push({ x: right, y: mover.y, w: mover.w - overlap, h: BLOCK_H, vx: 1.2, vy: -0.5, rot: 0, vr: 0.05, hue: mover.hue, life: 1 });
+    } else {
+      debris.push({ x: mover.x, y: mover.y, w: mover.w - overlap, h: BLOCK_H, vx: -1.2, vy: -0.5, rot: 0, vr: -0.05, hue: mover.hue, life: 1 });
+    }
+    blocks.push({ x: left, w: overlap, y: mover.y, hue: mover.hue });
+    sfx.place();
+    shake = Math.min(0.6, 0.15 + (mover.w - overlap) / 120);
+  }
+
+  score = blocks.length - 1;
+  if (score > best) { best = score; storage.set('turmstapler.best', best); }
+  spawnMover();
+}
+
+function gameOver() {
+  state = STATE.OVER;
+  overTime = 0;
+  sfx.fail();
+  shake = 0.8;
+  gamesPlayed++;
+  Portal.gameplayStop();
+}
+
+function restartFromOver() {
+  if (gamesPlayed > 0 && gamesPlayed % AD_EVERY_N_GAMES === 0) {
+    Portal.showAd(() => startGame());
+  } else {
+    startGame();
+  }
+}
+
+function burst(x, y, hue, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = 1.5 + Math.random() * 3;
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, hue: hue + Math.random() * 40 - 20, size: 2 + Math.random() * 3 });
+  }
+}
+
+// ---------- Eingabe ----------
+function onTap(px, py) {
+  const now = performance.now();
+  if (now - lastInput < 90) return;
+  lastInput = now;
+  if (state === STATE.START) {
+    if (hitSoundButton(px, py)) { toggleSound(); return; }
+    sfx.tap(); startGame();
+  } else if (state === STATE.PLAY) {
+    drop();
+  } else if (state === STATE.OVER) {
+    if (overTime < 0.6) return; // kurz warten, damit man das Ergebnis sieht
+    if (hitSoundButton(px, py)) { toggleSound(); return; }
+    sfx.tap(); restartFromOver();
+  }
+}
+function toggleSound() { soundOn = !soundOn; storage.set('turmstapler.sound', soundOn); if (soundOn) sfx.tap(); }
+function soundButtonRect() { const s = 44; return { x: W - s - 14, y: 14 + (window.visualViewport ? 0 : 0), s }; }
+function hitSoundButton(px, py) { const b = soundButtonRect(); return px >= b.x - 8 && px <= b.x + b.s + 8 && py >= b.y - 8 && py <= b.y + b.s + 8; }
+
+canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); onTap(e.clientX, e.clientY); });
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowDown') { e.preventDefault(); onTap(-100, -100); }
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) paused = true; else { paused = false; lastT = performance.now(); } });
+let paused = false;
+
+// ---------- Zeichnen ----------
+function rounded(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function drawBlock(x, y, w, h, hue, alpha) {
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  // Vorderseite
+  ctx.fillStyle = `hsl(${hue}, 62%, 56%)`;
+  rounded(x, y, w, h, 4); ctx.fill();
+  // oberer Lichtstreifen
+  ctx.fillStyle = `hsla(${hue}, 70%, 80%, 0.55)`;
+  rounded(x + 2, y + 2, w - 4, Math.max(2, h * 0.22), 3); ctx.fill();
+  // unterer Schatten
+  ctx.fillStyle = `hsla(${hue}, 60%, 25%, 0.45)`;
+  ctx.fillRect(x + 2, y + h - 5, w - 4, 4);
+  ctx.globalAlpha = 1;
+}
+
+function drawBackground() {
+  const h1 = (hueBase + blocks.length * 3) % 360;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, `hsl(${(h1 + 200) % 360}, 45%, ${Math.max(10, 18 - blocks.length * 0.05)}%)`);
+  g.addColorStop(1, `hsl(${(h1 + 240) % 360}, 40%, 28%)`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // Sterne, die mit dem Turm nach oben scrollen
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  for (let i = 0; i < 40; i++) {
+    const sx = (i * 97.3) % W;
+    const sy = ((i * 53.7) + camY * 0.3) % (H + 20);
+    const r = (i % 3) * 0.5 + 0.6;
+    ctx.beginPath(); ctx.arc(sx, H - sy, r, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawTower(sway) {
+  // Boden
+  const gy = worldToScreenY(0);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(0, gy, W, H - gy);
+  // Blöcke von unten nach oben; der Turm neigt sich leicht (nur Optik)
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    const sy = worldToScreenY(b.y) - BLOCK_H;
+    if (sy > H + BLOCK_H || sy < -BLOCK_H * 2) continue;
+    const t = i / Math.max(1, blocks.length);
+    const dx = sway * t * t;
+    drawBlock(b.x + dx, sy, b.w, BLOCK_H, b.hue);
+  }
+}
+
+function drawMover() {
+  if (!mover) return;
+  const sy = worldToScreenY(mover.y) - BLOCK_H;
+  // Schattenlinie auf dem obersten Block zeigt, wo der Block landen würde
+  const top = blocks[blocks.length - 1];
+  const left = Math.max(mover.x, top.x), right = Math.min(mover.x + mover.w, top.x + top.w);
+  if (right > left) {
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(left, worldToScreenY(top.y) - BLOCK_H, right - left, BLOCK_H);
+  }
+  drawBlock(mover.x, sy, mover.w, BLOCK_H, mover.hue);
+}
+
+function drawDebris() {
+  for (const d of debris) {
+    const sy = worldToScreenY(d.y) - d.h;
+    ctx.save();
+    ctx.translate(d.x + d.w / 2, sy + d.h / 2);
+    ctx.rotate(d.rot);
+    drawBlock(-d.w / 2, -d.h / 2, d.w, d.h, d.hue, Math.max(0, d.life));
+    ctx.restore();
+  }
+}
+
+function drawEffects() {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = `hsl(${p.hue}, 80%, 70%)`;
+    ctx.beginPath(); ctx.arc(p.x, worldToScreenY(p.y), p.size * p.life, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (const r of rings) {
+    ctx.strokeStyle = `rgba(255,255,255,${0.6 * r.life})`;
+    ctx.lineWidth = 3 * r.life;
+    ctx.beginPath(); ctx.arc(r.x, worldToScreenY(r.y), r.r * (2 - r.life), 0, Math.PI * 2); ctx.stroke();
+  }
+  if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * 0.35})`; ctx.fillRect(0, 0, W, H); }
+}
+
+function drawScore() {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.font = `bold ${Math.round(Math.min(W, H) * 0.16)}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 12;
+  ctx.fillText(String(score), W / 2, H * 0.07);
+  ctx.shadowBlur = 0;
+  if (combo >= 2) {
+    ctx.font = `bold ${Math.round(Math.min(W, H) * 0.05)}px system-ui, sans-serif`;
+    ctx.fillStyle = 'rgba(255,230,120,0.95)';
+    ctx.fillText('×' + combo, W / 2, H * 0.07 + Math.min(W, H) * 0.17);
+  }
+}
+
+function drawTrophy(x, y, s, alpha) {
+  // Pokal aus einfachen Formen
+  ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.translate(x, y);
+  ctx.fillStyle = '#f5c542';
+  ctx.beginPath(); ctx.moveTo(-s * 0.45, -s * 0.5); ctx.lineTo(s * 0.45, -s * 0.5);
+  ctx.quadraticCurveTo(s * 0.45, s * 0.25, 0, s * 0.3); ctx.quadraticCurveTo(-s * 0.45, s * 0.25, -s * 0.45, -s * 0.5); ctx.fill();
+  ctx.lineWidth = s * 0.09; ctx.strokeStyle = '#f5c542';
+  ctx.beginPath(); ctx.arc(-s * 0.5, -s * 0.2, s * 0.22, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(s * 0.5, -s * 0.2, s * 0.22, -Math.PI * 0.5, Math.PI * 0.5); ctx.stroke();
+  ctx.fillRect(-s * 0.08, s * 0.28, s * 0.16, s * 0.18);
+  ctx.fillRect(-s * 0.3, s * 0.44, s * 0.6, s * 0.1);
+  ctx.restore();
+}
+
+function drawPlayButton(cx, cy, r, pulse) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.arc(cx, cy, r * (1 + pulse * 0.06), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.78, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a1f3a';
+  ctx.beginPath(); ctx.moveTo(cx - r * 0.22, cy - r * 0.32); ctx.lineTo(cx + r * 0.36, cy); ctx.lineTo(cx - r * 0.22, cy + r * 0.32); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawReplayButton(cx, cy, r, pulse) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.arc(cx, cy, r * (1 + pulse * 0.06), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.78, 0, Math.PI * 2); ctx.fill();
+  // Kreispfeil
+  ctx.strokeStyle = '#1a1f3a'; ctx.lineWidth = r * 0.13; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.36, -Math.PI * 0.25, Math.PI * 1.35); ctx.stroke();
+  ctx.fillStyle = '#1a1f3a';
+  const ax = cx + Math.cos(-Math.PI * 0.25) * r * 0.36, ay = cy + Math.sin(-Math.PI * 0.25) * r * 0.36;
+  ctx.beginPath(); ctx.moveTo(ax + r * 0.16, ay - r * 0.02); ctx.lineTo(ax - r * 0.14, ay - r * 0.12); ctx.lineTo(ax - r * 0.02, ay + r * 0.18); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawSoundButton() {
+  const b = soundButtonRect();
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  rounded(b.x, b.y, b.s, b.s, 10); ctx.fill();
+  const cx = b.x + b.s / 2, cy = b.y + b.s / 2;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(cx - 12, cy - 5); ctx.lineTo(cx - 5, cy - 5); ctx.lineTo(cx + 2, cy - 11); ctx.lineTo(cx + 2, cy + 11); ctx.lineTo(cx - 5, cy + 5); ctx.lineTo(cx - 12, cy + 5); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  if (soundOn) {
+    ctx.beginPath(); ctx.arc(cx + 3, cy, 8, -0.7, 0.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + 3, cy, 13, -0.7, 0.7); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(cx + 7, cy - 6); ctx.lineTo(cx + 15, cy + 6); ctx.moveTo(cx + 15, cy - 6); ctx.lineTo(cx + 7, cy + 6); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawStartScreen(t) {
+  // Vorschau-Turm
+  const pulse = Math.sin(t * 3) * 0.5 + 0.5;
+  const w0 = Math.min(W, 480) * 0.42, bh = 22, n = 7;
+  const bx = W / 2, by = H * 0.6;
+  for (let i = 0; i < n; i++) {
+    const w = w0 - i * 6 + Math.sin(t * 2 + i) * 2;
+    const off = Math.sin(t * 1.4 + i * 0.9) * (i * 2.2);
+    drawBlock(bx - w / 2 + off, by - (i + 1) * bh, w, bh - 2, hueBase + i * 12);
+  }
+  // Fingertipp-Hinweis: ein Punkt, der auf den Turm tippt
+  const tapY = by - n * bh - 40 - pulse * 10;
+  ctx.fillStyle = `rgba(255,255,255,${0.5 + pulse * 0.4})`;
+  ctx.beginPath(); ctx.arc(bx, tapY, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - pulse)})`; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(bx, tapY, 10 + pulse * 14, 0, Math.PI * 2); ctx.stroke();
+
+  drawPlayButton(W / 2, H * 0.3, Math.min(W, H) * 0.11, pulse);
+
+  if (best > 0) {
+    const y = H * 0.9;
+    drawTrophy(W / 2 - 34, y, 22);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = `bold 26px system-ui, sans-serif`;
+    ctx.fillText(String(best), W / 2 - 10, y);
+  }
+  drawSoundButton();
+}
+
+function drawOverScreen(t) {
+  const a = Math.min(1, overTime / 0.6);
+  ctx.fillStyle = `rgba(10,12,30,${0.55 * a})`; ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = a;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${Math.round(Math.min(W, H) * 0.22)}px system-ui, sans-serif`;
+  ctx.fillText(String(score), W / 2, H * 0.3);
+  const isRecord = score > 0 && score === best;
+  const y = H * 0.46;
+  drawTrophy(W / 2 - 40, y, 26, a);
+  ctx.fillStyle = isRecord ? '#f5c542' : 'rgba(255,255,255,0.85)';
+  ctx.font = `bold 30px system-ui, sans-serif`; ctx.textAlign = 'left';
+  ctx.fillText(String(best), W / 2 - 12, y);
+  if (isRecord) {
+    // kleine Sterne rund um den Rekord
+    for (let i = 0; i < 6; i++) {
+      const ang = t * 1.5 + i * Math.PI / 3, rr = 70 + Math.sin(t * 4 + i) * 6;
+      ctx.fillStyle = `hsl(${(t * 80 + i * 60) % 360}, 90%, 70%)`;
+      ctx.beginPath(); ctx.arc(W / 2 + Math.cos(ang) * rr, y + Math.sin(ang) * rr * 0.5, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  if (overTime >= 0.6) drawReplayButton(W / 2, H * 0.68, Math.min(W, H) * 0.1, Math.sin(t * 3) * 0.5 + 0.5);
+  ctx.globalAlpha = 1;
+  if (overTime >= 0.6) drawSoundButton();
+}
+
+// ---------- Schleife ----------
+let lastT = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (paused) return;
+  let dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  timeSec += dt;
+  const step = dt * 60; // Bewegung in "Bildern" bei 60 Hz
+
+  // Spielfigur bewegen
+  if (state === STATE.PLAY && mover) {
+    mover.x += mover.dir * mover.speed * step;
+    const margin = 10;
+    const right = playX() + playW() - mover.w + margin, left = playX() - margin;
+    if (mover.dir > 0 && mover.x > right) { mover.dir = -1; mover.x = right; }
+    if (mover.dir < 0 && mover.x < left) { mover.dir = 1; mover.x = left; }
+  }
+
+  // Kamera folgt der Turmspitze
+  const topY = blocks.length ? blocks[blocks.length - 1].y + BLOCK_H : 0;
+  const wantCam = Math.max(0, topY - (groundY() - topTargetY()));
+  camY += (wantCam - camY) * Math.min(1, 6 * dt);
+
+  // Trümmer, Funken, Ringe
+  for (const d of debris) { d.vy -= 0.35 * step; d.y += d.vy * step * 2; d.x += d.vx * step; d.rot += d.vr * step; d.life -= 0.012 * step; }
+  debris = debris.filter(d => d.life > 0);
+  for (const p of particles) { p.vy -= 0.12 * step; p.x += p.vx * step; p.y += p.vy * step; p.life -= 0.03 * step; }
+  particles = particles.filter(p => p.life > 0);
+  for (const r of rings) r.life -= 0.04 * step;
+  rings = rings.filter(r => r.life > 0);
+  shake = Math.max(0, shake - 1.8 * dt);
+  flash = Math.max(0, flash - 2 * dt);
+  if (state === STATE.OVER) overTime += dt;
+
+  // Zeichnen
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * shake * 12, (Math.random() - 0.5) * shake * 12);
+  drawBackground();
+  const sway = state === STATE.PLAY ? Math.sin(timeSec * 1.6) * Math.min(14, blocks.length * 0.35) : 0;
+  if (state !== STATE.START) { drawTower(sway); drawDebris(); drawMover(); drawEffects(); }
+  ctx.restore();
+
+  if (state === STATE.START) drawStartScreen(timeSec);
+  else if (state === STATE.PLAY) drawScore();
+  else drawOverScreen(timeSec);
+}
+requestAnimationFrame(frame);
+
+// Für Tests von aussen (Playwright) erreichbar
+window.__turmstapler = {
+  get state() { return state; }, get score() { return score; }, get best() { return best; },
+  get blocks() { return blocks.length; }, get mover() { return mover; },
+  tap: () => onTap(-100, -100), start: startGame,
+};
+</script>
+</body>
+</html>
