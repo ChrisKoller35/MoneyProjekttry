@@ -443,8 +443,16 @@ window.A = window.A || {};
       const bob = walk < 0 ? (Math.sin(this.t * 2.5) > 0.7 ? -1 : 0) : (walk % 2 === 1 ? -1 : 0);
       const spr = A.Art.heroSprite(run.race, run.cls, frame); const flip = h.fx < 0;
       const blink = h.inv > 0 && Math.floor(this.t * 20) % 2;
-      this.shadow(x, y, 6);
+      if (W.sinkT == null) this.shadow(x, y, 6);
       if (!h.alive) { this.drawFallen(spr, x, y, flip, h); return; }
+      if (W.sinkT != null) { // Abstieg: Held dreht sich und versinkt in der Treppe
+        const q = clamp((this.t - W.sinkT) / 0.32, 0, 1), st = W.near && W.near.kind === 'stairs' ? W.near : null;
+        if (st) { x += (st.x / PX - cx - x) * q; y += (st.y / PX - cy + 6 - y) * q; }
+        const fl2 = Math.floor(this.t * 14) % 2 === 1;
+        this.blit(spr, x, y, fl2 ? !flip : flip, { sx: 1 - q * 0.6, sy: 1 - q, alpha: 1 - q * 0.8 });
+        if (A.FX && Math.random() < 0.8) A.FX.part({ kind: 'spark', add: true, x: (x + cx) * PX + (Math.random() - 0.5) * 20, y: (y + cy) * PX - Math.random() * 20, vx: 0, vy: -60, life: 0.3, color: Math.random() < 0.5 ? '#b55088' : '#f6757a', drag: 1 });
+        return;
+      }
       const aim = Math.atan2(h.fy, h.fx);
       const cls = run.cls, melee = cls !== 'schuetze' && cls !== 'weber' && cls !== 'rufer';
       // Ausfallschritt und Stauchen beim Schlag, Zusammenzucken beim Treffer
@@ -654,6 +662,12 @@ window.A = window.A || {};
           b.fillStyle = '#0d0b14'; b.fillRect(x0, y0, w, hh);
           for (let i = 0; i < 5; i++) { const c = [this.theme.brickHi, this.theme.brick[0], this.theme.brickLo, '#1a1626', '#120f1a'][i]; b.fillStyle = c; b.fillRect(x0 + 2 + i * 2, y0 + 2 + i * 4, w - 4 - i * 4, 3); }
           b.fillStyle = '#181425'; b.fillRect(x0 - 2, y0 - 2, w + 4, 1); b.fillRect(x0 - 2, y0 + hh + 1, w + 4, 1);
+          // Sog in der Tiefe: drehende Ringe und eine Rune um die Treppe
+          { const gl = this.g, vx = Math.round(x), vy = y0 + hh - 5;
+            for (let i = 0; i < 3; i++) { const k = ((t * 0.6 + i / 3) % 1); gl.globalAlpha = 0.55 * (1 - k); gl.strokeStyle = i % 2 ? '#f6757a' : '#b55088'; gl.lineWidth = 1; gl.beginPath(); gl.ellipse(vx + 0.5, vy + 0.5, 3 + k * 11, 1 + k * 4, 0, 0, TAU); gl.stroke(); }
+            gl.globalAlpha = 0.35 + Math.sin(t * 2) * 0.1; gl.strokeStyle = '#b55088'; gl.beginPath(); gl.ellipse(Math.round(x) + 0.5, Math.round(y) + 0.5, w * 0.75, hh * 0.75, 0, 0, TAU); gl.stroke();
+            gl.fillStyle = '#f6757a'; for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + t * 0.8; gl.fillRect(Math.round(x + Math.cos(a) * w * 0.75), Math.round(y + Math.sin(a) * hh * 0.75), 1, 1); }
+            gl.globalAlpha = 1; }
           if (near) { b.strokeStyle = '#fee761'; b.lineWidth = 1; b.strokeRect(x0 - 3.5, y0 - 3.5, w + 7, hh + 7); }
           if (Math.random() < 0.2 && A.FX) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 40, y: p.y + 10, vx: 0, vy: -30 - Math.random() * 30, life: 1, color: '#b55088', drag: 0.3 });
           top = y0 - 4; break;
