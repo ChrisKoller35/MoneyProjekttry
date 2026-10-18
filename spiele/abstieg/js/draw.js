@@ -12,10 +12,10 @@ window.A = window.A || {};
 
   // Farbwelten je Tiefe
   const THEMES = {
-    stone: { floor: ['#4d5878', '#48536f', '#525e80', '#45506c'], mortar: '#2a2f48', brick: ['#5e6a92', '#57638a', '#64719a'], brickHi: '#7d8ab0', brickLo: '#2a2f4c', cap: '#1d1c2e', capHi: '#41445f', ambient: '#423f62', banner: ['#a22633', '#e43b44', '#f6757a'], moss: ['#3e8948', '#265c42'], name: { de: 'Graue Gewölbe', en: 'Grey Vaults' } },
-    grotto: { floor: ['#2f4d4b', '#2b4744', '#345451', '#29423f'], mortar: '#162a2b', brick: ['#365c56', '#31544f', '#3c645d'], brickHi: '#527f74', brickLo: '#14262a', cap: '#0f1b1d', capHi: '#2a4644', ambient: '#2a4244', banner: ['#265c42', '#3e8948', '#63c74d'], moss: ['#3e8948', '#63c74d', '#265c42'], name: { de: 'Schleimgrotte', en: 'Slime Grotto' } },
-    rust: { floor: ['#5b3d3d', '#543737', '#624343', '#4f3333'], mortar: '#2b1a20', brick: ['#7b4b41', '#71453b', '#84534a'], brickHi: '#a3685b', brickLo: '#2e1a1e', cap: '#1f1216', capHi: '#4a2b2c', ambient: '#453030', banner: ['#be4a2f', '#f77622', '#feae34'], moss: ['#733e39', '#3e2731'], name: { de: 'Rostschmiede', en: 'Rust Forge' } },
-    throne: { floor: ['#4c2d3c', '#3c2331'], mortar: '#25141e', brick: ['#5b3149', '#532b42', '#643751'], brickHi: '#804b68', brickLo: '#2b1421', cap: '#1b0f17', capHi: '#432536', ambient: '#3e2b40', banner: ['#a22633', '#e43b44', '#feae34'], moss: ['#3e2731'], name: { de: 'Thronsaal', en: 'Throne Hall' } },
+    stone: { floor: ['#4d5878', '#48536f', '#525e80', '#45506c'], mortar: '#2a2f48', brick: ['#5e6a92', '#57638a', '#64719a'], brickHi: '#7d8ab0', brickLo: '#2a2f4c', cap: '#1d1c2e', capHi: '#41445f', ambient: '#4b4870', banner: ['#a22633', '#e43b44', '#f6757a'], moss: ['#3e8948', '#265c42'], name: { de: 'Graue Gewölbe', en: 'Grey Vaults' } },
+    grotto: { floor: ['#2f4d4b', '#2b4744', '#345451', '#29423f'], mortar: '#162a2b', brick: ['#365c56', '#31544f', '#3c645d'], brickHi: '#527f74', brickLo: '#14262a', cap: '#0f1b1d', capHi: '#2a4644', ambient: '#324c4e', banner: ['#265c42', '#3e8948', '#63c74d'], moss: ['#3e8948', '#63c74d', '#265c42'], name: { de: 'Schleimgrotte', en: 'Slime Grotto' } },
+    rust: { floor: ['#5b3d3d', '#543737', '#624343', '#4f3333'], mortar: '#2b1a20', brick: ['#7b4b41', '#71453b', '#84534a'], brickHi: '#a3685b', brickLo: '#2e1a1e', cap: '#1f1216', capHi: '#4a2b2c', ambient: '#4e3838', banner: ['#be4a2f', '#f77622', '#feae34'], moss: ['#733e39', '#3e2731'], name: { de: 'Rostschmiede', en: 'Rust Forge' } },
+    throne: { floor: ['#4c2d3c', '#3c2331'], mortar: '#25141e', brick: ['#5b3149', '#532b42', '#643751'], brickHi: '#804b68', brickLo: '#2b1421', cap: '#1b0f17', capHi: '#432536', ambient: '#47334a', banner: ['#a22633', '#e43b44', '#feae34'], moss: ['#3e2731'], name: { de: 'Thronsaal', en: 'Throne Hall' } },
   };
   const themeOf = (f) => f >= 6 ? 'throne' : f >= 4 ? 'rust' : f === 3 ? 'grotto' : 'stone';
   const RAR_COL = () => A.RARITY;
@@ -93,8 +93,9 @@ window.A = window.A || {};
           // Wand-Vorderseite (Ziegel)
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
             const gx = px + x; let col, d = 0;
-            if (y === 0) { col = CH; d = 6; }
-            else if (y === 1) { col = BH; d = -4; }
+            const tall = !isF(tx, ty - 1);
+            if (!tall && y === 0) { col = CH; d = 6; }
+            else if (!tall && y === 1) { col = BH; d = -4; }
             else if (y === T - 1) { col = BL; }
             else {
               const yy = y - 2, course = Math.floor(yy / 4), off = (course & 1) * 4, cy = ty * 4 + course;
@@ -105,6 +106,19 @@ window.A = window.A || {};
           }
           // Moos an der Wand
           if (hash(tx, ty, seed + 31) < (this.themeKey === 'grotto' ? 0.5 : 0.12)) { const mc = th.moss.map(rgb); for (let k = 0; k < 9; k++) { const x = Math.floor(hash(tx, k, 32) * 16), y = 10 + Math.floor(hash(k, ty, 33) * 5); put(px + x, py + y, mc[k % mc.length], 0); if (hash(x, y, 34) < 0.4 && y > 1) put(px + x, py + y - 1, mc[0], -10); } }
+        } else if (isF(tx, ty + 2) && !isF(tx, ty + 1)) {
+          // Oberes Wandstück: die Wand ist zwei Kacheln hoch, oben der Deckel-Rand, darunter dunklere Ziegel
+          for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+            const gx = px + x; let col, d = 0;
+            if (y === 0) { col = CH; d = 6; }
+            else if (y === 1) { col = BH; d = -4; }
+            else {
+              const yy = y - 2, course = Math.floor(yy / 4), off = (course & 1) * 4, cy = ty * 4 + course;
+              if (yy % 4 === 3 || (gx + off) % 8 === 7) { col = BL; d = 2; }
+              else { const bi = Math.floor((gx + off) / 8); col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)]; d = Math.round((hash(gx, py + y, seed + 22) - 0.5) * 8) + (yy % 4 === 0 ? 6 : 0) - 6; if (hash(bi, cy, seed + 23) < 0.06) d -= 22; }
+            }
+            put(gx, py + y, col, d);
+          }
         } else {
           // Wand oben (Deckel)
           // Fels: grobe Flecken und feines Rauschen, damit die Fläche zwischen den Räumen nicht leer wirkt
@@ -118,7 +132,7 @@ window.A = window.A || {};
       // Schatten auf dem Boden (unter Wänden, an Seitenwänden)
       for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
         if (!isF(tx, ty)) continue; const px = tx * T, py = ty * T;
-        if (!isF(tx, ty - 1)) { const f = [0.5, 0.62, 0.74, 0.84, 0.92, 0.97]; for (let y = 0; y < f.length; y++) for (let x = 0; x < T; x++) dark(px + x, py + y, f[y]); }
+        if (!isF(tx, ty - 1)) { const f = [0.42, 0.52, 0.63, 0.74, 0.84, 0.92, 0.97]; for (let y = 0; y < f.length; y++) for (let x = 0; x < T; x++) dark(px + x, py + y, f[y]); }
         if (!isF(tx - 1, ty)) { const f = [0.62, 0.8, 0.92]; for (let x = 0; x < f.length; x++) for (let y = 0; y < T; y++) dark(px + x, py + y, f[x]); }
         if (!isF(tx + 1, ty)) { const f = [0.72, 0.88]; for (let x = 0; x < f.length; x++) for (let y = 0; y < T; y++) dark(px + T - 1 - x, py + y, f[x]); }
         if (!isF(tx, ty + 1)) for (let x = 0; x < T; x++) dark(px + x, py + T - 1, 0.85);
@@ -135,13 +149,13 @@ window.A = window.A || {};
         const hasFront = !isF(r.x + 2, r.y - 1) && isF(r.x + 2, r.y);
         // Fackeln an der oberen Wand
         for (const col of [2, r.w - 3]) {
-          const x = (r.x + col) * T + 8, y = wallY + 11;
+          const x = (r.x + col) * T + 8, y = wallY + 7;
           if (!hasFront) continue;
           blit(S('sconce'), x, y + 4);
           this.torches.push({ x: x * PX, y: (y - 6) * PX, room: r.i, ph: rng.next() * 10 });
         }
         // Banner
-        if (rng.chance(r.type === 'boss' ? 1 : 0.55) && hasFront) for (const col of [4, r.w - 5]) blit(S('banner', 0, banPal, this.themeKey), (r.x + col) * T + 8, wallY + 14);
+        if (rng.chance(r.type === 'boss' ? 1 : 0.55) && hasFront) for (const col of [4, r.w - 5]) blit(S('banner', 0, banPal, this.themeKey), (r.x + col) * T + 8, wallY + 11);
         // Spinnweben in den oberen Ecken
         for (const [cx, dir] of [[rx, 1], [rx + rw - 1, -1]]) if (rng.chance(0.5)) { c.fillStyle = 'rgba(192,203,220,0.35)'; for (let i = 0; i < 7; i++) { c.fillRect(cx + dir * i, ry + 6 - i * 0.8 | 0, 1, 1); c.fillRect(cx + dir * Math.round(i * 0.6), ry + i, 1, 1); } for (let k = 2; k < 7; k += 2) for (let i = 0; i <= k; i++) c.fillRect(cx + dir * (k - i), ry + i, 1, 1); }
         // Knochen, Schädel, Moos
