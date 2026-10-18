@@ -1,0 +1,1420 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Der Abstieg – 18 Ebenen tief. Wähle Rasse und Klasse, sammle verrückte Items, stirb, komm tiefer.">
+<title>Der Abstieg</title>
+<style>
+  :root { --bg: #140f19; --panel: #1f1727; --card: #2b2136; --card2: #362a44; --line: rgba(255,255,255,0.08); --text: #f1e9dc; --muted: #a596b8; --gold: #f5c542; --hp: #6fdc7a; --bad: #ff5f5f; --blue: #57a6ff; --spark: #b07cd8; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+  button { font: inherit; color: inherit; }
+  #app { height: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; position: relative; }
+  #hud { display: none; align-items: center; gap: 8px; padding: 8px 10px; background: var(--panel); border-bottom: 1px solid var(--line); font-weight: 700; font-size: 14px; }
+  #hud.on { display: flex; }
+  #hud .pill { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.06); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+  #hpwrap { flex: 1; min-width: 60px; }
+  #hpbar { height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; }
+  #hpbar i { display: block; height: 100%; background: var(--hp); width: 100%; transition: width 0.3s; }
+  #hptext { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+  #heroBtn { border: 0; background: var(--card2); border-radius: 10px; padding: 5px 9px; font-weight: 800; cursor: pointer; }
+  #heroBtn.pts { background: var(--gold); color: #3a2a00; }
+  #screen { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 12px calc(16px + env(safe-area-inset-bottom)); }
+  h1 { font-size: 34px; margin: 0 0 4px; letter-spacing: 1px; }
+  h2 { font-size: 20px; margin: 0 0 10px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 13px 14px; font-weight: 800; font-size: 16px; background: var(--card2); cursor: pointer; margin-top: 8px; text-align: center; }
+  .btn.primary { background: var(--gold); color: #3a2a00; }
+  .btn.danger { background: #5a2a2a; }
+  .btn.small { display: inline-block; width: auto; padding: 8px 12px; font-size: 13px; margin: 4px 4px 0 0; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .card { background: var(--card); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+  .card.sel { outline: 2px solid var(--gold); }
+  .card.locked { opacity: 0.5; }
+  .card.click { cursor: pointer; }
+  .card .ttl { font-weight: 800; font-size: 15px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card .txt { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .choice { background: var(--card); border-radius: 16px; padding: 16px 10px; text-align: center; cursor: pointer; border: 2px solid transparent; }
+  .choice:active { border-color: var(--gold); }
+  .choice .ico { font-size: 34px; }
+  .choice .lbl { font-weight: 800; margin-top: 6px; }
+  .choice .txt { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .item { display: flex; gap: 10px; background: var(--card); border-radius: 14px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #888; }
+  .item .nm { font-weight: 800; }
+  .item .ln { color: var(--muted); font-size: 12.5px; }
+  .item .fl { color: #d8c8a0; font-size: 12px; font-style: italic; margin-top: 3px; }
+  .item .act { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+  .item .act button { border: 0; border-radius: 10px; padding: 7px 10px; font-weight: 800; font-size: 13px; background: var(--card2); cursor: pointer; white-space: nowrap; }
+  .item .act button.primary { background: var(--gold); color: #3a2a00; }
+  .item.cmp { border-left-width: 4px; }
+  .slotlbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .stat b { min-width: 30px; text-align: right; }
+  .stat button { border: 0; border-radius: 8px; width: 34px; height: 30px; font-weight: 900; background: var(--gold); color: #3a2a00; cursor: pointer; margin-left: 8px; }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13px; color: var(--muted); }
+  .kv b { color: var(--text); }
+  .skill { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; border: 2px solid transparent; }
+  .skill.on { border-color: var(--gold); }
+  .skill .nm { font-weight: 800; font-size: 14px; }
+  .skill .ds { color: var(--muted); font-size: 12px; }
+  .skill .cd { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tabs button { flex: 1; border: 0; border-radius: 10px; padding: 8px; font-weight: 800; background: transparent; color: var(--muted); cursor: pointer; }
+  .tabs button.on { background: var(--card2); color: var(--text); }
+  .toggle { display: flex; background: var(--card); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+  .toggle button { flex: 1; border: 0; padding: 9px; font-weight: 800; background: transparent; color: var(--muted); cursor: pointer; }
+  .toggle button.on { background: var(--card2); color: var(--text); }
+  #combat { display: none; position: absolute; inset: 0; background: var(--bg); flex-direction: column; z-index: 5; }
+  #combat.on { display: flex; }
+  #arena { flex: 1; width: 100%; display: block; }
+  #cbar { display: flex; gap: 6px; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); background: var(--panel); align-items: center; }
+  #cbar .sp { border: 0; border-radius: 10px; padding: 8px 12px; font-weight: 800; background: var(--card); cursor: pointer; }
+  #cbar .sp.on { background: var(--gold); color: #3a2a00; }
+  #cbar .log { flex: 1; font-size: 12px; color: var(--muted); text-align: right; }
+  #overlay { display: none; position: absolute; inset: 0; background: rgba(10,6,14,0.85); z-index: 10; padding: 16px; overflow-y: auto; }
+  #overlay.on { display: block; }
+  .ovbox { max-width: 520px; margin: 20px auto; background: var(--panel); border-radius: 18px; padding: 16px; }
+  .center { text-align: center; }
+  .big { font-size: 40px; font-weight: 900; }
+  .spark { color: var(--spark); font-weight: 800; }
+  .goldc { color: var(--gold); font-weight: 800; }
+  .q { background: rgba(245,197,66,0.08); border: 1px dashed rgba(245,197,66,0.4); border-radius: 12px; padding: 8px 10px; font-size: 13px; margin-bottom: 10px; }
+  .q.done { border-style: solid; color: var(--hp); border-color: var(--hp); }
+  .msg { background: var(--card); border-radius: 12px; padding: 12px; margin: 10px 0; font-size: 15px; }
+  .mini { font-size: 12px; color: var(--muted); }
+  .rar-common { border-left-color: #b8b8b8; } .rar-good { border-left-color: #6fdc7a; } .rar-rare { border-left-color: #57a6ff; } .rar-epic { border-left-color: #c77dff; } .rar-legendary { border-left-color: #f5c542; } .rar-cursed { border-left-color: #ff5f5f; }
+  .rc-common { color: #b8b8b8; } .rc-good { color: #6fdc7a; } .rc-rare { color: #57a6ff; } .rc-epic { color: #c77dff; } .rc-legendary { color: #f5c542; } .rc-cursed { color: #ff5f5f; }
+  .enemy { display: inline-block; background: var(--card); border-radius: 10px; padding: 6px 10px; margin: 0 6px 6px 0; font-size: 13px; }
+  .enemy b { display: block; }
+  .pointsBadge { background: var(--gold); color: #3a2a00; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 900; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="pill" id="hudFloor"></div>
+    <div id="hpwrap"><div id="hpbar"><i></i></div><div id="hptext"></div></div>
+    <div class="pill" id="hudGold">🪙 0</div>
+    <div class="pill" id="hudPot">🧪 0</div>
+    <button id="heroBtn"></button>
+  </div>
+  <div id="screen"></div>
+  <div id="combat">
+    <canvas id="arena"></canvas>
+    <div id="cbar"><button class="sp on" data-sp="1">1×</button><button class="sp" data-sp="2">2×</button><button class="sp" data-sp="3">3×</button><div class="log" id="clog"></div></div>
+  </div>
+  <div id="overlay"></div>
+</div>
+<script>
+// Zufall mit Startwert, damit Tests wiederholbar sind
+'use strict';
+window.A = window.A || {};
+A.RNG = class {
+  constructor(seed) { this.s = (seed >>> 0) || 1; }
+  next() { let x = this.s; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.s = x >>> 0; return this.s / 4294967296; }
+  int(a, b) { return a + Math.floor(this.next() * (b - a + 1)); }
+  pick(arr) { return arr[Math.floor(this.next() * arr.length)]; }
+  chance(p) { return this.next() < p; }
+  shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.next() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  weighted(list, w) { const tot = list.reduce((s, x) => s + w(x), 0); let r = this.next() * tot; for (const x of list) { r -= w(x); if (r <= 0) return x; } return list[list.length - 1]; }
+};
+A.rng = new A.RNG(Date.now());
+
+</script>
+<script>
+// Der Abstieg – Spieldaten (Rassen, Klassen, Fähigkeiten, Items, Monster, Ereignisse, Texte)
+// Alle Namen und Texte sind zweisprachig: { de, en }. A.L wählt beim Start die Sprache.
+'use strict';
+window.A = window.A || {};
+
+A.LANG = (navigator.language || 'de').toLowerCase().startsWith('de') ? 'de' : 'en';
+A.t = (o) => (o && typeof o === 'object' && (o.de || o.en)) ? (o[A.LANG] || o.de || o.en) : o;
+
+// ---------- Texte der Oberfläche ----------
+A.UI = {
+  title: { de: 'Der Abstieg', en: 'The Descent' },
+  tagline: { de: '18 Ebenen. Unten ist der Ausgang. Angeblich.', en: '18 floors. The exit is at the bottom. Allegedly.' },
+  play: { de: 'Abstieg beginnen', en: 'Begin descent' },
+  continueRun: { de: 'Durchlauf fortsetzen', en: 'Continue run' },
+  meta: { de: 'Seelenfunken', en: 'Soul sparks' },
+  race: { de: 'Rasse', en: 'Race' }, cls: { de: 'Klasse', en: 'Class' },
+  locked: { de: 'Gesperrt', en: 'Locked' }, unlock: { de: 'Freischalten', en: 'Unlock' },
+  start: { de: 'Los', en: 'Go' }, back: { de: 'Zurück', en: 'Back' },
+  floor: { de: 'Ebene', en: 'Floor' }, gold: { de: 'Gold', en: 'Gold' }, hp: { de: 'Leben', en: 'Health' },
+  level: { de: 'Stufe', en: 'Level' }, xp: { de: 'EP', en: 'XP' },
+  node: { fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' } },
+  chooseRoom: { de: 'Wähle deinen Weg', en: 'Choose your path' },
+  prep: { de: 'Aufstellung', en: 'Loadout' }, fightBtn: { de: 'Kämpfen!', en: 'Fight!' },
+  front: { de: 'Vorne', en: 'Front' }, backRow: { de: 'Hinten', en: 'Back' },
+  skills: { de: 'Fähigkeiten', en: 'Skills' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
+  stats: { de: 'Werte', en: 'Stats' },
+  stat: { str: { de: 'Stärke', en: 'Strength' }, tou: { de: 'Zähigkeit', en: 'Toughness' }, dex: { de: 'Geschick', en: 'Dexterity' }, mind: { de: 'Geist', en: 'Mind' }, luck: { de: 'Glück', en: 'Luck' } },
+  derived: { atk: { de: 'Angriff', en: 'Attack' }, def: { de: 'Rüstung', en: 'Armor' }, spd: { de: 'Tempo', en: 'Speed' }, crit: { de: 'Volltreffer', en: 'Crit' }, dodge: { de: 'Ausweichen', en: 'Dodge' }, mag: { de: 'Zauberkraft', en: 'Magic' } },
+  points: { de: 'Punkte frei', en: 'points to spend' },
+  victory: { de: 'Sieg!', en: 'Victory!' }, defeat: { de: 'Gefallen', en: 'Fallen' },
+  pickReward: { de: 'Wähle eine Belohnung', en: 'Choose a reward' }, skip: { de: 'Nichts nehmen', en: 'Take nothing' },
+  equip: { de: 'Anlegen', en: 'Equip' }, sell: { de: 'Verkaufen', en: 'Sell' }, buy: { de: 'Kaufen', en: 'Buy' }, take: { de: 'Nehmen', en: 'Take' },
+  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neue Fähigkeit wählen', en: 'Choose a new skill' },
+  heal: { de: 'Ausruhen (+35 % Leben)', en: 'Rest (+35% health)' }, train: { de: 'Trainieren (+1 Statpunkt)', en: 'Train (+1 stat point)' },
+  leave: { de: 'Weiter', en: 'Continue' }, descend: { de: 'Tiefer', en: 'Descend' },
+  runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
+  sparksEarned: { de: 'Seelenfunken erhalten', en: 'Soul sparks earned' },
+  toCamp: { de: 'Zum Lager', en: 'To camp' },
+  camp: { de: 'Das Lager', en: 'The camp' }, campInfo: { de: 'Hier oben wartet man. Und schaltet frei.', en: 'Up here you wait. And unlock things.' },
+  bought: { de: 'Freigeschaltet', en: 'Unlocked' },
+  speed: { de: 'Tempo', en: 'Speed' },
+  cooldown: { de: 'Abklingzeit', en: 'Cooldown' }, rounds: { de: 'Runden', en: 'rounds' },
+  blocked: { de: 'Ebene 7 ist versperrt. Noch. Der Abstieg geht bald weiter.', en: 'Floor 7 is sealed. For now. The descent continues soon.' },
+  win: { de: 'Du hast das Ende der bekannten Tiefe erreicht!', en: 'You reached the end of the known depths!' },
+  potion: { de: 'Trank', en: 'Potion' }, usePotion: { de: 'Trank trinken (+40 %)', en: 'Drink potion (+40%)' },
+  cursed: { de: 'verflucht', en: 'cursed' },
+  rarity: { common: { de: 'gewöhnlich', en: 'common' }, good: { de: 'gut', en: 'good' }, rare: { de: 'selten', en: 'rare' }, epic: { de: 'episch', en: 'epic' }, legendary: { de: 'legendär', en: 'legendary' }, cursed: { de: 'verflucht', en: 'cursed' } },
+  slot: { weapon: { de: 'Waffe', en: 'Weapon' }, armor: { de: 'Rüstung', en: 'Armor' }, helm: { de: 'Helm', en: 'Helm' }, boots: { de: 'Stiefel', en: 'Boots' }, trinket: { de: 'Schmuck', en: 'Trinket' } },
+  sound: { de: 'Ton', en: 'Sound' },
+  reset: { de: 'Alles löschen', en: 'Delete everything' },
+  elitePrefix: { de: 'Elite', en: 'Elite' },
+  dead: { de: 'Du bist gefallen auf Ebene', en: 'You fell on floor' },
+  quest: { de: 'Aufgabe', en: 'Quest' }, questDone: { de: 'Aufgabe erfüllt!', en: 'Quest complete!' },
+};
+
+// ---------- Rassen ----------
+// base: Grundwerte; perk: kurzer Text; mod: Änderungen an abgeleiteten Werten
+A.RACES = [
+  { id: 'mensch', name: { de: 'Mensch', en: 'Human' }, color: '#e8b98a', unlock: 0,
+    perk: { de: 'Ausgeglichen. Ein Fähigkeitsplatz mehr.', en: 'Balanced. One extra skill slot.' },
+    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { skillSlots: 1 } },
+  { id: 'fels', name: { de: 'Felsgeborener', en: 'Stoneborn' }, color: '#9a9aa8', unlock: 0,
+    perk: { de: 'Viel Leben und Rüstung, langsam.', en: 'Lots of health and armor, slow.' },
+    base: { str: 6, tou: 9, dex: 2, mind: 3, luck: 5 }, mod: { hpMul: 1.25, def: 4, spd: -2 } },
+  { id: 'schatten', name: { de: 'Schattenkind', en: 'Shadowkin' }, color: '#6d5ca8', unlock: 60,
+    perk: { de: 'Ausweichen und Volltreffer, wenig Leben.', en: 'Dodge and crits, little health.' },
+    base: { str: 4, tou: 3, dex: 9, mind: 4, luck: 5 }, mod: { hpMul: 0.8, dodge: 12, crit: 10 } },
+  { id: 'pilz', name: { de: 'Pilzling', en: 'Sporeling' }, color: '#7fbf6a', unlock: 120,
+    perk: { de: 'Vergiftet beim Treffen, heilt sich langsam.', en: 'Poisons on hit, slowly regenerates.' },
+    base: { str: 4, tou: 6, dex: 4, mind: 6, luck: 5 }, mod: { poisonOnHit: 2, regen: 3 } },
+  { id: 'kobold', name: { de: 'Blechkobold', en: 'Tin Kobold' }, color: '#c9a54a', unlock: 200,
+    perk: { de: 'Mehr Gold, bessere Items, baut Fallen.', en: 'More gold, better items, sets traps.' },
+    base: { str: 4, tou: 4, dex: 6, mind: 5, luck: 8 }, mod: { goldMul: 1.4, itemLuck: 1, trap: 8 } },
+];
+
+// ---------- Fähigkeiten ----------
+// kind: 'attack' (phys), 'magic', 'heal', 'shield', 'buff', 'multi' (alle Gegner)
+// pow: Vielfaches des Angriffs bzw. der Zauberkraft; cd: Abklingzeit in Runden; row: 'any' | 'front'
+A.SKILLS = {
+  // Klingenträger
+  hieb:      { name: { de: 'Wuchthieb', en: 'Heavy Blow' }, kind: 'attack', pow: 1.8, cd: 2, desc: { de: '180 % Schaden auf einen Gegner.', en: '180% damage to one enemy.' } },
+  wirbel:    { name: { de: 'Wirbelsturm', en: 'Whirlwind' }, kind: 'multi', pow: 0.9, cd: 3, desc: { de: '90 % Schaden auf alle Gegner.', en: '90% damage to all enemies.' } },
+  schild:    { name: { de: 'Schildwall', en: 'Shield Wall' }, kind: 'shield', pow: 0.6, cd: 4, desc: { de: 'Schild in Höhe von 60 % des max. Lebens.', en: 'Shield worth 60% of max health.' } },
+  kampfschrei: { name: { de: 'Kampfschrei', en: 'War Cry' }, kind: 'buff', stat: 'atk', pow: 0.3, dur: 3, cd: 5, desc: { de: '+30 % Angriff für 3 Runden.', en: '+30% attack for 3 rounds.' } },
+  rache:     { name: { de: 'Vergeltung', en: 'Retribution' }, kind: 'attack', pow: 1.2, cd: 3, bonusMissingHp: 2, desc: { de: '120 % Schaden, bis zu +200 % je nach fehlendem Leben.', en: '120% damage, up to +200% based on missing health.' } },
+  hinrichtung: { name: { de: 'Hinrichtung', en: 'Execute' }, kind: 'attack', pow: 1.0, cd: 3, execute: 0.3, desc: { de: '100 % Schaden, tötet Gegner unter 30 % Leben sofort.', en: '100% damage, instantly kills enemies below 30% health.' } },
+  // Pfeilschütze
+  zielschuss: { name: { de: 'Zielschuss', en: 'Aimed Shot' }, kind: 'attack', pow: 1.6, cd: 2, critBonus: 30, desc: { de: '160 % Schaden, +30 % Volltreffer-Chance.', en: '160% damage, +30% crit chance.' } },
+  pfeilregen: { name: { de: 'Pfeilregen', en: 'Arrow Rain' }, kind: 'multi', pow: 0.7, cd: 3, desc: { de: '70 % Schaden auf alle Gegner.', en: '70% damage to all enemies.' } },
+  giftpfeil: { name: { de: 'Giftpfeil', en: 'Poison Arrow' }, kind: 'attack', pow: 0.8, cd: 2, poison: 1.0, desc: { de: '80 % Schaden und Gift (100 % Angriff über 3 Runden).', en: '80% damage plus poison (100% attack over 3 rounds).' } },
+  rueckzug:  { name: { de: 'Rückzug', en: 'Fall Back' }, kind: 'buff', stat: 'dodge', pow: 40, dur: 2, cd: 4, desc: { de: '+40 % Ausweichen für 2 Runden.', en: '+40% dodge for 2 rounds.' } },
+  doppelschuss: { name: { de: 'Doppelschuss', en: 'Double Shot' }, kind: 'attack', pow: 0.9, hits: 2, cd: 2, desc: { de: 'Zwei Treffer zu je 90 %.', en: 'Two hits of 90% each.' } },
+  kopfschuss: { name: { de: 'Kopfschuss', en: 'Headshot' }, kind: 'attack', pow: 2.6, cd: 4, desc: { de: '260 % Schaden auf einen Gegner.', en: '260% damage to one enemy.' } },
+  // Fadenweber
+  funke:     { name: { de: 'Fadenfunke', en: 'Thread Spark' }, kind: 'magic', pow: 1.7, cd: 2, desc: { de: '170 % Zauberschaden auf einen Gegner.', en: '170% magic damage to one enemy.' } },
+  flaeche:   { name: { de: 'Gewebebrand', en: 'Weave Burn' }, kind: 'magic', multi: true, pow: 0.9, cd: 3, burn: 0.5, desc: { de: '90 % Zauberschaden auf alle, dazu Brand.', en: '90% magic damage to all, plus burn.' } },
+  gewebe:    { name: { de: 'Schutzgewebe', en: 'Ward Weave' }, kind: 'shield', pow: 0.5, magic: true, cd: 3, desc: { de: 'Schild in Höhe von 50 % des max. Lebens.', en: 'Shield worth 50% of max health.' } },
+  flicken:   { name: { de: 'Flicken', en: 'Mend' }, kind: 'heal', pow: 0.3, cd: 4, desc: { de: 'Heilt 30 % des max. Lebens.', en: 'Heals 30% of max health.' } },
+  fesseln:   { name: { de: 'Fadenfessel', en: 'Thread Bind' }, kind: 'magic', pow: 0.8, cd: 3, stun: 1, desc: { de: '80 % Zauberschaden, Gegner setzt eine Runde aus.', en: '80% magic damage, enemy skips a turn.' } },
+  entladung: { name: { de: 'Entladung', en: 'Discharge' }, kind: 'magic', multi: true, pow: 1.6, cd: 5, desc: { de: '160 % Zauberschaden auf alle Gegner.', en: '160% magic damage to all enemies.' } },
+};
+
+// ---------- Klassen ----------
+A.CLASSES = [
+  { id: 'klinge', name: { de: 'Klingenträger', en: 'Bladebearer' }, color: '#d9534f', unlock: 0, row: 'front',
+    perk: { de: 'Nahkampf. Schaden und Verteidigung.', en: 'Melee. Damage and defense.' },
+    base: { str: 3, tou: 2, dex: 0, mind: 0, luck: 0 }, skills: ['hieb', 'schild', 'kampfschrei', 'wirbel', 'rache', 'hinrichtung'], startSkills: ['hieb', 'schild'], weapon: 'schwert' },
+  { id: 'schuetze', name: { de: 'Pfeilschütze', en: 'Arrowshot' }, color: '#5cb85c', unlock: 0, row: 'back',
+    perk: { de: 'Trifft aus der zweiten Reihe. Volltreffer.', en: 'Strikes from the back row. Crits.' },
+    base: { str: 1, tou: 0, dex: 3, mind: 0, luck: 1 }, skills: ['zielschuss', 'giftpfeil', 'doppelschuss', 'pfeilregen', 'rueckzug', 'kopfschuss'], startSkills: ['zielschuss', 'giftpfeil'], weapon: 'bogen' },
+  { id: 'weber', name: { de: 'Fadenweber', en: 'Threadweaver' }, color: '#5bc0de', unlock: 0, row: 'back',
+    perk: { de: 'Zauber auf Flächen, Schilde, Heilung.', en: 'Area spells, shields, healing.' },
+    base: { str: 0, tou: 1, dex: 0, mind: 4, luck: 0 }, skills: ['funke', 'gewebe', 'flaeche', 'flicken', 'fesseln', 'entladung'], startSkills: ['funke', 'gewebe'], weapon: 'stab' },
+  { id: 'rufer', name: { de: 'Rufer', en: 'Caller' }, color: '#b07cd8', unlock: 150, row: 'back', soon: true,
+    perk: { de: 'Beschwört Wesen, die mitkämpfen. (Bald)', en: 'Summons creatures that fight along. (Soon)' },
+    base: { str: 0, tou: 1, dex: 0, mind: 3, luck: 1 }, skills: ['funke', 'flicken', 'fesseln', 'gewebe', 'flaeche', 'entladung'], startSkills: ['funke', 'flicken'], weapon: 'stab' },
+  { id: 'brau', name: { de: 'Braumeister', en: 'Brewmaster' }, color: '#e0a83a', unlock: 150, row: 'front', soon: true,
+    perk: { de: 'Tränke, Gifte, Glücksspiel. (Bald)', en: 'Potions, poisons, gambling. (Soon)' },
+    base: { str: 1, tou: 1, dex: 1, mind: 1, luck: 3 }, skills: ['giftpfeil', 'hieb', 'flicken', 'wirbel', 'rueckzug', 'rache'], startSkills: ['giftpfeil', 'flicken'], weapon: 'schwert' },
+];
+
+// ---------- Items ----------
+A.RARITY = {
+  common:    { color: '#b8b8b8', affixes: 0, mult: 1.0,  weight: 50 },
+  good:      { color: '#6fdc7a', affixes: 1, mult: 1.15, weight: 30 },
+  rare:      { color: '#57a6ff', affixes: 2, mult: 1.3,  weight: 14 },
+  epic:      { color: '#c77dff', affixes: 3, mult: 1.5,  weight: 5 },
+  legendary: { color: '#f5c542', affixes: 3, mult: 1.8,  weight: 1 },
+  cursed:    { color: '#ff5f5f', affixes: 3, mult: 1.9,  weight: 3 },
+};
+A.SLOTS = ['weapon', 'armor', 'helm', 'boots', 'trinket', 'trinket2'];
+
+// Grund-Items je Platz (Werte bei Ebene 1, skalieren mit der Ebene)
+A.BASES = [
+  { id: 'schwert', slot: 'weapon', name: { de: 'Schwert', en: 'Sword' }, atk: 6, cls: ['klinge', 'brau'] },
+  { id: 'axt', slot: 'weapon', name: { de: 'Axt', en: 'Axe' }, atk: 8, spd: -1, cls: ['klinge', 'brau'] },
+  { id: 'dolch', slot: 'weapon', name: { de: 'Dolch', en: 'Dagger' }, atk: 4, crit: 10, spd: 1, cls: ['klinge', 'schuetze', 'brau'] },
+  { id: 'bogen', slot: 'weapon', name: { de: 'Bogen', en: 'Bow' }, atk: 6, crit: 5, cls: ['schuetze'] },
+  { id: 'armbrust', slot: 'weapon', name: { de: 'Armbrust', en: 'Crossbow' }, atk: 9, spd: -1, cls: ['schuetze'] },
+  { id: 'stab', slot: 'weapon', name: { de: 'Stab', en: 'Staff' }, mag: 7, cls: ['weber', 'rufer'] },
+  { id: 'zepter', slot: 'weapon', name: { de: 'Zepter', en: 'Scepter' }, mag: 5, hp: 15, cls: ['weber', 'rufer'] },
+  { id: 'loeffel', slot: 'weapon', name: { de: 'Löffel', en: 'Spoon' }, atk: 3, mag: 3, cls: ['klinge', 'schuetze', 'weber', 'rufer', 'brau'] },
+  { id: 'leder', slot: 'armor', name: { de: 'Lederwams', en: 'Leather Jerkin' }, def: 3, dodge: 3 },
+  { id: 'kette', slot: 'armor', name: { de: 'Kettenhemd', en: 'Chainmail' }, def: 6, spd: -1 },
+  { id: 'robe', slot: 'armor', name: { de: 'Robe', en: 'Robe' }, def: 2, mag: 3 },
+  { id: 'platte', slot: 'armor', name: { de: 'Plattenpanzer', en: 'Plate Armor' }, def: 9, spd: -2, hp: 10 },
+  { id: 'kappe', slot: 'helm', name: { de: 'Kappe', en: 'Cap' }, def: 1, dodge: 2 },
+  { id: 'topfhelm', slot: 'helm', name: { de: 'Topfhelm', en: 'Bucket Helm' }, def: 4 },
+  { id: 'teekessel', slot: 'helm', name: { de: 'Teekessel', en: 'Tea Kettle' }, def: 3, mag: 3 },
+  { id: 'stiefel', slot: 'boots', name: { de: 'Stiefel', en: 'Boots' }, spd: 1, def: 1 },
+  { id: 'sandalen', slot: 'boots', name: { de: 'Sandalen', en: 'Sandals' }, spd: 2, dodge: 3 },
+  { id: 'stahlstiefel', slot: 'boots', name: { de: 'Stahlstiefel', en: 'Steel Boots' }, def: 3 },
+  { id: 'ring', slot: 'trinket', name: { de: 'Ring', en: 'Ring' }, crit: 4 },
+  { id: 'amulett', slot: 'trinket', name: { de: 'Amulett', en: 'Amulet' }, hp: 20 },
+  { id: 'socke', slot: 'trinket', name: { de: 'Socke', en: 'Sock' }, dodge: 4 },
+  { id: 'zahn', slot: 'trinket', name: { de: 'Zahn', en: 'Tooth' }, atk: 2, mag: 2 },
+];
+
+// Zusatz-Eigenschaften: key -> Wert pro Stufe, Text
+A.AFFIXES = [
+  { key: 'atkPct', val: 12, name: { de: 'des Zorns', en: 'of Wrath' }, text: { de: '+{v} % Angriff', en: '+{v}% attack' } },
+  { key: 'magPct', val: 12, name: { de: 'der Fäden', en: 'of Threads' }, text: { de: '+{v} % Zauberkraft', en: '+{v}% magic' } },
+  { key: 'hp', val: 25, name: { de: 'des Ochsen', en: 'of the Ox' }, text: { de: '+{v} Leben', en: '+{v} health' } },
+  { key: 'def', val: 4, name: { de: 'der Mauer', en: 'of the Wall' }, text: { de: '+{v} Rüstung', en: '+{v} armor' } },
+  { key: 'crit', val: 8, name: { de: 'des Falken', en: 'of the Falcon' }, text: { de: '+{v} % Volltreffer', en: '+{v}% crit' } },
+  { key: 'dodge', val: 7, name: { de: 'des Schattens', en: 'of Shadows' }, text: { de: '+{v} % Ausweichen', en: '+{v}% dodge' } },
+  { key: 'spd', val: 2, name: { de: 'des Windes', en: 'of the Wind' }, text: { de: '+{v} Tempo', en: '+{v} speed' } },
+  { key: 'lifesteal', val: 8, name: { de: 'des Blutegels', en: 'of the Leech' }, text: { de: '{v} % Schaden als Heilung', en: '{v}% damage as healing' } },
+  { key: 'thorns', val: 15, name: { de: 'der Dornen', en: 'of Thorns' }, text: { de: 'Angreifer erleiden {v} % zurück', en: 'Attackers take {v}% back' } },
+  { key: 'goldPct', val: 25, name: { de: 'des Krämers', en: 'of the Peddler' }, text: { de: '+{v} % Gold', en: '+{v}% gold' } },
+  { key: 'xpPct', val: 20, name: { de: 'des Lehrlings', en: 'of the Apprentice' }, text: { de: '+{v} % Erfahrung', en: '+{v}% experience' } },
+  { key: 'poisonOnHit', val: 3, name: { de: 'der Natter', en: 'of the Viper' }, text: { de: 'Treffer vergiften ({v}/Runde)', en: 'Hits poison ({v}/round)' } },
+  { key: 'startShield', val: 15, name: { de: 'der Vorsicht', en: 'of Caution' }, text: { de: 'Kampfstart: Schild {v} %', en: 'Battle start: shield {v}%' } },
+  { key: 'regen', val: 3, name: { de: 'des Moores', en: 'of the Moor' }, text: { de: '+{v} % Leben pro Runde', en: '+{v}% health per round' } },
+];
+
+// Frech-Texte für Items (reine Deko)
+A.QUIRKS = [
+  { de: 'Riecht nach nassem Hund.', en: 'Smells like wet dog.' },
+  { de: 'Pfeift bei jedem Treffer.', en: 'Whistles on every hit.' },
+  { de: 'Vorbesitzer: unbekannt, vermutlich tot.', en: 'Previous owner: unknown, probably dead.' },
+  { de: 'Glänzt nur, wenn niemand hinschaut.', en: 'Only shines when nobody looks.' },
+  { de: 'Hat eine Delle. Die Delle hat eine Geschichte.', en: 'Has a dent. The dent has a story.' },
+  { de: 'Flüstert nachts Rezepte.', en: 'Whispers recipes at night.' },
+  { de: 'Gönner-Kommentar: «Mutig. Dumm, aber mutig.»', en: 'Patron comment: "Brave. Stupid, but brave."' },
+  { de: 'Passt perfekt. Beunruhigend perfekt.', en: 'Fits perfectly. Disturbingly perfectly.' },
+  { de: 'Kratzt. Egal wo.', en: 'Itches. Everywhere.' },
+  { de: 'Zählt deine Schritte. Laut.', en: 'Counts your steps. Out loud.' },
+];
+
+// Legendäre und verfluchte Einzelstücke
+A.UNIQUES = [
+  { id: 'u_loeffel', base: 'loeffel', rarity: 'legendary', name: { de: 'Löffel der Verzweiflung', en: 'Spoon of Despair' }, stats: { atkPct: 40, magPct: 40, dodge: -10 }, flavor: { de: 'Gegner lachen dich aus. Dann sterben sie.', en: 'Enemies laugh at you. Then they die.' } },
+  { id: 'u_socke', base: 'socke', rarity: 'legendary', name: { de: 'Socke der zweiten Chance', en: 'Sock of Second Chances' }, stats: { revive: 1, dodge: 5 }, flavor: { de: 'Einmal pro Durchlauf überlebst du mit 1 Leben.', en: 'Once per run you survive with 1 health.' } },
+  { id: 'u_kessel', base: 'teekessel', rarity: 'legendary', name: { de: 'Helm aus Teekesseln', en: 'Helm of Tea Kettles' }, stats: { def: 10, magPct: 25 }, flavor: { de: 'Pfeift bei jedem Treffer. Gegner hassen das.', en: 'Whistles on every hit. Enemies hate it.' } },
+  { id: 'u_zahn', base: 'zahn', rarity: 'cursed', name: { de: 'Verfluchter Goldzahn', en: 'Cursed Gold Tooth' }, stats: { goldPct: 200, regen: -2 }, flavor: { de: 'Dreifaches Gold. Du verlierst jede Runde 2 % Leben.', en: 'Triple gold. You lose 2% health every round.' } },
+  { id: 'u_axt', base: 'axt', rarity: 'cursed', name: { de: 'Axt des Wahnsinns', en: 'Axe of Madness' }, stats: { atkPct: 70, def: -8 }, flavor: { de: 'Schlägt doppelt so hart. Vergisst, sich zu ducken.', en: 'Hits twice as hard. Forgets to duck.' } },
+  { id: 'u_ring', base: 'ring', rarity: 'legendary', name: { de: 'Ring des Gönners', en: 'Patron\'s Ring' }, stats: { goldPct: 50, xpPct: 30, luck: 3 }, flavor: { de: 'Jemand da oben mag dich. Vorerst.', en: 'Someone up there likes you. For now.' } },
+];
+
+// ---------- Monster ----------
+// stats bei Ebene 1: hp, atk, def, spd; row: front/back; kind: melee/ranged/magic; floors: ab Ebene
+A.MONSTERS = [
+  { id: 'schleimer', name: { de: 'Schleimer', en: 'Slimer' }, hp: 22, atk: 5, def: 0, spd: 3, row: 'front', kind: 'melee', floors: [1, 4], color: '#6fdc7a', shape: 'blob' },
+  { id: 'ratte', name: { de: 'Höhlenratte', en: 'Cave Rat' }, hp: 16, atk: 6, def: 0, spd: 7, row: 'front', kind: 'melee', floors: [1, 5], color: '#8a6a4a', shape: 'rat', crit: 10 },
+  { id: 'fledermaus', name: { de: 'Fledermaus', en: 'Bat' }, hp: 12, atk: 5, def: 0, spd: 9, row: 'back', kind: 'ranged', floors: [1, 4], color: '#5a4a6a', shape: 'bat', dodge: 20 },
+  { id: 'pilzkrieger', name: { de: 'Pilzkrieger', en: 'Fungus Warrior' }, hp: 34, atk: 7, def: 2, spd: 3, row: 'front', kind: 'melee', floors: [2, 6], color: '#b86fa0', shape: 'mushroom', poisonOnHit: 2 },
+  { id: 'knochen', name: { de: 'Knochenwächter', en: 'Bone Warden' }, hp: 40, atk: 8, def: 4, spd: 4, row: 'front', kind: 'melee', floors: [3, 6], color: '#e8e2d0', shape: 'skeleton' },
+  { id: 'glutmotte', name: { de: 'Glutmotte', en: 'Ember Moth' }, hp: 18, atk: 7, def: 0, spd: 8, row: 'back', kind: 'magic', floors: [3, 6], color: '#ff8a3d', shape: 'moth', burn: 0.4 },
+  { id: 'spinne', name: { de: 'Fadenspinne', en: 'Thread Spider' }, hp: 26, atk: 7, def: 1, spd: 6, row: 'back', kind: 'ranged', floors: [2, 6], color: '#3a3a4a', shape: 'spider', poisonOnHit: 2 },
+  { id: 'rostgolem', name: { de: 'Rostgolem', en: 'Rust Golem' }, hp: 70, atk: 10, def: 7, spd: 1, row: 'front', kind: 'melee', floors: [4, 6], color: '#a0522d', shape: 'golem' },
+  { id: 'schattenfaenger', name: { de: 'Schattenfänger', en: 'Shadow Catcher' }, hp: 30, atk: 11, def: 1, spd: 7, row: 'back', kind: 'magic', floors: [4, 6], color: '#2e2a4a', shape: 'ghost', dodge: 15 },
+  { id: 'tunnelwurm', name: { de: 'Tunnelwurm', en: 'Tunnel Worm' }, hp: 55, atk: 9, def: 3, spd: 2, row: 'front', kind: 'melee', floors: [5, 6], color: '#c08a6a', shape: 'worm' },
+  { id: 'spiegelgeist', name: { de: 'Spiegelgeist', en: 'Mirror Ghost' }, hp: 28, atk: 9, def: 0, spd: 6, row: 'back', kind: 'magic', floors: [5, 6], color: '#9fd8ff', shape: 'ghost', thorns: 30 },
+  { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1 },
+];
+A.BOSSES = {
+  3: { id: 'schleimkoenig', name: { de: 'Schleimkönig', en: 'Slime King' }, hp: 160, atk: 11, def: 2, spd: 3, row: 'front', kind: 'melee', color: '#3fbf5a', shape: 'blob', boss: true,
+       trick: { de: 'Teilt sich bei 50 % Leben in zwei Schleimer.', en: 'Splits into two slimers at 50% health.' }, split: true },
+  6: { id: 'rostkoenig', name: { de: 'Rostkönig', en: 'Rust King' }, hp: 320, atk: 16, def: 9, spd: 2, row: 'front', kind: 'melee', color: '#8a3a1a', shape: 'golem', boss: true,
+       trick: { de: 'Jeder Waffentreffer heilt ihn um 5 %. Zauber und Gift nicht.', en: 'Every weapon hit heals him 5%. Spells and poison do not.' }, healOnPhys: 0.05 },
+};
+
+// ---------- Ereignisse ----------
+A.EVENTS = [
+  { id: 'brunnen', title: { de: 'Der Brunnen', en: 'The Well' }, text: { de: 'Ein Brunnen mit leuchtendem Wasser. Riecht nach Kupfer und Hoffnung.', en: 'A well with glowing water. Smells of copper and hope.' },
+    choices: [
+      { text: { de: 'Trinken', en: 'Drink' }, outcomes: [{ p: 0.6, heal: 0.5, msg: { de: 'Erfrischend! +50 % Leben.', en: 'Refreshing! +50% health.' } }, { p: 0.4, dmg: 0.2, stat: 'tou', msg: { de: 'Bäh. −20 % Leben, aber +1 Zähigkeit. Charakterbildend.', en: 'Yuck. −20% health, but +1 toughness. Character-building.' } }] },
+      { text: { de: 'Münze werfen', en: 'Toss a coin' }, outcomes: [{ p: 1, gold: -10, item: 'good', msg: { de: 'Plopp. Etwas kommt zurück.', en: 'Plop. Something comes back.' } }] },
+      { text: { de: 'Weitergehen', en: 'Walk on' }, outcomes: [{ p: 1, msg: { de: 'Vernünftig. Langweilig, aber vernünftig.', en: 'Sensible. Boring, but sensible.' } }] },
+    ] },
+  { id: 'haendlerleiche', title: { de: 'Der tote Händler', en: 'The Dead Merchant' }, text: { de: 'Ein Händler, der nicht mehr handelt. Sein Beutel schon.', en: 'A merchant who no longer trades. His purse still does.' },
+    choices: [
+      { text: { de: 'Beutel nehmen', en: 'Take the purse' }, outcomes: [{ p: 0.7, gold: 40, msg: { de: '+40 Gold. Er braucht es nicht mehr.', en: '+40 gold. He won\'t need it.' } }, { p: 0.3, gold: 40, curse: true, msg: { de: '+40 Gold und ein Fluch-Item. Er brauchte es wirklich nicht mehr.', en: '+40 gold and a cursed item. He really didn\'t need it.' } }] },
+      { text: { de: 'Begraben', en: 'Bury him' }, outcomes: [{ p: 1, xp: 30, msg: { de: 'Anstand. +30 Erfahrung.', en: 'Decency. +30 experience.' } }] },
+    ] },
+  { id: 'statue', title: { de: 'Die Statue', en: 'The Statue' }, text: { de: 'Eine Statue mit ausgestreckter Hand. Die Hand will etwas.', en: 'A statue with an outstretched hand. The hand wants something.' },
+    choices: [
+      { text: { de: '30 Gold geben', en: 'Give 30 gold' }, outcomes: [{ p: 1, gold: -30, stat: 'luck', msg: { de: 'Die Statue zwinkert. +1 Glück.', en: 'The statue winks. +1 luck.' } }] },
+      { text: { de: 'Hand abbrechen', en: 'Break the hand off' }, outcomes: [{ p: 0.5, item: 'rare', msg: { de: 'In der Hand steckte etwas.', en: 'Something was inside the hand.' } }, { p: 0.5, dmg: 0.3, msg: { de: 'Die Statue schlägt zurück. −30 % Leben.', en: 'The statue hits back. −30% health.' } }] },
+      { text: { de: 'Ignorieren', en: 'Ignore it' }, outcomes: [{ p: 1, msg: { de: 'Die Hand bleibt leer. Wie dein Herz.', en: 'The hand stays empty. Like your heart.' } }] },
+    ] },
+  { id: 'goenner', title: { de: 'Gönner-Kiste', en: 'Patron Crate' }, text: { de: 'Eine Kiste fällt von oben. Zettel: «Für den Unterhaltungswert.»', en: 'A crate drops from above. Note: "For entertainment value."' },
+    choices: [
+      { text: { de: 'Öffnen', en: 'Open it' }, outcomes: [{ p: 0.75, item: 'epic', msg: { de: 'Jemand da oben mag dich.', en: 'Someone up there likes you.' } }, { p: 0.25, item: 'cursed', msg: { de: 'Jemand da oben mag dich. Auf seine Art.', en: 'Someone up there likes you. In their own way.' } }] },
+    ] },
+  { id: 'rattenkoenig', title: { de: 'Der Rattenhändler', en: 'The Rat Trader' }, text: { de: 'Eine sprechende Ratte bietet dir ein Geschäft an. Ihre Zähne glänzen.', en: 'A talking rat offers you a deal. Its teeth gleam.' },
+    choices: [
+      { text: { de: 'Trank kaufen (20 Gold)', en: 'Buy potion (20 gold)' }, outcomes: [{ p: 1, gold: -20, potion: 1, msg: { de: 'Ein Trank. Leicht angenagt.', en: 'A potion. Slightly gnawed.' } }] },
+      { text: { de: 'Leben tauschen', en: 'Trade life' }, outcomes: [{ p: 1, dmg: 0.25, stat: 'str', msg: { de: '−25 % Leben, +1 Stärke. Die Ratte nickt anerkennend.', en: '−25% health, +1 strength. The rat nods approvingly.' } }] },
+      { text: { de: 'Ratte vertreiben', en: 'Shoo the rat' }, outcomes: [{ p: 1, msg: { de: 'Sie geht. Beleidigt.', en: 'It leaves. Offended.' } }] },
+    ] },
+  { id: 'altar', title: { de: 'Der Altar', en: 'The Altar' }, text: { de: 'Ein Altar. Darauf: ein Loch in Itemform.', en: 'An altar. On it: a hole shaped like an item.' },
+    choices: [
+      { text: { de: 'Item opfern', en: 'Sacrifice an item' }, needItem: true, outcomes: [{ p: 1, sacrifice: true, msg: { de: 'Der Altar kaut. Du fühlst dich stärker: +2 Statpunkte.', en: 'The altar chews. You feel stronger: +2 stat points.' } }] },
+      { text: { de: 'Weitergehen', en: 'Walk on' }, outcomes: [{ p: 1, msg: { de: 'Der Altar seufzt.', en: 'The altar sighs.' } }] },
+    ] },
+];
+
+// ---------- Lager (Freischaltungen mit Seelenfunken) ----------
+A.META_SHOP = [
+  { id: 'hp1', name: { de: 'Zähe Haut I', en: 'Tough Skin I' }, desc: { de: '+10 % Leben in jedem Durchlauf', en: '+10% health every run' }, cost: 30, effect: { hpMul: 0.1 } },
+  { id: 'hp2', name: { de: 'Zähe Haut II', en: 'Tough Skin II' }, desc: { de: '+10 % Leben', en: '+10% health' }, cost: 80, effect: { hpMul: 0.1 }, needs: 'hp1' },
+  { id: 'gold1', name: { de: 'Startkapital', en: 'Seed Money' }, desc: { de: 'Start mit 40 Gold', en: 'Start with 40 gold' }, cost: 25, effect: { startGold: 40 } },
+  { id: 'atk1', name: { de: 'Alte Narben', en: 'Old Scars' }, desc: { de: '+8 % Angriff und Zauberkraft', en: '+8% attack and magic' }, cost: 50, effect: { dmgMul: 0.08 } },
+  { id: 'potion1', name: { de: 'Reiseapotheke', en: 'Travel Kit' }, desc: { de: 'Start mit einem Trank', en: 'Start with a potion' }, cost: 40, effect: { startPotion: 1 } },
+  { id: 'race_schatten', name: { de: 'Schattenkind', en: 'Shadowkin' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 60, effect: { race: 'schatten' } },
+  { id: 'race_pilz', name: { de: 'Pilzling', en: 'Sporeling' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 120, effect: { race: 'pilz' } },
+  { id: 'race_kobold', name: { de: 'Blechkobold', en: 'Tin Kobold' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 200, effect: { race: 'kobold' } },
+  { id: 'skill1', name: { de: 'Alte Schriften', en: 'Old Scrolls' }, desc: { de: 'Start mit drei Fähigkeiten statt zwei', en: 'Start with three skills instead of two' }, cost: 70, effect: { extraStartSkill: 1 } },
+  { id: 'luck1', name: { de: 'Glückspfennig', en: 'Lucky Penny' }, desc: { de: 'Bessere Items fallen öfter', en: 'Better items drop more often' }, cost: 90, effect: { itemLuck: 1 } },
+];
+
+// ---------- Aufgaben je Ebene ----------
+A.QUESTS = [
+  { id: 'kill5', text: { de: 'Besiege 5 Gegner auf dieser Ebene', en: 'Defeat 5 enemies on this floor' }, type: 'kills', n: 5, reward: { gold: 30 } },
+  { id: 'nodmg', text: { de: 'Gewinne einen Kampf ohne Schaden', en: 'Win a fight without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
+  { id: 'crit3', text: { de: 'Lande 3 Volltreffer', en: 'Land 3 critical hits' }, type: 'crits', n: 3, reward: { xp: 40 } },
+  { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
+];
+
+A.MAX_FLOOR = 6;
+
+</script>
+<script>
+// Der Abstieg – Automatischer Kampf. Rechnet den ganzen Kampf vor und liefert eine Liste von Ereignissen,
+// die die Oberfläche dann Schritt für Schritt abspielt.
+'use strict';
+window.A = window.A || {};
+
+A.Combat = (function () {
+  const MAX_ROUNDS = 30;
+
+  function mkEntity(o) {
+    return Object.assign({ shield: 0, effects: [], skills: [], alive: true, cds: {}, stunned: 0, buffs: {} }, o);
+  }
+
+  function living(ents, side) { return ents.filter(e => e.alive && e.side === side); }
+
+  function pickTarget(rng, attacker, ents, melee) {
+    const foes = living(ents, attacker.side === 'hero' ? 'enemy' : 'hero');
+    if (!foes.length) return null;
+    if (melee) {
+      const front = foes.filter(f => f.row === 'front');
+      if (front.length) return rng.pick(front);
+    }
+    return rng.pick(foes);
+  }
+
+  function statOf(e, k) { return (e[k] || 0) + (e.buffs[k] ? e.buffs[k].val * ((k === 'atk' || k === 'mag') ? e[k] : 1) : 0); }
+
+  function dealDamage(ctx, from, to, raw, opts) {
+    const { rng, ev, snap } = ctx;
+    opts = opts || {};
+    // Ausweichen
+    const dodge = Math.max(0, Math.min(75, statOf(to, 'dodge')));
+    if (!opts.noDodge && rng.chance(dodge / 100)) { ev.push({ t: 'miss', from: from.id, to: to.id, hp: snap() }); return 0; }
+    let dmg = raw * (0.9 + rng.next() * 0.2);
+    // Rüstung
+    const def = Math.max(0, statOf(to, 'def'));
+    dmg = dmg * 100 / (100 + def * 4);
+    // Volltreffer
+    let crit = false;
+    const critCh = Math.max(0, Math.min(90, statOf(from, 'crit') + (opts.critBonus || 0)));
+    if (rng.chance(critCh / 100)) { dmg *= 1.75; crit = true; if (from.side === 'hero') ctx.stats.crits++; }
+    dmg = Math.max(1, Math.round(dmg));
+    // Schild
+    let absorbed = 0;
+    if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; }
+    to.hp -= dmg;
+    if (to.side === 'hero') ctx.stats.dmgTaken += dmg;
+    ev.push({ t: 'hit', from: from.id, to: to.id, dmg, crit, absorbed, kind: opts.kind || 'phys', hp: snap() });
+    // Nebenwirkungen des Angreifers
+    if (from.lifesteal && dmg > 0 && from.alive) { const h = Math.max(1, Math.round(dmg * from.lifesteal / 100)); heal(ctx, from, h); }
+    if (from.poisonOnHit && dmg > 0) addEffect(ctx, to, 'poison', Math.max(1, Math.round(from.poisonOnHit * (1 + ctx.floor * 0.3))), 3);
+    if (from.burn && dmg > 0 && opts.kind !== 'poison') addEffect(ctx, to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * from.burn)), 2);
+    if (opts.poison) addEffect(ctx, to, 'poison', Math.max(1, Math.round(statOf(from, 'atk') * opts.poison / 3)), 3);
+    if (opts.burn) addEffect(ctx, to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
+    if (opts.stun) { to.stunned = opts.stun; ev.push({ t: 'effect', who: to.id, kind: 'stun', hp: snap() }); }
+    // Dornen
+    if (to.thorns && dmg > 0 && opts.kind === 'phys' && from.alive) {
+      const back = Math.max(1, Math.round(dmg * to.thorns / 100));
+      from.hp -= back; if (from.side === 'hero') ctx.stats.dmgTaken += back;
+      ev.push({ t: 'hit', from: to.id, to: from.id, dmg: back, crit: false, absorbed: 0, kind: 'thorns', hp: snap() });
+      checkDeath(ctx, from);
+    }
+    // Boss: heilt sich bei Waffentreffern
+    if (to.healOnPhys && opts.kind === 'phys' && to.alive && to.hp > 0) heal(ctx, to, Math.round(to.maxHp * to.healOnPhys));
+    checkDeath(ctx, to);
+    return dmg;
+  }
+
+  function heal(ctx, who, amt) {
+    if (!who.alive) return;
+    const real = Math.max(0, Math.min(amt, who.maxHp - who.hp));
+    if (real <= 0) return;
+    who.hp += real;
+    ctx.ev.push({ t: 'heal', who: who.id, amt: real, hp: ctx.snap() });
+  }
+
+  function addEffect(ctx, who, kind, val, dur) {
+    if (!who.alive) return;
+    const ex = who.effects.find(e => e.kind === kind);
+    if (ex) { ex.val = Math.max(ex.val, val); ex.dur = Math.max(ex.dur, dur); }
+    else who.effects.push({ kind, val, dur });
+    ctx.ev.push({ t: 'effect', who: who.id, kind, val, hp: ctx.snap() });
+  }
+
+  function checkDeath(ctx, e) {
+    if (!e.alive || e.hp > 0) return;
+    if (e.revive > 0) { e.revive--; e.hp = 1; ctx.ev.push({ t: 'revive', who: e.id, hp: ctx.snap() }); return; }
+    e.alive = false; e.hp = 0;
+    ctx.ev.push({ t: 'die', who: e.id, hp: ctx.snap() });
+    if (e.side === 'enemy') ctx.stats.kills++;
+    if (e.split && !e.didSplit) {
+      // Boss-Trick ist eigentlich bei 50 %, siehe tickBossTricks
+    }
+  }
+
+  function tickBossTricks(ctx, e) {
+    if (e.split && !e.didSplit && e.alive && e.hp <= e.maxHp * 0.5) {
+      e.didSplit = true;
+      const m = A.MONSTERS.find(x => x.id === 'schleimer');
+      for (let i = 0; i < 2; i++) {
+        const s = mkEntity(A.Game.monsterEntity(m, ctx.floor, false, ctx.ents.length + i + 1));
+        s.hp = Math.round(s.maxHp * 0.6);
+        ctx.ents.push(s);
+        ctx.ev.push({ t: 'spawn', ent: snapshotEntity(s), hp: ctx.snap() });
+      }
+      ctx.ev.push({ t: 'say', who: e.id, text: A.LANG === 'de' ? 'Der Schleimkönig teilt sich!' : 'The Slime King splits!', hp: ctx.snap() });
+    }
+  }
+
+  function useSkill(ctx, who, sk, ents) {
+    const { rng, ev } = ctx;
+    const foes = living(ents, who.side === 'hero' ? 'enemy' : 'hero');
+    ev.push({ t: 'act', who: who.id, skill: sk.id, hp: ctx.snap() });
+    const base = sk.kind === 'magic' || sk.magic ? statOf(who, 'mag') : statOf(who, 'atk');
+    if (sk.kind === 'attack' || sk.kind === 'magic') {
+      const targets = sk.multi ? foes.slice() : [pickTarget(rng, who, ents, sk.kind === 'attack' && who.melee)].filter(Boolean);
+      for (const tg of targets) {
+        const hits = sk.hits || 1;
+        for (let h = 0; h < hits; h++) {
+          if (!tg.alive) break;
+          let pow = sk.pow;
+          if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - who.hp / who.maxHp);
+          if (sk.execute && tg.hp <= tg.maxHp * sk.execute && !tg.boss) { tg.hp = 0; ev.push({ t: 'hit', from: who.id, to: tg.id, dmg: tg.maxHp, crit: true, absorbed: 0, kind: 'execute', hp: ctx.snap() }); ctx.stats.kills += 0; checkDeath(ctx, tg); if (!tg.alive) ctx.stats.kills += 0; continue; }
+          dealDamage(ctx, who, tg, base * pow, { kind: sk.kind === 'magic' ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, burn: sk.burn, stun: sk.stun });
+        }
+      }
+    } else if (sk.kind === 'multi') {
+      for (const tg of foes.slice()) if (tg.alive) dealDamage(ctx, who, tg, base * sk.pow, { kind: 'phys' });
+    } else if (sk.kind === 'shield') {
+      const amt = Math.round(who.maxHp * sk.pow);
+      who.shield += amt; ev.push({ t: 'shield', who: who.id, amt, hp: ctx.snap() });
+    } else if (sk.kind === 'heal') {
+      heal(ctx, who, Math.round(who.maxHp * sk.pow));
+    } else if (sk.kind === 'buff') {
+      who.buffs[sk.stat] = { val: sk.pow, dur: sk.dur };
+      ev.push({ t: 'buff', who: who.id, stat: sk.stat, hp: ctx.snap() });
+    }
+  }
+
+  function basicAttack(ctx, who, ents) {
+    const magic = who.kind === 'magic';
+    const tg = pickTarget(ctx.rng, who, ents, who.melee);
+    if (!tg) return;
+    ctx.ev.push({ t: 'act', who: who.id, skill: null, hp: ctx.snap() });
+    dealDamage(ctx, who, tg, statOf(who, magic ? 'mag' : 'atk'), { kind: magic ? 'magic' : 'phys' });
+    if (who.steal && tg.side === 'hero' && tg.alive) { ctx.stats.goldStolen += 5 + ctx.floor * 3; ctx.ev.push({ t: 'steal', who: who.id, hp: ctx.snap() }); }
+  }
+
+  function endOfRound(ctx, e) {
+    if (!e.alive) return;
+    for (const f of e.effects) {
+      if (f.kind === 'poison' || f.kind === 'burn') {
+        const d = Math.max(1, Math.round(f.val));
+        e.hp -= d; if (e.side === 'hero') ctx.stats.dmgTaken += d;
+        ctx.ev.push({ t: 'hit', from: null, to: e.id, dmg: d, crit: false, absorbed: 0, kind: f.kind, hp: ctx.snap() });
+      }
+      f.dur--;
+    }
+    e.effects = e.effects.filter(f => f.dur > 0);
+    for (const k of Object.keys(e.buffs)) { e.buffs[k].dur--; if (e.buffs[k].dur <= 0) delete e.buffs[k]; }
+    if (e.regen && e.alive) {
+      const r = Math.round(e.maxHp * e.regen / 100);
+      if (r > 0) heal(ctx, e, r);
+      else if (r < 0) { e.hp += r; ctx.ev.push({ t: 'hit', from: null, to: e.id, dmg: -r, crit: false, absorbed: 0, kind: 'curse', hp: ctx.snap() }); }
+    }
+    checkDeath(ctx, e);
+  }
+
+  function snapshotEntity(e) {
+    return { id: e.id, name: e.name, side: e.side, row: e.row, hp: e.hp, maxHp: e.maxHp, color: e.color, shape: e.shape, boss: !!e.boss, elite: !!e.elite };
+  }
+
+  // hero: Entity-Daten aus A.Game.heroEntity; enemies: Liste aus A.Game.monsterEntity
+  function simulate(heroData, enemyData, floor, seed) {
+    const rng = new A.RNG(seed);
+    const ents = [mkEntity(heroData)].concat(enemyData.map(mkEntity));
+    const ev = [];
+    const stats = { dmgTaken: 0, crits: 0, kills: 0, goldStolen: 0, rounds: 0 };
+    const snap = () => { const o = {}; for (const e of ents) o[e.id] = { hp: Math.max(0, Math.round(e.hp)), sh: Math.round(e.shield), fx: e.effects.map(f => f.kind), st: e.stunned > 0 }; return o; };
+    const ctx = { rng, ev, ents, stats, floor, snap };
+    const hero = ents[0];
+    ev.push({ t: 'start', ents: ents.map(snapshotEntity), hp: snap() });
+    if (hero.startShield) { hero.shield = Math.round(hero.maxHp * hero.startShield / 100); ev.push({ t: 'shield', who: hero.id, amt: hero.shield, hp: snap() }); }
+    if (hero.trap) {
+      for (const f of living(ents, 'enemy')) { const d = Math.round(f.maxHp * hero.trap / 100); f.hp -= d; ev.push({ t: 'hit', from: hero.id, to: f.id, dmg: d, crit: false, absorbed: 0, kind: 'trap', hp: snap() }); checkDeath(ctx, f); }
+    }
+
+    let round = 0;
+    while (round < MAX_ROUNDS) {
+      round++; stats.rounds = round;
+      ev.push({ t: 'round', n: round, hp: snap() });
+      const order = ents.filter(e => e.alive).sort((a, b) => (statOf(b, 'spd') + rng.next()) - (statOf(a, 'spd') + rng.next()));
+      for (const e of order) {
+        if (!e.alive) continue;
+        if (!living(ents, 'hero').length || !living(ents, 'enemy').length) break;
+        if (e.stunned > 0) { e.stunned--; ev.push({ t: 'skip', who: e.id, hp: snap() }); continue; }
+        // Abklingzeiten
+        for (const k of Object.keys(e.cds)) if (e.cds[k] > 0) e.cds[k]--;
+        let used = false;
+        for (const sid of e.skills) {
+          const sk = A.SKILLS[sid]; if (!sk) continue;
+          if ((e.cds[sid] || 0) > 0) continue;
+          // sinnvoll? Heilen nur unter 70 %, Schild nur ohne Schild, Buff nur ohne Buff
+          if (sk.kind === 'heal' && e.hp > e.maxHp * 0.7) continue;
+          if (sk.kind === 'shield' && e.shield > e.maxHp * 0.2) continue;
+          if (sk.kind === 'buff' && e.buffs[sk.stat]) continue;
+          if ((sk.multi || sk.kind === 'multi') && living(ents, e.side === 'hero' ? 'enemy' : 'hero').length < 2 && sk.pow < 1.2) continue;
+          useSkill(ctx, e, Object.assign({ id: sid }, sk), ents);
+          e.cds[sid] = sk.cd;
+          used = true; break;
+        }
+        if (!used) basicAttack(ctx, e, ents);
+        for (const b of ents) if (b.boss) tickBossTricks(ctx, b);
+      }
+      for (const e of ents) endOfRound(ctx, e);
+      if (!living(ents, 'hero').length || !living(ents, 'enemy').length) break;
+    }
+    const won = living(ents, 'hero').length > 0 && !living(ents, 'enemy').length;
+    const fled = living(ents, 'hero').length > 0 && living(ents, 'enemy').length > 0;
+    ev.push({ t: 'end', won, fled, hp: snap() });
+    return { won, fled, events: ev, heroHp: Math.max(0, Math.round(hero.hp)), heroRevive: hero.revive, stats };
+  }
+
+  return { simulate, snapshotEntity };
+})();
+
+</script>
+<script>
+// Der Abstieg – Spiellogik: Held, Items, Ebenen, Belohnungen, Lager, Speichern
+'use strict';
+window.A = window.A || {};
+
+A.Game = (function () {
+  const SAVE = 'abstieg.v1';
+  const META = 'abstieg.meta.v1';
+
+  // ---------- Dauerhaft (Lager) ----------
+  let meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 };
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} }
+  function saveMeta() { try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
+  function metaEffects() {
+    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [] };
+    for (const id of meta.unlocked) {
+      const u = A.META_SHOP.find(x => x.id === id); if (!u) continue;
+      for (const k of Object.keys(u.effect)) { if (k === 'race') eff.races.push(u.effect.race); else eff[k] += u.effect[k]; }
+    }
+    return eff;
+  }
+  function raceUnlocked(r) { return r.unlock === 0 || metaEffects().races.includes(r.id); }
+  function classUnlocked(c) { return c.unlock === 0 && !c.soon; }
+
+  // ---------- Durchlauf ----------
+  let run = null;
+  function newRun(raceId, classId) {
+    const race = A.RACES.find(r => r.id === raceId), cls = A.CLASSES.find(c => c.id === classId);
+    const me = metaEffects();
+    const skills = cls.startSkills.slice();
+    if (me.extraStartSkill) skills.push(cls.skills.find(s => !skills.includes(s)));
+    run = {
+      seed: Math.floor(Math.random() * 1e9), race: race.id, cls: cls.id,
+      floor: 1, step: 0, level: 1, xp: 0, points: 0,
+      stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
+      hp: 0, gold: 10 + me.startGold, potions: me.startPotion,
+      gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
+      bag: [], known: skills, active: skills.slice(0, 3), row: cls.row,
+      kills: 0, quest: null, questProg: 0, questDone: false, choices: null, pendingSkillPick: null,
+      log: [], reviveUsed: false, over: false, won: false,
+    };
+    run.rng = new A.RNG(run.seed);
+    // Startwaffe
+    const base = A.BASES.find(b => b.id === cls.weapon);
+    run.gear.weapon = makeItem(base, 'common', 1);
+    run.gear.armor = makeItem(A.BASES.find(b => b.id === 'leder'), 'common', 1);
+    run.hp = derived().maxHp;
+    newFloor();
+    save();
+    return run;
+  }
+
+  // ---------- Abgeleitete Werte ----------
+  function gearList() { return A.SLOTS.map(s => run.gear[s]).filter(Boolean); }
+  function derived(r) {
+    r = r || run;
+    const race = A.RACES.find(x => x.id === r.race), me = metaEffects();
+    const s = r.stats;
+    const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
+    const mod = race.mod || {};
+    const atkPct = sum('atkPct') / 100 + me.dmgMul, magPct = sum('magPct') / 100 + me.dmgMul;
+    const d = {
+      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul)),
+      atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
+      mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
+      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0)),
+      spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0)),
+      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0)),
+      dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0)),
+      lifesteal: sum('lifesteal'), thorns: sum('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
+      regen: sum('regen') + (mod.regen || 0), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100,
+      xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'),
+      skillSlots: 3 + (mod.skillSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0),
+    };
+    return d;
+  }
+
+  function heroEntity() {
+    const d = derived(), race = A.RACES.find(x => x.id === run.race), cls = A.CLASSES.find(x => x.id === run.cls);
+    return {
+      id: 'hero', name: A.t(race.name) + ' ' + A.t(cls.name), side: 'hero', row: run.row, melee: cls.row === 'front' && run.row === 'front',
+      hp: run.hp, maxHp: d.maxHp, atk: d.atk, mag: d.mag, def: d.def, spd: d.spd, crit: d.crit, dodge: d.dodge,
+      lifesteal: d.lifesteal, thorns: d.thorns, poisonOnHit: d.poisonOnHit, regen: d.regen, startShield: d.startShield,
+      revive: run.reviveUsed ? 0 : d.revive, trap: d.trap, kind: cls.id === 'weber' || cls.id === 'rufer' ? 'magic' : 'phys',
+      skills: run.active.filter(Boolean), color: cls.color, shape: 'hero', raceColor: race.color,
+    };
+  }
+
+  function monsterEntity(m, floor, elite, idx) {
+    const hpM = 1 + 0.32 * (floor - 1), atkM = 1 + 0.22 * (floor - 1);
+    const e = {
+      id: 'e' + idx, mid: m.id, name: (elite ? A.t(A.UI.elitePrefix) + ' ' : '') + A.t(m.name), side: 'enemy', row: m.row, melee: m.kind === 'melee', kind: m.kind,
+      maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
+      def: Math.round((m.def || 0) * (1 + 0.15 * (floor - 1))), spd: m.spd + (elite ? 2 : 0), crit: m.crit || 5, dodge: m.dodge || 0,
+      poisonOnHit: m.poisonOnHit || 0, burn: m.burn || 0, thorns: m.thorns || 0, steal: m.steal || 0, color: m.color, shape: m.shape,
+      boss: !!m.boss, elite: !!elite, split: !!m.split, healOnPhys: m.healOnPhys || 0, skills: [],
+    };
+    e.hp = e.maxHp;
+    if (elite) { const t = run ? run.rng.pick(['giftig', 'gepanzert', 'schnell']) : 'gepanzert'; e.eliteKind = t; if (t === 'giftig') e.poisonOnHit += 3; if (t === 'gepanzert') e.def += 5; if (t === 'schnell') e.spd += 4; }
+    return e;
+  }
+
+  function enemyGroup(type) {
+    const f = run.floor, rng = run.rng;
+    if (type === 'boss') return [monsterEntity(A.BOSSES[f], f, false, 1)];
+    const pool = A.MONSTERS.filter(m => f >= m.floors[0] && f <= m.floors[1]);
+    const n = type === 'elite' ? rng.int(1, 2) : (f <= 1 ? rng.int(1, 2) : f <= 3 ? rng.int(2, 3) : rng.int(2, 4));
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(monsterEntity(rng.pick(pool), f, type === 'elite' && i === 0, i + 1));
+    return out;
+  }
+
+  // ---------- Items ----------
+  function rollRarity(bonusLuck) {
+    const rng = run ? run.rng : A.rng;
+    const luck = (bonusLuck || 0) + (run ? derived().itemLuck : 0);
+    const list = Object.keys(A.RARITY);
+    return rng.weighted(list, k => {
+      const r = A.RARITY[k];
+      let w = r.weight;
+      if (k !== 'common' && k !== 'cursed') w *= 1 + luck * 0.35;
+      if (k === 'common') w /= 1 + luck * 0.35 + (run ? run.floor * 0.15 : 0);
+      return w;
+    });
+  }
+  let itemSeq = 0;
+  function makeItem(base, rarity, floor, forceUnique) {
+    const rng = run ? run.rng : A.rng;
+    const R = A.RARITY[rarity];
+    const scale = (1 + 0.18 * (floor - 1)) * R.mult;
+    const it = { uid: 'i' + (++itemSeq) + '_' + Math.floor(rng.next() * 1e6), base: base.id, slot: base.slot, rarity, floor, stats: {}, affixes: [], name: null, flavor: null };
+    for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+    // Einzelstück?
+    const uniq = forceUnique || ((rarity === 'legendary' || rarity === 'cursed') ? A.UNIQUES.filter(u => u.rarity === rarity && (!run || !run.seenUniques || !run.seenUniques.includes(u.id))) : []);
+    if (Array.isArray(uniq) ? uniq.length && rng.chance(0.7) : uniq) {
+      const u = Array.isArray(uniq) ? rng.pick(uniq) : uniq;
+      const ub = A.BASES.find(b => b.id === u.base);
+      it.base = ub.id; it.slot = ub.slot; it.unique = u.id; it.name = u.name; it.flavor = u.flavor;
+      it.stats = {};
+      for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (ub[k]) it.stats[k] = Math.round(ub[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+      for (const k of Object.keys(u.stats)) it.stats[k] = (it.stats[k] || 0) + u.stats[k];
+      if (run) { run.seenUniques = run.seenUniques || []; run.seenUniques.push(u.id); }
+      return it;
+    }
+    const pool = rng.shuffle(A.AFFIXES).slice(0, R.affixes);
+    for (const a of pool) {
+      const v = Math.round(a.val * (['hp', 'def'].includes(a.key) ? (1 + 0.15 * (floor - 1)) : 1) * (rarity === 'epic' || rarity === 'legendary' || rarity === 'cursed' ? 1.3 : 1));
+      it.stats[a.key] = (it.stats[a.key] || 0) + v; it.affixes.push(a.key);
+    }
+    if (rarity === 'cursed') { const bad = rng.pick(['def', 'dodge', 'spd', 'regen']); it.stats[bad] = (it.stats[bad] || 0) - (bad === 'spd' ? 3 : bad === 'regen' ? 2 : 8); it.curse = bad; }
+    if (rng.chance(rarity === 'common' ? 0.15 : 0.5)) it.flavor = rng.pick(A.QUIRKS);
+    return it;
+  }
+  function itemName(it) {
+    if (it.name) return A.t(it.name);
+    const base = A.BASES.find(b => b.id === it.base);
+    let n = A.t(base.name);
+    if (it.affixes.length) n += ' ' + A.t(A.AFFIXES.find(a => a.key === it.affixes[0]).name);
+    if (it.rarity === 'cursed') n = (A.LANG === 'de' ? 'Verfluchte(r) ' : 'Cursed ') + n;
+    return n;
+  }
+  function itemLines(it) {
+    const out = [];
+    const L = { atk: A.UI.derived.atk, mag: A.UI.derived.mag, def: A.UI.derived.def, hp: A.UI.hp, spd: A.UI.derived.spd, crit: A.UI.derived.crit, dodge: A.UI.derived.dodge };
+    for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (it.stats[k]) out.push((it.stats[k] > 0 ? '+' : '') + it.stats[k] + (k === 'crit' || k === 'dodge' ? ' %' : '') + ' ' + A.t(L[k]));
+    for (const a of A.AFFIXES) if (it.stats[a.key] && !['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'].includes(a.key)) out.push(A.t(a.text).replace('{v}', it.stats[a.key]));
+    if (it.stats.revive) out.push(A.LANG === 'de' ? 'Einmal pro Durchlauf überleben' : 'Survive once per run');
+    if (it.stats.luck) out.push('+' + it.stats.luck + ' ' + A.t(A.UI.stat.luck));
+    return out;
+  }
+  function randomItem(rarity, slotPref) {
+    const rng = run.rng;
+    let bases = A.BASES.filter(b => !b.cls || b.cls.includes(run.cls));
+    if (slotPref) bases = bases.filter(b => b.slot === slotPref);
+    return makeItem(rng.pick(bases), rarity || rollRarity(), run.floor);
+  }
+  function equip(it) {
+    let slot = it.slot;
+    if (slot === 'trinket' && run.gear.trinket && !run.gear.trinket2) slot = 'trinket2';
+    const old = run.gear[slot];
+    run.gear[slot] = it;
+    run.bag = run.bag.filter(x => x.uid !== it.uid);
+    if (old) run.bag.push(old);
+    const d = derived(); if (run.hp > d.maxHp) run.hp = d.maxHp;
+    save();
+  }
+  function sellValue(it) { return Math.round((8 + it.floor * 6) * A.RARITY[it.rarity].mult); }
+  function sell(it) { run.gold += sellValue(it); run.bag = run.bag.filter(x => x.uid !== it.uid); save(); }
+  function addToBag(it) { run.bag.push(it); while (run.bag.length > 8) { const worst = run.bag.slice().sort((a, b) => A.RARITY[a.rarity].mult - A.RARITY[b.rarity].mult)[0]; run.gold += sellValue(worst); run.bag = run.bag.filter(x => x.uid !== worst.uid); } save(); }
+
+  // ---------- Ebenen und Wege ----------
+  function newFloor() {
+    run.step = 0; run.usedRest = false; run.usedShop = false;
+    run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    nextChoices();
+  }
+  function nextChoices() {
+    const rng = run.rng;
+    const STEPS = 4;
+    if (run.step >= STEPS) { run.choices = [{ type: A.BOSSES[run.floor] ? 'boss' : 'fight', final: true }]; save(); return; }
+    const types = [];
+    types.push(rng.chance(0.75) ? 'fight' : 'elite');
+    const extra = ['event', 'treasure', 'fight', 'elite'];
+    if (!run.usedShop) extra.push('shop', 'shop');
+    if (!run.usedRest) extra.push('rest', 'rest');
+    const n = rng.int(2, 3);
+    while (types.length < n) { const t = rng.pick(extra); if (!types.includes(t)) types.push(t); }
+    run.choices = rng.shuffle(types).map(t => ({ type: t }));
+    save();
+  }
+  function choose(choice) {
+    run.current = choice; run.step++;
+    if (choice.type === 'shop') run.usedShop = true;
+    if (choice.type === 'rest') run.usedRest = true;
+    if (choice.type === 'event') run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent && run.currentEvent.id;
+    if (choice.type === 'shop') run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5) }));
+    if (['fight', 'elite', 'boss'].includes(choice.type)) run.enemies = enemyGroup(choice.type);
+    save();
+  }
+  function afterRoom() {
+    if (run.current && run.current.final) {
+      if (run.floor >= A.MAX_FLOOR) { run.over = true; run.won = true; finishRun(); return 'won'; }
+      run.floor++; newFloor(); return 'descend';
+    }
+    nextChoices(); return 'next';
+  }
+
+  // ---------- Kampf-Ergebnis ----------
+  function resolveFight(result) {
+    run.hp = result.heroHp;
+    if (result.heroRevive === 0 && derived().revive > 0) run.reviveUsed = true;
+    if (!result.won) {
+      if (result.fled) { save(); return { fled: true }; }
+      run.over = true; finishRun(); return { dead: true };
+    }
+    const f = run.floor, type = run.current.type;
+    const n = run.enemies.length;
+    const d = derived();
+    let gold = Math.round(run.rng.int(6, 12) * n * (1 + 0.25 * (f - 1)) * (type === 'elite' ? 1.6 : type === 'boss' ? 4 : 1) * (1 + d.goldPct / 100));
+    gold = Math.max(0, gold - result.stats.goldStolen);
+    const xp = Math.round((10 + f * 5) * n * (type === 'elite' ? 2 : type === 'boss' ? 5 : 1) * (1 + d.xpPct / 100));
+    run.gold += gold; run.kills += result.stats.kills; run.floorKills += result.stats.kills; meta.totalKills += result.stats.kills;
+    const rewards = [];
+    const nItems = type === 'boss' ? 3 : type === 'elite' ? 3 : 2;
+    for (let i = 0; i < nItems; i++) rewards.push(randomItem(type === 'boss' ? (i === 0 ? 'legendary' : rollRarity(2)) : type === 'elite' ? rollRarity(1) : undefined));
+    const levels = addXp(xp);
+    // Aufgabe
+    const q = run.quest;
+    if (q && !run.questDone) {
+      if (q.type === 'kills') run.questProg = run.floorKills;
+      if (q.type === 'nodmg' && result.stats.dmgTaken === 0) run.questProg = 1;
+      if (q.type === 'crits') run.questProg += result.stats.crits;
+      if (q.type === 'elite' && type === 'elite') run.questProg = 1;
+    }
+    let questReward = null;
+    if (q && !run.questDone && run.questProg >= q.n) { run.questDone = true; questReward = q.reward; if (q.reward.gold) run.gold += q.reward.gold; if (q.reward.xp) addXp(q.reward.xp); if (q.reward.item) rewards.push(randomItem(q.reward.item)); }
+    save();
+    return { gold, xp, rewards, levels, questReward, boss: type === 'boss' };
+  }
+  function xpNeed(l) { return Math.round(40 * Math.pow(l, 1.4)); }
+  function addXp(xp) {
+    run.xp += xp; let ups = 0;
+    while (run.xp >= xpNeed(run.level)) { run.xp -= xpNeed(run.level); run.level++; run.points += 3; ups++; if (run.level % 3 === 0) run.pendingSkillPick = (run.pendingSkillPick || 0) + 1; }
+    if (ups) { const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.2 * ups)); }
+    return ups;
+  }
+  function spend(stat) { if (run.points <= 0) return; run.points--; run.stats[stat]++; const before = derived(); run.hp = Math.min(before.maxHp, run.hp + (stat === 'tou' ? 8 : 0)); save(); }
+  function skillOffer() {
+    const cls = A.CLASSES.find(c => c.id === run.cls);
+    const rest = cls.skills.filter(s => !run.known.includes(s));
+    return run.rng.shuffle(rest).slice(0, 3);
+  }
+  function learnSkill(id) { run.known.push(id); run.pendingSkillPick--; if (run.active.length < derived().skillSlots) run.active.push(id); save(); }
+  function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
+
+  // ---------- Räume ----------
+  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.35)); else run.points++; save(); }
+  function doEvent(choiceIdx) {
+    const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
+    let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
+    for (const o of ch.outcomes) { if (r < o.p) { oc = o; break; } r -= o.p; }
+    const d = derived(); const res = { msg: A.t(oc.msg), items: [] };
+    if (oc.heal) run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * oc.heal));
+    if (oc.dmg) run.hp = Math.max(1, run.hp - Math.round(d.maxHp * oc.dmg));
+    if (oc.gold) run.gold = Math.max(0, run.gold + oc.gold);
+    if (oc.xp) addXp(oc.xp);
+    if (oc.stat) run.stats[oc.stat]++;
+    if (oc.potion) run.potions += oc.potion;
+    if (oc.item) res.items.push(randomItem(oc.item));
+    if (oc.curse) res.items.push(randomItem('cursed'));
+    if (oc.sacrifice) { const worst = run.bag[0]; if (worst) run.bag.shift(); run.points += 2; }
+    for (const it of res.items) addToBag(it);
+    save(); return res;
+  }
+  function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
+  function buy(idx) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; addToBag(s.it); return true; }
+  function buyPotion() { const p = 25 + run.floor * 5; if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
+  function potionPrice() { return 25 + run.floor * 5; }
+  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.4)); save(); return true; }
+
+  // ---------- Ende ----------
+  function finishRun() {
+    const sparks = run.floor * 8 + Math.floor(run.kills * 1.5) + (run.won ? 60 : 0) + run.level * 2;
+    run.sparksEarned = sparks; meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    saveMeta(); save();
+  }
+  function metaBuy(id) { const u = A.META_SHOP.find(x => x.id === id); if (!u || meta.unlocked.includes(id) || meta.sparks < u.cost || (u.needs && !meta.unlocked.includes(u.needs))) return false; meta.sparks -= u.cost; meta.unlocked.push(id); saveMeta(); return true; }
+
+  // ---------- Speichern ----------
+  function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); return run; } catch (e) { return null; } }
+  function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
+  function resetAll() { clearRun(); meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 }; saveMeta(); }
+
+  loadMeta();
+  return {
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, heroEntity, monsterEntity, enemyGroup,
+    makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
+    choose, afterRoom, resolveFight, xpNeed, spend, skillOffer, learnSkill, setActive,
+    doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy,
+  };
+})();
+
+</script>
+<script>
+// Der Abstieg – Kampfszene auf dem Canvas: Figuren aus einfachen Formen, Abspielen der Kampf-Ereignisse
+'use strict';
+window.A = window.A || {};
+
+A.Arena = class {
+  constructor(canvas) {
+    this.cv = canvas; this.ctx = canvas.getContext('2d');
+    this.ents = []; this.floats = []; this.flashes = {}; this.lunge = {}; this.t = 0; this.speed = 1;
+    this.queue = []; this.playing = false; this.onDone = null; this.wait = 0; this.caption = '';
+    this.shakeT = 0; this.floor = 1; this.bg = '#1a1420';
+    this.resize();
+    new ResizeObserver(() => this.resize()).observe(canvas);
+    this.last = performance.now();
+    const loop = (now) => { requestAnimationFrame(loop); const dt = Math.min(0.05, (now - this.last) / 1000); this.last = now; this.step(dt); this.draw(); };
+    requestAnimationFrame(loop);
+  }
+  resize() {
+    const r = this.cv.getBoundingClientRect(); const d = Math.min(2, window.devicePixelRatio || 1);
+    this.W = r.width; this.H = r.height; this.cv.width = Math.round(r.width * d); this.cv.height = Math.round(r.height * d);
+    this.ctx.setTransform(d, 0, 0, d, 0, 0);
+    this.layout();
+  }
+  setup(ents, floor) {
+    this.ents = ents.map(e => Object.assign({}, e, { sh: 0, fx: [], st: false, dead: false, alpha: 1 }));
+    this.floor = floor; this.floats = []; this.flashes = {}; this.lunge = {}; this.caption = '';
+    this.layout();
+  }
+  layout() {
+    const W = this.W, H = this.H;
+    const groups = { 'hero-front': [], 'hero-back': [], 'enemy-front': [], 'enemy-back': [] };
+    for (const e of this.ents) { if (!e.dead) groups[e.side + '-' + e.row].push(e); }
+    const xs = { 'hero-front': W * 0.34, 'hero-back': W * 0.17, 'enemy-front': W * 0.64, 'enemy-back': W * 0.82 };
+    for (const k of Object.keys(groups)) {
+      const g = groups[k]; const n = g.length;
+      g.forEach((e, i) => { e.tx = xs[k]; e.ty = H * 0.62 - (n - 1) * 34 + i * 68; if (e.x == null) { e.x = e.tx; e.y = e.ty; } });
+    }
+  }
+  play(events, onDone) {
+    this.queue = events.slice(); this.playing = true; this.onDone = onDone; this.wait = 0;
+  }
+  step(dt) {
+    this.t += dt;
+    for (const e of this.ents) { e.x += ((e.tx || e.x) - e.x) * Math.min(1, dt * 8); e.y += ((e.ty || e.y) - e.y) * Math.min(1, dt * 8); if (e.dead) e.alpha = Math.max(0, e.alpha - dt * 2); }
+    for (const f of this.floats) { f.y -= 30 * dt; f.life -= dt; }
+    this.floats = this.floats.filter(f => f.life > 0);
+    for (const k of Object.keys(this.flashes)) { this.flashes[k] -= dt; if (this.flashes[k] <= 0) delete this.flashes[k]; }
+    for (const k of Object.keys(this.lunge)) { this.lunge[k] -= dt * 4; if (this.lunge[k] <= 0) delete this.lunge[k]; }
+    this.shakeT = Math.max(0, this.shakeT - dt);
+    if (!this.playing) return;
+    this.wait -= dt * this.speed;
+    while (this.wait <= 0 && this.queue.length) {
+      const ev = this.queue.shift();
+      this.wait += this.apply(ev);
+    }
+    if (!this.queue.length && this.wait <= 0) { this.playing = false; if (this.onDone) { const f = this.onDone; this.onDone = null; f(); } }
+  }
+  find(id) { return this.ents.find(e => e.id === id); }
+  apply(ev) {
+    const sync = () => { if (!ev.hp) return; for (const e of this.ents) { const s = ev.hp[e.id]; if (s) { e.hp = s.hp; e.sh = s.sh; e.fx = s.fx; e.st = s.st; } } };
+    switch (ev.t) {
+      case 'start': return 0.3;
+      case 'round': this.caption = (A.LANG === 'de' ? 'Runde ' : 'Round ') + ev.n; return 0.25;
+      case 'act': { const e = this.find(ev.who); if (e) { this.lunge[e.id] = 1; if (ev.skill) { const sk = A.SKILLS[ev.skill]; this.float(e.x, e.y - 48, A.t(sk.name), '#ffe08a', 15); } } return ev.skill ? 0.35 : 0.2; }
+      case 'hit': { sync(); const to = this.find(ev.to); if (to) { this.flashes[to.id] = 0.25; const col = ev.kind === 'poison' ? '#9be37a' : ev.kind === 'burn' ? '#ff8a3d' : ev.kind === 'magic' ? '#7fd8ff' : ev.kind === 'thorns' ? '#c9c9c9' : ev.kind === 'curse' ? '#ff5f5f' : ev.crit ? '#ffb347' : '#ffffff'; this.float(to.x, to.y - 30, (ev.crit ? '✦' : '') + '−' + ev.dmg + (ev.absorbed ? ' (' + ev.absorbed + '🛡)' : ''), col, ev.crit ? 24 : 18); if (to.side === 'hero' && ev.dmg > 0) this.shakeT = 0.15; } return ev.kind === 'poison' || ev.kind === 'burn' || ev.kind === 'curse' ? 0.15 : 0.3; }
+      case 'miss': { const to = this.find(ev.to); if (to) this.float(to.x, to.y - 30, A.LANG === 'de' ? 'daneben' : 'miss', '#bbb', 14); return 0.25; }
+      case 'heal': { sync(); const e = this.find(ev.who); if (e) this.float(e.x, e.y - 30, '+' + ev.amt, '#6fdc7a', 18); return 0.25; }
+      case 'shield': { sync(); const e = this.find(ev.who); if (e) this.float(e.x, e.y - 30, '🛡 ' + ev.amt, '#9fd8ff', 16); return 0.25; }
+      case 'effect': { sync(); const e = this.find(ev.who); if (e) this.float(e.x, e.y - 50, ev.kind === 'poison' ? '☠' : ev.kind === 'burn' ? '🔥' : ev.kind === 'stun' ? '💫' : '', '#fff', 18); return 0.15; }
+      case 'buff': { const e = this.find(ev.who); if (e) this.float(e.x, e.y - 50, '▲', '#ffe08a', 18); return 0.2; }
+      case 'skip': { const e = this.find(ev.who); if (e) this.float(e.x, e.y - 50, '💫', '#fff', 16); return 0.2; }
+      case 'steal': { const e = this.find(ev.who); if (e) this.float(e.x, e.y - 50, '💰?', '#f5c542', 16); return 0.2; }
+      case 'revive': { sync(); const e = this.find(ev.who); if (e) this.float(e.x, e.y - 50, '✚ 1', '#f5c542', 22); return 0.5; }
+      case 'spawn': { const s = Object.assign({}, ev.ent, { sh: 0, fx: [], st: false, dead: false, alpha: 1 }); this.ents.push(s); this.layout(); s.x = s.tx; s.y = s.ty; return 0.4; }
+      case 'say': { this.caption = ev.text; return 0.6; }
+      case 'die': { sync(); const e = this.find(ev.who); if (e) { e.dead = true; e.hp = 0; } this.layout(); return 0.35; }
+      case 'end': { sync(); this.caption = ev.won ? A.t(A.UI.victory) : ev.fled ? '…' : A.t(A.UI.defeat); return 0.6; }
+      default: return 0;
+    }
+  }
+  float(x, y, text, color, size) { this.floats.push({ x: x + (Math.random() - 0.5) * 20, y, text, color, size, life: 1.1 }); }
+
+  draw() {
+    const c = this.ctx, W = this.W, H = this.H;
+    c.save();
+    if (this.shakeT > 0) c.translate((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+    // Höhle
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#120e18'); g.addColorStop(1, '#2a2030');
+    c.fillStyle = g; c.fillRect(-10, -10, W + 20, H + 20);
+    c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-10, H * 0.72, W + 20, H);
+    for (let i = 0; i < 18; i++) { const x = (i * 71 + this.floor * 13) % W, y = (i * 37) % (H * 0.6); c.fillStyle = 'rgba(255,255,255,0.03)'; c.beginPath(); c.ellipse(x, y, 20 + (i % 4) * 8, 10 + (i % 3) * 5, i, 0, Math.PI * 2); c.fill(); }
+    // Fackeln
+    for (const fx of [W * 0.08, W * 0.92]) { const fl = 0.8 + Math.sin(this.t * 9 + fx) * 0.1; const lg = c.createRadialGradient(fx, H * 0.18, 2, fx, H * 0.18, 80); lg.addColorStop(0, `rgba(255,170,70,${0.25 * fl})`); lg.addColorStop(1, 'rgba(255,170,70,0)'); c.fillStyle = lg; c.fillRect(fx - 80, H * 0.18 - 80, 160, 160); c.fillStyle = '#ffcf6b'; c.beginPath(); c.arc(fx, H * 0.18, 4, 0, Math.PI * 2); c.fill(); }
+    // Figuren (hinten zuerst)
+    const sorted = this.ents.slice().sort((a, b) => a.y - b.y);
+    for (const e of sorted) this.drawEntity(e);
+    // Schwebende Zahlen
+    for (const f of this.floats) {
+      c.globalAlpha = Math.min(1, f.life * 1.5); c.font = `900 ${f.size}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,0.7)'; c.strokeText(f.text, f.x, f.y); c.fillStyle = f.color; c.fillText(f.text, f.x, f.y);
+    }
+    c.globalAlpha = 1;
+    // Überschrift
+    if (this.caption) { c.font = '800 15px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = 'rgba(255,255,255,0.85)'; c.fillText(this.caption, W / 2, 10); }
+    c.restore();
+  }
+  drawEntity(e) {
+    const c = this.ctx;
+    const lung = this.lunge[e.id] || 0;
+    const dir = e.side === 'hero' ? 1 : -1;
+    const x = e.x + Math.sin(lung * Math.PI) * 26 * dir, y = e.y + (e.dead ? 0 : Math.sin(this.t * 2.5 + e.x) * 2);
+    const s = e.boss ? 1.6 : e.elite ? 1.2 : 1;
+    c.save(); c.globalAlpha = e.alpha;
+    // Schatten
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(e.x, e.y + 26 * s, 22 * s, 7 * s, 0, 0, Math.PI * 2); c.fill();
+    c.translate(x, y); c.scale(s * (e.side === 'hero' ? 1 : -1), s);
+    const flash = this.flashes[e.id] > 0;
+    this.drawShape(e.shape, e.color, e.raceColor, flash, e.st);
+    c.restore();
+    if (e.dead) return;
+    // Lebensbalken
+    const bw = 54 * s, bx = e.x - bw / 2, by = e.y - 36 * s;
+    c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(bx - 1, by - 1, bw + 2, 8);
+    c.fillStyle = e.side === 'hero' ? '#6fdc7a' : e.boss ? '#ff5f5f' : '#ff8a6a'; c.fillRect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 6);
+    if (e.sh > 0) { c.fillStyle = '#9fd8ff'; c.fillRect(bx, by + 6, bw * Math.min(1, e.sh / e.maxHp), 2); }
+    c.font = '700 10px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'bottom'; c.fillStyle = '#fff';
+    c.fillText((e.boss ? '👑 ' : '') + e.name, e.x, by - 3);
+    if (e.fx && e.fx.length) { c.font = '12px system-ui'; c.fillText(e.fx.map(k => k === 'poison' ? '☠' : k === 'burn' ? '🔥' : '').join(''), e.x + bw / 2 + 10, by + 8); }
+  }
+  drawShape(shape, color, color2, flash, stunned) {
+    const c = this.ctx;
+    const col = flash ? '#ffffff' : color;
+    const eye = () => { c.fillStyle = '#fff'; c.beginPath(); c.arc(6, -6, 3.5, 0, Math.PI * 2); c.fill(); c.fillStyle = '#111'; c.beginPath(); c.arc(7, -6, 1.6, 0, Math.PI * 2); c.fill(); };
+    switch (shape) {
+      case 'hero':
+        c.fillStyle = '#3b2b20'; c.fillRect(-8, 12, 6, 12); c.fillRect(2, 12, 6, 12);
+        c.fillStyle = col; this.rr(-11, -8, 22, 22, 6);
+        c.fillStyle = color2 || '#e8b98a'; c.beginPath(); c.arc(0, -16, 9, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#222'; c.fillRect(2, -18, 3, 3);
+        c.fillStyle = col; c.beginPath(); c.arc(0, -19, 9.5, Math.PI, 0); c.fill();
+        c.fillStyle = '#c7ccd6'; c.fillRect(12, -14, 3, 26); c.fillRect(9, -16, 9, 3);
+        break;
+      case 'blob': c.fillStyle = col; c.beginPath(); c.moveTo(-18, 14); c.quadraticCurveTo(-20, -18, 0, -16); c.quadraticCurveTo(20, -18, 18, 14); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,0.3)'; c.beginPath(); c.arc(-6, -6, 4, 0, Math.PI * 2); c.fill(); eye(); break;
+      case 'rat': c.fillStyle = col; c.beginPath(); c.ellipse(0, 4, 18, 11, 0, 0, Math.PI * 2); c.fill(); c.beginPath(); c.arc(14, -2, 8, 0, Math.PI * 2); c.fill(); c.fillStyle = '#e8a0a0'; c.beginPath(); c.arc(16, -9, 4, 0, Math.PI * 2); c.fill(); c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); c.moveTo(-18, 6); c.quadraticCurveTo(-30, 0, -28, -10); c.stroke(); eye(); break;
+      case 'bat': c.fillStyle = col; c.beginPath(); c.moveTo(0, 0); c.lineTo(-24, -12); c.lineTo(-16, 2); c.lineTo(-8, -4); c.lineTo(0, 6); c.lineTo(8, -4); c.lineTo(16, 2); c.lineTo(24, -12); c.closePath(); c.fill(); c.beginPath(); c.arc(0, -4, 7, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ff5f5f'; c.fillRect(-4, -6, 2, 2); c.fillRect(2, -6, 2, 2); break;
+      case 'mushroom': c.fillStyle = '#e8dcc0'; c.fillRect(-7, -2, 14, 22); c.fillStyle = col; c.beginPath(); c.arc(0, -4, 20, Math.PI, 0); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(-8, -12, 3, 0, Math.PI * 2); c.arc(6, -16, 2.5, 0, Math.PI * 2); c.fill(); c.fillStyle = '#222'; c.fillRect(-4, 4, 2, 3); c.fillRect(2, 4, 2, 3); c.fillStyle = '#8a5a2b'; c.fillRect(10, -6, 3, 24); break;
+      case 'skeleton': c.fillStyle = col; c.beginPath(); c.arc(0, -14, 9, 0, Math.PI * 2); c.fill(); c.fillRect(-2, -6, 4, 18); for (let i = 0; i < 3; i++) c.fillRect(-10, -2 + i * 6, 20, 2); c.fillRect(-9, 12, 5, 12); c.fillRect(4, 12, 5, 12); c.fillStyle = '#111'; c.fillRect(-5, -17, 3, 3); c.fillRect(2, -17, 3, 3); c.fillStyle = '#c7ccd6'; c.fillRect(12, -10, 3, 22); break;
+      case 'moth': c.fillStyle = col; c.beginPath(); c.ellipse(-12, -2, 12, 8, -0.4, 0, Math.PI * 2); c.ellipse(12, -2, 12, 8, 0.4, 0, Math.PI * 2); c.fill(); c.fillStyle = '#5a3a2a'; c.beginPath(); c.ellipse(0, 0, 4, 12, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ffe08a'; c.beginPath(); c.arc(-10, -2, 3, 0, Math.PI * 2); c.arc(10, -2, 3, 0, Math.PI * 2); c.fill(); break;
+      case 'spider': c.strokeStyle = col; c.lineWidth = 2.5; for (let i = 0; i < 4; i++) { const a = -0.8 + i * 0.55; for (const d of [-1, 1]) { c.beginPath(); c.moveTo(0, 0); c.lineTo(d * Math.cos(a) * 20, Math.sin(a) * 20 + 4); c.stroke(); } } c.fillStyle = col; c.beginPath(); c.ellipse(0, 2, 11, 9, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ff5f5f'; c.fillRect(-4, -3, 2, 2); c.fillRect(2, -3, 2, 2); c.fillRect(-1, -5, 2, 2); break;
+      case 'golem': c.fillStyle = col; this.rr(-16, -8, 32, 30, 5); c.fillStyle = col; this.rr(-10, -22, 20, 16, 4); c.fillStyle = '#ffcf6b'; c.fillRect(-5, -16, 4, 3); c.fillRect(2, -16, 4, 3); c.fillStyle = col; this.rr(-24, -6, 9, 22, 3); this.rr(15, -6, 9, 22, 3); c.fillStyle = 'rgba(0,0,0,0.2)'; c.fillRect(-12, 0, 8, 3); c.fillRect(2, 8, 10, 3); break;
+      case 'ghost': c.fillStyle = col; c.globalAlpha *= 0.85; c.beginPath(); c.arc(0, -8, 14, Math.PI, 0); c.lineTo(14, 14); for (let i = 0; i < 4; i++) c.lineTo(14 - (i + 0.5) * 7, 8 + (i % 2) * 6); c.lineTo(-14, 14); c.closePath(); c.fill(); c.fillStyle = '#111'; c.beginPath(); c.arc(-5, -8, 2.5, 0, Math.PI * 2); c.arc(5, -8, 2.5, 0, Math.PI * 2); c.fill(); break;
+      case 'worm': c.fillStyle = col; for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(-18 + i * 11, 8 - i * 5, 10, 0, Math.PI * 2); c.fill(); } c.beginPath(); c.arc(16, -10, 12, 0, Math.PI * 2); c.fill(); c.fillStyle = '#3a1a1a'; c.beginPath(); c.arc(20, -8, 6, 0, Math.PI * 2); c.fill(); c.fillStyle = '#fff'; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(14 + i * 3, -8); c.lineTo(15.5 + i * 3, -3); c.lineTo(17 + i * 3, -8); c.fill(); } break;
+      case 'kobold': c.fillStyle = col; this.rr(-9, -4, 18, 18, 5); c.beginPath(); c.arc(0, -12, 8, 0, Math.PI * 2); c.fill(); c.beginPath(); c.moveTo(-8, -14); c.lineTo(-16, -24); c.lineTo(-4, -18); c.fill(); c.beginPath(); c.moveTo(8, -14); c.lineTo(16, -24); c.lineTo(4, -18); c.fill(); c.fillStyle = '#111'; c.fillRect(2, -14, 3, 3); c.fillStyle = '#f5c542'; c.beginPath(); c.arc(14, 4, 5, 0, Math.PI * 2); c.fill(); break;
+      default: c.fillStyle = col; c.beginPath(); c.arc(0, 0, 16, 0, Math.PI * 2); c.fill(); eye();
+    }
+    if (stunned) { c.fillStyle = '#ffe08a'; c.font = '14px system-ui'; c.textAlign = 'center'; c.fillText('💫', 0, -30); }
+  }
+  rr(x, y, w, h, r) { const c = this.ctx; c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); c.fill(); }
+};
+
+</script>
+<script>
+// Der Abstieg – Oberfläche: Bildschirme, Knöpfe, Kampf-Abspielen
+'use strict';
+window.A = window.A || {};
+
+(function () {
+  const G = A.Game, t = A.t, U = A.UI;
+  const $ = (s) => document.querySelector(s);
+  const screen = $('#screen'), hud = $('#hud'), overlay = $('#overlay'), combatEl = $('#combat');
+  const arena = new A.Arena($('#arena'));
+  let speed = 1;
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // Portal-Anbindung (Platzhalter; wird beim Einreichen ersetzt)
+  const Portal = window.AbstiegPortal || { gameplayStart() {}, gameplayStop() {}, happytime() {}, showAd(cb) { cb(); }, showRewardedAd(cb) { cb(); } };
+
+  // ---------- Ton ----------
+  let actx = null;
+  function beep(f, d, type, v) {
+    if (!G.meta.sound) return;
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
+      const o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(v || 0.04, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d);
+      o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + d); } catch (e) {}
+  }
+  const sfx = { click: () => beep(520, 0.05, 'triangle', 0.04), buy: () => { beep(660, 0.06, 'triangle', 0.05); setTimeout(() => beep(990, 0.08, 'triangle', 0.05), 50); }, win: () => [440, 550, 660, 880].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 80)), lose: () => beep(110, 0.5, 'sawtooth', 0.06), hit: () => beep(150 + Math.random() * 60, 0.05, 'square', 0.03) };
+
+  // ---------- HUD ----------
+  function hudUpdate() {
+    const r = G.run;
+    if (!r || r.over) { hud.classList.remove('on'); return; }
+    hud.classList.add('on');
+    const d = G.derived();
+    $('#hudFloor').textContent = '⬇ ' + r.floor;
+    $('#hpbar i').style.width = Math.max(0, Math.min(100, r.hp / d.maxHp * 100)) + '%';
+    $('#hptext').textContent = r.hp + ' / ' + d.maxHp;
+    $('#hudGold').textContent = '🪙 ' + r.gold;
+    $('#hudPot').textContent = '🧪 ' + r.potions;
+    const hb = $('#heroBtn'); hb.textContent = 'Lv ' + r.level + (r.points > 0 ? ' +' + r.points : ''); hb.classList.toggle('pts', r.points > 0 || r.pendingSkillPick > 0);
+  }
+  $('#heroBtn').addEventListener('click', () => { sfx.click(); showSheet(); });
+
+  // ---------- Hilfen ----------
+  function itemHtml(it, actions, cmpWith) {
+    const lines = G.itemLines(it);
+    const base = A.BASES.find(b => b.id === it.base);
+    let cmp = '';
+    if (cmpWith) {
+      const diff = scoreItem(it) - scoreItem(cmpWith);
+      cmp = `<span class="mini" style="color:${diff >= 0 ? 'var(--hp)' : 'var(--bad)'}">${diff >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(diff))}</span>`;
+    } else if (cmpWith === null) cmp = `<span class="mini" style="color:var(--hp)">▲ neu</span>`;
+    return `<div class="item rar-${it.rarity}">
+      <div style="flex:1;min-width:0">
+        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · <span class="rc-${it.rarity}">${t(U.rarity[it.rarity])}</span> ${cmp}</div>
+        <div class="nm">${esc(G.itemName(it))}</div>
+        <div class="ln">${lines.map(esc).join(' · ')}</div>
+        ${it.flavor ? `<div class="fl">${esc(t(it.flavor))}</div>` : ''}
+      </div>
+      ${actions ? `<div class="act">${actions}</div>` : ''}
+    </div>`;
+  }
+  function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30; }
+  function slotCurrent(it) { const r = G.run; if (it.slot === 'trinket') { if (!r.gear.trinket) return null; if (!r.gear.trinket2) return null; return scoreItem(r.gear.trinket) < scoreItem(r.gear.trinket2) ? r.gear.trinket : r.gear.trinket2; } return r.gear[it.slot] || null; }
+  function show(html) { screen.innerHTML = html; screen.scrollTop = 0; hudUpdate(); }
+  function ov(html) { overlay.innerHTML = `<div class="ovbox">${html}</div>`; overlay.classList.add('on'); }
+  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; }
+  const ICONS = { fight: '⚔️', elite: '💀', treasure: '💰', shop: '🛒', event: '❓', rest: '🔥', boss: '👑' };
+  const DESC = { fight: { de: 'Gegner, Beute, Erfahrung', en: 'Enemies, loot, experience' }, elite: { de: 'Schwer, aber besseres Item', en: 'Hard, but better item' }, treasure: { de: 'Items und Gold', en: 'Items and gold' }, shop: { de: 'Kaufen und verkaufen', en: 'Buy and sell' }, event: { de: 'Eine Entscheidung', en: 'A decision' }, rest: { de: 'Heilen oder trainieren', en: 'Heal or train' }, boss: { de: 'Der Wächter der Ebene', en: 'The floor\'s guardian' } };
+
+  // ---------- Titel ----------
+  function title() {
+    const m = G.meta, r = G.load();
+    show(`<div style="padding-top:12vh" class="center">
+      <div style="font-size:64px">🕳️</div>
+      <h1>${t(U.title)}</h1>
+      <div class="sub">${t(U.tagline)}</div>
+      ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} (${t(U.floor)} ${r.floor})</button>` : ''}
+      <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
+      <button class="btn" id="bCamp">🏕️ ${t(U.camp)} · <span class="spark">✦ ${m.sparks}</span></button>
+      <div style="margin-top:18px" class="mini">${A.LANG === 'de' ? 'Durchläufe' : 'Runs'}: ${m.runs} · ${A.LANG === 'de' ? 'Tiefste Ebene' : 'Deepest floor'}: ${m.best}</div>
+      <div style="margin-top:12px"><button class="btn small" id="bSound">${m.sound ? '🔊' : '🔇'} ${t(U.sound)}</button><button class="btn small" id="bReset">${t(U.reset)}</button></div>
+    </div>`);
+    if (r) $('#bCont').onclick = () => { sfx.click(); resume(); };
+    $('#bNew').onclick = () => { sfx.click(); if (r) { if (!confirm(A.LANG === 'de' ? 'Laufenden Durchlauf aufgeben?' : 'Abandon the current run?')) return; G.clearRun(); } heroSelect(); };
+    $('#bCamp').onclick = () => { sfx.click(); camp(); };
+    $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); title(); };
+    $('#bReset').onclick = () => { if (confirm(A.LANG === 'de' ? 'Wirklich alles löschen? Auch die Seelenfunken.' : 'Really delete everything? Including soul sparks.')) { G.resetAll(); title(); } };
+  }
+
+  // ---------- Held wählen ----------
+  let selRace = 'mensch', selCls = 'klinge';
+  function heroSelect() {
+    const races = A.RACES.map(r => { const ok = G.raceUnlocked(r); return `<div class="card click ${selRace === r.id ? 'sel' : ''} ${ok ? '' : 'locked'}" data-race="${r.id}"><div class="ttl"><span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${r.color};margin-right:6px"></span>${t(r.name)}</span>${ok ? '' : `<span class="spark">✦ ${r.unlock}</span>`}</div><div class="txt">${t(r.perk)}</div></div>`; }).join('');
+    const classes = A.CLASSES.map(c => { const ok = G.classUnlocked(c); return `<div class="card click ${selCls === c.id ? 'sel' : ''} ${ok ? '' : 'locked'}" data-cls="${c.id}"><div class="ttl"><span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c.color};margin-right:6px"></span>${t(c.name)}</span>${ok ? `<span class="mini">${t(c.row === 'front' ? U.front : U.backRow)}</span>` : `<span class="mini">${t(U.locked)}</span>`}</div><div class="txt">${t(c.perk)}</div></div>`; }).join('');
+    show(`<h2>${t(U.race)}</h2>${races}<h2 style="margin-top:14px">${t(U.cls)}</h2>${classes}
+      <button class="btn primary" id="bStart">${t(U.start)}</button><button class="btn" id="bBack">${t(U.back)}</button>`);
+    screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { camp(); return; } selRace = r.id; sfx.click(); heroSelect(); });
+    screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) return; selCls = c.id; sfx.click(); heroSelect(); });
+    $('#bStart').onclick = () => { sfx.buy(); G.newRun(selRace, selCls); Portal.gameplayStart(); map(); };
+    $('#bBack').onclick = () => { sfx.click(); title(); };
+  }
+
+  // ---------- Lager ----------
+  function camp() {
+    const m = G.meta, me = G.metaEffects();
+    const list = A.META_SHOP.map(u => { const have = m.unlocked.includes(u.id); const can = !have && m.sparks >= u.cost && (!u.needs || m.unlocked.includes(u.needs)); return `<div class="card ${have ? '' : (can ? '' : 'locked')}"><div class="ttl"><span>${t(u.name)}</span>${have ? `<span class="mini" style="color:var(--hp)">✓ ${t(U.bought)}</span>` : `<button class="btn small ${can ? 'primary' : ''}" data-buy="${u.id}" ${can ? '' : 'disabled'}>✦ ${u.cost}</button>`}</div><div class="txt">${t(u.desc)}</div></div>`; }).join('');
+    show(`<h2>🏕️ ${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div><div class="card"><div class="ttl"><span>${t(U.meta)}</span><span class="spark">✦ ${m.sparks}</span></div></div>${list}<button class="btn" id="bBack">${t(U.back)}</button>`);
+    screen.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.metaBuy(b.dataset.buy)) { sfx.buy(); camp(); } });
+    $('#bBack').onclick = () => { sfx.click(); title(); };
+  }
+
+  // ---------- Fortsetzen ----------
+  function resume() {
+    const r = G.run;
+    Portal.gameplayStart();
+    if (r.current && r.current.type && r.enemies && r.pendingFight) prep(); else map();
+  }
+
+  // ---------- Karte / Wegwahl ----------
+  function map() {
+    const r = G.run;
+    if (r.over) { runOver(); return; }
+    const q = r.quest;
+    const choices = r.choices.map((c, i) => `<div class="choice" data-i="${i}"><div class="ico">${ICONS[c.type]}</div><div class="lbl">${t(U.node[c.type])}</div><div class="txt">${t(DESC[c.type])}</div></div>`).join('');
+    show(`<h2>${t(U.floor)} ${r.floor} · ${A.LANG === 'de' ? 'Raum' : 'Room'} ${r.step + 1}/5</h2>
+      ${q ? `<div class="q ${r.questDone ? 'done' : ''}">📜 ${t(U.quest)}: ${t(q.text)} (${Math.min(r.questProg, q.n)}/${q.n})${r.questDone ? ' ✓' : ''}</div>` : ''}
+      <div class="sub">${t(U.chooseRoom)}</div><div class="grid2">${choices}</div>
+      ${r.points > 0 || r.pendingSkillPick > 0 ? `<button class="btn primary" id="bSheet">⬆ ${t(U.levelUp)} · ${r.points} ${t(U.points)}</button>` : ''}`);
+    screen.querySelectorAll('.choice').forEach(el => el.onclick = () => { sfx.click(); enterRoom(r.choices[+el.dataset.i]); });
+    const bs = $('#bSheet'); if (bs) bs.onclick = () => showSheet();
+  }
+  function enterRoom(choice) {
+    G.choose(choice);
+    const r = G.run;
+    if (['fight', 'elite', 'boss'].includes(choice.type)) { r.pendingFight = true; G.save(); prep(); }
+    else if (choice.type === 'rest') rest();
+    else if (choice.type === 'event') eventScreen();
+    else if (choice.type === 'shop') shop();
+    else if (choice.type === 'treasure') treasure();
+  }
+  function leaveRoom() {
+    const res = G.afterRoom();
+    if (res === 'won') { runOver(); return; }
+    if (res === 'descend') { ov(`<div class="center"><div style="font-size:50px">⬇️</div><h2>${t(U.floor)} ${G.run.floor}</h2><div class="sub">${A.LANG === 'de' ? 'Neue Schicht, neue Gegner, neue Aufgabe.' : 'New layer, new enemies, new quest.'}</div><button class="btn primary" id="bOk">${t(U.descend)}</button></div>`); $('#bOk').onclick = () => { ovClose(); Portal.showAd(() => map()); }; return; }
+    map();
+  }
+
+  // ---------- Heldenblatt ----------
+  function showSheet(tab) {
+    const r = G.run, d = G.derived();
+    tab = tab || 'stats';
+    const statsHtml = ['str', 'tou', 'dex', 'mind', 'luck'].map(k => `<div class="stat"><span>${t(U.stat[k])}</span><span><b>${r.stats[k]}</b>${r.points > 0 ? `<button data-sp="${k}">+</button>` : ''}</span></div>`).join('');
+    const kv = `<div class="kv" style="margin-top:10px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
+    const gear = A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : `<div class="item" style="opacity:0.5"><div><div class="slotlbl">${t(U.slot[s === 'trinket2' ? 'trinket' : s])}</div><div class="nm">–</div></div></div>`; }).join('');
+    const bag = r.bag.length ? r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${t(U.sell)} ${G.sellValue(it)}🪙</button>`, slotCurrent(it))).join('') : `<div class="mini">${A.LANG === 'de' ? 'Leer.' : 'Empty.'}</div>`;
+    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div><div class="nm">${on ? '●' : '○'} ${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd} ${t(U.rounds)}</div></div>`; }).join('');
+    const content = tab === 'stats' ? `${r.points > 0 ? `<div class="q">⬆ ${r.points} ${t(U.points)}</div>` : ''}${statsHtml}${kv}` :
+      tab === 'gear' ? `${gear}<h2 style="margin-top:12px">${t(U.bag)} (${r.bag.length}/8)</h2>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">🧪 ${t(U.usePotion)}</button>` : ''}` :
+      `<div class="mini" style="margin-bottom:8px">${A.LANG === 'de' ? `Bis zu ${d.skillSlots} aktiv. Reihenfolge = Vorrang im Kampf.` : `Up to ${d.skillSlots} active. Order = priority in battle.`}</div>${skills}
+       <div class="toggle" style="margin-top:10px"><button data-row="front" class="${r.row === 'front' ? 'on' : ''}">${t(U.front)}</button><button data-row="back" class="${r.row === 'back' ? 'on' : ''}">${t(U.backRow)}</button></div><div class="mini">${A.LANG === 'de' ? 'Vorne: trifft im Nahkampf voll, wird zuerst angegriffen. Hinten: Nahkämpfer erreichen dich erst, wenn vorne niemand steht; Nahkampf-Waffen machen hinten 30 % weniger.' : 'Front: full melee hits, attacked first. Back: melee enemies reach you only when the front is empty; melee weapons do 30% less from the back.'}</div>`;
+    ov(`<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => showSheet(b.dataset.tab));
+    overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); sfx.click(); showSheet('stats'); });
+    overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { G.equip(r.bag.find(x => x.uid === b.dataset.eq)); sfx.buy(); showSheet('gear'); });
+    overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); sfx.buy(); showSheet('gear'); });
+    overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); sfx.click(); showSheet('skills'); });
+    overlay.querySelectorAll('[data-row]').forEach(b => b.onclick = () => { r.row = b.dataset.row; G.save(); sfx.click(); showSheet('skills'); });
+    const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); sfx.buy(); showSheet('gear'); };
+    $('#bClose').onclick = () => { ovClose(); hudUpdate(); if (r.pendingSkillPick > 0) skillPick(); };
+  }
+  function skillPick() {
+    const r = G.run; const offer = G.skillOffer();
+    if (!offer.length) { r.pendingSkillPick = 0; G.save(); return; }
+    ov(`<h2>${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd} ${t(U.rounds)}</div></div>`; }).join('')}`);
+    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { G.learnSkill(el.dataset.pick); sfx.buy(); ovClose(); hudUpdate(); if (r.pendingSkillPick > 0) skillPick(); });
+  }
+
+  // ---------- Aufstellung ----------
+  function prep() {
+    const r = G.run, d = G.derived();
+    const enemies = r.enemies.map(e => `<div class="enemy"><b>${e.boss ? '👑 ' : ''}${esc(e.name)}</b>❤ ${e.maxHp} · ⚔ ${e.atk} · ${t(e.row === 'front' ? U.front : U.backRow)}${e.eliteKind ? ' · ' + ({ giftig: '☠', gepanzert: '🛡', schnell: '💨' })[e.eliteKind] : ''}</div>`).join('');
+    const boss = r.current.type === 'boss' ? `<div class="q">👑 ${t(A.BOSSES[r.floor].trick)}</div>` : '';
+    const skills = r.active.map(id => `<span class="enemy">✦ ${t(A.SKILLS[id].name)}</span>`).join('') || `<span class="mini">–</span>`;
+    show(`<h2>${t(U.prep)}</h2>${boss}<div class="card"><div class="slotlbl">${A.LANG === 'de' ? 'Gegner' : 'Enemies'}</div><div style="margin-top:6px">${enemies}</div></div>
+      <div class="card"><div class="slotlbl">${A.LANG === 'de' ? 'Du' : 'You'}</div><div class="kv" style="margin-top:6px"><span>${t(U.hp)} <b>${r.hp}/${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span></div><div style="margin-top:8px">${skills}</div></div>
+      <div class="toggle"><button data-row="front" class="${r.row === 'front' ? 'on' : ''}">${t(U.front)}</button><button data-row="back" class="${r.row === 'back' ? 'on' : ''}">${t(U.backRow)}</button></div>
+      <div class="row"><button class="btn" id="bSheet">🎒 ${t(U.items)} / ${t(U.skills)}</button>${r.potions > 0 && r.hp < d.maxHp ? `<button class="btn" id="bPot">🧪 +40 %</button>` : ''}</div>
+      <button class="btn primary" id="bFight">⚔️ ${t(U.fightBtn)}</button>`);
+    screen.querySelectorAll('[data-row]').forEach(b => b.onclick = () => { r.row = b.dataset.row; G.save(); sfx.click(); prep(); });
+    $('#bSheet').onclick = () => { showSheet('gear'); $('#bClose').onclick = () => { ovClose(); prep(); }; };
+    const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); sfx.buy(); prep(); };
+    $('#bFight').onclick = () => { sfx.click(); fight(); };
+  }
+
+  // ---------- Kampf ----------
+  function fight() {
+    const r = G.run;
+    const hero = G.heroEntity();
+    if (hero.row === 'back' && hero.melee === false && A.CLASSES.find(c => c.id === r.cls).row === 'front') hero.atk = Math.round(hero.atk * 0.7);
+    const result = A.Combat.simulate(hero, r.enemies, r.floor, r.rng.int(1, 2e9));
+    combatEl.classList.add('on');
+    arena.speed = speed;
+    arena.setup(result.events[0].ents, r.floor);
+    $('#clog').textContent = '';
+    arena.play(result.events, () => finishFight(result));
+  }
+  document.querySelectorAll('#cbar .sp').forEach(b => b.onclick = () => { speed = +b.dataset.sp; arena.speed = speed; document.querySelectorAll('#cbar .sp').forEach(x => x.classList.toggle('on', x === b)); });
+  function finishFight(result) {
+    const r = G.run;
+    r.pendingFight = false;
+    const out = G.resolveFight(result);
+    combatEl.classList.remove('on');
+    hudUpdate();
+    if (out.dead) { sfx.lose(); runOver(); return; }
+    if (out.fled) { ov(`<div class="center"><h2>…</h2><div class="sub">${A.LANG === 'de' ? 'Der Kampf zieht sich. Ihr geht euch aus dem Weg.' : 'The fight drags on. You avoid each other.'}</div><button class="btn primary" id="bOk">${t(U.leave)}</button></div>`); $('#bOk').onclick = () => { ovClose(); leaveRoom(); }; return; }
+    sfx.win(); if (out.boss) Portal.happytime();
+    reward(out);
+  }
+  function reward(out) {
+    const r = G.run;
+    const items = out.rewards.map((it, i) => itemHtml(it, `<button class="primary" data-take="${i}">${t(U.take)}</button>`, slotCurrent(it))).join('');
+    ov(`<div class="center"><h2>${t(U.victory)}</h2><div><span class="goldc">+${out.gold} 🪙</span> · +${out.xp} ${t(U.xp)}${out.levels ? ` · <b style="color:var(--hp)">${t(U.levelUp)}</b>` : ''}</div>${out.questReward ? `<div class="q done">📜 ${t(U.questDone)}</div>` : ''}</div>
+      <h2 style="margin-top:10px">${t(U.pickReward)}</h2>${items}<button class="btn" id="bSkip">${t(U.skip)}</button>`);
+    overlay.querySelectorAll('[data-take]').forEach(b => b.onclick = () => { const it = out.rewards[+b.dataset.take]; G.addToBag(it); sfx.buy(); afterReward(it); });
+    $('#bSkip').onclick = () => { sfx.click(); afterReward(null); };
+  }
+  function afterReward(it) {
+    const r = G.run;
+    ovClose();
+    const next = () => { if (r.pendingSkillPick > 0) { skillPick(); const wait = setInterval(() => { if (!overlay.classList.contains('on')) { clearInterval(wait); leaveRoom(); } }, 150); } else leaveRoom(); };
+    if (it) {
+      const cur = slotCurrent(it);
+      ov(`${itemHtml(it)}<button class="btn primary" id="bEq">${t(U.equip)}${cur ? ` (${A.LANG === 'de' ? 'ersetzt' : 'replaces'} ${esc(G.itemName(cur))})` : ''}</button><button class="btn" id="bBag">${t(U.bag)}</button>`);
+      $('#bEq').onclick = () => { G.equip(it); sfx.buy(); ovClose(); hudUpdate(); next(); };
+      $('#bBag').onclick = () => { ovClose(); next(); };
+    } else next();
+  }
+
+  // ---------- Räume ----------
+  function rest() {
+    show(`<h2>🔥 ${t(U.node.rest)}</h2><div class="sub">${A.LANG === 'de' ? 'Ein Feuer. Endlich. Niemand will dich fressen. Vorerst.' : 'A fire. Finally. Nothing wants to eat you. For now.'}</div>
+      <button class="btn primary" id="bHeal">${t(U.heal)}</button><button class="btn" id="bTrain">${t(U.train)}</button>`);
+    $('#bHeal').onclick = () => { G.doRest('heal'); sfx.buy(); leaveRoom(); };
+    $('#bTrain').onclick = () => { G.doRest('train'); sfx.buy(); leaveRoom(); };
+  }
+  function eventScreen() {
+    const r = G.run, ev = r.currentEvent;
+    show(`<h2>❓ ${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${c.needItem && !r.bag.length ? 'disabled' : ''}>${t(c.text)}</button>`).join('')}`);
+    screen.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); sfx.click(); hudUpdate();
+      show(`<h2>❓ ${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(it => itemHtml(it)).join('')}<button class="btn primary" id="bOk">${t(U.leave)}</button>`);
+      $('#bOk').onclick = () => leaveRoom(); });
+  }
+  function shop() {
+    const r = G.run;
+    const items = r.shopItems.map((s, i) => s ? itemHtml(s.it, `<button class="${r.gold >= s.price ? 'primary' : ''}" data-buy="${i}" ${r.gold >= s.price ? '' : 'disabled'}>${t(U.buy)} ${s.price}🪙</button>`, slotCurrent(s.it)) : '').join('');
+    const bag = r.bag.map(it => itemHtml(it, `<button data-sell="${it.uid}">${t(U.sell)} ${G.sellValue(it)}🪙</button>`)).join('');
+    show(`<h2>🛒 ${t(U.node.shop)}</h2><div class="sub">${A.LANG === 'de' ? '«Alles frisch. Fast alles. Keine Rückgabe.»' : '"All fresh. Mostly. No returns."'}</div>${items}
+      <div class="item"><div style="flex:1"><div class="nm">🧪 ${t(U.potion)}</div><div class="ln">+40 % ${t(U.hp)}</div></div><div class="act"><button class="${r.gold >= G.potionPrice() ? 'primary' : ''}" id="bPot" ${r.gold >= G.potionPrice() ? '' : 'disabled'}>${t(U.buy)} ${G.potionPrice()}🪙</button></div></div>
+      ${bag ? `<h2 style="margin-top:12px">${t(U.bag)}</h2>${bag}` : ''}<button class="btn primary" id="bLeave">${t(U.leave)}</button>`);
+    screen.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.buy(+b.dataset.buy)) { sfx.buy(); shop(); } });
+    screen.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); sfx.buy(); shop(); });
+    $('#bPot').onclick = () => { if (G.buyPotion()) { sfx.buy(); shop(); } };
+    $('#bLeave').onclick = () => { sfx.click(); leaveRoom(); };
+  }
+  function treasure() {
+    const res = G.treasure();
+    for (const it of res.items) G.addToBag(it);
+    show(`<h2>💰 ${t(U.node.treasure)}</h2><div class="msg">${A.LANG === 'de' ? `Eine Truhe. Unverschlossen. Verdächtig. <b class="goldc">+${res.gold} 🪙</b>` : `A chest. Unlocked. Suspicious. <b class="goldc">+${res.gold} 🪙</b>`}</div>${res.items.map(it => itemHtml(it)).join('')}<div class="mini">${A.LANG === 'de' ? 'Liegt im Beutel. Anlegen über den Helden-Knopf oben.' : 'Now in your bag. Equip via the hero button above.'}</div><button class="btn primary" id="bOk">${t(U.leave)}</button>`);
+    $('#bOk').onclick = () => { sfx.click(); leaveRoom(); };
+  }
+
+  // ---------- Ende ----------
+  function runOver() {
+    const r = G.run;
+    if (!r.over) { r.over = true; G.finishRun(); }
+    Portal.gameplayStop();
+    hud.classList.remove('on');
+    const won = r.won;
+    show(`<div class="center" style="padding-top:6vh"><div style="font-size:56px">${won ? '🏆' : '💀'}</div><h2>${won ? t(U.win) : t(U.runOver)}</h2>
+      ${won ? `<div class="msg">${t(U.blocked)}</div>` : `<div class="sub">${t(U.dead)} ${r.floor}.</div>`}
+      <div class="card" style="text-align:left"><div class="kv"><span>${t(U.reached)} <b>${r.floor}</b></span><span>${t(U.level)} <b>${r.level}</b></span><span>${t(U.kills)} <b>${r.kills}</b></span><span>🪙 <b>${r.gold}</b></span></div></div>
+      <div class="big spark">✦ +${r.sparksEarned}</div><div class="mini">${t(U.sparksEarned)}</div>
+      <button class="btn primary" id="bCamp" style="margin-top:16px">${t(U.toCamp)}</button></div>`);
+    $('#bCamp').onclick = () => { sfx.click(); G.clearRun(); Portal.showAd(() => camp()); };
+  }
+
+  // ---------- Start ----------
+  document.addEventListener('visibilitychange', () => { if (document.hidden) G.save(); });
+  window.__abstieg = { G, arena, title, map, get overlay() { return overlay; }, setSpeed: (s) => { speed = s; arena.speed = s; } };
+  title();
+})();
+
+</script>
+</body>
+</html>
