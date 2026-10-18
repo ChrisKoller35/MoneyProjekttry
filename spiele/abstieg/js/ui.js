@@ -121,7 +121,7 @@ window.A = window.A || {};
   // Überblenden: schwarz werden (fadeOut) und wieder aufhellen (fadeIn), für Ebenen-Wechsel
   const fadeEl = $('#fade');
   function fadeIn() { if (!fadeEl) return; fadeEl.style.transition = 'none'; fadeEl.style.opacity = '1'; requestAnimationFrame(() => requestAnimationFrame(() => { fadeEl.style.transition = 'opacity .7s'; fadeEl.style.opacity = '0'; })); }
-  function fadeOut(cb) { if (!fadeEl) { cb(); return; } fadeEl.style.transition = 'opacity .3s'; fadeEl.style.opacity = '1'; setTimeout(cb, 330); }
+  function fadeOut(cb, delay) { const dl = delay || 0; if (!fadeEl) { setTimeout(cb, dl); return; } fadeEl.style.transition = `opacity .3s ${dl / 1000}s`; fadeEl.style.opacity = '1'; setTimeout(cb, 330 + dl); }
   function title() {
     S.music(null);
     const m = G.meta, r = G.load();
@@ -305,7 +305,7 @@ window.A = window.A || {};
     if (p.kind === 'stairs') {
       const nt = A.Draw.THEMES[A.Draw.themeOf(r.floor + 1)];
       ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${r.floor + 1}</h2><div class="sub">${nt ? `<b class="goldc">${esc(t(nt.name))}</b><br>` : ''}${L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
-      $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }); };
+      $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
     else if (p.kind === 'chest') { Wd.markUsed(p); treasure(); }
