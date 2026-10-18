@@ -254,6 +254,7 @@ window.A = window.A || {};
       if (A.FX) for (const p of A.FX.P) if (p.kind === 'smoke') { b.globalAlpha = clamp(p.life / p.max, 0, 1) * 0.45; b.fillStyle = p.color; b.beginPath(); b.arc(Math.round(p.x / PX - cx), Math.round((p.y - p.z) / PX - cy), p.size, 0, TAU); b.fill(); }
       b.globalAlpha = 1;
       // Alles nach Tiefe sortiert
+      for (const m of W.mons) this.drawWarn(m, cx, cy);
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -278,6 +279,12 @@ window.A = window.A || {};
           const a0 = a - 1.3, sweep = 2.6 * Math.min(1, p * 2.2);
           g.globalAlpha = 1 - p * 0.8; g.strokeStyle = f.color === '#fff' ? '#ffffff' : f.color; g.lineWidth = 3; g.beginPath(); g.arc(x, y - 4, R, a0, a0 + sweep); g.stroke();
           g.globalAlpha = (1 - p) * 0.6; g.strokeStyle = f.color === '#fff' ? '#fee761' : '#2ce8f5'; g.lineWidth = 1; g.beginPath(); g.arc(x, y - 4, R - 3, a0 + sweep * 0.3, a0 + sweep); g.stroke();
+        } else if (f.kind === 'claw') { // Krallen-Hieb: drei rote Striche quer zur Angriffsrichtung
+          const a = Math.atan2(f.fy, f.fx), p = 1 - f.life / 0.22, R = f.r / PX * 0.75, n = f.big ? 4 : 3;
+          g.save(); g.translate(x + Math.cos(a) * R, y - 6 + Math.sin(a) * R * 0.6); g.rotate(a + Math.PI / 2);
+          const len = (f.big ? 16 : 10) * Math.min(1, p * 3);
+          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
+          g.restore();
         } else if (f.kind === 'ring') { g.globalAlpha = clamp(f.life / 0.4, 0, 1); g.strokeStyle = f.color; g.lineWidth = 2; g.beginPath(); g.arc(x, y, f.r * (1.2 - f.life) / PX, 0, TAU); g.stroke(); }
       }
       g.globalAlpha = 1;
@@ -441,6 +448,19 @@ window.A = window.A || {};
     }
     stars(x, y) { const b = this.b; b.fillStyle = '#fee761'; for (let i = 0; i < 3; i++) { const a = this.t * 6 + i * 2.1; b.fillRect(Math.round(x + Math.cos(a) * 6), Math.round(y + Math.sin(a) * 2), 1, 1); } }
 
+    // Warnzone unter allen Figuren (Boden-Ebene)
+    drawWarn(m, cx, cy) {
+      const b = this.b, x = m.x / PX - cx, y = m.y / PX - cy + (m.boss ? 12 : m.elite ? 8 : 7);
+      // Warnzone: roter Fächer am Boden, der sich während des Ausholens füllt
+      if (m.alive && m.state === 'windup' && m.kind === 'melee') {
+        const p = clamp(1 - m.st / (m.stMax || 0.42), 0, 1), R = (m.r + 12 + 22) / PX * 1.05, a = Math.atan2(m.fy, m.fx);
+        b.save(); b.translate(Math.round(x), Math.round(y - 2)); b.scale(1, 0.6);
+        b.globalAlpha = 0.22; b.fillStyle = '#e43b44'; b.beginPath(); b.moveTo(0, 0); b.arc(0, 0, R, a - 0.75, a + 0.75); b.closePath(); b.fill();
+        b.globalAlpha = 0.45; b.beginPath(); b.moveTo(0, 0); b.arc(0, 0, R * p, a - 0.75, a + 0.75); b.closePath(); b.fill();
+        b.globalAlpha = 0.8; b.strokeStyle = '#ff0044'; b.lineWidth = 1; b.beginPath(); b.arc(0, 0, R, a - 0.75, a + 0.75); b.stroke();
+        b.restore(); b.globalAlpha = 1;
+      }
+    }
     drawMon(m, W, cx, cy) {
       const b = this.b, x = m.x / PX - cx; let y = m.y / PX - cy + (m.boss ? 12 : m.elite ? 8 : 7);
       const sc = m.boss ? 2 : 1;
@@ -469,6 +489,15 @@ window.A = window.A || {};
       if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
       this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
       if (m.state === 'windup' && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
+      // Fernkämpfer laden sichtbar auf: Kugel wächst vor dem Körper, Funken werden angesaugt
+      if (m.kind !== 'melee' && m.cd < 0.45 && !(m.stun > 0) && !(m.spawn > 0)) {
+        const p = clamp(1 - m.cd / 0.45, 0, 1), col = m.kind === 'magic' ? '#c77dff' : '#ffb08a', g = this.g;
+        const ox2 = Math.round(dx + m.fx * 7), oy2 = Math.round(dy - spr.h * sy * 0.5 + m.fy * 4);
+        g.globalAlpha = 0.5 + p * 0.5; g.fillStyle = col; g.beginPath(); g.arc(ox2, oy2, 1 + p * 3, 0, TAU); g.fill();
+        g.fillStyle = '#ffffff'; g.fillRect(ox2, oy2, 1, 1);
+        for (let i = 0; i < 4; i++) { const a = this.t * 7 + i * 1.57, rr = (1 - ((this.t * 3 + i * 0.25) % 1)) * 9; g.fillStyle = col; g.fillRect(Math.round(ox2 + Math.cos(a) * rr), Math.round(oy2 + Math.sin(a) * rr), 1, 1); }
+        g.globalAlpha = 1;
+      }
       if (m.boss) { const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(dx - cr.w / 2 + (flip ? -2 : 2)), Math.round(dy - spr.h * sy - cr.h + 5)); }
       const top = dy - spr.h * sy - 2;
       if (m.state === 'windup') { const al = A.Art.sprite('u_alert'); b.drawImage(al.img, Math.round(dx - al.w / 2), Math.round(top - al.h - 2 + Math.sin(this.t * 20))); }

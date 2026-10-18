@@ -279,10 +279,10 @@ A.World = (function () {
     if (m.stun > 0) { m.stun -= dt; return; }
     const d = dist(m, h) || 1, nx = (h.x - m.x) / d, ny = (h.y - m.y) / d;
     if (d < 420) { m.fx = nx; m.fy = ny; }
-    if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys' }); } return; }
+    if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; W.fx.push({ kind: 'claw', x: m.x, y: m.y, fx: m.fx, fy: m.fy, r: m.r + h.r + 22, life: 0.22, big: m.boss || m.elite }); fx('strike', { m }); if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys' }); } return; }
     if (m.kind === 'melee') {
       if (d > m.r + h.r + 4) moveEnt(m, nx * m.speed * dt, ny * m.speed * dt);
-      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
+      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
     } else {
       const want = 170;
       if (d < want - 30) moveEnt(m, -nx * m.speed * 0.8 * dt, -ny * m.speed * 0.8 * dt);
