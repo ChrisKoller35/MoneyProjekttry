@@ -3312,6 +3312,37 @@ window.A = window.A || {};
         for (let i = 0; i < 4; i++) { const a = this.t * 7 + i * 1.57, rr = (1 - ((this.t * 3 + i * 0.25) % 1)) * 9; g.fillStyle = col; g.fillRect(Math.round(ox2 + Math.cos(a) * rr), Math.round(oy2 + Math.sin(a) * rr), 1, 1); }
         g.globalAlpha = 1;
       }
+      // eigene kleine Effekte je Gegnerart (Schleimtropfen, Sporen, Glut, Dampf, Schatten-Fetzen, Funkeln ...)
+      if (A.FX && !(m.spawn > 0) && !A.FX.low) {
+        const F = A.FX, dtt = this.dt || 0.016, R = (n) => Math.random() < n * dtt, mv = m.state !== 'windup';
+        const wx = m.x + (Math.random() - 0.5) * m.r, top = m.y - spr.h * sy * PX * 0.6 - lift * PX, mid = m.y - spr.h * sy * PX * 0.3 - lift * PX;
+        switch (m.mid) {
+          case 'schleimer': case 'schleimkoenig':
+            if (R(m.boss ? 10 : 4)) F.part({ add: true, x: wx, y: mid, vx: 0, vy: -12, life: 0.7, color: '#c8f5a0', drag: 1, size: 2 });
+            if (mv && R(m.boss ? 8 : 3)) F.decal(m.x + (Math.random() - 0.5) * m.r, m.y + 10, 'drop', '#3e8948', 2); break;
+          case 'ratte': case 'tunnelwurm':
+            if (mv && R(m.mid === 'ratte' ? 6 : 10)) F.part({ x: m.x - m.fx * 10, y: m.y + 8, vx: -m.fx * 30 + (Math.random() - 0.5) * 20, vy: 0, z: 2, vz: 50, g: 300, life: 0.6, color: m.mid === 'ratte' ? '#8b9bb4' : '#733e39', size: 2 }); break;
+          case 'pilzkrieger':
+            if (R(6)) F.part({ add: true, x: wx, y: top, vx: (Math.random() - 0.5) * 12, vy: -8, life: 1.2, color: Math.random() < 0.5 ? '#b55088' : '#ead4aa', drag: 0.5, size: 2 }); break;
+          case 'knochen':
+            if (R(1.6)) F.part({ x: wx, y: mid, vx: 0, vy: 0, z: 6, vz: 0, g: 200, life: 0.6, color: '#ead4aa', size: 2 }); break;
+          case 'glutmotte':
+            if (R(18)) F.part({ add: true, x: wx, y: mid, vx: (Math.random() - 0.5) * 16, vy: -14 - Math.random() * 14, life: 0.6, color: Math.random() < 0.5 ? '#feae34' : '#f77622', drag: 0.8, size: 2 }); break;
+          case 'spinne':
+            if (R(2)) F.part({ x: wx, y: mid, vx: 0, vy: 0, z: 4, vz: 0, g: 120, life: 0.7, color: '#63c74d', size: 2 }); break;
+          case 'rostgolem': case 'rostkoenig':
+            if (R(m.boss ? 6 : 3)) F.part({ kind: 'smoke', x: wx, y: top, vx: (Math.random() - 0.5) * 8, vy: -22, life: 0.8, size: 3, grow: 7, color: '#c0cbdc', drag: 1 });
+            if (R(m.boss ? 4 : 1.6)) F.burst(wx, mid, 2, { color: ['#feae34', '#ffffff'], smin: 30, smax: 80, life: 0.2, add: true, kind: 'spark', drag: 5 }); break;
+          case 'schattenfaenger':
+            if (R(16)) F.part({ kind: 'smoke', x: wx - m.fx * 6, y: mid, vx: -m.fx * 14, vy: -6, life: 0.6, size: 3, grow: 5, color: Math.random() < 0.5 ? '#262b44' : '#68386c', drag: 1.5 }); break;
+          case 'spiegelgeist':
+            if (R(10)) F.part({ add: true, x: wx + (Math.random() - 0.5) * 10, y: mid + (Math.random() - 0.5) * 16, vx: 0, vy: -4, life: 0.35, color: Math.random() < 0.5 ? '#ffffff' : '#2ce8f5' }); break;
+          case 'kobolddieb':
+            if (R(2.4)) F.part({ add: true, x: wx, y: mid, vx: 0, vy: -10, life: 0.4, color: '#fee761', size: 2 }); break;
+          case 'fledermaus':
+            if (R(3)) F.part({ x: wx, y: mid, vx: 0, vy: 0, z: 8, vz: 0, g: 80, life: 0.8, color: '#68386c', size: 2 }); break;
+        }
+      }
       if (m.boss && A.FX && Math.random() < (this.dt || 0.016) * (m.hp < m.maxHp * 0.5 ? 1.6 : 0.7)) { const W2 = A.World.W, h2 = W2 && W2.hero; if (h2) A.FX.rocks(h2.x + (Math.random() - 0.5) * 260, h2.y + (Math.random() - 0.5) * 160, 1 + Math.floor(Math.random() * 2), 12); }
       if (m.boss) { const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(dx - cr.w / 2 + (flip ? -2 : 2)), Math.round(dy - spr.h * sy - cr.h + 5)); }
       const top = dy - spr.h * sy - 2;
