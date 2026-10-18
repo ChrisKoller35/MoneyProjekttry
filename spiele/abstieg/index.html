@@ -47,6 +47,8 @@
   #hpbar i { background: linear-gradient(#f6757a 0 3px, #e43b44 3px 11px, #a22633 11px); transition: width 0.12s; }
   #hpbar.low i { animation: lowHp 0.6s steps(2) infinite; }
   @keyframes lowHp { 50% { filter: brightness(1.5); } }
+  #hudGold.bump, #hudPot.bump { animation: hudBump 0.25s ease-out; }
+  @keyframes hudBump { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.18); filter: brightness(1.6); } 100% { transform: scale(1); filter: brightness(1); } }
   #hptext { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: #fff; text-shadow: 1px 0 var(--ink), -1px 0 var(--ink), 0 1px var(--ink), 0 -1px var(--ink); }
   #xpbar { height: 6px; background: var(--ink); box-shadow: 0 0 0 1px #3a4466; }
   #xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(#e0a4ff 0 2px, #9b55d6 2px); transition: width 0.3s; }

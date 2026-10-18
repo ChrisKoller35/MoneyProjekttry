@@ -47,6 +47,8 @@
   #hpbar i { background: linear-gradient(#f6757a 0 3px, #e43b44 3px 11px, #a22633 11px); transition: width 0.12s; }
   #hpbar.low i { animation: lowHp 0.6s steps(2) infinite; }
   @keyframes lowHp { 50% { filter: brightness(1.5); } }
+  #hudGold.bump, #hudPot.bump { animation: hudBump 0.25s ease-out; }
+  @keyframes hudBump { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.18); filter: brightness(1.6); } 100% { transform: scale(1); filter: brightness(1); } }
   #hptext { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: #fff; text-shadow: 1px 0 var(--ink), -1px 0 var(--ink), 0 1px var(--ink), 0 -1px var(--ink); }
   #xpbar { height: 6px; background: var(--ink); box-shadow: 0 0 0 1px #3a4466; }
   #xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(#e0a4ff 0 2px, #9b55d6 2px); transition: width 0.3s; }
@@ -2169,6 +2171,7 @@ A.FX = (function () {
   const P = [];            // Teilchen (Weltkoordinaten)
   const flashes = [];      // kurze Lichter
   const banners = [];      // grosse Einblendungen
+  const flyers = [];       // aufgesammelte Münzen/Tränke, die zur Anzeige oben fliegen
   let decals = [];         // Flecken, die der Zeichner in den Boden malt
   let trauma = 0, stopT = 0, slowT = 0, hurtT = 0, healT = 0, lowFx = false, t = 0, combo = 0, comboT = -9;
   const MAX = 420;
@@ -2268,8 +2271,8 @@ A.FX = (function () {
         }
         if (f && f.side === 'hero') { if (d.magic) S().cast(); else S().shoot(); } else if (once('eshot', 120)) S().shoot(); return;
       }
-      case 'coin': S().coin(); burst(d.x, d.y - 10, 3, { color: ['#fee761', '#ffffff'], smin: 20, smax: 60, life: 0.3, add: true, kind: 'spark' }); return;
-      case 'pickPotion': S().potion(); return;
+      case 'coin': flyers.push({ x: d.x, y: d.y - 10, t: 0, kind: 'coin' }); S().coin(); burst(d.x, d.y - 10, 3, { color: ['#fee761', '#ffffff'], smin: 20, smax: 60, life: 0.3, add: true, kind: 'spark' }); return;
+      case 'pickPotion': if (d && d.x != null) flyers.push({ x: d.x, y: d.y - 10, t: 0, kind: 'potion' }); S().potion(); return;
       case 'drop': S().drop(d.rarity); if (d.rarity === 'epic' || d.rarity === 'legendary') { flash(d.x, d.y, 90, d.color, 0.5); burst(d.x, d.y, 16, { color: [d.color, '#ffffff'], smin: 40, smax: 160, life: 0.6, add: true, kind: 'spark' }); } return;
       case 'pickItem': S().loot(d.rarity); return;
       case 'level': {
@@ -2319,6 +2322,7 @@ A.FX = (function () {
     }
     for (let i = P.length - 1; i >= 0; i--) if (P[i].life <= 0) P.splice(i, 1);
     for (const f of flashes) f.life -= dt; for (let i = flashes.length - 1; i >= 0; i--) if (flashes[i].life <= 0) flashes.splice(i, 1);
+    for (const f of flyers) f.t += dt || 0.016; for (let i = flyers.length - 1; i >= 0; i--) if (flyers[i].t > 0.55) { const el = document.getElementById(flyers[i].kind === 'coin' ? 'hudGold' : 'hudPot'); if (el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } flyers.splice(i, 1); }
     for (const b of banners) b.life -= dt; for (let i = banners.length - 1; i >= 0; i--) if (banners[i].life <= 0) banners.splice(i, 1);
   }
   // Spielzeit für diesen Schritt: 0 während der Treffer-Pause, langsamer bei Zeitlupe
@@ -2330,7 +2334,7 @@ A.FX = (function () {
   function reset() { P.length = 0; flashes.length = 0; banners.length = 0; decals = []; trauma = 0; stopT = 0; slowT = 0; hurtT = 0; }
   function takeDecals() { const d = decals; decals = []; return d; }
   return {
-    P, flashes, banners, ev, update, simDt, reset, takeDecals, burst, smoke, part, flash, shake, freeze, banner, decal,
+    P, flashes, banners, flyers, ev, update, simDt, reset, takeDecals, burst, smoke, part, flash, shake, freeze, banner, decal,
     get trauma() { return trauma; }, get hurt() { return hurtT; }, get healGlow() { return healT; },
     set low(v) { lowFx = v; }, get low() { return lowFx; },
   };
@@ -2672,7 +2676,7 @@ A.World = (function () {
       if (p.kind === 'gold' && d < 110 && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
         if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); }
-        else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion'); }
+        else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }
       }
     }
@@ -3477,6 +3481,19 @@ window.A = window.A || {};
       if (this.signAt && W.room && W.room.type === 'start') { c.font = this.font(this.signAt.px || 6.5 * this.s); c.fillStyle = this.signAt.color || '#3e2731'; c.fillText(this.signAt.text, this.signAt.sx, this.signAt.sy); this.signAt = null; }
       // Namen von Elite-Gegnern
       for (const m of W.mons) if (m.alive && m.elite && !(m.spawn > 0)) { const [x, y] = toS(m.x, m.y, 46); c.font = this.font(11 * d); c.lineWidth = 3 * d; c.strokeStyle = '#181425'; c.strokeText(m.name, x, y); c.fillStyle = ELITE_COL[m.eliteKind] || '#fee761'; c.fillText(m.name, x, y); }
+      // Aufgesammeltes fliegt im Bogen zur Anzeige oben
+      if (A.FX && A.FX.flyers.length) {
+        const rc = this.cv.getBoundingClientRect(), k = this.dw / (rc.width || 1);
+        for (const f of A.FX.flyers) {
+          const el = document.getElementById(f.kind === 'coin' ? 'hudGold' : 'hudPot'); if (!el) continue;
+          const er = el.getBoundingClientRect(), tx = (er.left + 16 - rc.left) * k, ty = (er.top + er.height / 2 - rc.top) * k;
+          const [sx0, sy0] = toS(f.x, f.y), q = Math.min(1, f.t / 0.55), e = q * q * (3 - 2 * q);
+          const mx = (sx0 + tx) / 2 + (sx0 < tx ? -60 : 60) * d, my = Math.min(sy0, ty) - 40 * d;
+          const x = (1 - e) * (1 - e) * sx0 + 2 * (1 - e) * e * mx + e * e * tx, y = (1 - e) * (1 - e) * sy0 + 2 * (1 - e) * e * my + e * e * ty;
+          const ic = A.Art.sprite(f.kind === 'coin' ? 'coin' : 'potion', 0), sz = (f.kind === 'coin' ? 9 : 11) * d * (1.2 - q * 0.3);
+          c.imageSmoothingEnabled = false; c.globalAlpha = 1; c.drawImage(ic.img, Math.round(x - sz / 2), Math.round(y - sz / 2), Math.round(sz * ic.w / ic.h), Math.round(sz));
+        }
+      }
       // Schwebende Zahlen
       for (const f of W.floats) {
         const age = (f.max || 1) - f.life, pop = age < 0.12 ? 1 + (1 - age / 0.12) * 0.7 : 1;
