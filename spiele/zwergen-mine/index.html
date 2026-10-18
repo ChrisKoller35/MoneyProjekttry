@@ -76,6 +76,20 @@
   #toast .small { color: var(--muted); font-size: 13px; margin-top: 4px; }
   #toast button.ghost { background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,0.18); font-size: 13px; padding: 6px 12px; margin-top: 12px; }
   #toast button { margin-top: 10px; border: 0; border-radius: 12px; padding: 9px 18px; font-weight: 800; background: var(--gold); color: #3a2a00; font-size: 15px; cursor: pointer; }
+  #tip { position: absolute; left: 0; top: 14px; z-index: 4; display: none; pointer-events: none; width: max-content; max-width: min(280px, calc(100% - 110px));
+    background: #fff7e0; color: #2a1d05; border-radius: 14px; padding: 10px 12px; font-weight: 700; font-size: 14px; line-height: 1.3; box-shadow: 0 6px 18px rgba(0,0,0,0.45); animation: tipIn 0.25s ease-out; }
+  #tip.low { max-width: min(340px, calc(100% - 24px)); }
+  #tip::after { content: ''; position: absolute; left: var(--ax, 50%); bottom: -8px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: #fff7e0; }
+  #tip button { pointer-events: auto; margin-left: 8px; border: 0; border-radius: 8px; padding: 4px 10px; font-weight: 800; background: #2a1d05; color: #fff7e0; cursor: pointer; }
+  @keyframes tipIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .tab.hint { color: var(--text); animation: glow 1.2s infinite; }
+  @keyframes glow { 0%, 100% { box-shadow: 0 0 0 2px rgba(245,197,66,0.95); } 50% { box-shadow: 0 0 0 5px rgba(245,197,66,0.2); } }
+  .card.stuck { background: linear-gradient(90deg, #4a1c22, #2e2540); border: 1px solid rgba(255,107,107,0.55); }
+  .buy.stuckbtn { background: #ff6b6b; color: #3a0a0a; }
+  .card.pop { animation: pop 0.3s ease-out; }
+  @keyframes pop { 40% { transform: scale(1.03); box-shadow: 0 0 0 2px rgba(245,197,66,0.8); } }
+  .spark { position: fixed; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; pointer-events: none; z-index: 9; animation: spark 0.55s ease-out forwards; }
+  @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
   #soundBtn { position: absolute; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 10px; border: 0; background: rgba(255,255,255,0.08); display: grid; place-items: center; cursor: pointer; }
   #soundBtn svg { width: 22px; height: 22px; }
 </style>
@@ -92,6 +106,7 @@
     <button id="bossBtn"></button>
     <button id="soundBtn" aria-label="Ton"></button>
     <div id="skills"><button class="skill" id="dynBtn">🧨<span class="cd"></span><span class="lbl"></span></button><button class="skill" id="beerBtn">🍺<span class="cd"></span><span class="lbl"></span></button></div>
+    <div id="tip"><span class="txt"></span><button id="tipOk">OK</button></div>
     <div id="toast"></div>
   </div>
   <div id="panel">
@@ -142,7 +157,11 @@ const T = DE ? {
   records: 'Rekorde', bestDepth: 'Tiefster Punkt', thisMine: 'Diese Mine', mines: 'Minen', mine: 'Mine', show: 'Ansehen', close: 'Schliessen',
   record: 'Neuer Rekord!', recordSub: 'Dein alter Rekord war Tiefe {n}', ringNew: 'Ring {r} erreicht!', ringSub: 'Neue Farben, leuchtendes Erz',
   noRuns: 'Noch kein Umzug. Ab Tiefe 51 kannst du in eine neue Mine ziehen.', playTime: 'Spielzeit',
-  reset: 'Ganz neu anfangen', resetAsk: 'Wirklich ganz von vorne anfangen? Alles wird gelöscht: Gold, Steine, Zwerge, Erbstücke, Ziele und Rekorde.', resetYes: 'Alles löschen', resetDone: 'Neues Spiel!', resetSub: 'Viel Spass beim Graben', moves: 'Umzüge', min: 'min', depthW: 'Tiefe',
+  reset: 'Ganz neu anfangen', resetAsk: 'Wirklich ganz von vorne anfangen? Alles wird gelöscht: Gold, Steine, Zwerge, Erbstücke, Ziele und Rekorde.', resetYes: 'Alles löschen', resetDone: 'Neues Spiel!', resetSub: 'Viel Spass beim Graben',
+  tips: { tap: 'Tippe auf den Felsen! Jeder Felsen gibt Gold.', dwarf: 'Kauf deinen ersten Zwerg. Zwerge graben von allein weiter, auch wenn du nicht tippst.', boss: 'Ein Boss! Schlag ihn kaputt, bevor der gelbe Zeitbalken leer ist. Bosse geben Steine.', gem: 'Mit Steinen kaufst du Verbesserungen, die für immer bleiben.', move: 'Hier geht es nur noch zäh weiter. Zieh in eine neue Mine: Du fängst oben an, bist aber für immer stärker.' },
+  bossFail: 'Zeit um!', bossFailSub: 'Kauf Stärkeres, dann nochmal', stuckName: 'Boss auf Tiefe {n} zu stark', retryShort: 'Nochmal',
+  stuckEff: 'Deine Zwerge allein schaffen <b>{p}&nbsp;%</b>. Kauf Zwerge oder eine bessere Hacke. Ab 100&nbsp;% greifen sie von selbst an.', stuckMove: 'Oder zieh um: Eine neue Mine macht dich für immer <b>+{p}&nbsp;%</b> stärker.',
+  autoRetry: 'Jetzt schaffen sie es!', autoRetrySub: 'Deine Zwerge greifen den Boss an', stronger: 'danach für immer +{p}&nbsp;% Gold und Graben.', worthNow: 'Lohnt sich jetzt!', moves: 'Umzüge', min: 'min', depthW: 'Tiefe',
 } : {
   pick: 'Pickaxe', dwarf: 'Dwarves', gem: 'Gems', perTap: 'per tap', perSec: 'per sec',
   pickName: 'Pickaxe', boss: 'Boss', retry: 'Retry boss', welcome: 'Welcome back!', away: 'Your dwarves kept digging',
@@ -168,7 +187,11 @@ const T = DE ? {
   records: 'Records', bestDepth: 'Deepest point', thisMine: 'This mine', mines: 'Mines', mine: 'Mine', show: 'View', close: 'Close',
   record: 'New record!', recordSub: 'Your old record was depth {n}', ringNew: 'Ring {r} reached!', ringSub: 'New colors, glowing ore',
   noRuns: 'No move yet. From depth 51 you can move to a new mine.', playTime: 'Play time',
-  reset: 'Start over', resetAsk: 'Really start over from scratch? Everything will be deleted: gold, gems, dwarves, heirlooms, goals and records.', resetYes: 'Delete everything', resetDone: 'New game!', resetSub: 'Happy digging', moves: 'Moves', min: 'min', depthW: 'Depth',
+  reset: 'Start over', resetAsk: 'Really start over from scratch? Everything will be deleted: gold, gems, dwarves, heirlooms, goals and records.', resetYes: 'Delete everything', resetDone: 'New game!', resetSub: 'Happy digging',
+  tips: { tap: 'Tap the rock! Every rock gives gold.', dwarf: 'Buy your first dwarf. Dwarves keep digging on their own, even when you don’t tap.', boss: 'A boss! Smash it before the yellow time bar runs out. Bosses give gems.', gem: 'Gems buy upgrades that stay forever.', move: 'Progress is slow here. Move to a new mine: you start at the top, but stay stronger forever.' },
+  bossFail: 'Time’s up!', bossFailSub: 'Buy upgrades, then retry', stuckName: 'Boss at depth {n} too strong', retryShort: 'Retry',
+  stuckEff: 'Your dwarves alone manage <b>{p}%</b>. Buy dwarves or a better pickaxe. At 100% they attack on their own.', stuckMove: 'Or move: a new mine makes you <b>+{p}%</b> stronger forever.',
+  autoRetry: 'Now they can do it!', autoRetrySub: 'Your dwarves attack the boss', stronger: 'then +{p}% gold and digging forever.', worthNow: 'Worth it now!', moves: 'Moves', min: 'min', depthW: 'Depth',
 };
 const DWARF_NAMES = DE
   ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
@@ -321,7 +344,7 @@ function freshState() {
   return { gold: 0, gems: 0, depth: 1, maxDepth: 1, farm: false, pick: 0, dw: DWARVES.map(() => 0),
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0 }, cdDyn: 0, cdBeer: 0,
-    best: 1, recBase: 0, runs: [], runTime: 0 };
+    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {} };
 }
 let S = freshState();
 function load() {
@@ -335,6 +358,8 @@ function load() {
     S.best = Math.max(d.best || 1, S.maxDepth || 1);                       // Spielstand von vor den Rekorden
     if (d.recBase == null) S.recBase = S.best;
     if (!Array.isArray(S.runs)) S.runs = [];
+    if (d.lastMaxAt == null) S.lastMaxAt = S.runTime;                     // Spielstand von vor den Tipps
+    if (!S.tips || typeof S.tips !== 'object') S.tips = {};
     return d.saved || null;
   } catch (e) { return null; }
 }
@@ -376,6 +401,9 @@ const sfx = {
   buy: () => { beep(660, 0.06, 'triangle', 0.05); setTimeout(() => beep(990, 0.08, 'triangle', 0.05), 50); },
   boss: () => { [330, 440, 550, 660, 880].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 70)); },
   chest: () => { [520, 780, 1040].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'sine', 0.06), i * 60)); },
+  bossIn: () => { beep(110, 0.18, 'sawtooth', 0.06); setTimeout(() => beep(82, 0.28, 'sawtooth', 0.06), 170); },
+  tick: () => beep(1250, 0.03, 'square', 0.025),
+  fail: () => { [440, 330, 220].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.05), i * 110)); },
 };
 
 // ---------- Szene ----------
@@ -392,7 +420,8 @@ function resize() {
 new ResizeObserver(resize).observe(cv);
 
 let hpMax = 1;
-let shake = 0, hitFlash = 0, bossTimer = 0, bossActive = false, rage = 0;
+let shake = 0, hitFlash = 0, bossTimer = 0, bossActive = false, rage = 0, bossFlash = 0, lastTick = 0;
+const CONFETTI = ['#f5c542', '#57d2ff', '#ff6b6b', '#6fdc7a', '#c77dff'];
 let floats = [], chips = [], coins = [], banner = null, chest = null, chestTimer = 25;
 const bannerQ = [];
 // Meldungen nacheinander zeigen statt sich gegenseitig zu überschreiben
@@ -416,6 +445,7 @@ function spawnRock() {
     layerShown = LK;
   }
   if (bossActive && F.isBigBoss(S.depth)) showBanner({ text: T.bigBoss, sub: '💎 ×' + F.bossGems(S.depth, S), life: 2.4, color: '#ff6b6b' });
+  if (bossActive) { bossFlash = 1; lastTick = 0; sfx.bossIn(); }
   updateBossBtn();
 }
 
@@ -455,6 +485,7 @@ function breakRock() {
     showBanner({ text: T.bossWin, sub: '+' + g, gem: true, life: 2.4, color: '#57d2ff' });
     sfx.boss(); Portal.happytime();
     shake = 1;
+    for (let i = 0; i < 40; i++) { const p = chip(c.x, c.y - c.r * 0.3, CONFETTI[i % CONFETTI.length]); p.vx *= 1.7; p.vy -= 4; p.size = 5 + Math.random() * 4; chips.push(p); }
   }
   if (!S.farm) {
     S.depth++;
@@ -466,6 +497,7 @@ function breakRock() {
 
 // Neue Bestmarke in dieser Mine: Rekord, Ring-Belohnung, Rangliste
 function onNewMax() {
+  S.lastMaxAt = S.runTime;
   if (S.st.prest > 0 && S.maxDepth === S.recBase + 1) { showBanner({ text: T.record, sub: T.recordSub.replace('{n}', S.recBase), life: 2.6, color: '#ffd447' }); sfx.chest(); }
   if (S.maxDepth > S.best) {
     const r = F.ringOf(S.maxDepth);
@@ -478,16 +510,22 @@ function onNewMax() {
 function failBoss() {
   S.farm = true;
   S.depth = Math.max(1, S.depth - 1);
-  showBanner({ text: '⏱', sub: '', life: 1.6, color: '#ff6b6b' });
-  spawnRock();
+  showBanner({ text: T.bossFail, sub: T.bossFailSub, life: 2.4, color: '#ff6b6b' });
+  sfx.fail();
+  spawnRock(); buildPanel();
 }
 
 function retryBoss() {
   if (!S.farm) return;
   S.farm = false;
   S.depth = S.maxDepth;
-  spawnRock();
+  spawnRock(); buildPanel();
 }
+// Wie viel vom Boss die Zwerge allein in der Zeit schaffen (1 = genug, mit einer Sekunde Reserve)
+function bossPower() { const d = S.maxDepth; return F.totalDps(S) * Math.max(1, F.bossTime(d, S) - 1) / F.rockHp(d); }
+// Lohnt sich ein Umzug? Prozent mehr Gold und Graben danach, und ob man gerade feststeckt
+function movePct() { return Math.round((F.heirMult({ heir: S.heir + F.heirGain(S) }) / F.heirMult(S) - 1) * 100); }
+function moveWorth() { return F.canPrestige(S) && movePct() >= 15 && S.runTime - S.lastMaxAt >= (S.farm ? 60 : 300); }
 
 // ---------- Eingabe ----------
 let lastTap = 0;
@@ -771,13 +809,15 @@ function drawFx(dt) {
   if (banner && toast.style.display !== 'block') {
     const a = Math.min(1, banner.life * 1.5);
     ctx.globalAlpha = a;
-    ctx.fillStyle = 'rgba(14,10,22,0.82)'; roundRect(CW / 2 - 140, CH * 0.06, 280, 62, 14); ctx.fill();
+    const by = CH * 0.06 + (S.farm ? 44 : 0); // unter dem Knopf «Boss nochmal»
+    ctx.fillStyle = 'rgba(14,10,22,0.82)'; roundRect(CW / 2 - 140, by, 280, 62, 14); ctx.fill();
     ctx.fillStyle = banner.color; ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(banner.text, CW / 2, CH * 0.06 + 22);
+    ctx.fillText(banner.text, CW / 2, by + 22);
     ctx.fillStyle = '#fff'; ctx.font = '800 16px system-ui, sans-serif';
-    ctx.fillText(String(banner.sub), CW / 2, CH * 0.06 + 46);
+    ctx.fillText(String(banner.sub), CW / 2, by + 46);
     ctx.globalAlpha = 1;
   }
+  if (bossFlash > 0) { ctx.fillStyle = `rgba(255,50,50,${bossFlash * 0.28})`; ctx.fillRect(0, 0, CW, CH); }
   if (rage > 0) {
     ctx.fillStyle = `rgba(255,120,40,${0.08 + Math.sin(performance.now() / 120) * 0.04})`; ctx.fillRect(0, 0, CW, CH);
     ctx.fillStyle = '#ff8a3d'; ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'left';
@@ -837,6 +877,7 @@ function gemIcon(key) {
 let rows = [];
 function buildPanel() {
   listEl.innerHTML = ''; rows = [];
+  if (S.farm) rows.push(makeRow({ icon: iconCanvas(emojiIcon('⚔️')), kind: 'stuck' }));
   if (tab === 'pick') {
     rows.push(makeRow({ icon: iconCanvas(pickIcon), kind: 'pick' }));
     const ups = UPGRADES.slice().sort((a, b) => (S.up[a.key] ? 1 : 0) - (S.up[b.key] ? 1 : 0) || a.unlock - b.unlock);
@@ -885,12 +926,16 @@ function rowData(r) {
     const g = r.g, done = !!S.goals[g.id], p = Math.min(g.n, F.goalProgress(g, S));
     return { name: goalName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
   }
+  if (r.kind === 'stuck') {
+    const p = bossPower();
+    return { name: T.stuckName.replace('{n}', S.maxDepth), lvl: '', eff: T.stuckEff.replace('{p}', Math.min(99, Math.floor(p * 100))) + (moveWorth() ? '<br>' + T.stuckMove.replace('{p}', movePct()) : ''), cost: 0, cur: 'stuck', locked: false, stuck: true, bar: Math.min(1, p) };
+  }
   if (r.kind === 'rec') {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'prest') {
     const can = F.canPrestige(S), gain = F.heirGain(S);
-    return { name: T.newMine, lvl: S.heir > 0 ? '⚱ ' + S.heir : '', eff: can ? `<b>+${gain} ${T.heir}</b> (${T.heirEff}). ${T.deeper} ${T.newMineInfo}` : `${T.moveFrom} (${T.heirEff}).`, cost: 0, cur: 'prest', locked: false, prest: true, can };
+    return { name: T.newMine, lvl: S.heir > 0 ? '⚱ ' + S.heir : '', eff: can ? `${moveWorth() ? `<b style="color:#d9a6ff">${T.worthNow}</b> ` : ''}<b>+${gain} ${T.heir}</b>: ${T.stronger.replace('{p}', movePct())} ${T.deeper} ${T.newMineInfo}` : `${T.moveFrom} (${T.heirEff}).`, cost: 0, cur: 'prest', locked: false, prest: true, can };
   }
   const L = S.gu[r.key], g = GEM_UPS.find(u => u.key === r.key);
   const names = { power: T.gemPower, gold: T.gemGold, crit: T.gemCrit, offline: T.gemOffline, chest: T.gemChest };
@@ -914,6 +959,7 @@ function refreshPanel(force) {
     r.el.classList.toggle('locked', d.locked); r.el.classList.toggle('done', !!d.done); r.el.classList.toggle('prest', !!d.prest);
     if (d.prest) { r.btn.innerHTML = T.move; r.btn.className = 'buy' + (can ? ' prestcan' : ''); }
     else if (d.rec) { r.btn.innerHTML = T.show; r.btn.className = 'buy gemcan'; }
+    else if (d.stuck) { r.btn.innerHTML = '⚔ ' + T.retryShort; r.btn.className = 'buy stuckbtn'; r.el.classList.add('stuck'); }
     else if (d.reward) { r.btn.innerHTML = d.done ? '✓' : GEM_SVG + '+' + d.cost; r.btn.className = 'buy ' + (d.done ? 'ok' : 'rew'); }
     else {
       r.btn.innerHTML = d.maxed ? 'MAX' : d.done ? '✓ ' + T.bought : (d.cur === 'gold' ? COIN_SVG : GEM_SVG) + fmt(d.cost);
@@ -928,7 +974,7 @@ function updateTabDots() {
   const canPick = S.gold >= F.pickCost(S.pick) || UPGRADES.some(u => !S.up[u.key] && S.maxDepth >= u.unlock && S.gold >= u.cost);
   const canDwarf = DWARVES.some((d, i) => S.maxDepth >= d.unlock && S.gold >= F.dwarfCost(i, S.dw[i]));
   const canGem = GEM_UPS.some(u => S.gu[u.key] < u.max && S.gems >= F.gemCost(u.key, S.gu[u.key]));
-  const dots = { pick: canPick, dwarf: canDwarf, gem: canGem, goal: F.canPrestige(S) && !seenPrest };
+  const dots = { pick: canPick, dwarf: canDwarf, gem: canGem, goal: (F.canPrestige(S) && !seenPrest) || moveWorth() };
   document.querySelectorAll('.tab').forEach(b => b.querySelector('.dot').classList.toggle('show', dots[b.dataset.tab] && b.dataset.tab !== tab));
 }
 let seenPrest = false;
@@ -937,6 +983,7 @@ function buy(r) {
   if (r.kind === 'goal') return;
   if (r.kind === 'prest') { newMine(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
+  if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
   else { if (S.gems < d.cost) return; S.gems -= d.cost; }
@@ -947,10 +994,59 @@ function buy(r) {
     S.dw[r.i]++;
     if (F.milestoneMult(S.dw[r.i]) > before) showBanner({ text: DWARF_NAMES[r.i], sub: T.milestone, life: 2, color: DWARVES[r.i].hat });
   } else S.gu[r.key]++;
-  sfx.buy();
+  sfx.buy(); popBuy(r, d.cur === 'gold' ? '#f5c542' : '#57d2ff');
   if (r.kind === 'up') buildPanel(); else refreshPanel(true);
   save();
 }
+
+// Kauf-Gefühl: Karte hüpft kurz, Funken fliegen aus dem Knopf
+function popBuy(r, color) {
+  r.el.classList.remove('pop'); void r.el.offsetWidth; r.el.classList.add('pop');
+  const b = r.btn.getBoundingClientRect();
+  for (let i = 0; i < 8; i++) {
+    const sp = document.createElement('i'), a = Math.random() * Math.PI * 2, dist = 22 + Math.random() * 24;
+    sp.className = 'spark'; sp.style.left = (b.left + b.width / 2) + 'px'; sp.style.top = (b.top + b.height / 2) + 'px'; sp.style.background = color;
+    sp.style.setProperty('--dx', Math.cos(a) * dist + 'px'); sp.style.setProperty('--dy', Math.sin(a) * dist + 'px');
+    document.body.appendChild(sp); setTimeout(() => sp.remove(), 600);
+  }
+}
+
+// ---------- Tipps: erklären das Spiel in den ersten Minuten, jeder nur einmal ----------
+const TIPS = [
+  { id: 'tap', at: 'rock', when: () => S.st.prest === 0 && S.taps === 0 && S.depth === 1, done: () => S.taps >= 5 || S.depth > 1 },
+  { id: 'dwarf', at: 'dwarf', when: () => S.st.prest === 0 && S.st.bosses === 0 && S.dw.every(n => n === 0) && S.gold >= F.dwarfCost(0, 0), done: () => S.dw[0] > 0 },
+  { id: 'boss', at: 'rock', when: () => S.st.prest === 0 && S.st.bosses === 0 && bossActive, done: () => !bossActive },
+  { id: 'gem', at: 'gem', when: () => tab !== 'gem' && S.st.prest === 0 && S.gems >= F.gemCost('power', 0) && GEM_UPS.every(u => !S.gu[u.key]), done: () => tab === 'gem' || GEM_UPS.some(u => S.gu[u.key]) },
+  { id: 'move', at: 'goal', when: () => tab !== 'goal' && moveWorth(), done: () => tab === 'goal' || !F.canPrestige(S) },
+];
+const stageEl = document.getElementById('stage'), tipEl = document.getElementById('tip');
+let tipNow = null, tipAt = 0;
+function updateTip() {
+  if (tipNow) { if (tipNow.done() || (tipNow.id !== 'tap' && t - tipAt > 15)) hideTip(); else placeTip(); return; }   // nach 15 s Platz für den nächsten
+  if (toast.style.display === 'block') return;
+  const tip = TIPS.find(x => !S.tips[x.id] && x.when());
+  if (!tip) return;
+  S.tips[tip.id] = true; tipNow = tip; tipAt = t;
+  tipEl.querySelector('.txt').textContent = T.tips[tip.id];
+  tipEl.style.display = 'block'; placeTip();
+}
+function hideTip() {
+  tipNow = null; tipEl.style.display = 'none';
+  document.querySelectorAll('.tab.hint').forEach(b => b.classList.remove('hint'));
+}
+function placeTip() {
+  tipEl.classList.toggle('low', tipNow.at !== 'rock');   // unten breiter, damit er niedrig bleibt
+  const st = stageEl.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  let left = (st.width - w) / 2, top = 14, ax = w / 2;
+  if (tipNow.at !== 'rock') {   // Pfeil zeigt auf den Reiter unten, der Reiter leuchtet
+    const tb = document.querySelector(`.tab[data-tab="${tipNow.at}"]`).getBoundingClientRect(), cx = tb.left + tb.width / 2 - st.left;
+    left = Math.max(8, Math.min(st.width - w - 8, cx - w / 2)); ax = Math.max(16, Math.min(w - 16, cx - left));
+    top = st.height - h - (document.querySelector('.skill.show') ? 76 : 14);
+  }
+  tipEl.style.left = left + 'px'; tipEl.style.top = top + 'px'; tipEl.style.setProperty('--ax', ax + 'px');
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('hint', b.dataset.tab === tipNow.at));
+}
+document.getElementById('tipOk').addEventListener('click', hideTip);
 
 // ---------- Ziele ----------
 function goalName(g) { return (g.n === 1 && T.goals1[g.type]) || T.goals[g.type].replace('{n}', g.n); }
@@ -1006,7 +1102,7 @@ function startOver() {
 }
 function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
-  S.heir += gain; S.st.prest++; S.runTime = 0; S.recBase = S.best;
+  S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.best;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
   rage = 0; beer = 0; chest = null; chestTimer = 25; layerShown = -1;
   spawnRock(); buildPanel(); updateSkillBtns(); seenPrest = false;
@@ -1066,11 +1162,19 @@ function frame(now) {
   // Zwerge graben
   const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1);
   if (dps > 0 && S.hp > 0) damage(dps * dt, false);
-  if (bossActive) { bossTimer -= dt; if (bossTimer <= 0) failBoss(); }
+  if (bossActive) {
+    bossTimer -= dt;
+    const sec = Math.ceil(bossTimer); if (sec !== lastTick) { lastTick = sec; if (sec > 0 && sec <= 5) sfx.tick(); }   // die letzten Sekunden ticken
+    if (bossTimer <= 0) failBoss();
+  }
+  bossFlash = Math.max(0, bossFlash - dt * 2.5);
   if (rage > 0) rage -= dt;
   if (beer > 0) beer -= dt;
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
-  goalTimer -= dt; if (goalTimer <= 0) { goalTimer = 0.5; checkGoals(); updateSkillBtns(); }
+  goalTimer -= dt; if (goalTimer <= 0) {
+    goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip();
+    if (S.farm && bossPower() >= 1) { retryBoss(); showBanner({ text: T.autoRetry, sub: T.autoRetrySub, life: 2.2, color: '#6fdc7a' }); }
+  }
 
   // Truhe
   if (chest) { chest.life -= dt; if (chest.life <= 0) { chest = null; chestTimer = F.chestEvery(S); } }
@@ -1118,7 +1222,7 @@ Portal.gameplayStart();
 requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
-window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; } };
+window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct };
 </script>
 </body>
 </html>
