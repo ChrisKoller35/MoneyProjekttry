@@ -56,6 +56,7 @@ A.FX = (function () {
         if (d.kind === 'poison' || d.kind === 'burn') { burst(to.x, to.y - 8, 3, { color: d.kind === 'poison' ? ['#63c74d', '#3e8948'] : ['#f77622', '#feae34'], smin: 10, smax: 40, life: 0.5, vz: 30, g: 0, add: d.kind === 'burn' }); return; }
         if (to.side === 'hero') {
           burst(to.x, to.y - 6, 8, { color: ['#e43b44', '#a22633', '#ff0044'], smin: 50, smax: 140, life: 0.4, dir, spread: 1.2, z: 8, vz: 90, g: 380, stick: true });
+          if (d.kind === 'magic') { const c = d.color || '#c77dff'; part({ kind: 'ring', x: to.x, y: to.y - 6, life: 0.28, size: 36, color: c, add: true }); burst(to.x, to.y - 6, 10, { color: [c, '#ffffff'], smin: 60, smax: 180, life: 0.3, add: true, kind: 'spark', drag: 5 }); flash(to.x, to.y - 6, 60, c, 0.2); }
           hurtT = 0.45; shake(0.38); freeze(0.05); S().hurt(); return;
         }
         const g = gore(to);
@@ -130,6 +131,11 @@ A.FX = (function () {
       case 'potion': burst(d.e.x, d.e.y - 10, 12, { color: ['#e43b44', '#f6757a', '#ffffff'], smin: 10, smax: 50, vz: 60, g: -30, life: 0.7, add: true }); S().potion(); return;
       case 'step': part({ kind: 'smoke', x: d.e.x + rnd(-4, 4), y: d.e.y + 14, vx: -d.e.fx * 15, vy: rnd(-8, 0), life: 0.35, size: 2, grow: 4, color: '#8b9bb4', drag: 4 }); return;
       case 'windup': if (once('windup', 160)) S().windup(); return;
+      case 'strike': { // Gegner schlägt zu: Staub am Boden, beim Boss Erdstoss mit Wackeln
+        const m = d.m; smoke(m.x + m.fx * 14, m.y + 10, m.boss ? 8 : 2, '#8b9bb4', m.boss ? 6 : 3);
+        if (m.boss) { part({ kind: 'ring', x: m.x + m.fx * 20, y: m.y + 10, life: 0.4, size: 90, color: '#feae34', add: true }); burst(m.x + m.fx * 20, m.y + 6, 14, { color: ['#c0cbdc', '#8b9bb4', '#733e39'], smin: 60, smax: 180, life: 0.6, z: 2, vz: 120, g: 420 }); shake(0.45); }
+        return;
+      }
       case 'ignite': S().ignite(); return;
       case 'wallhit': burst(d.x, d.y, 5, { color: [d.color || '#ffffff', '#ffffff'], smin: 30, smax: 100, life: 0.25, add: true, kind: 'spark', drag: 4 }); return;
       case 'stun': return;
