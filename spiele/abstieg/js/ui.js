@@ -1,13 +1,13 @@
-// Der Abstieg – Oberfläche: Bildschirme, Knöpfe, Kampf-Abspielen
+// Der Abstieg – Oberfläche: Bildschirme, Knöpfe, Ebene in Echtzeit
 'use strict';
 window.A = window.A || {};
 
 (function () {
   const G = A.Game, t = A.t, U = A.UI;
   const $ = (s) => document.querySelector(s);
-  const screen = $('#screen'), hud = $('#hud'), overlay = $('#overlay'), combatEl = $('#combat');
-  const arena = new A.Arena($('#arena'));
-  let speed = 1;
+  const screen = $('#screen'), hud = $('#hud'), overlay = $('#overlay'), dungeonEl = $('#dungeon');
+  const draw = new A.Draw($('#arena'));
+  const Wd = A.World;
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // Portal-Anbindung (Platzhalter; wird beim Einreichen ersetzt)
@@ -60,9 +60,9 @@ window.A = window.A || {};
   }
   function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30; }
   function slotCurrent(it) { const r = G.run; if (it.slot === 'trinket') { if (!r.gear.trinket) return null; if (!r.gear.trinket2) return null; return scoreItem(r.gear.trinket) < scoreItem(r.gear.trinket2) ? r.gear.trinket : r.gear.trinket2; } return r.gear[it.slot] || null; }
-  function show(html) { screen.innerHTML = html; screen.scrollTop = 0; hudUpdate(); }
-  function ov(html) { overlay.innerHTML = `<div class="ovbox">${html}</div>`; overlay.classList.add('on'); }
-  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; }
+  function show(html) { dungeonEl.classList.remove('on'); document.body.classList.remove('play'); screen.style.display = ''; screen.innerHTML = html; screen.scrollTop = 0; hudUpdate(); }
+  function ov(html) { overlay.innerHTML = `<div class="ovbox">${html}</div>`; overlay.classList.add('on'); Wd.pause(true); }
+  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); } hudUpdate(); }
   const ICONS = { fight: '⚔️', elite: '💀', treasure: '💰', shop: '🛒', event: '❓', rest: '🔥', boss: '👑' };
   const DESC = { fight: { de: 'Gegner, Beute, Erfahrung', en: 'Enemies, loot, experience' }, elite: { de: 'Schwer, aber besseres Item', en: 'Hard, but better item' }, treasure: { de: 'Items und Gold', en: 'Items and gold' }, shop: { de: 'Kaufen und verkaufen', en: 'Buy and sell' }, event: { de: 'Eine Entscheidung', en: 'A decision' }, rest: { de: 'Heilen oder trainieren', en: 'Heal or train' }, boss: { de: 'Der Wächter der Ebene', en: 'The floor\'s guardian' } };
 
@@ -76,7 +76,8 @@ window.A = window.A || {};
       ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} (${t(U.floor)} ${r.floor})</button>` : ''}
       <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
       <button class="btn" id="bCamp">🏕️ ${t(U.camp)} · <span class="spark">✦ ${m.sparks}</span></button>
-      <div style="margin-top:18px" class="mini">${A.LANG === 'de' ? 'Durchläufe' : 'Runs'}: ${m.runs} · ${A.LANG === 'de' ? 'Tiefste Ebene' : 'Deepest floor'}: ${m.best}</div>
+      <div style="margin-top:14px" class="mini">${t(U.howto)}</div>
+      <div style="margin-top:10px" class="mini">${A.LANG === 'de' ? 'Durchläufe' : 'Runs'}: ${m.runs} · ${A.LANG === 'de' ? 'Tiefste Ebene' : 'Deepest floor'}: ${m.best}</div>
       <div style="margin-top:12px"><button class="btn small" id="bSound">${m.sound ? '🔊' : '🔇'} ${t(U.sound)}</button><button class="btn small" id="bReset">${t(U.reset)}</button></div>
     </div>`);
     if (r) $('#bCont').onclick = () => { sfx.click(); resume(); };
@@ -95,7 +96,7 @@ window.A = window.A || {};
       <button class="btn primary" id="bStart">${t(U.start)}</button><button class="btn" id="bBack">${t(U.back)}</button>`);
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { camp(); return; } selRace = r.id; sfx.click(); heroSelect(); });
     screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) return; selCls = c.id; sfx.click(); heroSelect(); });
-    $('#bStart').onclick = () => { sfx.buy(); G.newRun(selRace, selCls); Portal.gameplayStart(); map(); };
+    $('#bStart').onclick = () => { sfx.buy(); G.newRun(selRace, selCls); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { sfx.click(); title(); };
   }
 
@@ -112,38 +113,95 @@ window.A = window.A || {};
   function resume() {
     const r = G.run;
     Portal.gameplayStart();
-    if (r.current && r.current.type && r.enemies && r.pendingFight) prep(); else map();
+    dungeon(false);
   }
 
-  // ---------- Karte / Wegwahl ----------
-  function map() {
+  // ---------- Die Ebene (Echtzeit) ----------
+  const input = A.Input;
+  input.bindCanvas($('#arena'));
+  let last = 0, hudT = 0;
+  function dungeon(fresh) {
     const r = G.run;
     if (r.over) { runOver(); return; }
-    const q = r.quest;
-    const choices = r.choices.map((c, i) => `<div class="choice" data-i="${i}"><div class="ico">${ICONS[c.type]}</div><div class="lbl">${t(U.node[c.type])}</div><div class="txt">${t(DESC[c.type])}</div></div>`).join('');
-    show(`<h2>${t(U.floor)} ${r.floor} · ${A.LANG === 'de' ? 'Raum' : 'Room'} ${r.step + 1}/5</h2>
-      ${q ? `<div class="q ${r.questDone ? 'done' : ''}">📜 ${t(U.quest)}: ${t(q.text)} (${Math.min(r.questProg, q.n)}/${q.n})${r.questDone ? ' ✓' : ''}</div>` : ''}
-      <div class="sub">${t(U.chooseRoom)}</div><div class="grid2">${choices}</div>
-      ${r.points > 0 || r.pendingSkillPick > 0 ? `<button class="btn primary" id="bSheet">⬆ ${t(U.levelUp)} · ${r.points} ${t(U.points)}</button>` : ''}`);
-    screen.querySelectorAll('.choice').forEach(el => el.onclick = () => { sfx.click(); enterRoom(r.choices[+el.dataset.i]); });
-    const bs = $('#bSheet'); if (bs) bs.onclick = () => showSheet();
+    screen.style.display = 'none'; dungeonEl.classList.add('on'); document.body.classList.add('play'); hudUpdate();
+    const hooks = {
+      onItem: (it) => foundItem(it),
+      onProp: (p) => useProp(p),
+      onCleared: (room) => { sfx.win(); if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; Wd.float(Wd.W.hero.x, Wd.W.hero.y - 60, '📜 ' + t(U.questDone), '#6fdc7a', 15); } G.save(); setTimeout(() => { if (r.pendingSkillPick > 0) skillPick(); }, 400); },
+      onDeath: () => { sfx.lose(); setTimeout(() => runOver(), 600); },
+      onLevel: () => { sfx.buy(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 56, '⬆ ' + t(U.levelUp), '#f5c542', 18); hudUpdate(); },
+    };
+    Wd.enter(r.floor, r.floorSeed, fresh ? null : r.rooms, hooks);
+    r.rooms = Wd.saveRooms();
+    buildControls();
+    if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = A.LANG === 'de' ? (coarse ? 'Links laufen, rechts schlagen' : 'WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten') : (coarse ? 'Left: move, right: attack' : 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
+    if (!last) { last = performance.now(); requestAnimationFrame(loop); }
   }
-  function enterRoom(choice) {
-    G.choose(choice);
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!dungeonEl.classList.contains('on') || !Wd.W) return;
+    const inp = input.read();
+    Wd.step(dt, inp);
+    if (G.run) G.run.rooms = Wd.saveRooms();
+    draw.draw(Wd.W, dt);
+    hudT += dt; if (hudT > 0.15) { hudT = 0; hudUpdate(); controlsTick(); }
+  }
+  // Knöpfe am Rand
+  let ctl = null;
+  function buildControls() {
     const r = G.run;
-    if (['fight', 'elite', 'boss'].includes(choice.type)) { r.pendingFight = true; G.save(); prep(); }
-    else if (choice.type === 'rest') rest();
-    else if (choice.type === 'event') eventScreen();
-    else if (choice.type === 'shop') shop();
-    else if (choice.type === 'treasure') treasure();
+    const sk = r.active.filter(Boolean);
+    $('#controls').innerHTML = `<div id="btnGrid">
+      ${sk.map((id, i) => `<button class="cbtn sk" data-sk="${i}"><span class="ring"></span><span class="lbl">${esc(t(A.SKILLS[id].name))}</span><span class="key">${i + 1}</span></button>`).join('')}
+      <button class="cbtn pot" id="bPotion">🧪<span class="n"></span><span class="key">Q</span></button>
+      <button class="cbtn atk" id="bAtk">⚔️<span class="key">␣</span></button>
+      <button class="cbtn use" id="bUse" style="display:none">✋<span class="key">E</span></button>
+    </div>`;
+    ctl = { atk: $('#bAtk'), use: $('#bUse'), pot: $('#bPotion'), sk: Array.from(document.querySelectorAll('#controls .sk')) };
+    input.bindAttack(ctl.atk);
+    ctl.sk.forEach(b => b.addEventListener('pointerdown', (e) => { e.preventDefault(); if (Wd.useSkill(+b.dataset.sk)) sfx.click(); }));
+    ctl.pot.addEventListener('pointerdown', (e) => { e.preventDefault(); if (Wd.usePotion()) { sfx.buy(); hudUpdate(); } });
+    ctl.use.addEventListener('pointerdown', (e) => { e.preventDefault(); Wd.interact(); });
   }
-  function leaveRoom() {
-    const res = G.afterRoom();
-    if (res === 'won') { runOver(); return; }
-    if (res === 'descend') { ov(`<div class="center"><div style="font-size:50px">⬇️</div><h2>${t(U.floor)} ${G.run.floor}</h2><div class="sub">${A.LANG === 'de' ? 'Neue Schicht, neue Gegner, neue Aufgabe.' : 'New layer, new enemies, new quest.'}</div><button class="btn primary" id="bOk">${t(U.descend)}</button></div>`); $('#bOk').onclick = () => { ovClose(); Portal.showAd(() => map()); }; return; }
-    map();
+  function controlsTick() {
+    if (!ctl || !Wd.W) return;
+    const h = Wd.W.hero, r = G.run;
+    ctl.sk.forEach((b, i) => { const id = h.skills[i]; if (!id) return; const cd = Math.max(0, (h.cds[id] || 0) - Wd.W.t); const tot = A.SKILLS[id].cd * 2; b.classList.toggle('cold', cd > 0); b.querySelector('.ring').style.setProperty('--p', (cd / tot * 100) + '%'); });
+    ctl.pot.querySelector('.n').textContent = r.potions; ctl.pot.classList.toggle('cold', r.potions <= 0);
+    ctl.use.style.display = Wd.W.near ? '' : 'none';
+    if (Wd.W.near) ctl.use.innerHTML = ({ chest: '💰', fire: '🔥', merchant: '🛒', statue: '❓', stairs: '⬇️' })[Wd.W.near.kind] + '<span class="key">E</span>';
   }
-
+  input.onKey = (code, e) => {
+    if (!dungeonEl.classList.contains('on')) return;
+    if (overlay.classList.contains('on')) { if (code === 'Escape' || code === 'KeyI' || code === 'Tab') { const b = $('#bClose'); if (b) b.click(); e.preventDefault(); } return; }
+    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { if (Wd.useSkill(+code.slice(-1) - 1)) sfx.click(); }
+    if (code === 'KeyQ') { if (Wd.usePotion()) { sfx.buy(); hudUpdate(); } }
+    if (code === 'KeyE' || code === 'Enter') Wd.interact();
+    if (code === 'KeyI' || code === 'Tab' || code === 'Escape') { e.preventDefault(); showSheet(); }
+    if (code === 'Space') e.preventDefault();
+  };
+  // Gefundenes Item
+  function foundItem(it) {
+    const cur = slotCurrent(it);
+    ov(`<h2>${A.LANG === 'de' ? 'Gefunden' : 'Found'}</h2>${itemHtml(it, null, cur)}<button class="btn primary" id="bEq">${t(U.equip)}${cur ? ` (${A.LANG === 'de' ? 'ersetzt' : 'replaces'} ${esc(G.itemName(cur))})` : ''}</button><button class="btn" id="bBag">${t(U.bag)}</button><button class="btn" id="bClose">${t(U.sell)} ${G.sellValue(it)}🪙</button>`);
+    $('#bEq').onclick = () => { G.addToBag(it); G.equip(it); sfx.buy(); ovClose(); };
+    $('#bBag').onclick = () => { G.addToBag(it); sfx.click(); ovClose(); };
+    $('#bClose').onclick = () => { G.run.gold += G.sellValue(it); G.save(); sfx.buy(); ovClose(); };
+  }
+  // Dinge im Raum
+  function useProp(p) {
+    const r = G.run;
+    if (p.kind === 'stairs') {
+      ov(`<div class="center"><div style="font-size:50px">⬇️</div><h2>${t(U.floor)} ${r.floor + 1}</h2><div class="sub">${A.LANG === 'de' ? 'Neue Schicht, neue Gegner, neue Aufgabe.' : 'New layer, new enemies, new quest.'}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+      $('#bOk').onclick = () => { sfx.click(); overlay.classList.remove('on'); overlay.innerHTML = ''; const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); };
+      $('#bClose').onclick = () => ovClose();
+    }
+    else if (p.kind === 'chest') { Wd.markUsed(p); treasure(); }
+    else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
+    else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
+    else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
+  }
   // ---------- Heldenblatt ----------
   function showSheet(tab) {
     const r = G.run, d = G.derived();
@@ -152,120 +210,57 @@ window.A = window.A || {};
     const kv = `<div class="kv" style="margin-top:10px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
     const gear = A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : `<div class="item" style="opacity:0.5"><div><div class="slotlbl">${t(U.slot[s === 'trinket2' ? 'trinket' : s])}</div><div class="nm">–</div></div></div>`; }).join('');
     const bag = r.bag.length ? r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${t(U.sell)} ${G.sellValue(it)}🪙</button>`, slotCurrent(it))).join('') : `<div class="mini">${A.LANG === 'de' ? 'Leer.' : 'Empty.'}</div>`;
-    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div><div class="nm">${on ? '●' : '○'} ${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd} ${t(U.rounds)}</div></div>`; }).join('');
+    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div><div class="nm">${on ? '●' : '○'} ${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd * 2} s</div></div>`; }).join('');
     const content = tab === 'stats' ? `${r.points > 0 ? `<div class="q">⬆ ${r.points} ${t(U.points)}</div>` : ''}${statsHtml}${kv}` :
       tab === 'gear' ? `${gear}<h2 style="margin-top:12px">${t(U.bag)} (${r.bag.length}/8)</h2>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">🧪 ${t(U.usePotion)}</button>` : ''}` :
-      `<div class="mini" style="margin-bottom:8px">${A.LANG === 'de' ? `Bis zu ${d.skillSlots} aktiv. Reihenfolge = Vorrang im Kampf.` : `Up to ${d.skillSlots} active. Order = priority in battle.`}</div>${skills}
-       <div class="toggle" style="margin-top:10px"><button data-row="front" class="${r.row === 'front' ? 'on' : ''}">${t(U.front)}</button><button data-row="back" class="${r.row === 'back' ? 'on' : ''}">${t(U.backRow)}</button></div><div class="mini">${A.LANG === 'de' ? 'Vorne: trifft im Nahkampf voll, wird zuerst angegriffen. Hinten: Nahkämpfer erreichen dich erst, wenn vorne niemand steht; Nahkampf-Waffen machen hinten 30 % weniger.' : 'Front: full melee hits, attacked first. Back: melee enemies reach you only when the front is empty; melee weapons do 30% less from the back.'}</div>`;
+      `<div class="mini" style="margin-bottom:8px">${A.LANG === 'de' ? `Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}.` : `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}.`}</div>${skills}`;
     ov(`<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => showSheet(b.dataset.tab));
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); sfx.click(); showSheet('stats'); });
     overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { G.equip(r.bag.find(x => x.uid === b.dataset.eq)); sfx.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); sfx.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); sfx.click(); showSheet('skills'); });
-    overlay.querySelectorAll('[data-row]').forEach(b => b.onclick = () => { r.row = b.dataset.row; G.save(); sfx.click(); showSheet('skills'); });
-    const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); sfx.buy(); showSheet('gear'); };
-    $('#bClose').onclick = () => { ovClose(); hudUpdate(); if (r.pendingSkillPick > 0) skillPick(); };
+    const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; sfx.buy(); showSheet('gear'); };
+    $('#bClose').onclick = () => { ovClose(); if (r.pendingSkillPick > 0) skillPick(); };
   }
   function skillPick() {
     const r = G.run; const offer = G.skillOffer();
     if (!offer.length) { r.pendingSkillPick = 0; G.save(); return; }
-    ov(`<h2>${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd} ${t(U.rounds)}</div></div>`; }).join('')}`);
-    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { G.learnSkill(el.dataset.pick); sfx.buy(); ovClose(); hudUpdate(); if (r.pendingSkillPick > 0) skillPick(); });
-  }
-
-  // ---------- Aufstellung ----------
-  function prep() {
-    const r = G.run, d = G.derived();
-    const enemies = r.enemies.map(e => `<div class="enemy"><b>${e.boss ? '👑 ' : ''}${esc(e.name)}</b>❤ ${e.maxHp} · ⚔ ${e.atk} · ${t(e.row === 'front' ? U.front : U.backRow)}${e.eliteKind ? ' · ' + ({ giftig: '☠', gepanzert: '🛡', schnell: '💨' })[e.eliteKind] : ''}</div>`).join('');
-    const boss = r.current.type === 'boss' ? `<div class="q">👑 ${t(A.BOSSES[r.floor].trick)}</div>` : '';
-    const skills = r.active.map(id => `<span class="enemy">✦ ${t(A.SKILLS[id].name)}</span>`).join('') || `<span class="mini">–</span>`;
-    show(`<h2>${t(U.prep)}</h2>${boss}<div class="card"><div class="slotlbl">${A.LANG === 'de' ? 'Gegner' : 'Enemies'}</div><div style="margin-top:6px">${enemies}</div></div>
-      <div class="card"><div class="slotlbl">${A.LANG === 'de' ? 'Du' : 'You'}</div><div class="kv" style="margin-top:6px"><span>${t(U.hp)} <b>${r.hp}/${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span></div><div style="margin-top:8px">${skills}</div></div>
-      <div class="toggle"><button data-row="front" class="${r.row === 'front' ? 'on' : ''}">${t(U.front)}</button><button data-row="back" class="${r.row === 'back' ? 'on' : ''}">${t(U.backRow)}</button></div>
-      <div class="row"><button class="btn" id="bSheet">🎒 ${t(U.items)} / ${t(U.skills)}</button>${r.potions > 0 && r.hp < d.maxHp ? `<button class="btn" id="bPot">🧪 +40 %</button>` : ''}</div>
-      <button class="btn primary" id="bFight">⚔️ ${t(U.fightBtn)}</button>`);
-    screen.querySelectorAll('[data-row]').forEach(b => b.onclick = () => { r.row = b.dataset.row; G.save(); sfx.click(); prep(); });
-    $('#bSheet').onclick = () => { showSheet('gear'); $('#bClose').onclick = () => { ovClose(); prep(); }; };
-    const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); sfx.buy(); prep(); };
-    $('#bFight').onclick = () => { sfx.click(); fight(); };
-  }
-
-  // ---------- Kampf ----------
-  function fight() {
-    const r = G.run;
-    const hero = G.heroEntity();
-    if (hero.row === 'back' && hero.melee === false && A.CLASSES.find(c => c.id === r.cls).row === 'front') hero.atk = Math.round(hero.atk * 0.7);
-    const result = A.Combat.simulate(hero, r.enemies, r.floor, r.rng.int(1, 2e9));
-    combatEl.classList.add('on');
-    arena.speed = speed;
-    arena.setup(result.events[0].ents, r.floor);
-    $('#clog').textContent = '';
-    arena.play(result.events, () => finishFight(result));
-  }
-  document.querySelectorAll('#cbar .sp').forEach(b => b.onclick = () => { speed = +b.dataset.sp; arena.speed = speed; document.querySelectorAll('#cbar .sp').forEach(x => x.classList.toggle('on', x === b)); });
-  function finishFight(result) {
-    const r = G.run;
-    r.pendingFight = false;
-    const out = G.resolveFight(result);
-    combatEl.classList.remove('on');
-    hudUpdate();
-    if (out.dead) { sfx.lose(); runOver(); return; }
-    if (out.fled) { ov(`<div class="center"><h2>…</h2><div class="sub">${A.LANG === 'de' ? 'Der Kampf zieht sich. Ihr geht euch aus dem Weg.' : 'The fight drags on. You avoid each other.'}</div><button class="btn primary" id="bOk">${t(U.leave)}</button></div>`); $('#bOk').onclick = () => { ovClose(); leaveRoom(); }; return; }
-    sfx.win(); if (out.boss) Portal.happytime();
-    reward(out);
-  }
-  function reward(out) {
-    const r = G.run;
-    const items = out.rewards.map((it, i) => itemHtml(it, `<button class="primary" data-take="${i}">${t(U.take)}</button>`, slotCurrent(it))).join('');
-    ov(`<div class="center"><h2>${t(U.victory)}</h2><div><span class="goldc">+${out.gold} 🪙</span> · +${out.xp} ${t(U.xp)}${out.levels ? ` · <b style="color:var(--hp)">${t(U.levelUp)}</b>` : ''}</div>${out.questReward ? `<div class="q done">📜 ${t(U.questDone)}</div>` : ''}</div>
-      <h2 style="margin-top:10px">${t(U.pickReward)}</h2>${items}<button class="btn" id="bSkip">${t(U.skip)}</button>`);
-    overlay.querySelectorAll('[data-take]').forEach(b => b.onclick = () => { const it = out.rewards[+b.dataset.take]; G.addToBag(it); sfx.buy(); afterReward(it); });
-    $('#bSkip').onclick = () => { sfx.click(); afterReward(null); };
-  }
-  function afterReward(it) {
-    const r = G.run;
-    ovClose();
-    const next = () => { if (r.pendingSkillPick > 0) { skillPick(); const wait = setInterval(() => { if (!overlay.classList.contains('on')) { clearInterval(wait); leaveRoom(); } }, 150); } else leaveRoom(); };
-    if (it) {
-      const cur = slotCurrent(it);
-      ov(`${itemHtml(it)}<button class="btn primary" id="bEq">${t(U.equip)}${cur ? ` (${A.LANG === 'de' ? 'ersetzt' : 'replaces'} ${esc(G.itemName(cur))})` : ''}</button><button class="btn" id="bBag">${t(U.bag)}</button>`);
-      $('#bEq').onclick = () => { G.equip(it); sfx.buy(); ovClose(); hudUpdate(); next(); };
-      $('#bBag').onclick = () => { ovClose(); next(); };
-    } else next();
+    ov(`<h2>${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd * 2} s</div></div>`; }).join('')}`);
+    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { G.learnSkill(el.dataset.pick); sfx.buy(); if (r.pendingSkillPick > 0) skillPick(); else { ovClose(); buildControls(); } });
   }
 
   // ---------- Räume ----------
   function rest() {
-    show(`<h2>🔥 ${t(U.node.rest)}</h2><div class="sub">${A.LANG === 'de' ? 'Ein Feuer. Endlich. Niemand will dich fressen. Vorerst.' : 'A fire. Finally. Nothing wants to eat you. For now.'}</div>
+    ov(`<h2>🔥 ${t(U.node.rest)}</h2><div class="sub">${A.LANG === 'de' ? 'Ein Feuer. Endlich. Niemand will dich fressen. Vorerst.' : 'A fire. Finally. Nothing wants to eat you. For now.'}</div>
       <button class="btn primary" id="bHeal">${t(U.heal)}</button><button class="btn" id="bTrain">${t(U.train)}</button>`);
-    $('#bHeal').onclick = () => { G.doRest('heal'); sfx.buy(); leaveRoom(); };
-    $('#bTrain').onclick = () => { G.doRest('train'); sfx.buy(); leaveRoom(); };
+    $('#bHeal').onclick = () => { G.doRest('heal'); Wd.W.hero.hp = G.run.hp; sfx.buy(); ovClose(); };
+    $('#bTrain').onclick = () => { G.doRest('train'); sfx.buy(); ovClose(); };
   }
   function eventScreen() {
     const r = G.run, ev = r.currentEvent;
-    show(`<h2>❓ ${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${c.needItem && !r.bag.length ? 'disabled' : ''}>${t(c.text)}</button>`).join('')}`);
-    screen.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); sfx.click(); hudUpdate();
-      show(`<h2>❓ ${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(it => itemHtml(it)).join('')}<button class="btn primary" id="bOk">${t(U.leave)}</button>`);
-      $('#bOk').onclick = () => leaveRoom(); });
+    ov(`<h2>❓ ${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${c.needItem && !r.bag.length ? 'disabled' : ''}>${t(c.text)}</button>`).join('')}`);
+    overlay.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); sfx.click(); r.currentEvent = null; Wd.W.hero.hp = r.hp; hudUpdate();
+      ov(`<h2>❓ ${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(it => itemHtml(it)).join('')}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+      $('#bClose').onclick = () => ovClose(); });
   }
   function shop() {
     const r = G.run;
     const items = r.shopItems.map((s, i) => s ? itemHtml(s.it, `<button class="${r.gold >= s.price ? 'primary' : ''}" data-buy="${i}" ${r.gold >= s.price ? '' : 'disabled'}>${t(U.buy)} ${s.price}🪙</button>`, slotCurrent(s.it)) : '').join('');
     const bag = r.bag.map(it => itemHtml(it, `<button data-sell="${it.uid}">${t(U.sell)} ${G.sellValue(it)}🪙</button>`)).join('');
-    show(`<h2>🛒 ${t(U.node.shop)}</h2><div class="sub">${A.LANG === 'de' ? '«Alles frisch. Fast alles. Keine Rückgabe.»' : '"All fresh. Mostly. No returns."'}</div>${items}
+    ov(`<h2>🛒 ${t(U.node.shop)}</h2><div class="sub">${A.LANG === 'de' ? '«Alles frisch. Fast alles. Keine Rückgabe.»' : '"All fresh. Mostly. No returns."'}</div>${items}
       <div class="item"><div style="flex:1"><div class="nm">🧪 ${t(U.potion)}</div><div class="ln">+40 % ${t(U.hp)}</div></div><div class="act"><button class="${r.gold >= G.potionPrice() ? 'primary' : ''}" id="bPot" ${r.gold >= G.potionPrice() ? '' : 'disabled'}>${t(U.buy)} ${G.potionPrice()}🪙</button></div></div>
-      ${bag ? `<h2 style="margin-top:12px">${t(U.bag)}</h2>${bag}` : ''}<button class="btn primary" id="bLeave">${t(U.leave)}</button>`);
-    screen.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.buy(+b.dataset.buy)) { sfx.buy(); shop(); } });
-    screen.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); sfx.buy(); shop(); });
+      ${bag ? `<h2 style="margin-top:12px">${t(U.bag)}</h2>${bag}` : ''}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+    overlay.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.buy(+b.dataset.buy)) { sfx.buy(); shop(); } });
+    overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); sfx.buy(); shop(); });
     $('#bPot').onclick = () => { if (G.buyPotion()) { sfx.buy(); shop(); } };
-    $('#bLeave').onclick = () => { sfx.click(); leaveRoom(); };
+    $('#bClose').onclick = () => { sfx.click(); ovClose(); };
   }
   function treasure() {
     const res = G.treasure();
     for (const it of res.items) G.addToBag(it);
-    show(`<h2>💰 ${t(U.node.treasure)}</h2><div class="msg">${A.LANG === 'de' ? `Eine Truhe. Unverschlossen. Verdächtig. <b class="goldc">+${res.gold} 🪙</b>` : `A chest. Unlocked. Suspicious. <b class="goldc">+${res.gold} 🪙</b>`}</div>${res.items.map(it => itemHtml(it)).join('')}<div class="mini">${A.LANG === 'de' ? 'Liegt im Beutel. Anlegen über den Helden-Knopf oben.' : 'Now in your bag. Equip via the hero button above.'}</div><button class="btn primary" id="bOk">${t(U.leave)}</button>`);
-    $('#bOk').onclick = () => { sfx.click(); leaveRoom(); };
+    ov(`<h2>💰 ${t(U.node.treasure)}</h2><div class="msg">${A.LANG === 'de' ? `Eine Truhe. Unverschlossen. Verdächtig. <b class="goldc">+${res.gold} 🪙</b>` : `A chest. Unlocked. Suspicious. <b class="goldc">+${res.gold} 🪙</b>`}</div>${res.items.map(it => itemHtml(it)).join('')}<div class="mini">${A.LANG === 'de' ? 'Liegt im Beutel. Anlegen über den Helden-Knopf oben.' : 'Now in your bag. Equip via the hero button above.'}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+    $('#bClose').onclick = () => { sfx.click(); ovClose(); };
   }
 
   // ---------- Ende ----------
@@ -273,6 +268,7 @@ window.A = window.A || {};
     const r = G.run;
     if (!r.over) { r.over = true; G.finishRun(); }
     Portal.gameplayStop();
+    overlay.classList.remove('on'); overlay.innerHTML = '';
     hud.classList.remove('on');
     const won = r.won;
     show(`<div class="center" style="padding-top:6vh"><div style="font-size:56px">${won ? '🏆' : '💀'}</div><h2>${won ? t(U.win) : t(U.runOver)}</h2>
@@ -285,6 +281,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden) G.save(); });
-  window.__abstieg = { G, arena, title, map, get overlay() { return overlay; }, setSpeed: (s) => { speed = s; arena.speed = s; } };
+  window.__abstieg = { G, Wd, title, dungeon, get overlay() { return overlay; } };
   title();
 })();
