@@ -3298,6 +3298,15 @@ window.A = window.A || {};
       if (m.swing > 0 && m.kind === 'melee') { const l = Math.sin((1 - m.swing / 0.2) * Math.PI) * 5; ox += m.fx * l; oy += m.fy * l * 0.5; }
       if (m.flash > 0) { sx *= 1.15; sy *= 0.85; }
       this.shadow(x, y, (m.boss ? 13 : m.elite ? 8 : 6) * (fly ? 0.7 : 1));
+      // Aura am Boden für Elite-Gegner und Boss: drehender Runenkreis, aufsteigende Funken
+      if ((m.elite || m.boss) && !(m.spawn > 0)) {
+        const g = this.g, ac = m.boss ? '#e43b44' : (ELITE_COL[m.eliteKind] || '#fee761'), R = m.boss ? 20 : 12, rot = this.t * (m.boss ? 0.9 : 1.6), pu = 0.55 + Math.sin(this.t * 3) * 0.15;
+        g.globalAlpha = pu * 0.6; g.strokeStyle = ac; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.42, 0, 0, TAU); g.stroke();
+        g.globalAlpha = pu; g.fillStyle = ac;
+        const n = m.boss ? 10 : 6; for (let i = 0; i < n; i++) { const a = rot + i / n * TAU; g.fillRect(Math.round(x + Math.cos(a) * R) - 1, Math.round(y + Math.sin(a) * R * 0.42), 2, 1); }
+        g.globalAlpha = 1;
+        if (A.FX && !A.FX.low && Math.random() < (this.dt || 0.016) * (m.boss ? 10 : 5)) { const a = Math.random() * TAU; A.FX.part({ add: true, x: m.x + Math.cos(a) * R * PX * 0.9, y: m.y + 14 + Math.sin(a) * R * PX * 0.38, vx: 0, vy: -18 - Math.random() * 12, life: 0.8, color: Math.random() < 0.3 ? '#ffffff' : ac, drag: 0.5, size: Math.random() < 0.4 ? 2 : 1 }); }
+      }
       const dx = Math.round(x + ox), dy = Math.round(y - lift + oy);
       if (m.elite && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, ELITE_COL[m.eliteKind] || '#fee761', sc);
       if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
