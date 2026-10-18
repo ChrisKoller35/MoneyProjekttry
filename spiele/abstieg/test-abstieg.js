@@ -52,7 +52,7 @@ fs.mkdirSync(out, { recursive: true });
   async function closeOverlays(tag) {
     for (let i = 0; i < 6; i++) {
       const s = await state(); if (!s || !s.ov) return;
-      const sel = ['#overlay [data-pick]', '#overlay #bEq', '#overlay #bHeal', '#overlay [data-c]', '#overlay #bOk', '#overlay #bClose'];
+      const sel = ['#overlay [data-pick]', '#overlay #bEq', '#overlay #bHeal', '#overlay [data-c]', '#overlay #bOk', '#overlay #bClose'].map(q => q + ':not([disabled])');
       let done = false;
       for (const q of sel) { const l = page.locator(q); if (await l.count()) { if (tag && !shots[tag]) { shots[tag] = 1; await shot(tag); } await l.first().click(); await page.waitForTimeout(150); done = true; break; } }
       if (!done) { await shot('xx-overlay'); log.push('unbekanntes Overlay'); return; }

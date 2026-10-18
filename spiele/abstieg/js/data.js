@@ -32,7 +32,7 @@ A.UI = {
   pickReward: { de: 'Wähle eine Belohnung', en: 'Choose a reward' }, skip: { de: 'Nichts nehmen', en: 'Take nothing' },
   equip: { de: 'Anlegen', en: 'Equip' }, sell: { de: 'Verkaufen', en: 'Sell' }, buy: { de: 'Kaufen', en: 'Buy' }, take: { de: 'Nehmen', en: 'Take' },
   levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neue Fähigkeit wählen', en: 'Choose a new skill' },
-  heal: { de: 'Ausruhen (+35 % Leben)', en: 'Rest (+35% health)' }, train: { de: 'Trainieren (+1 Statpunkt)', en: 'Train (+1 stat point)' },
+  heal: { de: 'Ausruhen (+50 % Leben)', en: 'Rest (+50% health)' }, train: { de: 'Trainieren (+1 Statpunkt)', en: 'Train (+1 stat point)' },
   leave: { de: 'Weiter', en: 'Continue' }, descend: { de: 'Tiefer', en: 'Descend' },
   runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
   sparksEarned: { de: 'Seelenfunken erhalten', en: 'Soul sparks earned' },
@@ -122,12 +122,12 @@ A.CLASSES = [
 
 // ---------- Items ----------
 A.RARITY = {
-  common:    { color: '#b8b8b8', affixes: 0, mult: 1.0,  weight: 50 },
-  good:      { color: '#6fdc7a', affixes: 1, mult: 1.15, weight: 30 },
-  rare:      { color: '#57a6ff', affixes: 2, mult: 1.3,  weight: 14 },
+  common:    { color: '#c0cbdc', affixes: 0, mult: 1.0,  weight: 50 },
+  good:      { color: '#63c74d', affixes: 1, mult: 1.15, weight: 30 },
+  rare:      { color: '#3fa9f5', affixes: 2, mult: 1.3,  weight: 14 },
   epic:      { color: '#c77dff', affixes: 3, mult: 1.5,  weight: 5 },
-  legendary: { color: '#f5c542', affixes: 3, mult: 1.8,  weight: 1 },
-  cursed:    { color: '#ff5f5f', affixes: 3, mult: 1.9,  weight: 3 },
+  legendary: { color: '#feae34', affixes: 3, mult: 1.8,  weight: 1 },
+  cursed:    { color: '#e43b44', affixes: 3, mult: 1.9,  weight: 3 },
 };
 A.SLOTS = ['weapon', 'armor', 'helm', 'boots', 'trinket', 'trinket2'];
 
