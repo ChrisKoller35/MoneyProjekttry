@@ -7,6 +7,17 @@ window.A = window.A || {};
   const $ = (s) => document.querySelector(s);
   const screen = $('#screen'), hud = $('#hud'), overlay = $('#overlay'), dungeonEl = $('#dungeon'), bgCv = $('#bg'), joyHint = $('#joyHint');
   const draw = new A.Draw($('#arena'));
+  // Darstellung: 'retro' (Pixel-Grafik) oder '3d' (Klötzchen-Welt mit Licht und Schatten); ?look=3d bzw. ?look=retro zum Ausprobieren
+  let draw3 = null, look3dBroken = false;
+  try { const q = new URLSearchParams(location.search).get('look'); if (q === '3d' || q === 'retro') G.meta.look = q; } catch (e) {}
+  function lookIs3d() { return G.meta.look === '3d' && !!A.Draw3 && !look3dBroken; }
+  function activeDraw() {
+    if (!lookIs3d()) return draw;
+    if (!draw3) { try { draw3 = new A.Draw3($('#arena3d'), draw); } catch (e) { console.warn('3D nicht möglich:', e); look3dBroken = true; return draw; } }
+    return draw3;
+  }
+  function applyLook() { const on = lookIs3d(); dungeonEl.classList.toggle('d3', on); if (on) activeDraw(); if (draw3) { draw3.topPad = draw.topPad; draw3.botPad = draw.botPad; } }
+  function toggleLook() { G.meta.look = G.meta.look === '3d' ? 'retro' : '3d'; G.saveMeta(); applyLook(); }
   const Wd = A.World;
   const de = A.LANG === 'de', L = (d, e) => de ? d : e;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -111,7 +122,7 @@ window.A = window.A || {};
     const m = G.meta, r = G.load();
     const words = t(U.title).split(' ');
     show(`<div class="title-wrap fade-in">
-      <div class="topbar"><button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
+      <div class="topbar">${A.Draw3 ? `<button class="iconbtn look" id="bLook" aria-label="${L('Darstellung wechseln', 'Switch look')}">${L('Look', 'Look')}<b>${m.look === '3d' ? '3D' : 'Retro'}</b></button>` : ''}<button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
       <div class="logo">${words.length > 1 ? `<div class="pre">${esc(words[0])}</div>` : ''}<h1>${esc(words.slice(words.length > 1 ? 1 : 0).join(' '))}</h1></div>
       <div class="tag">${esc(t(U.tagline))}</div>
       <div class="menu">
@@ -127,6 +138,7 @@ window.A = window.A || {};
     $('#bNew').onclick = () => { S.click(); if (r) { if (!confirm(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'))) return; G.clearRun(); } heroSelect(); };
     $('#bCamp').onclick = () => { S.click(); camp(); };
     $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); S.click(); title(); };
+    if ($('#bLook')) $('#bLook').onclick = () => { S.click(); toggleLook(); title(); };
     $('#bReset').onclick = () => { if (confirm(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'))) { G.resetAll(); title(); } };
   }
 
@@ -195,7 +207,7 @@ window.A = window.A || {};
     };
     Wd.enter(r.floor, r.floorSeed, fresh ? null : r.rooms, hooks);
     r.rooms = Wd.saveRooms();
-    buildControls(); pads();
+    buildControls(); pads(); applyLook();
     const th = A.Draw.THEMES[A.Draw.themeOf(r.floor)];
     A.FX.banner(t(U.floor) + ' ' + r.floor, th ? t(th.name) : '', '#fee761', 2.6);
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten', 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
@@ -210,14 +222,15 @@ window.A = window.A || {};
     if (sdt > 0) Wd.step(sdt, inp);
     A.FX.update(sdt);
     if (G.run) G.run.rooms = Wd.saveRooms();
-    draw.draw(Wd.W, dt);
+    const dr = activeDraw(); if (dr !== draw) { dr.topPad = draw.topPad; dr.botPad = draw.botPad; }
+    dr.draw(Wd.W, dt);
     controlsTick();
     hudT += dt; if (hudT > 0.1) { hudT = 0; hudUpdate(); }
     joyHint.classList.toggle('hide', !!input.joy.on);
     // Bildrate beobachten: kommt das Gerät nicht mit, wird die Darstellung einfacher (weniger Licht-Feinheiten, weniger Teilchen)
-    if (draw.quality === 'hi' && !Wd.W.paused && raw < 0.25) {
+    if (dr.quality === 'hi' && !Wd.W.paused && raw < 0.25) {
       perf.n++; perf.sum += raw;
-      if (perf.n >= 120) { if (perf.sum / perf.n > 0.026) { draw.quality = 'lo'; A.FX.low = true; } perf.n = 0; perf.sum = 0; }
+      if (perf.n >= 120) { if (perf.sum / perf.n > 0.026) { dr.quality = 'lo'; A.FX.low = true; } perf.n = 0; perf.sum = 0; }
     }
   }
   // Freie Fläche fürs Bild: oben die Anzeige, unten die Knöpfe, wenn sie die Bildmitte verdecken (Handy hochkant)
@@ -264,6 +277,7 @@ window.A = window.A || {};
     if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
     if (code === 'KeyQ') { if (Wd.usePotion()) hudUpdate(); }
     if (code === 'KeyE' || code === 'Enter') Wd.interact();
+    if (code === 'KeyL') { toggleLook(); A.FX.banner(L('Look', 'Look') + ': ' + (G.meta.look === '3d' ? '3D' : 'Retro'), null, '#fee761', 1.2); }
     if (code === 'KeyI' || code === 'Tab' || code === 'Escape') { e.preventDefault(); S.click(); showSheet(); }
     if (code === 'Space') e.preventDefault();
   };
@@ -379,6 +393,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, shop, rest, eventScreen, treasure, runOver, useProp } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, shop, rest, eventScreen, treasure, runOver, useProp } };
   title();
 })();

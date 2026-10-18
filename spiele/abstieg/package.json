@@ -1,0 +1,14 @@
+{
+  "name": "der-abstieg",
+  "private": true,
+  "description": "Browser-Spiel «Der Abstieg». node build3d.js bündelt die 3D-Darstellung, node build.js baut dist/index.html.",
+  "scripts": {
+    "build3d": "node build3d.js",
+    "build": "node build3d.js && node build.js",
+    "test": "node test-abstieg.js test-bilder"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.182.0"
+  }
+}

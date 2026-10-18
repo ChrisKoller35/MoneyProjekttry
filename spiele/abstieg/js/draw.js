@@ -446,7 +446,7 @@ window.A = window.A || {};
           if (Math.random() < 0.2 && A.FX) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 40, y: p.y + 10, vx: 0, vy: -30 - Math.random() * 30, life: 1, color: '#b55088', drag: 0.3 });
           top = y0 - 4; break;
         }
-        case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { x: x, y: y + 4 - spr.h + 4, text: p.text }; break;
+        case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
       if (near && !p.used || (near && p.kind === 'merchant') || (near && p.kind === 'stairs')) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
     }
@@ -516,8 +516,10 @@ window.A = window.A || {};
 
     // ---------- Oberfläche über dem Bild (volle Auflösung) ----------
     font(px, w) { return `${w || 700} ${Math.round(px)}px "Pixelify Sans", system-ui, sans-serif`; }
-    overlay(W, cx, cy) {
-      const c = this.ctx, dw = this.dw, dh = this.dh, s = this.s, d = this.dpr, t = this.t;
+    overlay(W, cx, cy) { const s = this.s; this.overlayCore(W, (wx, wy, up) => [(wx / PX - cx) * s, ((wy - (up || 0)) / PX - cy) * s]); }
+    // toS(wx, wy, up): Weltpunkt (und Höhe darüber) -> Bildschirmpunkt; die 3D-Darstellung liefert ihre eigene Umrechnung
+    overlayCore(W, toS) {
+      const c = this.ctx, dw = this.dw, dh = this.dh, d = this.dpr, t = this.t;
       // Vignette
       if (!this.vig) { const v = A.Art.mk(dw, dh), x = v.getContext('2d'); const gr = x.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.3, dw / 2, dh / 2, Math.max(dw, dh) * 0.75); gr.addColorStop(0, 'rgba(8,6,14,0)'); gr.addColorStop(1, 'rgba(8,6,14,0.7)'); x.fillStyle = gr; x.fillRect(0, 0, dw, dh); this.vig = v; }
       c.drawImage(this.vig, 0, 0);
@@ -525,12 +527,11 @@ window.A = window.A || {};
       const h = W.hero, low = h.alive && h.hp / h.maxHp < 0.3;
       const hurt = (A.FX ? A.FX.hurt : 0) * 1.6 + (low ? 0.25 + Math.sin(t * 6) * 0.12 : 0);
       if (hurt > 0.01) { const gr = c.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.25, dw / 2, dh / 2, Math.max(dw, dh) * 0.7); gr.addColorStop(0, 'rgba(228,59,68,0)'); gr.addColorStop(1, `rgba(228,59,68,${clamp(hurt, 0, 0.75)})`); c.fillStyle = gr; c.fillRect(0, 0, dw, dh); }
-      const toS = (wx, wy) => [(wx / PX - cx) * s, (wy / PX - cy) * s];
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
       // Schild am Start
-      if (this.signAt && W.room && W.room.type === 'start') { c.font = this.font(6.5 * s); c.fillStyle = '#3e2731'; c.fillText(this.signAt.text, this.signAt.x * s, this.signAt.y * s); this.signAt = null; }
+      if (this.signAt && W.room && W.room.type === 'start') { c.font = this.font(this.signAt.px || 6.5 * this.s); c.fillStyle = this.signAt.color || '#3e2731'; c.fillText(this.signAt.text, this.signAt.sx, this.signAt.sy); this.signAt = null; }
       // Namen von Elite-Gegnern
-      for (const m of W.mons) if (m.alive && m.elite && !(m.spawn > 0)) { const [x, y] = toS(m.x, m.y - 46); c.font = this.font(11 * d); c.lineWidth = 3 * d; c.strokeStyle = '#181425'; c.strokeText(m.name, x, y); c.fillStyle = ELITE_COL[m.eliteKind] || '#fee761'; c.fillText(m.name, x, y); }
+      for (const m of W.mons) if (m.alive && m.elite && !(m.spawn > 0)) { const [x, y] = toS(m.x, m.y, 46); c.font = this.font(11 * d); c.lineWidth = 3 * d; c.strokeStyle = '#181425'; c.strokeText(m.name, x, y); c.fillStyle = ELITE_COL[m.eliteKind] || '#fee761'; c.fillText(m.name, x, y); }
       // Schwebende Zahlen
       for (const f of W.floats) {
         const age = (f.max || 1) - f.life, pop = age < 0.12 ? 1 + (1 - age / 0.12) * 0.7 : 1;

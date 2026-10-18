@@ -132,7 +132,12 @@
   /* ---------- Spielfeld und Knöpfe ---------- */
   #dungeon { display: none; flex: 1; position: relative; overflow: hidden; background: #0e0c16; }
   #dungeon.on { display: block; }
-  #arena { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  #arena { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; z-index: 1; }
+  #arena3d { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+  #dungeon.d3 #arena3d { display: block; }
+  #dungeon.d3 #arena { image-rendering: auto; }
+  .iconbtn.look { width: auto; padding: 0 10px; font-weight: 700; font-size: 15px; color: var(--mist); letter-spacing: 0.5px; }
+  .iconbtn.look b { color: var(--gold2); margin-left: 5px; }
   #controls { position: absolute; right: calc(12px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 4; }
   #btnGrid { display: grid; grid-template-columns: repeat(4, 58px); grid-template-rows: 58px 88px; gap: 9px; justify-items: center; align-items: end; }
   .cbtn { pointer-events: auto; position: relative; width: 58px; height: 58px; border: 3px solid var(--ink); border-radius: 50%; color: #fff; cursor: pointer; display: grid; place-items: center; padding: 0; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none;
@@ -216,6 +221,7 @@
   </div>
   <div id="screen"></div>
   <div id="dungeon">
+    <canvas id="arena3d"></canvas>
     <canvas id="arena"></canvas>
     <div id="joyHint"></div>
     <div id="controls"></div>
@@ -230,6 +236,7 @@
 <script src="js/fx.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>
+<script src="js/draw3.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/input.js"></script>
 <script src="js/ui.js"></script>

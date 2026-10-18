@@ -1,15 +1,16 @@
 // Browser-Test: steuert den Helden automatisch durch die Ebenen (läuft zu Gegnern, schlägt, nutzt Fähigkeiten,
 // benutzt Truhen/Feuer/Treppe), macht Bildschirmfotos, meldet Fehler.
-// Aufruf: node test-abstieg.js <bilder-ordner> [playwright-pfad] [chromium-pfad]
+// Aufruf: node test-abstieg.js <bilder-ordner> [playwright-pfad] [chromium-pfad] [retro|3d]
 const path = require('path'), fs = require('fs');
 const out = process.argv[2] || '.';
 const pw = require(process.argv[3] || '/opt/node-tools/node_modules/playwright');
 const exe = process.argv[4] || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const file = 'file://' + path.join(__dirname, 'dist', 'index.html');
+const look = process.argv[5] || 'retro';
+const file = 'file://' + path.join(__dirname, 'dist', 'index.html') + '?look=' + look;
 fs.mkdirSync(out, { recursive: true });
 
 (async () => {
-  const browser = await pw.chromium.launch({ executablePath: exe });
+  const browser = await pw.chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'de-CH' });
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));

@@ -7,7 +7,7 @@ A.Game = (function () {
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
-  let meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 };
+  let meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro' };   // look: 'retro' (Pixel) oder '3d'
   function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} }
   function saveMeta() { try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   function metaEffects() {
