@@ -17,19 +17,25 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
 
   await page.goto(file); await page.waitForTimeout(600);
   await shot('01-start');
+  const tipNow = () => page.evaluate(() => window.__mine.tip);
+  check((await tipNow()) === 'tap' && (await page.locator('#tip').textContent()).includes('Tippe auf den Felsen'), 'Tipp am Anfang: auf den Felsen tippen');
 
   // 1) Tippen
   for (let i = 0; i < 60; i++) { await page.mouse.click(195, 300); await page.waitForTimeout(45); }
   await page.waitForTimeout(300);
   let s = await S();
   check(s.gold > 0 && s.taps >= 50, `Tippen bringt Gold (${s.taps} Tipps, Gold ${Math.round(s.gold)}, Tiefe ${s.depth})`);
+  check((await tipNow()) === 'dwarf' && await page.locator('.tab[data-tab="dwarf"].hint').isVisible(), 'Danach Tipp: ersten Zwerg kaufen (Reiter leuchtet)');
   await shot('02-graben');
 
   // 2) Zwerg kaufen
   await page.click('[data-tab="dwarf"]'); await page.waitForTimeout(200);
-  await page.locator('.buy').first().click(); await page.waitForTimeout(200);
+  await page.locator('.buy').first().click(); await page.waitForTimeout(150);
+  const sparks = await page.locator('.spark').count();
+  await page.waitForTimeout(500);
   s = await S();
-  check(s.dw[0] === 1, 'Erster Zwerg gekauft');
+  check(s.dw[0] === 1 && sparks > 0, `Erster Zwerg gekauft (${sparks} Funken)`);
+  check((await tipNow()) !== 'dwarf', 'Zwergen-Tipp verschwindet nach dem Kauf');
   await shot('03-zwerge');
 
   // 3) Vorspulen bis Boss auf Tiefe 10
@@ -45,6 +51,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.waitForTimeout(400);
   s = await S();
   check(s.depth === 10, 'Boss auf Tiefe 10 erreicht');
+  check((await tipNow()) === 'boss', 'Tipp beim ersten Boss');
   await shot('04-boss');
 
   // 4) Truhe
@@ -180,6 +187,32 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   s = await S();
   check(s.depth === 1 && s.heir === 0 && s.best === 1, 'Nach dem Neuladen bleibt es ein neues Spiel');
 
+  // 9g) Boss zu stark: Karte oben in der Liste, Nochmal-Knopf, Zwerge greifen von selbst an
+  await page.click('[data-tab="pick"]'); await page.waitForTimeout(200);
+  await page.evaluate(() => { const m = window.__mine; m.S.dw[0] = 1; m.jump(20); m.failBoss(); });
+  await page.waitForTimeout(400);
+  const stuck = page.locator('.card.stuck');
+  check(await stuck.isVisible() && (await stuck.textContent()).includes('Boss auf Tiefe 20 zu stark') && (await stuck.textContent()).includes('%'), 'Karte «Boss zu stark» mit Kraft-Anzeige');
+  await shot('14i-boss-zu-stark');
+  await stuck.locator('.buy').click(); await page.waitForTimeout(300);
+  s = await S();
+  check(!s.farm && s.depth === 20 && !(await page.locator('.card.stuck').count()), 'Nochmal-Knopf startet den Boss');
+  await page.evaluate(() => window.__mine.failBoss()); await page.waitForTimeout(200);
+  const auto = await page.evaluate(async () => { const m = window.__mine; m.S.dw[0] = 400; await new Promise(r => setTimeout(r, 1200)); return { farm: m.S.farm, b: m.banners() }; });
+  check(!auto.farm && auto.b.includes('Jetzt schaffen sie es!'), 'Zwerge greifen von selbst an, sobald sie stark genug sind');
+
+  // 9h) Umzug lohnt sich: Hinweis, leuchtender Reiter, Text in der Karte
+  if (await page.locator('#tip').isVisible()) await page.click('#tipOk');   // offenen Tipp wegklicken
+  await page.evaluate(() => { const m = window.__mine; m.S.dw[0] = 0; m.jump(100); m.failBoss(); m.S.lastMaxAt = m.S.runTime - 120; m.buildPanel(); });
+  await page.waitForTimeout(900);
+  check(await page.evaluate(() => window.__mine.moveWorth()) && (await tipNow()) === 'move' && await page.locator('.tab[data-tab="goal"].hint').isVisible(), `Hinweis: neue Mine lohnt sich (${await tipNow()})`);
+  check((await page.locator('.card.stuck').textContent()).includes('neue Mine'), 'Boss-Karte nennt die neue Mine');
+  await shot('14j-umzug-lohnt-sich');
+  await page.click('[data-tab="goal"]'); await page.waitForTimeout(700);
+  const prestText = await page.locator('.card.prest').textContent();
+  check((await tipNow()) === null && prestText.includes('Lohnt sich jetzt!'), `Im Reiter «Ziele»: Lohnt sich jetzt! (${await tipNow()}, ${prestText.slice(0, 60)})`);
+  await shot('14k-ziele-umzug');
+
   // 10) Spätere Schichten ansehen
   for (const d of [61, 91, 111, 131]) {
     await page.evaluate((d) => window.__mine.jump(d), d); await page.waitForTimeout(1200);
@@ -201,12 +234,14 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const old = await withSave({ gold: 5000, gems: 12, depth: 34, maxDepth: 34, pick: 20, dw: [10, 5, 2, 0, 0, 0], gu: { power: 1, gold: 0, crit: 0, offline: 0, chest: 0 }, taps: 3000, saved: Date.now(), farm: false });
   s = await old.evaluate(() => JSON.parse(JSON.stringify(window.__mine.S)));
   check(s.depth === 34 && s.st.bosses === 3 && s.dw.length === 8 && s.goals.d25, `Alter Spielstand lädt (Bosse ${s.st.bosses}, Ziele ${Object.keys(s.goals).length}, Steine ${s.gems})`);
+  check((await old.evaluate(() => window.__mine.tip)) === null && !(await old.locator('#tip').isVisible()), 'Alter Spielstand: keine Anfänger-Tipps');
   await old.screenshot({ path: `${out}/17-alter-stand.png` });
 
   // 13) Englisch
   const en = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'en-US' });
   en.on('pageerror', e => errors.push('en pageerror: ' + e.message));
   await en.goto(file); await en.waitForTimeout(500);
+  check((await en.locator('#tip').textContent()).includes('Tap the rock'), 'Tipp auf Englisch');
   await en.evaluate(() => { const m = window.__mine; m.S.gold = 1e9; m.S.maxDepth = 60; m.jump(60); });
   await en.click('[data-tab="goal"]'); await en.waitForTimeout(300);
   await en.screenshot({ path: `${out}/18-englisch-ziele.png` });
