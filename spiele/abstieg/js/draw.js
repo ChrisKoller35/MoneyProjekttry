@@ -230,7 +230,7 @@ window.A = window.A || {};
           }
         }
       }
-      this.level = cv; this.lc = c; this.levelW = W; this.litAt = {}; this.cam = null; this.levelAge = 0;
+      this.level = cv; this.lc = c; this.levelW = W; this.litAt = {}; this.cam = null; this.levelAge = 0; this.opening = null; this._act = null;
     }
     // Stimmung zeichnen (auf dem Leucht-Bild): Staub/Sporen/Glut/Asche, Tropfen mit Spritzer, Glutrisse
     drawAmbience(cx, cy) {
@@ -381,6 +381,23 @@ window.A = window.A || {};
       const x0 = Math.max(0, Math.floor(cx / T)), y0 = Math.max(0, Math.floor(cy / T)), x1 = Math.min(MW - 1, Math.ceil((cx + this.bw) / T)), y1 = Math.min(MH - 1, Math.ceil((cy + this.bh) / T));
       if (W.active && W.active.lockT == null) W.active.lockT = this.t;
       const p = W.active ? clamp((this.t - W.active.lockT) / 0.18, 0, 1) : 1;
+      // Gitter schlagen auf: Staub an jeder Tür
+      if (W.active && p >= 1 && !W.active._dust) { W.active._dust = 1; if (A.FX) for (const [dx2, dy2] of W.active.doors) A.FX.smoke((dx2 + 0.5) * T * PX, (dy2 + 1) * T * PX - 6, 3, '#8b9bb4', 3); }
+      // Raum gesäubert: Gitter fahren nach oben weg
+      if (this._act && !W.active && this._act.cleared) this.opening = { doors: this._act.doors.slice(), t0: this.t };
+      this._act = W.active;
+      if (this.opening) {
+        const q = (this.t - this.opening.t0) / 0.45;
+        if (q >= 1) this.opening = null;
+        else for (const [ox, oy] of this.opening.doors) {
+          const px = ox * T - cx, top = oy * T - cy, up = Math.round(q * q * T), hh = T - up; if (hh <= 0) continue;
+          b.save(); b.beginPath(); b.rect(px, top, T, T); b.clip();
+          for (let i = 0; i < 4; i++) { b.fillStyle = '#262b44'; b.fillRect(px + 1 + i * 4, top - up, 3, T); b.fillStyle = '#8b9bb4'; b.fillRect(px + 2 + i * 4, top - up, 1, T); b.fillStyle = '#5a6988'; b.fillRect(px + 3 + i * 4, top - up, 1, T); }
+          b.fillStyle = '#262b44'; b.fillRect(px, top - up + 5, T, 3); b.fillStyle = '#8b9bb4'; b.fillRect(px, top - up + 5, T, 1);
+          b.restore();
+          if (Math.random() < 0.3 && A.FX) A.FX.part({ kind: 'px', x: (ox * T + Math.random() * T) * PX, y: (oy + 1) * T * PX, vx: 0, vy: -10, life: 0.5, color: '#8b9bb4' });
+        }
+      }
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
         if (W.tiles[y][x] !== 2) continue;
         const px = x * T - cx, py = y * T - cy - Math.round((1 - p) * 12);
@@ -598,7 +615,18 @@ window.A = window.A || {};
       const S = (n, f) => A.Art.sprite(n, f || 0);
       let spr = null, top = y - 16;
       switch (p.kind) {
-        case 'chest': spr = S('chest', p.used ? 1 : 0); this.shadow(x, y + 4, 8); if (near && !p.used) this.outlineGlow(spr, x, y + 5, false, '#fee761'); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 5 - spr.h)); top = y + 5 - spr.h; if (!p.used && Math.floor(t * 2 + p.x) % 4 === 0) { this.g.fillStyle = '#fff'; this.g.fillRect(Math.round(x + 3), Math.round(y - 5), 1, 1); } break;
+        case 'chest': {
+          // Truhe: wackelt ab und zu, springt beim Öffnen auf und sprüht Gold und Licht
+          if (p._seen == null) { p._seen = 1; p._openT = p.used ? -99 : null; }
+          if (p.used && p._openT == null) { p._openT = t; if (A.FX) { A.FX.flash(p.x, p.y - 10, 110, '#feae34', 0.5); A.FX.burst(p.x, p.y - 12, 26, { color: ['#fee761', '#feae34', '#ffffff'], smin: 40, smax: 170, life: 0.7, add: true, kind: 'spark', drag: 3 }); A.FX.burst(p.x, p.y - 10, 10, { color: ['#fee761', '#feae34'], smin: 30, smax: 90, z: 10, vz: 220, g: 520, life: 1.1, size: 2 }); A.FX.part({ kind: 'ring', x: p.x, y: p.y - 6, life: 0.4, size: 50, color: '#fee761', add: true }); A.FX.shake(0.15); } }
+          spr = S('chest', p.used ? 1 : 0); let sx = 1, sy = 1, wob = 0;
+          const oa = p._openT != null ? t - p._openT : 9;
+          if (oa < 0.5) { const q = oa / 0.5; sx = 1 + Math.sin(q * Math.PI * 2) * 0.22 * (1 - q); sy = 1 - Math.sin(q * Math.PI * 2) * 0.18 * (1 - q); }
+          else if (!p.used) { const c = (t + p.x * 0.01) % 3.2; if (c < 0.4) wob = Math.round(Math.sin(c * 40) * (1 - c / 0.4)); if (near) wob = Math.round(Math.sin(t * 18)); }
+          this.shadow(x, y + 4, 8); if (near && !p.used) this.outlineGlow(spr, x + wob, y + 5, false, '#fee761');
+          const w = Math.round(spr.w * sx), hh = Math.round(spr.h * sy);
+          b.drawImage(spr.img, Math.round(x + wob - w / 2), Math.round(y + 5 - hh), w, hh); top = y + 5 - hh;
+          if (p.used && oa < 2.5) { const gl = this.g; gl.globalAlpha = Math.max(0, 0.6 * (1 - oa / 2.5)); gl.fillStyle = '#fee761'; gl.fillRect(Math.round(x - 5), Math.round(y - 30 + oa * 4), 10, Math.round(26 - oa * 4)); gl.globalAlpha = 1; } if (!p.used && Math.floor(t * 2 + p.x) % 4 === 0) { this.g.fillStyle = '#fff'; this.g.fillRect(Math.round(x + 3), Math.round(y - 5), 1, 1); } break; }
         case 'fire': {
           const lg = S('logs'); b.drawImage(lg.img, Math.round(x - lg.w / 2), Math.round(y + 4 - lg.h));
           const f = S('flame', Math.floor(t * 10) % 3), sc = p.used ? 1 : 2; b.drawImage(f.img, Math.round(x - f.w * sc / 2), Math.round(y + 1 - f.h * sc), f.w * sc, f.h * sc);
