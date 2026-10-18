@@ -115,6 +115,12 @@ window.A = window.A || {};
   window.addEventListener('resize', () => { if (screen.querySelector('.title-wrap')) sceneBg(true); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (screen.querySelector('.title-wrap')) sceneBg(true); });
   function ov(html, cls) { overlay.innerHTML = `<div class="ovbox ${cls || ''}">${html}</div>`; overlay.classList.add('on'); overlay.scrollTop = 0; Wd.pause(true); }
+  // eigene Sicherheitsfrage im Spiel (confirm() ist in eingebetteten Seiten oft gesperrt)
+  function ask(text, yes, onYes) {
+    ov(`<div class="center"><h2 class="mid">${esc(text)}</h2><button class="btn primary" id="bYes">${esc(yes)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+    $('#bYes').onclick = () => { S.click(); ovClose(); onYes(); };
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
+  }
   function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); } hudUpdate(); }
 
   // ---------- Titel ----------
@@ -140,11 +146,11 @@ window.A = window.A || {};
       </div>
     </div>`, { title: true });
     if (r) $('#bCont').onclick = () => { S.click(); resume(); };
-    $('#bNew').onclick = () => { S.click(); if (r) { if (!confirm(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'))) return; G.clearRun(); } heroSelect(); };
+    $('#bNew').onclick = () => { S.click(); if (r) ask(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'), L('Aufgeben', 'Abandon'), () => { G.clearRun(); heroSelect(); }); else heroSelect(); };
     $('#bCamp').onclick = () => { S.click(); camp(); };
     $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); S.click(); if (!G.meta.sound) S.music(null); title(); };
     if ($('#bLook')) $('#bLook').onclick = () => { S.click(); toggleLook(); title(); };
-    $('#bReset').onclick = () => { if (confirm(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'))) { G.resetAll(); title(); } };
+    $('#bReset').onclick = () => { S.click(); ask(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'), L('Alles löschen', 'Delete everything'), () => { G.resetAll(); title(); }); };
   }
 
   // ---------- Held wählen ----------
