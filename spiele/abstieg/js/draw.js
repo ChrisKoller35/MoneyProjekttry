@@ -208,7 +208,7 @@ window.A = window.A || {};
       }
       // Stimmung je Farbwelt: schwebende Teilchen, Tropfstellen, leuchtende Pilze, Glutrisse (eigener Zufall, ändert die Räume nicht)
       const ar = new A.RNG((W.seed ^ 0x2c1b3c6d) >>> 0 || 11), tk = this.themeKey;
-      this.motes = []; this.drips = []; this.cracks = [];
+      this.motes = []; this.drips = []; this.cracks = []; this.shafts = [];
       for (const r of W.rooms) {
         const n = Math.round(r.w * r.h / 8);
         for (let i = 0; i < n; i++) this.motes.push({ room: r.i, x: (r.x + ar.next() * r.w) * T, y: (r.y + ar.next() * r.h) * T, h: r.h * T, y0: r.y * T, ph: ar.next() * 100, s: ar.next() });
@@ -216,6 +216,7 @@ window.A = window.A || {};
           const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)); if (isF(tx, r.y - 1)) continue;
           this.drips.push({ room: r.i, x: tx * T + 4 + Math.floor(ar.next() * 8), y0: r.y * T - 3, y1: (r.y + 1 + ar.next() * (r.h - 2)) * T, per: 2.4 + ar.next() * 2.6, ph: ar.next() * 5, sp: -1 });
         }
+        if (!isF(r.x + 2, r.y - 1) && ar.next() < 0.7) for (let i = 0; i < (ar.next() < 0.4 ? 2 : 1); i++) this.shafts.push({ room: r.i, x: (r.x + 1 + ar.next() * (r.w - 4)) * T, y: r.y * T - 6, w: 8 + Math.floor(ar.next() * 10), len: (3.5 + ar.next() * 3) * T, ph: ar.next() * 6 });
         const m = tk === 'grotto' ? 4 : tk === 'rust' ? 3 : 0;
         for (let i = 0; i < m; i++) {
           const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)), ty = r.y + 1 + Math.floor(ar.next() * (r.h - 2)); if (!isF(tx, ty)) continue;
@@ -237,6 +238,15 @@ window.A = window.A || {};
       const g = this.g, t = this.t, tk = this.themeKey, bw = this.bw, bh = this.bh;
       const col = { stone: '#c0cbdc', grotto: '#63c74d', rust: '#feae34', throne: '#f6757a' }[tk] || '#c0cbdc';
       const rise = tk === 'grotto' || tk === 'rust' ? 1 : -1, sp = tk === 'rust' ? 10 : 4;
+      // Lichtstrahlen von oben: schräge, weiche Bahnen, die langsam atmen
+      const sc = { stone: [200, 210, 255], grotto: [120, 255, 230], rust: [255, 170, 90], throne: [255, 140, 200] }[tk] || [255, 255, 255];
+      for (const s of this.shafts || []) {
+        if (this.litAt[s.room] == null) continue;
+        const x = s.x - cx, y = s.y - cy, sl = s.len * 0.45; if (x + sl + s.w < 0 || x > bw || y > bh || y + s.len < 0) continue;
+        const a = 0.24 + 0.07 * Math.sin(t * 0.7 + s.ph), gr = g.createLinearGradient(0, y, 0, y + s.len);
+        gr.addColorStop(0, `rgba(${sc},${a})`); gr.addColorStop(1, `rgba(${sc},0)`);
+        g.globalAlpha = 1; g.fillStyle = gr; g.beginPath(); g.moveTo(x, y); g.lineTo(x + s.w, y); g.lineTo(x + s.w + sl, y + s.len); g.lineTo(x + sl, y + s.len); g.closePath(); g.fill();
+      }
       for (const m of this.motes || []) {
         if (this.litAt[m.room] == null) continue;
         const yy = m.y0 + ((((m.y - m.y0) - rise * t * sp * (0.6 + m.s)) % m.h) + m.h) % m.h;
@@ -730,7 +740,10 @@ window.A = window.A || {};
     overlayCore(W, toS) {
       const c = this.ctx, dw = this.dw, dh = this.dh, d = this.dpr, t = this.t;
       // Vignette
-      if (!this.vig) { const v = A.Art.mk(dw, dh), x = v.getContext('2d'); const gr = x.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.3, dw / 2, dh / 2, Math.max(dw, dh) * 0.75); gr.addColorStop(0, 'rgba(8,6,14,0)'); gr.addColorStop(1, 'rgba(8,6,14,0.7)'); x.fillStyle = gr; x.fillRect(0, 0, dw, dh); this.vig = v; }
+      if (!this.vig || this.vigKey !== this.themeKey) { // Rand-Abdunklung mit einem Hauch der Farbwelt
+        const tint = { stone: [20, 18, 44], grotto: [6, 30, 32], rust: [40, 12, 8], throne: [36, 8, 32] }[this.themeKey] || [8, 6, 14];
+        const v = A.Art.mk(dw, dh), x = v.getContext('2d'); const gr = x.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.3, dw / 2, dh / 2, Math.max(dw, dh) * 0.75);
+        gr.addColorStop(0, `rgba(${tint},0)`); gr.addColorStop(0.6, `rgba(${tint},0.28)`); gr.addColorStop(1, 'rgba(8,6,14,0.78)'); x.fillStyle = gr; x.fillRect(0, 0, dw, dh); this.vig = v; this.vigKey = this.themeKey; }
       c.drawImage(this.vig, 0, 0);
       // Treffer und wenig Leben: roter Rand
       const h = W.hero, low = h.alive && h.hp / h.maxHp < 0.3;
