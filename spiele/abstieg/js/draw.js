@@ -222,7 +222,7 @@ window.A = window.A || {};
 
     // ---------- Ein Bild malen ----------
     draw(W, dt) {
-      this.t += dt;
+      this.t += dt; this.dt = Math.min(0.05, dt || 0.016);
       if (!W) return;
       if (this.levelW !== W) this.buildLevel(W);
       this.applyDecals();
@@ -358,20 +358,64 @@ window.A = window.A || {};
       let sx = 1, sy = 1;
       if (h.swing > 0 && melee) { const p = 1 - h.swing / 0.2; const lunge = Math.sin(Math.min(1, p * 1.6) * Math.PI) * 3; x += h.fx * lunge; y += h.fy * lunge * 0.5; sx = 1 + 0.12 * Math.sin(p * Math.PI); sy = 1 - 0.1 * Math.sin(p * Math.PI); }
       if (h.flash > 0) { sx *= 1.15; sy *= 0.85; }
+      this.tip = null;
       const drawWeapon = (ghost) => {
         const wpn = A.Art.sprite(cls === 'schuetze' ? 'w_bow' : (cls === 'weber' || cls === 'rufer') ? 'w_staff' : 'w_sword');
         const hx = x + (flip ? -4 : 4), hy = y - 7 + bob;
         b.save(); b.translate(Math.round(hx), Math.round(hy));
-        if (cls === 'schuetze') { b.rotate(aim); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2)); }
-        else if (cls === 'weber' || cls === 'rufer') { const lean = h.swing > 0 ? Math.sin(h.swing / 0.25 * Math.PI) * 0.6 : 0.15; b.rotate((flip ? -1 : 1) * lean); b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4); }
+        if (cls === 'schuetze') { // Bogen: beim Schuss kurzer Rückstoss
+          const rec = h.swing > 0 ? Math.sin(h.swing / 0.2 * Math.PI) * 2.5 : 0;
+          b.rotate(aim); b.drawImage(wpn.img, -2 - Math.round(rec), -Math.round(wpn.h / 2));
+        }
+        else if (cls === 'weber' || cls === 'rufer') { // Stab: beim Zaubern nach vorn stossen, Spitze glüht
+          const cast = h.swing > 0 ? Math.sin(Math.min(1, h.swing / 0.2) * Math.PI) : 0;
+          const rot = (flip ? -1 : 1) * (0.15 + cast * 0.55) + Math.sin(this.t * 2.5) * 0.03;
+          b.rotate(rot); b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4);
+          const L = wpn.h - 5, tx = hx + Math.sin(rot) * L, ty = hy - Math.cos(rot) * L, gl = this.g, col = '#7fd8ff';
+          const pulse = 0.5 + Math.sin(this.t * 5) * 0.2 + cast * 0.5, rr = 1.5 + cast * 2.5;
+          gl.globalAlpha = Math.min(1, pulse); gl.fillStyle = col; gl.beginPath(); gl.arc(Math.round(tx), Math.round(ty), rr + 1, 0, TAU); gl.fill();
+          gl.fillStyle = '#ffffff'; gl.fillRect(Math.round(tx) - 1, Math.round(ty) - 1, 2, 2); gl.globalAlpha = 1;
+          this.tip = { x: (tx + cx) * PX, y: (ty + cy) * PX, a: 0.35 + cast * 0.6 };
+          if (A.FX && Math.random() < 0.15 + cast) A.FX.part({ kind: 'px', add: true, x: (tx + cx) * PX + (Math.random() - 0.5) * 6, y: (ty + cy) * PX + 6, vx: (Math.random() - 0.5) * 20, vy: -20 - Math.random() * 30, life: 0.4, color: Math.random() < 0.5 ? col : '#ffffff' });
+        }
         else {
-          let ang;
-          if (h.swing > 0) {
-            const p = 1 - h.swing / 0.2; const e = 1 - Math.pow(1 - p, 3); ang = aim - 1.9 + e * 3.4;
-            // Schwung-Spur: heller Bogen hinter der Klinge
-            if (p > 0.1 && p < 0.9) { b.globalAlpha = 0.95 * (1 - p * 0.6); b.strokeStyle = '#ffffff'; b.lineWidth = 3; b.beginPath(); b.arc(0, 0, wpn.w - 1, aim - 1.9, ang, false); b.stroke(); b.globalAlpha = 0.35 * (1 - p); b.strokeStyle = '#fee761'; b.lineWidth = 1; b.beginPath(); b.arc(0, 0, wpn.w + 1, aim - 1.9, ang, false); b.stroke(); b.globalAlpha = 1; }
-          } else ang = flip ? Math.PI - 0.9 : 0.9;
-          b.rotate(ang); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2));
+          // Schwert mit Gewicht: holt aus, schlägt durch, schwingt nach und pendelt beim Laufen hinterher
+          const dt = this.dt || 0.016;
+          const wrap = (a, ref) => a + Math.round((ref - a) / TAU) * TAU;
+          if (h._wa == null) { h._wa = flip ? Math.PI - 0.9 : 0.9; h._wv = 0; h._wh = []; }
+          const spinP = h.spinT != null ? (W.t - h.spinT) / 0.4 : 2;
+          let ang, smear = null;
+          if (spinP >= 0 && spinP < 1) { // Wirbelsturm: Klinge einmal ganz herum
+            if (!h._sp) { h._sp = true; h._s0 = h._wa; }
+            const e = 1 - Math.pow(1 - spinP, 2); ang = h._s0 + e * TAU * 1.2 * (flip ? -1 : 1); h._wv = (flip ? -1 : 1) * 20; smear = [ang - (flip ? -1 : 1) * 2.4, ang];
+          } else if (h.swing > 0) {
+            h._sp = false;
+            if (!h._sw) { h._sw = true; h._ws = h._wa; h._a0 = wrap(aim - 2.3, h._wa); }
+            const p = Math.max(0, 1 - h.swing / 0.2);
+            if (p < 0.2) { const q = p / 0.2; ang = h._ws + (h._a0 - h._ws) * (1 - (1 - q) * (1 - q)); }
+            else { const q = (p - 0.2) / 0.8; ang = h._a0 + (1 - Math.pow(1 - q, 3)) * 3.9; if (q < 0.95) smear = [Math.max(h._a0, ang - 2.4), ang, 1 - q]; }
+            h._wv = 22;
+          } else {
+            h._sw = false; h._sp = false;
+            const sway = h.moving ? Math.sin(this.t * 15.7) * 0.14 : Math.sin(this.t * 2.5) * 0.04;
+            const rest = wrap((flip ? Math.PI - 0.9 : 0.9) + sway, h._wa);
+            h._wv += ((rest - h._wa) * 130 - h._wv * 12) * dt; ang = h._wa + h._wv * dt;
+          }
+          h._wa = ang;
+          // Schwung-Fläche: heller Halbmond zwischen Ausholen und Klinge
+          if (smear) {
+            const [a0, a1] = smear[0] < smear[1] ? smear : [smear[1], smear[0]], k = smear[2] != null ? smear[2] : 0.8;
+            b.globalAlpha = 0.55 * k; b.fillStyle = '#ffffff'; b.beginPath(); b.arc(0, 0, wpn.w + 1, a0, a1); b.arc(0, 0, Math.max(3, wpn.w - 5), a1, a0, true); b.closePath(); b.fill();
+            b.globalAlpha = 0.9 * k; b.strokeStyle = '#fee761'; b.lineWidth = 1; b.beginPath(); b.arc(0, 0, wpn.w + 1, a0 + (a1 - a0) * 0.4, a1); b.stroke();
+          }
+          // Nachbilder der Klinge bei schneller Bewegung
+          const hist = h._wh;
+          for (let i = hist.length - 1, n = 0; i >= 0 && n < 3; i--, n++) {
+            if (Math.abs(hist[i] - ang) < 0.18) continue;
+            b.save(); b.globalAlpha = 0.4 / (n + 1); b.rotate(hist[i]); b.drawImage(A.Art.white(wpn, false), -2, -Math.round(wpn.h / 2)); b.restore();
+          }
+          hist.push(ang); if (hist.length > 3) hist.shift();
+          b.globalAlpha = 1; b.rotate(ang); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2));
         }
         b.restore();
       };
@@ -500,6 +544,15 @@ window.A = window.A || {};
       const core = hero ? (s.color === '#c77dff' ? '#f6757a' : '#ffffff') : '#fee761';
       const ring = hero ? s.color : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44');
       const r = Math.max(2, Math.round(s.r / PX)) + (Math.sin(this.t * 30) > 0 ? 1 : 0);
+      // Schweif: die letzten Positionen als dünner werdende Leuchtspur
+      const tr = s.trail || (s.trail = []); tr.push([x + cx, y + cy]); if (tr.length > 8) tr.shift();
+      for (let i = 1; i < tr.length; i++) {
+        const k = i / tr.length; g.globalAlpha = 0.85 * k; g.strokeStyle = i > tr.length - 3 ? '#ffffff' : ring; g.lineWidth = Math.max(1, Math.round((r + 1) * 2 * k)); g.lineCap = 'round';
+        g.beginPath(); g.moveTo(Math.round(tr[i - 1][0] - cx), Math.round(tr[i - 1][1] - cy)); g.lineTo(Math.round(tr[i][0] - cx), Math.round(tr[i][1] - cy)); g.stroke();
+      }
+      g.lineCap = 'butt'; g.globalAlpha = 1;
+      // zwei kleine Funken kreisen um den Kern
+      for (let i = 0; i < 2; i++) { const a = this.t * 16 + i * Math.PI + s.x * 0.01; g.fillStyle = i ? '#ffffff' : ring; g.fillRect(Math.round(x + Math.cos(a) * (r + 3)), Math.round(y + Math.sin(a) * (r + 2)), 1, 1); }
       b.fillStyle = '#181425'; b.beginPath(); b.arc(Math.round(x), Math.round(y), r + 1, 0, TAU); b.fill();
       b.fillStyle = ring; b.beginPath(); b.arc(Math.round(x), Math.round(y), r, 0, TAU); b.fill();
       b.fillStyle = core; b.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
@@ -515,6 +568,7 @@ window.A = window.A || {};
       const fl = (ph, k) => 0.86 + Math.sin(t * 9 * (k || 1) + ph) * 0.07 + Math.sin(t * 23 + ph * 2) * 0.05;
       const h = W.hero;
       L(h.x, h.y - 8, 82, '#ffcf94', 0.8); L(h.x, h.y - 8, 30, '#ffffff', 0.28);
+      if (this.tip) L(this.tip.x, this.tip.y, 24 + this.tip.a * 40, '#7fd8ff', this.tip.a);
       for (const tc of this.torches) {
         const lit = this.litAt[tc.room]; if (lit == null) continue;
         const age = t - lit, grow = clamp(age / 0.6, 0, 1);

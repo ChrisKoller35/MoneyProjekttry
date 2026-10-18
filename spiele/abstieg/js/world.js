@@ -168,7 +168,7 @@ A.World = (function () {
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
     if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; }
-    fx('hit', { from, to, dmg, crit, kind: opts.kind });
+    fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn') {
       const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1);
@@ -235,7 +235,8 @@ A.World = (function () {
   function shoot(from, tx, ty, dmg, opts) {
     const d = Math.hypot(tx - from.x, ty - from.y) || 1;
     const sp = opts.speed || 420;
-    fx('shoot', { from, magic: opts.kind === 'magic' });
+    if (!opts.color) opts.color = opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0';
+    fx('shoot', { from, magic: opts.kind === 'magic', color: opts.color, dx: (tx - from.x) / d, dy: (ty - from.y) / d });
     W.shots.push({ x: from.x + (tx - from.x) / d * (from.r + 4), y: from.y + (ty - from.y) / d * (from.r + 4), vx: (tx - from.x) / d * sp, vy: (ty - from.y) / d * sp, r: opts.r || 5, side: from.side, from, dmg, opts, life: opts.life || 1.0, color: opts.color || (opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0') });
   }
   function heroAttack() {
@@ -256,7 +257,7 @@ A.World = (function () {
     if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * sk.pow)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
     else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * sk.pow), true);
     else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: sk.pow, until: W.t + sk.dur * 2 } : { mul: sk.pow, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
-    else if (sk.kind === 'multi' || sk.multi) { fx('nova', { e: h, r: 170, color: magic ? '#f77622' : '#ffffff' }); let n = 0; for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < 170 + m.r) { hit(h, m, (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * sk.pow, { kind: magic ? 'magic' : 'phys', burn: sk.burn }); n++; } } }
+    else if (sk.kind === 'multi' || sk.multi) { if (h.melee && !magic) h.spinT = W.t; const nc = magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff'; fx('nova', { e: h, r: 170, color: nc, magic }); let n = 0; for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < 170 + m.r) { hit(h, m, (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * sk.pow, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc }); n++; } } }
     else { // Einzelziel (attack / magic)
       const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute };
       let pow = sk.pow; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);

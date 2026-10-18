@@ -2223,6 +2223,14 @@ A.FX = (function () {
         burst(to.x, to.y - 6, d.crit ? 12 : 6, { color: ['#ffffff', '#fee761', '#feae34'], smin: 80, smax: d.crit ? 260 : 180, life: 0.22, dir, spread: 0.9, add: true, kind: 'spark', drag: 6 });
         burst(to.x, to.y - 4, d.crit ? 9 : 5, { color: g, smin: 40, smax: 140, life: 0.6, dir, spread: 1.1, z: 6, vz: 110, g: 420, stick: true });
         flash(to.x, to.y - 6, d.crit ? 46 : 30, d.crit ? '#feae34' : '#ffffff', 0.09);
+        if (d.kind === 'magic') { // Zauber-Einschlag: farbiger Ring, Sternfunken, Glut, die nach oben steigt
+          const c = d.color || '#7fd8ff';
+          part({ kind: 'ring', x: to.x, y: to.y - 6, life: 0.28, size: 40, color: c, add: true });
+          part({ kind: 'ring', x: to.x, y: to.y - 6, life: 0.16, size: 22, color: '#ffffff', add: true });
+          burst(to.x, to.y - 6, 12, { color: [c, c, '#ffffff'], smin: 60, smax: 200, life: 0.3, add: true, kind: 'spark', drag: 5 });
+          burst(to.x, to.y - 6, 6, { color: [c, '#ffffff'], smin: 5, smax: 30, vz: 70, g: -60, life: 0.7, add: true });
+          flash(to.x, to.y - 6, 70, c, 0.22);
+        }
         if (from.side === 'hero') { freeze(d.crit ? 0.075 : (d.kind === 'magic' ? 0.02 : 0.035)); shake(d.crit ? 0.28 : 0.1); }
         S().hit(d.crit);
         return;
@@ -2244,7 +2252,17 @@ A.FX = (function () {
       case 'lock': shake(0.35); S().lock(); return;
       case 'cleared': S().cleared(); setTimeout(() => S().open(), 250); banner(A.LANG === 'de' ? 'Raum gesäubert' : 'Room cleared', null, '#fee761', 1.4); return;
       case 'swing': if (d.magic) S().cast(); else S().swing(); return;
-      case 'shoot': if (d.from && d.from.side === 'hero') { if (d.magic) S().cast(); else S().shoot(); } else if (once('eshot', 120)) S().shoot(); return;
+      case 'shoot': {
+        const f = d.from;
+        if (d.magic && f) { // Zauber-Blitz an der Hand: kleine Rune, Funken in Schussrichtung, Lichtblitz
+          const x = f.x + (d.dx || 0) * 14, y = f.y - 12 + (d.dy || 0) * 8, c = d.color || '#7fd8ff';
+          burst(x, y, f.side === 'hero' ? 8 : 4, { color: [c, '#ffffff'], smin: 40, smax: 130, life: 0.22, dir: Math.atan2(d.dy || 0, d.dx || 1), spread: 0.7, add: true, kind: 'spark', drag: 6 });
+          part({ kind: 'ring', x, y, life: 0.18, size: 22, color: c, add: true });
+          if (f.side === 'hero') part({ kind: 'rune', x: f.x, y: f.y + 10, life: 0.4, size: 9, color: c, add: true });
+          flash(x, y, f.side === 'hero' ? 44 : 30, c, 0.12);
+        }
+        if (f && f.side === 'hero') { if (d.magic) S().cast(); else S().shoot(); } else if (once('eshot', 120)) S().shoot(); return;
+      }
       case 'coin': S().coin(); burst(d.x, d.y - 10, 3, { color: ['#fee761', '#ffffff'], smin: 20, smax: 60, life: 0.3, add: true, kind: 'spark' }); return;
       case 'pickPotion': S().potion(); return;
       case 'drop': S().drop(d.rarity); if (d.rarity === 'epic' || d.rarity === 'legendary') { flash(d.x, d.y, 90, d.color, 0.5); burst(d.x, d.y, 16, { color: [d.color, '#ffffff'], smin: 40, smax: 160, life: 0.6, add: true, kind: 'spark' }); } return;
@@ -2260,7 +2278,16 @@ A.FX = (function () {
       case 'heal': { const e = d.e; if (d.n < 3 && !d.loud) return; burst(e.x, e.y, 8, { color: ['#63c74d', '#c8f5a0'], smin: 10, smax: 40, vz: 80, z: 4, g: -40, life: 0.8, add: true, kind: 'plus' }); healT = 0.35; if (d.loud) S().heal(); return; }
       case 'shield': part({ kind: 'ring', x: d.e.x, y: d.e.y, life: 0.45, size: 46, color: '#2ce8f5', add: true }); flash(d.e.x, d.e.y, 60, '#2ce8f5', 0.3); S().shield(); return;
       case 'buff': burst(d.e.x, d.e.y, 18, { color: ['#e43b44', '#feae34', '#fee761'], smin: 40, smax: 120, life: 0.5, add: true, kind: 'spark' }); S().buff(); return;
-      case 'nova': part({ kind: 'ring', x: d.e.x, y: d.e.y, life: 0.35, size: d.r || 170, color: d.color || '#ffffff', add: true }); flash(d.e.x, d.e.y, (d.r || 170) * 0.8, d.color || '#ffffff', 0.25); shake(0.3); S().nova(); return;
+      case 'nova': { // Flächenzauber / Wirbel: zwei Wellen, Bodenrune, Funkenkranz, bei Feuer aufsteigende Glut
+        const e = d.e, R = d.r || 170, c = d.color || '#ffffff';
+        part({ kind: 'ring', x: e.x, y: e.y, life: 0.35, size: R, color: c, add: true });
+        part({ kind: 'ring', x: e.x, y: e.y, life: 0.55, size: R * 1.15, color: '#ffffff', add: true });
+        if (d.magic) part({ kind: 'rune', x: e.x, y: e.y + 10, life: 0.7, size: 26, color: c, add: true });
+        for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2, sp = rnd(220, 320); part({ kind: 'spark', add: true, x: e.x + Math.cos(a) * 14, y: e.y + Math.sin(a) * 10, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, life: rnd(0.25, 0.4), color: i % 3 ? c : '#ffffff', drag: 4 }); }
+        if (d.magic) for (let i = 0; i < 18; i++) { const a = Math.random() * Math.PI * 2, rr = rnd(20, R * 0.9); part({ add: true, x: e.x + Math.cos(a) * rr, y: e.y + Math.sin(a) * rr * 0.6, vx: rnd(-8, 8), vy: 0, vz: rnd(40, 90), z: 2, life: rnd(0.6, 1.1), color: Math.random() < 0.5 ? c : '#fee761', size: Math.random() < 0.3 ? 2 : 1, drag: 1 }); }
+        else smoke(e.x, e.y + 8, 6, '#8b9bb4', 4);
+        flash(e.x, e.y, R * 0.9, c, 0.3); shake(0.3); S().nova(); return;
+      }
       case 'potion': burst(d.e.x, d.e.y - 10, 12, { color: ['#e43b44', '#f6757a', '#ffffff'], smin: 10, smax: 50, vz: 60, g: -30, life: 0.7, add: true }); S().potion(); return;
       case 'step': part({ kind: 'smoke', x: d.e.x + rnd(-4, 4), y: d.e.y + 14, vx: -d.e.fx * 15, vy: rnd(-8, 0), life: 0.35, size: 2, grow: 4, color: '#8b9bb4', drag: 4 }); return;
       case 'windup': if (once('windup', 160)) S().windup(); return;
@@ -2471,7 +2498,7 @@ A.World = (function () {
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
     if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; }
-    fx('hit', { from, to, dmg, crit, kind: opts.kind });
+    fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn') {
       const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1);
@@ -2538,7 +2565,8 @@ A.World = (function () {
   function shoot(from, tx, ty, dmg, opts) {
     const d = Math.hypot(tx - from.x, ty - from.y) || 1;
     const sp = opts.speed || 420;
-    fx('shoot', { from, magic: opts.kind === 'magic' });
+    if (!opts.color) opts.color = opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0';
+    fx('shoot', { from, magic: opts.kind === 'magic', color: opts.color, dx: (tx - from.x) / d, dy: (ty - from.y) / d });
     W.shots.push({ x: from.x + (tx - from.x) / d * (from.r + 4), y: from.y + (ty - from.y) / d * (from.r + 4), vx: (tx - from.x) / d * sp, vy: (ty - from.y) / d * sp, r: opts.r || 5, side: from.side, from, dmg, opts, life: opts.life || 1.0, color: opts.color || (opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0') });
   }
   function heroAttack() {
@@ -2559,7 +2587,7 @@ A.World = (function () {
     if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * sk.pow)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
     else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * sk.pow), true);
     else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: sk.pow, until: W.t + sk.dur * 2 } : { mul: sk.pow, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
-    else if (sk.kind === 'multi' || sk.multi) { fx('nova', { e: h, r: 170, color: magic ? '#f77622' : '#ffffff' }); let n = 0; for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < 170 + m.r) { hit(h, m, (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * sk.pow, { kind: magic ? 'magic' : 'phys', burn: sk.burn }); n++; } } }
+    else if (sk.kind === 'multi' || sk.multi) { if (h.melee && !magic) h.spinT = W.t; const nc = magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff'; fx('nova', { e: h, r: 170, color: nc, magic }); let n = 0; for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < 170 + m.r) { hit(h, m, (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * sk.pow, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc }); n++; } } }
     else { // Einzelziel (attack / magic)
       const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute };
       let pow = sk.pow; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
@@ -2890,7 +2918,7 @@ window.A = window.A || {};
 
     // ---------- Ein Bild malen ----------
     draw(W, dt) {
-      this.t += dt;
+      this.t += dt; this.dt = Math.min(0.05, dt || 0.016);
       if (!W) return;
       if (this.levelW !== W) this.buildLevel(W);
       this.applyDecals();
@@ -3026,20 +3054,64 @@ window.A = window.A || {};
       let sx = 1, sy = 1;
       if (h.swing > 0 && melee) { const p = 1 - h.swing / 0.2; const lunge = Math.sin(Math.min(1, p * 1.6) * Math.PI) * 3; x += h.fx * lunge; y += h.fy * lunge * 0.5; sx = 1 + 0.12 * Math.sin(p * Math.PI); sy = 1 - 0.1 * Math.sin(p * Math.PI); }
       if (h.flash > 0) { sx *= 1.15; sy *= 0.85; }
+      this.tip = null;
       const drawWeapon = (ghost) => {
         const wpn = A.Art.sprite(cls === 'schuetze' ? 'w_bow' : (cls === 'weber' || cls === 'rufer') ? 'w_staff' : 'w_sword');
         const hx = x + (flip ? -4 : 4), hy = y - 7 + bob;
         b.save(); b.translate(Math.round(hx), Math.round(hy));
-        if (cls === 'schuetze') { b.rotate(aim); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2)); }
-        else if (cls === 'weber' || cls === 'rufer') { const lean = h.swing > 0 ? Math.sin(h.swing / 0.25 * Math.PI) * 0.6 : 0.15; b.rotate((flip ? -1 : 1) * lean); b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4); }
+        if (cls === 'schuetze') { // Bogen: beim Schuss kurzer Rückstoss
+          const rec = h.swing > 0 ? Math.sin(h.swing / 0.2 * Math.PI) * 2.5 : 0;
+          b.rotate(aim); b.drawImage(wpn.img, -2 - Math.round(rec), -Math.round(wpn.h / 2));
+        }
+        else if (cls === 'weber' || cls === 'rufer') { // Stab: beim Zaubern nach vorn stossen, Spitze glüht
+          const cast = h.swing > 0 ? Math.sin(Math.min(1, h.swing / 0.2) * Math.PI) : 0;
+          const rot = (flip ? -1 : 1) * (0.15 + cast * 0.55) + Math.sin(this.t * 2.5) * 0.03;
+          b.rotate(rot); b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4);
+          const L = wpn.h - 5, tx = hx + Math.sin(rot) * L, ty = hy - Math.cos(rot) * L, gl = this.g, col = '#7fd8ff';
+          const pulse = 0.5 + Math.sin(this.t * 5) * 0.2 + cast * 0.5, rr = 1.5 + cast * 2.5;
+          gl.globalAlpha = Math.min(1, pulse); gl.fillStyle = col; gl.beginPath(); gl.arc(Math.round(tx), Math.round(ty), rr + 1, 0, TAU); gl.fill();
+          gl.fillStyle = '#ffffff'; gl.fillRect(Math.round(tx) - 1, Math.round(ty) - 1, 2, 2); gl.globalAlpha = 1;
+          this.tip = { x: (tx + cx) * PX, y: (ty + cy) * PX, a: 0.35 + cast * 0.6 };
+          if (A.FX && Math.random() < 0.15 + cast) A.FX.part({ kind: 'px', add: true, x: (tx + cx) * PX + (Math.random() - 0.5) * 6, y: (ty + cy) * PX + 6, vx: (Math.random() - 0.5) * 20, vy: -20 - Math.random() * 30, life: 0.4, color: Math.random() < 0.5 ? col : '#ffffff' });
+        }
         else {
-          let ang;
-          if (h.swing > 0) {
-            const p = 1 - h.swing / 0.2; const e = 1 - Math.pow(1 - p, 3); ang = aim - 1.9 + e * 3.4;
-            // Schwung-Spur: heller Bogen hinter der Klinge
-            if (p > 0.1 && p < 0.9) { b.globalAlpha = 0.95 * (1 - p * 0.6); b.strokeStyle = '#ffffff'; b.lineWidth = 3; b.beginPath(); b.arc(0, 0, wpn.w - 1, aim - 1.9, ang, false); b.stroke(); b.globalAlpha = 0.35 * (1 - p); b.strokeStyle = '#fee761'; b.lineWidth = 1; b.beginPath(); b.arc(0, 0, wpn.w + 1, aim - 1.9, ang, false); b.stroke(); b.globalAlpha = 1; }
-          } else ang = flip ? Math.PI - 0.9 : 0.9;
-          b.rotate(ang); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2));
+          // Schwert mit Gewicht: holt aus, schlägt durch, schwingt nach und pendelt beim Laufen hinterher
+          const dt = this.dt || 0.016;
+          const wrap = (a, ref) => a + Math.round((ref - a) / TAU) * TAU;
+          if (h._wa == null) { h._wa = flip ? Math.PI - 0.9 : 0.9; h._wv = 0; h._wh = []; }
+          const spinP = h.spinT != null ? (W.t - h.spinT) / 0.4 : 2;
+          let ang, smear = null;
+          if (spinP >= 0 && spinP < 1) { // Wirbelsturm: Klinge einmal ganz herum
+            if (!h._sp) { h._sp = true; h._s0 = h._wa; }
+            const e = 1 - Math.pow(1 - spinP, 2); ang = h._s0 + e * TAU * 1.2 * (flip ? -1 : 1); h._wv = (flip ? -1 : 1) * 20; smear = [ang - (flip ? -1 : 1) * 2.4, ang];
+          } else if (h.swing > 0) {
+            h._sp = false;
+            if (!h._sw) { h._sw = true; h._ws = h._wa; h._a0 = wrap(aim - 2.3, h._wa); }
+            const p = Math.max(0, 1 - h.swing / 0.2);
+            if (p < 0.2) { const q = p / 0.2; ang = h._ws + (h._a0 - h._ws) * (1 - (1 - q) * (1 - q)); }
+            else { const q = (p - 0.2) / 0.8; ang = h._a0 + (1 - Math.pow(1 - q, 3)) * 3.9; if (q < 0.95) smear = [Math.max(h._a0, ang - 2.4), ang, 1 - q]; }
+            h._wv = 22;
+          } else {
+            h._sw = false; h._sp = false;
+            const sway = h.moving ? Math.sin(this.t * 15.7) * 0.14 : Math.sin(this.t * 2.5) * 0.04;
+            const rest = wrap((flip ? Math.PI - 0.9 : 0.9) + sway, h._wa);
+            h._wv += ((rest - h._wa) * 130 - h._wv * 12) * dt; ang = h._wa + h._wv * dt;
+          }
+          h._wa = ang;
+          // Schwung-Fläche: heller Halbmond zwischen Ausholen und Klinge
+          if (smear) {
+            const [a0, a1] = smear[0] < smear[1] ? smear : [smear[1], smear[0]], k = smear[2] != null ? smear[2] : 0.8;
+            b.globalAlpha = 0.55 * k; b.fillStyle = '#ffffff'; b.beginPath(); b.arc(0, 0, wpn.w + 1, a0, a1); b.arc(0, 0, Math.max(3, wpn.w - 5), a1, a0, true); b.closePath(); b.fill();
+            b.globalAlpha = 0.9 * k; b.strokeStyle = '#fee761'; b.lineWidth = 1; b.beginPath(); b.arc(0, 0, wpn.w + 1, a0 + (a1 - a0) * 0.4, a1); b.stroke();
+          }
+          // Nachbilder der Klinge bei schneller Bewegung
+          const hist = h._wh;
+          for (let i = hist.length - 1, n = 0; i >= 0 && n < 3; i--, n++) {
+            if (Math.abs(hist[i] - ang) < 0.18) continue;
+            b.save(); b.globalAlpha = 0.4 / (n + 1); b.rotate(hist[i]); b.drawImage(A.Art.white(wpn, false), -2, -Math.round(wpn.h / 2)); b.restore();
+          }
+          hist.push(ang); if (hist.length > 3) hist.shift();
+          b.globalAlpha = 1; b.rotate(ang); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2));
         }
         b.restore();
       };
@@ -3168,6 +3240,15 @@ window.A = window.A || {};
       const core = hero ? (s.color === '#c77dff' ? '#f6757a' : '#ffffff') : '#fee761';
       const ring = hero ? s.color : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44');
       const r = Math.max(2, Math.round(s.r / PX)) + (Math.sin(this.t * 30) > 0 ? 1 : 0);
+      // Schweif: die letzten Positionen als dünner werdende Leuchtspur
+      const tr = s.trail || (s.trail = []); tr.push([x + cx, y + cy]); if (tr.length > 8) tr.shift();
+      for (let i = 1; i < tr.length; i++) {
+        const k = i / tr.length; g.globalAlpha = 0.85 * k; g.strokeStyle = i > tr.length - 3 ? '#ffffff' : ring; g.lineWidth = Math.max(1, Math.round((r + 1) * 2 * k)); g.lineCap = 'round';
+        g.beginPath(); g.moveTo(Math.round(tr[i - 1][0] - cx), Math.round(tr[i - 1][1] - cy)); g.lineTo(Math.round(tr[i][0] - cx), Math.round(tr[i][1] - cy)); g.stroke();
+      }
+      g.lineCap = 'butt'; g.globalAlpha = 1;
+      // zwei kleine Funken kreisen um den Kern
+      for (let i = 0; i < 2; i++) { const a = this.t * 16 + i * Math.PI + s.x * 0.01; g.fillStyle = i ? '#ffffff' : ring; g.fillRect(Math.round(x + Math.cos(a) * (r + 3)), Math.round(y + Math.sin(a) * (r + 2)), 1, 1); }
       b.fillStyle = '#181425'; b.beginPath(); b.arc(Math.round(x), Math.round(y), r + 1, 0, TAU); b.fill();
       b.fillStyle = ring; b.beginPath(); b.arc(Math.round(x), Math.round(y), r, 0, TAU); b.fill();
       b.fillStyle = core; b.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
@@ -3183,6 +3264,7 @@ window.A = window.A || {};
       const fl = (ph, k) => 0.86 + Math.sin(t * 9 * (k || 1) + ph) * 0.07 + Math.sin(t * 23 + ph * 2) * 0.05;
       const h = W.hero;
       L(h.x, h.y - 8, 82, '#ffcf94', 0.8); L(h.x, h.y - 8, 30, '#ffffff', 0.28);
+      if (this.tip) L(this.tip.x, this.tip.y, 24 + this.tip.a * 40, '#7fd8ff', this.tip.a);
       for (const tc of this.torches) {
         const lit = this.litAt[tc.room]; if (lit == null) continue;
         const age = t - lit, grow = clamp(age / 0.6, 0, 1);
