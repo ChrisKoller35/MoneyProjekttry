@@ -7747,7 +7747,7 @@ A.Scenes = (function () {
   }
 
   // ======================= Titelbild =======================
-  const T = { cv: null, on: false, s: 3, bw: 0, bh: 0, t: 0, anchor: null, dim: 0, race: 'mensch', cls: 'klinge', embers: [], bats: [], dust: [], nextBat: 2, stat: null, geo: null, heroC: {} };
+  const T = { cv: null, on: false, s: 3, bw: 0, bh: 0, t: 0, anchor: null, dim: 0, race: 'mensch', cls: 'klinge', embers: [], bats: [], dust: [], nextBat: 2, eyes: [], nextEye: 2.5, fog: [], peb: [], nextRumble: 6, shk: 0, stat: null, geo: null, heroC: {} };
   layer(T, 'buf'); layer(T, 'lt'); layer(T, 'gl');
 
   function titleResize() {
@@ -7766,8 +7766,10 @@ A.Scenes = (function () {
     const oh = Math.round(ow * 0.72), fw = 5;
     T.geo = { gx: Math.round(T.bw / 2), floorY, ow, oh, fw };
     T.stat = buildTitle();
-    T.embers.length = 0;
+    T.embers.length = 0; T.peb.length = 0; T.eyes.length = 0;
+    T.fog = []; for (let i = 0; i < 7; i++) T.fog.push({ x: rnd(-20, T.bw + 20), y: G2fy() + rnd(-2, 14), r: rnd(14, 26), v: rnd(2, 5) * (Math.random() < 0.5 ? -1 : 1), ph: rnd(0, TAU) });
   }
+  function G2fy() { return T.geo ? T.geo.floorY : T.bh * 0.7; }
 
   function buildTitle() {
     const bw = T.bw, bh = T.bh, G = T.geo, gx = G.gx, fy = G.floorY, ow = G.ow, oh = G.oh, fw = G.fw;
@@ -7874,7 +7876,16 @@ A.Scenes = (function () {
   function titleFrame(dt) {
     const b = T.bufx, l = T.ltx, g = T.glx, G = T.geo; if (!G) return;
     T.t += dt; const t = T.t;
-    begin(T, '#2b2742'); b.drawImage(T.stat, 0, 0);
+    begin(T, '#2b2742');
+    // ab und zu grollt es in der Tiefe: Bild ruckelt, Steinchen rieseln vom Bogen
+    T.nextRumble -= dt; if (T.shk > 0) T.shk -= dt;
+    if (T.nextRumble <= 0) {
+      T.nextRumble = rnd(9, 15); T.shk = 0.45;
+      for (let i = 0; i < 7; i++) T.peb.push({ x: G.gx + rnd(-G.ow / 2 - 6, G.ow / 2 + 6), y: G.floorY - G.oh - G.ow / 2 - rnd(0, 4), vy: rnd(0, 20), vx: rnd(-6, 6), land: G.floorY + rnd(1, 9), s: Math.random() < 0.4 ? 2 : 1, dl: rnd(0, 0.35), t: 0 });
+      if (A.Sound && A.Sound.drip) A.Sound.drip();
+    }
+    const sh = T.shk > 0 ? Math.round(Math.sin(t * 70) * Math.min(1, T.shk * 3)) : 0;
+    b.drawImage(T.stat, sh, 0);
     const ar = G.ow / 2, acy = G.floorY - G.oh, deepY = G.floorY - G.oh * 0.62;
     // Fackeln
     for (const [i, tc] of T.torches.entries()) {
@@ -7891,12 +7902,40 @@ A.Scenes = (function () {
     light(l, G.gx, G.floorY - 4, ar * 2.6, '#d4602a', 0.9 * pulse);
     light(l, G.gx, G.floorY + 10, ar * 1.8, '#f77622', 0.5);
     if (Math.random() < dt * 14) T.embers.push({ x: G.gx + rnd(-ar * 0.6, ar * 0.6), y: deepY + rnd(-3, 8), vx: rnd(-4, 4), vy: rnd(-12, -28), life: rnd(2.2, 4.5), max: 4.5, ph: rnd(0, TAU) });
+    // Augen in der Dunkelheit des Tors: tauchen auf, blinzeln, verschwinden
+    T.nextEye -= dt;
+    if (T.nextEye <= 0) { T.nextEye = rnd(2.5, 6); T.eyes.push({ x: Math.round(G.gx + rnd(-ar * 0.55, ar * 0.55)), y: Math.round(acy + rnd(-ar * 0.55, ar * 0.1)), life: rnd(2.2, 3.4), max: 3.4, gap: Math.random() < 0.3 ? 4 : 3, col: Math.random() < 0.25 ? '#fee761' : '#e43b44', bl: rnd(0.8, 1.6) }); }
+    for (const e of T.eyes) {
+      e.life -= dt; const a = clamp(Math.min(e.life, (e.max - e.life) * 2), 0, 1);
+      if (Math.abs(e.life - e.bl) < 0.09) continue;
+      g.globalAlpha = a; g.fillStyle = e.col; g.fillRect(e.x - e.gap, e.y, 2, 1); g.fillRect(e.x + e.gap - 1, e.y, 2, 1);
+      light(g, e.x, e.y, 5, e.col, 0.25 * a); g.globalAlpha = 1;
+    }
+    for (let i = T.eyes.length - 1; i >= 0; i--) if (T.eyes[i].life <= 0) T.eyes.splice(i, 1);
+    // Steinchen vom Bogen mit Staubwölkchen beim Aufprall
+    for (const p of T.peb) {
+      if (p.dl > 0) { p.dl -= dt; continue; }
+      if (p.y < p.land) { p.vy += 260 * dt; p.x += p.vx * dt; p.y = Math.min(p.land, p.y + p.vy * dt); if (p.y >= p.land) for (let k = 0; k < 3; k++) T.dust.push({ x: p.x + rnd(-2, 2), y: p.y - rnd(0, 2), vx: rnd(-6, 6), vy: rnd(-5, -1), life: rnd(0.5, 0.9), max: 0.9, big: 1 }); }
+      else p.t += dt;
+      b.globalAlpha = clamp(1 - p.t / 1.5, 0, 1); b.fillStyle = '#181425'; b.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, p.s + 2, p.s + 2); b.fillStyle = '#8b9bb4'; b.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
+    }
+    b.globalAlpha = 1;
+    for (let i = T.peb.length - 1; i >= 0; i--) if (T.peb[i].t > 1.5) T.peb.splice(i, 1);
+    // Nebel kriecht über den Boden
+    for (const f of T.fog) {
+      f.x += f.v * dt; if (f.x < -40) f.x = T.bw + 40; if (f.x > T.bw + 40) f.x = -40;
+      b.globalAlpha = 0.07 + Math.sin(t * 0.6 + f.ph) * 0.025; b.fillStyle = '#8b9bb4'; b.beginPath(); b.ellipse(Math.round(f.x), Math.round(f.y), f.r, f.r * 0.32, 0, 0, TAU); b.fill();
+    }
+    b.globalAlpha = 1;
     // Held vor dem Tor (atmet leicht), Gegenlicht als heller Rand
     const bob = Math.sin(t * 2.5) > 0.6 ? -1 : 0; const key = T.race + T.cls + bob;
     if (!T.heroC[key]) { const im = heroImage(T.race, T.cls, 0, bob); T.heroC[key] = { im, rim: rimOf(im, '#f77622') }; }
     const H = T.heroC[key]; const hx = G.gx - 20, hy = G.floorY + 6 - 34;
     b.drawImage(H.im, hx, hy); g.globalAlpha = 0.75 + Math.sin(t * 1.7) * 0.15; g.drawImage(H.rim, hx, hy); g.globalAlpha = 1;
     light(l, G.gx, G.floorY - 8, 22, '#c0cbdc', 0.25);
+    // Waffe blitzt kurz auf
+    const gp = (t % 4.2) / 4.2; if (gp > 0.9) { const q = (gp - 0.9) / 0.1, gs = Math.round(Math.sin(q * Math.PI) * 3), gxx = hx + 28, gyy = hy + 31;
+      g.fillStyle = '#ffffff'; g.fillRect(gxx - gs, gyy, gs * 2 + 1, 1); g.fillRect(gxx, gyy - gs, 1, gs * 2 + 1); light(g, gxx, gyy, 4 + gs, '#ffffff', 0.4); }
     // Fledermäuse
     T.nextBat -= dt;
     if (T.nextBat <= 0) { T.nextBat = rnd(4, 9); const left = Math.random() < 0.5; T.bats.push({ x: left ? -12 : T.bw + 12, y: rnd(12, Math.max(14, acy - ar - 14)), vx: (left ? 1 : -1) * rnd(24, 38), ph: rnd(0, TAU) }); }
@@ -7908,7 +7947,7 @@ A.Scenes = (function () {
     for (let i = T.bats.length - 1; i >= 0; i--) if (T.bats[i].x < -30 || T.bats[i].x > T.bw + 30) T.bats.splice(i, 1);
     // Staub im Licht
     if (T.dust.length < 26 && Math.random() < dt * 6) T.dust.push({ x: rnd(0, T.bw), y: rnd(acy - ar - 30, G.floorY), vx: rnd(-1.5, 1.5), vy: rnd(-2, 1), life: rnd(4, 8), max: 8 });
-    for (const d of T.dust) { d.life -= dt; d.x += d.vx * dt; d.y += d.vy * dt; const a = Math.min(1, d.life, (d.max - d.life)) * 0.18; g.globalAlpha = a; g.fillStyle = '#c0cbdc'; g.fillRect(Math.round(d.x), Math.round(d.y), 1, 1); }
+    for (const d of T.dust) { d.life -= dt; d.x += d.vx * dt; d.y += d.vy * dt; const a = d.big ? clamp(d.life / d.max, 0, 1) * 0.5 : Math.min(1, d.life, (d.max - d.life)) * 0.18; g.globalAlpha = a; g.fillStyle = '#c0cbdc'; g.fillRect(Math.round(d.x), Math.round(d.y), d.big ? 2 : 1, d.big ? 2 : 1); }
     for (let i = T.dust.length - 1; i >= 0; i--) if (T.dust[i].life <= 0) T.dust.splice(i, 1);
     // Glut-Funken
     for (const e of T.embers) {
