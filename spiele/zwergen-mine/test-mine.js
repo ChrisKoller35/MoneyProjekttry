@@ -102,7 +102,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await shot('11-grossboss');
 
   // 9) Umzug in neue Mine (Erbstücke)
-  await page.evaluate(() => { window.__mine.S.maxDepth = 100; window.__mine.buildPanel(); });
+  await page.evaluate(() => { window.__mine.S.maxDepth = 100; window.__mine.S.best = 100; window.__mine.buildPanel(); });
   await page.click('[data-tab="goal"]'); await page.waitForTimeout(300);
   await shot('12-umzug-moeglich');
   await page.locator('.card.prest .buy').click(); await page.waitForTimeout(300);
@@ -111,7 +111,53 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.click('#tYes'); await page.waitForTimeout(600);
   s = await S();
   check(s.heir === 49 && s.depth === 1 && s.gold === 0 && s.st.prest === 1 && s.gems > 0, `Umzug: ${s.heir} Erbstücke, Tiefe ${s.depth}, Steine behalten ${s.gems}`);
+  check(s.runs.length === 1 && s.runs[0].d === 100 && s.recBase === 100 && s.best === 100, 'Umzug merkt sich die Mine für die Rekorde');
+  await page.waitForTimeout(300);
+  check(await page.locator('#best').textContent() === '🏆100', 'Rekord oben neben der Tiefe sichtbar');
   await shot('14-neue-mine');
+
+  // 9b) Rekorde ansehen (Klick auf die Tiefe und Reiter «Ziele»)
+  await page.click('#depthPill'); await page.waitForTimeout(300);
+  const recText = await page.locator('#toast').textContent();
+  check(await page.locator('#tClose').isVisible() && recText.includes('Mine 1') && recText.includes('100'), 'Rekorde öffnen sich mit Klick auf die Tiefe');
+  await shot('14b-rekorde');
+  await page.click('#tClose'); await page.waitForTimeout(200);
+  check(!(await page.locator('#toast').isVisible()), 'Rekorde schliessen');
+  await page.click('[data-tab="goal"]'); await page.waitForTimeout(200);
+  await page.locator('.card', { hasText: 'Rekorde' }).locator('.buy').click(); await page.waitForTimeout(200);
+  check(await page.locator('#tClose').isVisible(), 'Rekorde auch im Reiter «Ziele»');
+  await page.click('#tClose'); await page.waitForTimeout(200);
+  check((await page.evaluate(() => window.__mine.GOALS.length)) === 47, '47 Ziele');
+
+  // 9c) Alten Rekord in der neuen Mine knacken
+  const rec = await page.evaluate(() => { const m = window.__mine; m.jump(100); m.S.hp = 1; m.tap(); return { best: m.S.best, b: m.banners() }; });
+  check(rec.best === 101 && rec.b.includes('Neuer Rekord!'), `Meldung «Neuer Rekord!» (${rec.b.join(', ')})`);
+  for (let i = 0; i < 60; i++) { if ((await page.evaluate(() => window.__mine.banners()[0])) === 'Neuer Rekord!') break; await page.waitForTimeout(150); }
+  await page.waitForTimeout(400);
+  await shot('14c-neuer-rekord');
+
+  // 9d) Ring II ab Tiefe 141: neue Farben, Edelsteine, weicherer Anstieg
+  const ring = await page.evaluate(() => {
+    const m = window.__mine; m.jump(140); m.S.hp = 1;
+    const exp = m.S.gems + m.F.bossGems(140, m.S) + m.F.ringGems(1);
+    const layerMsgs = () => m.banners().filter(t => t === 'Neue Schicht').length, before = layerMsgs(); m.tap();
+    return { gems: m.S.gems, exp, b: m.banners(), extraLayerMsg: layerMsgs() > before, name: m.layerAt(141).name, same: m.layerAt(141).rock === m.layerAt(1).rock,
+      grow: m.F.rockHp(142) / m.F.rockHp(141), growOld: m.F.rockHp(139) / m.F.rockHp(138), far: m.F.rockHp(2000) };
+  });
+  check(ring.name === 'Erde II' && !ring.same, `Ring II hat eigene Farben (${ring.name})`);
+  check(ring.gems === ring.exp && ring.b.includes('Ring II erreicht!') && !ring.extraLayerMsg, `Ring II gibt einmal Edelsteine (${ring.gems} von ${ring.exp}, ${ring.b.join(', ')})`);
+  check(Math.abs(ring.grow - 1.15) < 0.01 && Math.abs(ring.growOld - 1.21 * 1.025) < 0.01 && isFinite(ring.far), `Fels wächst ab 140 langsamer (${ring.grow.toFixed(3)} statt ${ring.growOld.toFixed(3)})`);
+  for (let i = 0; i < 60; i++) { if ((await page.evaluate(() => window.__mine.banners()[0])) === 'Ring II erreicht!') break; await page.waitForTimeout(150); }
+  await page.waitForTimeout(500);
+  await shot('14d-ring-2');
+  for (const d of [161, 201, 251, 281, 431]) {
+    await page.evaluate((d) => window.__mine.jump(d), d); await page.waitForTimeout(2800);
+    await shot(`14e-ring-tiefe-${d}`);
+  }
+
+  // 9e) Ton aus, wenn das Fenster nicht mehr vorne ist
+  const foc = await page.evaluate(() => { const m = window.__mine; window.dispatchEvent(new Event('blur')); const a = m.focus; window.dispatchEvent(new Event('focus')); return [a, m.focus]; });
+  check(foc[0] === false && foc[1] === true, 'Ton aus, wenn man woanders hinklickt');
 
   // 10) Spätere Schichten ansehen
   for (const d of [61, 91, 111, 131]) {
@@ -156,6 +202,9 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const ds = await desk.evaluate(() => ({ cdDyn: window.__mine.S.cdDyn, cdBeer: window.__mine.S.cdBeer }));
   check(ds.cdDyn > 0 && ds.cdBeer > 0, 'Tasten D und B funktionieren am PC');
   await desk.screenshot({ path: `${out}/20-desktop.png` });
+  await desk.click('#depthPill'); await desk.waitForTimeout(300);
+  check(await desk.locator('#tClose').isVisible(), 'Rekorde am PC');
+  await desk.screenshot({ path: `${out}/21-desktop-rekorde.png` });
 
   check(errors.length === 0, 'Keine Fehler im Browser ' + JSON.stringify(errors));
   await browser.close();

@@ -20,7 +20,13 @@
   .pill svg { width: 20px; height: 20px; flex: none; }
   #gold { color: var(--gold); }
   #gems { color: var(--gem); }
-  #depthPill { margin-left: auto; }
+  #depthPill { margin-left: auto; cursor: pointer; }
+  #best { font-size: 12px; color: var(--muted); font-weight: 700; }
+  #best:empty { display: none; }
+  .runs { display: grid; grid-template-columns: auto auto auto auto; column-gap: 14px; text-align: left; font-size: 13px; margin-top: 10px; max-height: 200px; overflow-y: auto; white-space: nowrap; }
+  .runs span { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .runs .cur { color: var(--gold); font-weight: 800; }
+  .runs .note { grid-column: 1 / -1; white-space: normal; color: var(--muted); border: 0; }
   #dps { font-size: 12px; color: var(--muted); font-weight: 600; }
   #stage { position: relative; flex: 1 1 auto; min-height: 220px; }
   #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
@@ -64,7 +70,7 @@
   .buy.can { background: var(--gold); color: #3a2a00; }
   .buy.gemcan { background: var(--gem); color: #003449; }
   .buy:active.can, .buy:active.gemcan { transform: scale(0.96); }
-  #toast { position: absolute; left: 50%; top: 18%; transform: translate(-50%, 0); background: rgba(20,15,30,0.92); border: 2px solid var(--gold); border-radius: 16px; padding: 14px 18px; text-align: center; display: none; z-index: 5; min-width: 220px; }
+  #toast { position: absolute; left: 50%; top: 18%; transform: translate(-50%, 0); background: rgba(20,15,30,0.92); border: 2px solid var(--gold); border-radius: 16px; padding: 14px 18px; text-align: center; display: none; z-index: 5; min-width: 220px; width: max-content; max-width: min(340px, 88vw); }
   #toast .big { font-size: 26px; font-weight: 900; color: var(--gold); display: flex; align-items: center; justify-content: center; gap: 8px; }
   #toast .big svg { width: 28px; height: 28px; }
   #toast .small { color: var(--muted); font-size: 13px; margin-top: 4px; }
@@ -78,7 +84,7 @@
   <div id="hud">
     <div class="pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#f5c542"/><circle cx="12" cy="12" r="6" fill="none" stroke="#c9961b" stroke-width="2"/></svg><span id="gold">0</span></div>
     <div class="pill"><svg viewBox="0 0 24 24"><path d="M6 4h12l4 6-10 11L2 10z" fill="#57d2ff"/><path d="M2 10h20M8 4l4 6 4-6M12 10v11" stroke="#1d8db6" stroke-width="1.4" fill="none"/></svg><span id="gems">0</span></div>
-    <div class="pill" id="depthPill"><svg viewBox="0 0 24 24"><path d="M12 3v14M6 11l6 6 6-6" stroke="#f3ead8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 21h16" stroke="#a99bbd" stroke-width="2.4" stroke-linecap="round"/></svg><span id="depth">1</span></div>
+    <div class="pill" id="depthPill"><svg viewBox="0 0 24 24"><path d="M12 3v14M6 11l6 6 6-6" stroke="#f3ead8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 21h16" stroke="#a99bbd" stroke-width="2.4" stroke-linecap="round"/></svg><span id="depth">1</span><span id="best"></span></div>
   </div>
   <div id="stage">
     <canvas id="scene"></canvas>
@@ -105,6 +111,7 @@
 const Portal = window.ZwergenMinePortal || {
   gameplayStart() {}, gameplayStop() {}, happytime() {},
   showRewardedAd(onReward) { onReward(); },   // freiwillige Werbung gegen Belohnung
+  submitScore(depth) {},                       // Rangliste des Portals (tiefster Punkt), später anschliessen
 };
 
 // ---------- Texte (Deutsch / Englisch) ----------
@@ -129,8 +136,11 @@ const T = DE ? {
     magnet: ['Erz-Magnet', 'Truhen geben doppelt'], gluck: ['Glücksbringer', 'Volltreffer ×6 statt ×5'], lied: ['Zwergenlied', 'Zwerge +30 %'],
     bohrer: ['Diamantbohrer', 'Hacke ×2'], schicht: ['Doppelschicht', 'Zwerge +50 %'], kugel: ['Kristallkugel', 'Bosse geben doppelt Steine'],
   },
-  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine' },
+  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine', heir: 'Sammle {n} Erbstücke' },
   goals1: { boss: 'Besiege deinen ersten Boss', prest: 'Zieh zum ersten Mal in eine neue Mine' },
+  records: 'Rekorde', bestDepth: 'Tiefster Punkt', thisMine: 'Diese Mine', mines: 'Minen', mine: 'Mine', show: 'Ansehen', close: 'Schliessen',
+  record: 'Neuer Rekord!', recordSub: 'Dein alter Rekord war Tiefe {n}', ringNew: 'Ring {r} erreicht!', ringSub: 'Neue Farben, leuchtendes Erz',
+  noRuns: 'Noch kein Umzug. Ab Tiefe 51 kannst du in eine neue Mine ziehen.', playTime: 'Spielzeit', moves: 'Umzüge', min: 'min', depthW: 'Tiefe',
 } : {
   pick: 'Pickaxe', dwarf: 'Dwarves', gem: 'Gems', perTap: 'per tap', perSec: 'per sec',
   pickName: 'Pickaxe', boss: 'Boss', retry: 'Retry boss', welcome: 'Welcome back!', away: 'Your dwarves kept digging',
@@ -151,8 +161,11 @@ const T = DE ? {
     magnet: ['Ore Magnet', 'Chests give double'], gluck: ['Lucky Charm', 'Crits ×6 instead of ×5'], lied: ['Dwarf Song', 'Dwarves +30%'],
     bohrer: ['Diamond Drill', 'Pickaxe ×2'], schicht: ['Double Shift', 'Dwarves +50%'], kugel: ['Crystal Ball', 'Bosses give double gems'],
   },
-  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times' },
+  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times', heir: 'Collect {n} heirlooms' },
   goals1: { boss: 'Beat your first boss', prest: 'Move to a new mine for the first time' },
+  records: 'Records', bestDepth: 'Deepest point', thisMine: 'This mine', mines: 'Mines', mine: 'Mine', show: 'View', close: 'Close',
+  record: 'New record!', recordSub: 'Your old record was depth {n}', ringNew: 'Ring {r} reached!', ringSub: 'New colors, glowing ore',
+  noRuns: 'No move yet. From depth 51 you can move to a new mine.', playTime: 'Play time', moves: 'Moves', min: 'min', depthW: 'Depth',
 };
 const DWARF_NAMES = DE
   ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
@@ -214,6 +227,13 @@ const GOALS = [
   { id: 'p10', type: 'pick', n: 10, gems: 1 }, { id: 'p30', type: 'pick', n: 30, gems: 2 }, { id: 'p60', type: 'pick', n: 60, gems: 5 },
   { id: 'u5', type: 'up', n: 5, gems: 1 }, { id: 'u15', type: 'up', n: 15, gems: 6 },
   { id: 'n1', type: 'prest', n: 1, gems: 3 }, { id: 'n3', type: 'prest', n: 3, gems: 8 },
+  // Ziele für lange Spieler (Endlos-Tiefe)
+  { id: 'd200', type: 'depth', n: 200, gems: 25 }, { id: 'd250', type: 'depth', n: 250, gems: 35 }, { id: 'd300', type: 'depth', n: 300, gems: 50 }, { id: 'd400', type: 'depth', n: 400, gems: 80 }, { id: 'd500', type: 'depth', n: 500, gems: 120 },
+  { id: 't30000', type: 'taps', n: 30000, gems: 8 }, { id: 't100000', type: 'taps', n: 100000, gems: 15 }, { id: 'w800', type: 'dw', n: 800, gems: 10 },
+  { id: 'b30', type: 'boss', n: 30, gems: 8 }, { id: 'b60', type: 'boss', n: 60, gems: 12 }, { id: 'b100', type: 'boss', n: 100, gems: 20 },
+  { id: 'c100', type: 'chest', n: 100, gems: 8 }, { id: 'c200', type: 'chest', n: 200, gems: 12 }, { id: 'p100', type: 'pick', n: 100, gems: 8 }, { id: 'p150', type: 'pick', n: 150, gems: 12 },
+  { id: 'n5', type: 'prest', n: 5, gems: 12 }, { id: 'n10', type: 'prest', n: 10, gems: 20 }, { id: 'n25', type: 'prest', n: 25, gems: 40 },
+  { id: 'h100', type: 'heir', n: 100, gems: 3 }, { id: 'h500', type: 'heir', n: 500, gems: 6 }, { id: 'h2000', type: 'heir', n: 2000, gems: 12 }, { id: 'h10000', type: 'heir', n: 10000, gems: 25 },
 ];
 const GEM_UPS = [
   { key: 'power',   base: 2,  grow: 1.35, max: 999 },
@@ -226,7 +246,10 @@ const F = {
   isBoss: (d) => d % 10 === 0,
   isBigBoss: (d) => d % 50 === 0,
   layerOf: (d) => Math.floor((d - 1) / 10) % LAYERS.length,
-  rockHp: (d) => Math.ceil(8 * Math.pow(1.21, d - 1) * Math.pow(1.025, Math.max(0, d - 40)) * (d % 50 === 0 ? 10 : d % 10 === 0 ? 7 : 1)),
+  ringOf: (d) => Math.floor((d - 1) / (10 * LAYERS.length)),   // nach 14 Schichten beginnt ein neuer Ring
+  ringGems: (r) => 30 * r,
+  // Fels: ×1.21 je Tiefe, ab 40 zusätzlich ×1.025; ab Ring II (Tiefe 141) nur noch ×1.15, damit es endlos weitergeht
+  rockHp: (d) => { const e = Math.min(d, 140); return Math.ceil(8 * Math.pow(1.21, e - 1) * Math.pow(1.025, Math.max(0, e - 40)) * Math.pow(1.15, Math.max(0, d - 140)) * (d % 50 === 0 ? 10 : d % 10 === 0 ? 7 : 1)); },
   rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s)),
   bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
   bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0),
@@ -252,16 +275,50 @@ const F = {
   dynCd: 90, dynTaps: 30, beerCd: 180, beerSec: 20, beerMult: 3,
   canPrestige: (s) => s.maxDepth > 50,
   heirGain: (s) => s.maxDepth > 50 ? Math.floor(Math.pow((s.maxDepth - 30) / 10, 2)) : 0,
-  goalProgress: (g, s) => ({ depth: s.maxDepth, taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest })[g.type],
+  goalProgress: (g, s) => ({ depth: Math.max(s.maxDepth, s.best || 1), taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest, heir: s.heir || 0 })[g.type],
 };
 // FORMELN_ENDE
+
+// ---------- Ringe: nach 14 Schichten geht es mit neuen Farben weiter ----------
+const ROMAN = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+function ringName(r) { return ROMAN[r] || String(r + 1); }
+function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1).length === 3 ? hex.slice(1).replace(/./g, (c) => c + c) : hex.slice(1), 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+  if (mx === mn) return [0, 0, l];
+  const d = mx - mn, s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, s, l];
+}
+function hslToHex(h, s, l) {
+  const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+  return '#' + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+const layerCache = {};
+function layerAt(d) {
+  const i = F.layerOf(d), r = F.ringOf(d), key = i + ':' + r;
+  if (layerCache[key]) return layerCache[key];
+  const base = LAYERS[i];
+  let L;
+  if (r === 0) L = Object.assign({ glow: false }, base);
+  else {
+    const shift = (r * 137.5) % 360;
+    const tint = (hex, dl, ds, minL = 0) => { const [h, s, l] = hexToHsl(hex); return hslToHex((h + shift) % 360, Math.min(1, s * 1.1 + ds), Math.min(0.9, Math.max(minL, l + dl))); };
+    L = { rock: tint(base.rock, 0.02, 0.12), dark: tint(base.dark, 0, 0.12), ore: tint(base.ore, 0.08, 0.3, 0.6), bg: tint(base.bg, 0, 0.15), glow: true };
+  }
+  L.name = T.layers[i] + (r ? ' ' + ringName(r) : '');
+  return (layerCache[key] = L);
+}
 
 // ---------- Spielstand ----------
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
   return { gold: 0, gems: 0, depth: 1, maxDepth: 1, farm: false, pick: 0, dw: DWARVES.map(() => 0),
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
-    up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0 }, cdDyn: 0, cdBeer: 0 };
+    up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0 }, cdDyn: 0, cdBeer: 0,
+    best: 1, recBase: 0, runs: [], runTime: 0 };
 }
 let S = freshState();
 function load() {
@@ -272,6 +329,9 @@ function load() {
     const f = freshState();
     S = Object.assign(f, d, { gu: Object.assign(f.gu, d.gu || {}), dw: DWARVES.map((_, i) => (d.dw && d.dw[i]) || 0), up: Object.assign({}, d.up || {}), goals: Object.assign({}, d.goals || {}), st: Object.assign(f.st, d.st || {}) });
     if (!d.st) S.st.bosses = Math.floor(((d.maxDepth || 1) - 1) / 10);   // Spielstand von vor den Zielen
+    S.best = Math.max(d.best || 1, S.maxDepth || 1);                       // Spielstand von vor den Rekorden
+    if (d.recBase == null) S.recBase = S.best;
+    if (!Array.isArray(S.runs)) S.runs = [];
     return d.saved || null;
   } catch (e) { return null; }
 }
@@ -288,8 +348,15 @@ function fmt(n) {
 
 // ---------- Ton ----------
 let actx = null;
+// Still, solange das Spiel nicht im Vordergrund ist (anderes Fenster, Chat daneben angeklickt)
+let hasFocus = !document.hasFocus || document.hasFocus();
+window.addEventListener('blur', () => { hasFocus = false; });
+window.addEventListener('focus', () => { hasFocus = true; });
+document.addEventListener('pointerdown', () => { hasFocus = true; }, true);
+document.addEventListener('keydown', () => { hasFocus = true; }, true);
+let lastBrk = 0;
 function beep(f, d, type, v) {
-  if (!S.sound) return;
+  if (!S.sound || !hasFocus) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     if (actx.state === 'suspended') actx.resume();
@@ -302,7 +369,7 @@ function beep(f, d, type, v) {
 const sfx = {
   hit: () => beep(140 + Math.random() * 40, 0.05, 'square', 0.03),
   crit: () => { beep(600, 0.06, 'square', 0.04); beep(900, 0.08, 'triangle', 0.04); },
-  brk: () => { beep(90, 0.15, 'sawtooth', 0.05); setTimeout(() => beep(520, 0.08, 'triangle', 0.04), 40); },
+  brk: () => { const n = performance.now(); if (n - lastBrk < 160) return; lastBrk = n; beep(90, 0.15, 'sawtooth', 0.05); setTimeout(() => beep(520, 0.08, 'triangle', 0.04), 40); },
   buy: () => { beep(660, 0.06, 'triangle', 0.05); setTimeout(() => beep(990, 0.08, 'triangle', 0.05), 50); },
   boss: () => { [330, 440, 550, 660, 880].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 70)); },
   chest: () => { [520, 780, 1040].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'sine', 0.06), i * 60)); },
@@ -340,10 +407,10 @@ function spawnRock() {
   S.hp = hpMax;
   bossTimer = F.bossTime(S.depth, S);
   rockSeed = (S.depth * 9301 + 49297) % 233280;
-  const L = F.layerOf(S.depth);
-  if (L !== layerShown) {
-    if (layerShown !== -1) showBanner({ text: T.newLayer, sub: T.layers[L] + ' · ' + S.depth, life: 2.4, color: LAYERS[L].ore });
-    layerShown = L;
+  const LK = Math.floor((S.depth - 1) / 10);
+  if (LK !== layerShown) {
+    if (layerShown !== -1) { const ly = layerAt(S.depth); showBanner({ text: T.newLayer, sub: ly.name + ' · ' + S.depth, life: 2.4, color: ly.ore }); }
+    layerShown = LK;
   }
   if (bossActive && F.isBigBoss(S.depth)) showBanner({ text: T.bigBoss, sub: '💎 ×' + F.bossGems(S.depth, S), life: 2.4, color: '#ff6b6b' });
   updateBossBtn();
@@ -358,7 +425,7 @@ function damage(amount, fromTap, x, y) {
     shake = Math.min(1, shake + (crit ? 0.6 : 0.25)); hitFlash = 1;
     const c = rockCenter();
     floats.push({ x: (x ?? c.x) + (Math.random() - 0.5) * 30, y: (y ?? c.y) - 20, text: fmt(amount), life: 1, crit });
-    const col = LAYERS[F.layerOf(S.depth)];
+    const col = layerAt(S.depth);
     for (let i = 0; i < (crit ? 10 : 4); i++) chips.push(chip(x ?? c.x, y ?? c.y, Math.random() < 0.35 ? col.ore : col.rock));
     crit ? sfx.crit() : sfx.hit();
   }
@@ -374,7 +441,7 @@ function breakRock() {
   const c = rockCenter();
   const gold = F.rockGold(S.depth, S);
   S.gold += gold;
-  for (let i = 0; i < 26; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, LAYERS[F.layerOf(S.depth)][Math.random() < 0.4 ? 'ore' : 'rock']));
+  for (let i = 0; i < 26; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, layerAt(S.depth)[Math.random() < 0.4 ? 'ore' : 'rock']));
   const n = Math.min(10, 3 + Math.floor(Math.log10(gold + 1) * 2));
   for (let i = 0; i < n; i++) coins.push({ x: c.x + (Math.random() - 0.5) * c.r, y: c.y + (Math.random() - 0.5) * c.r * 0.6, t: -i * 0.04, sx: 0, sy: 0 });
   floats.push({ x: c.x, y: c.y - c.r - 10, text: '+' + fmt(gold), life: 1.3, gold: true });
@@ -388,10 +455,21 @@ function breakRock() {
   }
   if (!S.farm) {
     S.depth++;
-    if (S.depth > S.maxDepth) S.maxDepth = S.depth;
+    if (S.depth > S.maxDepth) { S.maxDepth = S.depth; onNewMax(); }
   }
   spawnRock();
   refreshPanel(true);
+}
+
+// Neue Bestmarke in dieser Mine: Rekord, Ring-Belohnung, Rangliste
+function onNewMax() {
+  if (S.st.prest > 0 && S.maxDepth === S.recBase + 1) { showBanner({ text: T.record, sub: T.recordSub.replace('{n}', S.recBase), life: 2.6, color: '#ffd447' }); sfx.chest(); }
+  if (S.maxDepth > S.best) {
+    const r = F.ringOf(S.maxDepth);
+    if (r > F.ringOf(S.best)) { const g = F.ringGems(r); S.gems += g; showBanner({ text: T.ringNew.replace('{r}', ringName(r)), sub: T.ringSub + '  💎 +' + g, life: 3.2, color: layerAt(S.maxDepth).ore }); sfx.boss(); layerShown = Math.floor((S.maxDepth - 1) / 10); }   // ersetzt die Schicht-Meldung
+    S.best = S.maxDepth;
+    if (S.best % 10 === 0) Portal.submitScore(S.best);
+  }
 }
 
 function failBoss() {
@@ -490,7 +568,7 @@ function rng(seed) { let s = seed; return () => (s = (s * 9301 + 49297) % 233280
 
 function drawRock(t) {
   const c = rockCenter();
-  const L = LAYERS[F.layerOf(S.depth)];
+  const L = layerAt(S.depth);
   const sx = (Math.random() - 0.5) * shake * 10, sy = (Math.random() - 0.5) * shake * 10;
   const R = rng(rockSeed);
   const pts = [];
@@ -510,13 +588,15 @@ function drawRock(t) {
   ctx.fillStyle = g; ctx.fill();
   ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.stroke();
   ctx.save(); ctx.clip();
-  // Erz-Adern
+  // Erz-Adern (ab Ring II leuchtend)
+  if (L.glow) { ctx.shadowColor = L.ore; ctx.shadowBlur = 10; }
   for (let i = 0; i < 9; i++) {
     const ox = c.x + sx + (R() - 0.5) * c.r * 1.5, oy = c.y + sy + (R() - 0.5) * c.r * 1.4, s = 4 + R() * 8;
     ctx.fillStyle = L.ore;
     ctx.beginPath(); ctx.moveTo(ox, oy - s); ctx.lineTo(ox + s * 0.8, oy); ctx.lineTo(ox, oy + s * 0.7); ctx.lineTo(ox - s * 0.9, oy); ctx.closePath(); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(ox - s * 0.3, oy - s * 0.5, s * 0.25, s * 0.25);
   }
+  ctx.shadowBlur = 0;
   // Risse je nach Schaden
   const dmg = 1 - Math.max(0, S.hp) / hpMax;
   const cracks = Math.floor(dmg * 7);
@@ -566,10 +646,10 @@ function roundRect(x, y, w, h, r) {
 }
 
 function drawBackground(t) {
-  const L = LAYERS[F.layerOf(S.depth)];
+  const L = layerAt(S.depth);
   ctx.fillStyle = L.bg; ctx.fillRect(0, 0, CW, CH);
   // Stollenwände
-  const R = rng(F.layerOf(S.depth) * 31 + 3);
+  const R = rng(Math.floor((S.depth - 1) / 10) * 31 + 3);
   for (let i = 0; i < 26; i++) {
     const x = R() * CW, y = R() * CH, s = 10 + R() * 26;
     ctx.fillStyle = `rgba(255,255,255,${0.02 + R() * 0.03})`;
@@ -590,7 +670,7 @@ function drawBackground(t) {
   // Name der Schicht
   ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '800 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if (banner) return;
-  ctx.fillText(T.layers[F.layerOf(S.depth)] + ' · ' + T.layer + ' ' + (Math.floor((S.depth - 1) / 10) + 1), CW / 2, CH * 0.08 + 30);
+  ctx.fillText(L.name + ' · ' + T.layer + ' ' + (Math.floor((S.depth - 1) / 10) + 1), CW / 2, CH * 0.08 + 30);
   if (S.heir > 0) { ctx.fillStyle = '#c77dff'; ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText('⚱ ' + S.heir + '  +' + Math.round((F.heirMult(S) - 1) * 100) + '%', CW - 14, CH * 0.08 + 30); }
 }
 
@@ -739,7 +819,7 @@ function dwarfIcon(i) {
 }
 const GEM_ICON_COLORS = { power: '#ff8a3d', gold: '#f5c542', crit: '#ff6b6b', offline: '#7f8cff', chest: '#6fdc7a' };
 const UP_EMOJI = { spitze: '⛏️', doppel: '✌️', band: '🛤️', laterne: '🏮', dyn: '🧨', zeit: '⏳', bier: '🍺', waage: '⚖️', kurs: '🎓', magnet: '🧲', gluck: '🍀', lied: '🎵', bohrer: '💎', schicht: '🌙', kugel: '🔮' };
-const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️' };
+const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️', heir: '💜' };
 function emojiIcon(e) { return (g) => { g.font = '26px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, 20, 22); }; }
 function heirIcon(g) { g.translate(20, 20); g.fillStyle = '#c77dff'; g.beginPath(); g.moveTo(-8, -12); g.lineTo(8, -12); g.lineTo(11, 0); g.lineTo(6, 14); g.lineTo(-6, 14); g.lineTo(-11, 0); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(-5, -8, 3, 14); }
 function gemIcon(key) {
@@ -764,6 +844,7 @@ function buildPanel() {
     GEM_UPS.forEach((u) => rows.push(makeRow({ icon: iconCanvas(gemIcon(u.key)), kind: 'gem', key: u.key })));
   } else {
     rows.push(makeRow({ icon: iconCanvas(heirIcon), kind: 'prest' }));
+    rows.push(makeRow({ icon: iconCanvas(emojiIcon('🏆')), kind: 'rec' }));
     const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
     gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
   }
@@ -801,6 +882,9 @@ function rowData(r) {
     const g = r.g, done = !!S.goals[g.id], p = Math.min(g.n, F.goalProgress(g, S));
     return { name: goalName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
   }
+  if (r.kind === 'rec') {
+    return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
+  }
   if (r.kind === 'prest') {
     const can = F.canPrestige(S), gain = F.heirGain(S);
     return { name: T.newMine, lvl: S.heir > 0 ? '⚱ ' + S.heir : '', eff: can ? `<b>+${gain} ${T.heir}</b> (${T.heirEff}). ${T.deeper} ${T.newMineInfo}` : `${T.moveFrom} (${T.heirEff}).`, cost: 0, cur: 'prest', locked: false, prest: true, can };
@@ -826,6 +910,7 @@ function refreshPanel(force) {
     r.nm.textContent = d.name; r.lvl.textContent = d.lvl; r.eff.innerHTML = d.eff;
     r.el.classList.toggle('locked', d.locked); r.el.classList.toggle('done', !!d.done); r.el.classList.toggle('prest', !!d.prest);
     if (d.prest) { r.btn.innerHTML = T.move; r.btn.className = 'buy' + (can ? ' prestcan' : ''); }
+    else if (d.rec) { r.btn.innerHTML = T.show; r.btn.className = 'buy gemcan'; }
     else if (d.reward) { r.btn.innerHTML = d.done ? '✓' : GEM_SVG + '+' + d.cost; r.btn.className = 'buy ' + (d.done ? 'ok' : 'rew'); }
     else {
       r.btn.innerHTML = d.maxed ? 'MAX' : d.done ? '✓ ' + T.bought : (d.cur === 'gold' ? COIN_SVG : GEM_SVG) + fmt(d.cost);
@@ -848,6 +933,7 @@ function buy(r) {
   const d = rowData(r);
   if (r.kind === 'goal') return;
   if (r.kind === 'prest') { newMine(); return; }
+  if (r.kind === 'rec') { showRecords(); return; }
   if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
   else { if (S.gems < d.cost) return; S.gems -= d.cost; }
@@ -891,8 +977,22 @@ function askConfirm(text, onYes) {
   document.getElementById('tNo').onclick = () => { toast.style.display = 'none'; };
   document.getElementById('tYes').onclick = () => { toast.style.display = 'none'; onYes(); };
 }
+function showRecords() {
+  if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Offline-Gold oder Rückfrage nicht überdecken
+  const dur = (t) => { const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60); return h ? h + ':' + String(m).padStart(2, '0') + ' h' : Math.max(1, Math.round(t / 60)) + ' ' + T.min; };
+  const row = (a, d, h, t, cls) => [a, `${T.depthW} <b>${d}</b>`, h, t].map(x => `<span class="${cls}">${x}</span>`).join('');
+  const list = S.runs.slice().sort((a, b) => b.d - a.d).slice(0, 8).map((m) => row(`${T.mine} ${m.n}`, m.d, '⚱ +' + m.h, m.t ? dur(m.t) : '', '')).join('');
+  toast.innerHTML = `<div style="font-weight:900;font-size:18px">🏆 ${T.records}</div>
+    <div class="small">${T.bestDepth}</div><div class="big">${S.best}</div>
+    <div class="runs">${row(`${T.thisMine} (${S.st.prest + 1})`, S.maxDepth, '', dur(S.runTime), 'cur')}${list || `<span class="note">${T.noRuns}</span>`}</div>
+    <div class="small">${T.moves} ${S.st.prest} · ⚱ ${S.heir} ${T.heir} · ${T.playTime} ${dur(S.st.time)}</div>
+    <button id="tClose">${T.close}</button>`;
+  toast.style.display = 'block';
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+}
 function doNewMine(gain) {
-  S.heir += gain; S.st.prest++;
+  S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
+  S.heir += gain; S.st.prest++; S.runTime = 0; S.recBase = S.best;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
   rage = 0; beer = 0; chest = null; chestTimer = 25; layerShown = -1;
   spawnRock(); buildPanel(); updateSkillBtns(); seenPrest = false;
@@ -902,7 +1002,8 @@ function doNewMine(gain) {
 }
 
 // ---------- HUD ----------
-const goldEl = document.getElementById('gold'), gemsEl = document.getElementById('gems'), depthEl = document.getElementById('depth');
+const goldEl = document.getElementById('gold'), gemsEl = document.getElementById('gems'), depthEl = document.getElementById('depth'), bestEl = document.getElementById('best');
+document.getElementById('depthPill').addEventListener('click', () => showRecords());
 const bossBtn = document.getElementById('bossBtn');
 bossBtn.addEventListener('click', () => { retryBoss(); });
 function updateBossBtn() {
@@ -946,6 +1047,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   if (paused) return;
   const dt = Math.min(0.1, (now - last) / 1000); last = now; t += dt;
+  S.runTime += dt; S.st.time += dt;
 
   // Zwerge graben
   const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1);
@@ -982,6 +1084,7 @@ function frame(now) {
 
   // HUD
   goldEl.textContent = fmt(S.gold); gemsEl.textContent = fmt(S.gems); depthEl.textContent = S.depth;
+  const bt = S.best > S.depth ? '🏆' + S.best : ''; if (bestEl.textContent !== bt) bestEl.textContent = bt;
   panelTimer -= dt; if (panelTimer <= 0) { panelTimer = 0.25; refreshPanel(false); }
   saveTimer -= dt; if (saveTimer <= 0) { saveTimer = 5; save(); }
 }
@@ -989,7 +1092,7 @@ function frame(now) {
 // ---------- Start ----------
 const since = load();
 drawSoundIcon();
-layerShown = F.layerOf(S.depth);
+layerShown = Math.floor((S.depth - 1) / 10);
 spawnRock();
 if (S.hp <= 0) S.hp = hpMax;
 buildPanel();
@@ -1001,7 +1104,7 @@ Portal.gameplayStart();
 requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
-window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: () => { S = freshState(); spawnRock(); buildPanel(); }, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.farm = false; spawnRock(); buildPanel(); } };
+window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: () => { S = freshState(); spawnRock(); buildPanel(); }, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; } };
 </script>
 </body>
 </html>
