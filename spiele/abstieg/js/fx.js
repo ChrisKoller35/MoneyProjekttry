@@ -7,6 +7,7 @@ A.FX = (function () {
   const P = [];            // Teilchen (Weltkoordinaten)
   const flashes = [];      // kurze Lichter
   const banners = [];      // grosse Einblendungen
+  const flyers = [];       // aufgesammelte Münzen/Tränke, die zur Anzeige oben fliegen
   let decals = [];         // Flecken, die der Zeichner in den Boden malt
   let trauma = 0, stopT = 0, slowT = 0, hurtT = 0, healT = 0, lowFx = false, t = 0, combo = 0, comboT = -9;
   const MAX = 420;
@@ -106,8 +107,8 @@ A.FX = (function () {
         }
         if (f && f.side === 'hero') { if (d.magic) S().cast(); else S().shoot(); } else if (once('eshot', 120)) S().shoot(); return;
       }
-      case 'coin': S().coin(); burst(d.x, d.y - 10, 3, { color: ['#fee761', '#ffffff'], smin: 20, smax: 60, life: 0.3, add: true, kind: 'spark' }); return;
-      case 'pickPotion': S().potion(); return;
+      case 'coin': flyers.push({ x: d.x, y: d.y - 10, t: 0, kind: 'coin' }); S().coin(); burst(d.x, d.y - 10, 3, { color: ['#fee761', '#ffffff'], smin: 20, smax: 60, life: 0.3, add: true, kind: 'spark' }); return;
+      case 'pickPotion': if (d && d.x != null) flyers.push({ x: d.x, y: d.y - 10, t: 0, kind: 'potion' }); S().potion(); return;
       case 'drop': S().drop(d.rarity); if (d.rarity === 'epic' || d.rarity === 'legendary') { flash(d.x, d.y, 90, d.color, 0.5); burst(d.x, d.y, 16, { color: [d.color, '#ffffff'], smin: 40, smax: 160, life: 0.6, add: true, kind: 'spark' }); } return;
       case 'pickItem': S().loot(d.rarity); return;
       case 'level': {
@@ -157,6 +158,7 @@ A.FX = (function () {
     }
     for (let i = P.length - 1; i >= 0; i--) if (P[i].life <= 0) P.splice(i, 1);
     for (const f of flashes) f.life -= dt; for (let i = flashes.length - 1; i >= 0; i--) if (flashes[i].life <= 0) flashes.splice(i, 1);
+    for (const f of flyers) f.t += dt || 0.016; for (let i = flyers.length - 1; i >= 0; i--) if (flyers[i].t > 0.55) { const el = document.getElementById(flyers[i].kind === 'coin' ? 'hudGold' : 'hudPot'); if (el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } flyers.splice(i, 1); }
     for (const b of banners) b.life -= dt; for (let i = banners.length - 1; i >= 0; i--) if (banners[i].life <= 0) banners.splice(i, 1);
   }
   // Spielzeit für diesen Schritt: 0 während der Treffer-Pause, langsamer bei Zeitlupe
@@ -168,7 +170,7 @@ A.FX = (function () {
   function reset() { P.length = 0; flashes.length = 0; banners.length = 0; decals = []; trauma = 0; stopT = 0; slowT = 0; hurtT = 0; }
   function takeDecals() { const d = decals; decals = []; return d; }
   return {
-    P, flashes, banners, ev, update, simDt, reset, takeDecals, burst, smoke, part, flash, shake, freeze, banner, decal,
+    P, flashes, banners, flyers, ev, update, simDt, reset, takeDecals, burst, smoke, part, flash, shake, freeze, banner, decal,
     get trauma() { return trauma; }, get hurt() { return hurtT; }, get healGlow() { return healT; },
     set low(v) { lowFx = v; }, get low() { return lowFx; },
   };

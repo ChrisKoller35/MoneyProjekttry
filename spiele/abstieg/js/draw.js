@@ -771,6 +771,19 @@ window.A = window.A || {};
       if (this.signAt && W.room && W.room.type === 'start') { c.font = this.font(this.signAt.px || 6.5 * this.s); c.fillStyle = this.signAt.color || '#3e2731'; c.fillText(this.signAt.text, this.signAt.sx, this.signAt.sy); this.signAt = null; }
       // Namen von Elite-Gegnern
       for (const m of W.mons) if (m.alive && m.elite && !(m.spawn > 0)) { const [x, y] = toS(m.x, m.y, 46); c.font = this.font(11 * d); c.lineWidth = 3 * d; c.strokeStyle = '#181425'; c.strokeText(m.name, x, y); c.fillStyle = ELITE_COL[m.eliteKind] || '#fee761'; c.fillText(m.name, x, y); }
+      // Aufgesammeltes fliegt im Bogen zur Anzeige oben
+      if (A.FX && A.FX.flyers.length) {
+        const rc = this.cv.getBoundingClientRect(), k = this.dw / (rc.width || 1);
+        for (const f of A.FX.flyers) {
+          const el = document.getElementById(f.kind === 'coin' ? 'hudGold' : 'hudPot'); if (!el) continue;
+          const er = el.getBoundingClientRect(), tx = (er.left + 16 - rc.left) * k, ty = (er.top + er.height / 2 - rc.top) * k;
+          const [sx0, sy0] = toS(f.x, f.y), q = Math.min(1, f.t / 0.55), e = q * q * (3 - 2 * q);
+          const mx = (sx0 + tx) / 2 + (sx0 < tx ? -60 : 60) * d, my = Math.min(sy0, ty) - 40 * d;
+          const x = (1 - e) * (1 - e) * sx0 + 2 * (1 - e) * e * mx + e * e * tx, y = (1 - e) * (1 - e) * sy0 + 2 * (1 - e) * e * my + e * e * ty;
+          const ic = A.Art.sprite(f.kind === 'coin' ? 'coin' : 'potion', 0), sz = (f.kind === 'coin' ? 9 : 11) * d * (1.2 - q * 0.3);
+          c.imageSmoothingEnabled = false; c.globalAlpha = 1; c.drawImage(ic.img, Math.round(x - sz / 2), Math.round(y - sz / 2), Math.round(sz * ic.w / ic.h), Math.round(sz));
+        }
+      }
       // Schwebende Zahlen
       for (const f of W.floats) {
         const age = (f.max || 1) - f.life, pop = age < 0.12 ? 1 + (1 - age / 0.12) * 0.7 : 1;
