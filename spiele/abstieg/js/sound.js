@@ -4,7 +4,7 @@
 window.A = window.A || {};
 
 A.Sound = (function () {
-  let ac = null, master = null, noiseBuf = null, coinCombo = 0, coinT = 0, lastHit = 0;
+  let ac = null, master = null, musGain = null, noiseBuf = null, coinCombo = 0, coinT = 0, lastHit = 0;
   const on = () => !A.Game || A.Game.meta.sound;
   function ctx() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return ac; }
@@ -13,19 +13,41 @@ A.Sound = (function () {
       master = ac.createGain(); master.gain.value = 0.55;
       const comp = ac.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4;
       master.connect(comp); comp.connect(ac.destination);
+      musGain = ac.createGain(); musGain.gain.value = 0.3; musGain.connect(comp);
       noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
       const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     } catch (e) { ac = null; }
     return ac;
   }
   // Ton: Frequenz von f0 nach f1 in dur Sekunden
-  function tone(f0, f1, dur, type, vol, delay) {
+  function tone(f0, f1, dur, type, vol, delay, out, attack) {
     const a = ctx(); if (!a) return; const t = a.currentTime + (delay || 0);
     const o = a.createOscillator(), g = a.createGain();
     o.type = type || 'square'; o.frequency.setValueAtTime(f0, t); if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.1, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.1, t + (attack || 0.008)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(out || master); o.start(t); o.stop(t + dur + 0.02);
   }
+  // ---------- Musik: leise, düstere Schleife aus Code ----------
+  // Grundton je Farbwelt, Bass-Folge i / VI / iv / V in Moll, darüber sparsame Töne aus der Moll-Pentatonik.
+  const MUS_ROOT = { stone: 110, grotto: 130.8, rust: 123.5, throne: 98 };
+  const MUS_PROG = [0, 8, 5, 7], PENTA = [0, 3, 5, 7, 10, 12, 15];
+  let mus = null;
+  function musicTick() {
+    const a = ctx(); if (!a || !mus) return;
+    if (!on()) { mus.next = a.currentTime; return; }
+    const bpm = mus.theme === 'throne' ? 96 : 84, beat = 60 / bpm, st = beat / 2;
+    while (mus.next < a.currentTime + 0.3) {
+      const i = mus.step, bar = Math.floor(i / 8) % 4, pos = i % 8, d = Math.max(0, mus.next - a.currentTime);
+      const root = mus.base * Math.pow(2, MUS_PROG[bar] / 12);
+      if (pos === 0) { tone(root / 2, root / 2, beat * 3.6, 'triangle', 0.1, d, musGain, 0.05); tone(root / 4, root / 4, beat * 3.8, 'sine', 0.08, d, musGain, 0.1); }
+      if (pos === 0 || pos === 4) { tone(70, 35, 0.18, 'sine', mus.theme === 'throne' ? 0.16 : 0.11, d, musGain); }
+      if (pos === 6 && mus.rng() < 0.6) { noise(0.03, 0.015, 'highpass', 6000, 8000, d); }
+      if (i % 32 === 16) tone(root * 2, root * 2, beat * 7, 'sine', 0.025, d, musGain, 1.2);
+      if (mus.rng() < (pos % 2 === 0 ? 0.42 : 0.18)) { const n = PENTA[Math.floor(mus.rng() * PENTA.length)]; const f = root * 2 * Math.pow(2, n / 12); tone(f, f, st * (mus.rng() < 0.3 ? 3 : 1.6), 'triangle', 0.04, d, musGain, 0.02); if (mus.rng() < 0.3) tone(f * 1.002, f, st * 2.5, 'sine', 0.02, d + 0.01, musGain, 0.3); }
+      mus.next += st; mus.step++;
+    }
+  }
+  function mulberry(seed) { let t = seed >>> 0; return () => { t += 0x6D2B79F5; let x = Math.imul(t ^ (t >>> 15), 1 | t); x ^= x + Math.imul(x ^ (x >>> 7), 61 | x); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
   // Rauschen mit Filter (Zischen, Schlag, Wusch)
   function noise(dur, vol, type, f0, f1, delay, q) {
     const a = ctx(); if (!a) return; const t = a.currentTime + (delay || 0);
@@ -36,7 +58,7 @@ A.Sound = (function () {
   }
   const r = (a, b) => a + Math.random() * (b - a);
   const S = {
-    init() { ctx(); },
+    init() { ctx(); if (mus && mus.pending) S.music(mus.theme); },
     click() { if (!on()) return; tone(900, 700, 0.05, 'triangle', 0.06); },
     swing() { if (!on()) return; noise(0.13, 0.12, 'bandpass', r(900, 1300), 3500, 0, 1.5); },
     shoot() { if (!on()) return; noise(0.08, 0.1, 'highpass', 2500, 5000); tone(r(500, 560), 300, 0.06, 'triangle', 0.04); },
@@ -72,7 +94,18 @@ A.Sound = (function () {
     lose() { if (!on()) return; [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.98, 0.3, 'triangle', 0.07, i * 0.18)); tone(98, 49, 1.2, 'sawtooth', 0.06, 0.6); },
     buy() { if (!on()) return; tone(988, 0, 0.06, 'square', 0.04); tone(1319, 0, 0.12, 'square', 0.04, 0.06); },
     win() { this.cleared(); },
+    // Musik starten (theme = Farbwelt) oder mit null anhalten; läuft nur, wenn der Ton an ist
+    music(theme) {
+      if (mus && mus.timer) { clearInterval(mus.timer); }
+      if (!theme) { mus = null; if (musGain && ac) { musGain.gain.cancelScheduledValues(ac.currentTime); musGain.gain.setTargetAtTime(0.0001, ac.currentTime, 0.4); } return; }
+      const a = ctx(); if (!a) { mus = { theme, pending: true }; return; }
+      musGain.gain.cancelScheduledValues(a.currentTime); musGain.gain.setTargetAtTime(0.3, a.currentTime, 0.6);
+      mus = { theme, base: MUS_ROOT[theme] || 110, next: a.currentTime + 0.1, step: 0, rng: mulberry(Date.now() & 0xffff), timer: setInterval(musicTick, 120) };
+      musicTick();
+    },
+    musicTheme() { return mus ? mus.theme : null; },
   };
+  document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) ac.suspend(); else if (on()) ac.resume(); });
   window.addEventListener('pointerdown', () => S.init(), { once: true });
   window.addEventListener('keydown', () => S.init(), { once: true });
   return S;

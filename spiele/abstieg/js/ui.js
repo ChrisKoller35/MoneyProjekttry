@@ -118,7 +118,12 @@ window.A = window.A || {};
   function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); } hudUpdate(); }
 
   // ---------- Titel ----------
+  // Überblenden: schwarz werden (fadeOut) und wieder aufhellen (fadeIn), für Ebenen-Wechsel
+  const fadeEl = $('#fade');
+  function fadeIn() { if (!fadeEl) return; fadeEl.style.transition = 'none'; fadeEl.style.opacity = '1'; requestAnimationFrame(() => requestAnimationFrame(() => { fadeEl.style.transition = 'opacity .7s'; fadeEl.style.opacity = '0'; })); }
+  function fadeOut(cb) { if (!fadeEl) { cb(); return; } fadeEl.style.transition = 'opacity .3s'; fadeEl.style.opacity = '1'; setTimeout(cb, 330); }
   function title() {
+    S.music(null);
     const m = G.meta, r = G.load();
     const words = t(U.title).split(' ');
     show(`<div class="title-wrap fade-in">
@@ -137,7 +142,7 @@ window.A = window.A || {};
     if (r) $('#bCont').onclick = () => { S.click(); resume(); };
     $('#bNew').onclick = () => { S.click(); if (r) { if (!confirm(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'))) return; G.clearRun(); } heroSelect(); };
     $('#bCamp').onclick = () => { S.click(); camp(); };
-    $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); S.click(); title(); };
+    $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); S.click(); if (!G.meta.sound) S.music(null); title(); };
     if ($('#bLook')) $('#bLook').onclick = () => { S.click(); toggleLook(); title(); };
     $('#bReset').onclick = () => { if (confirm(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'))) { G.resetAll(); title(); } };
   }
@@ -207,7 +212,8 @@ window.A = window.A || {};
     };
     Wd.enter(r.floor, r.floorSeed, fresh ? null : r.rooms, hooks);
     r.rooms = Wd.saveRooms();
-    buildControls(); pads(); applyLook();
+    buildControls(); pads(); applyLook(); fadeIn();
+    S.music(A.Draw.themeOf(r.floor));
     const th = A.Draw.THEMES[A.Draw.themeOf(r.floor)];
     A.FX.banner(t(U.floor) + ' ' + r.floor, th ? t(th.name) : '', '#fee761', 2.6);
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten', 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
@@ -299,7 +305,7 @@ window.A = window.A || {};
     if (p.kind === 'stairs') {
       const nt = A.Draw.THEMES[A.Draw.themeOf(r.floor + 1)];
       ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${r.floor + 1}</h2><div class="sub">${nt ? `<b class="goldc">${esc(t(nt.name))}</b><br>` : ''}${L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
-      $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); };
+      $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
     else if (p.kind === 'chest') { Wd.markUsed(p); treasure(); }

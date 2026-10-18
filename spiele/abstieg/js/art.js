@@ -58,6 +58,7 @@ A.Art = (function () {
     idle: ['.....22..22.....', '.....22..22.....', '.....NNN.NNN....'],
     a: ['.....22..22.....', '....22....22....', '...NNN.....NNN..'],
     b: ['......2222......', '......2..2......', '......NNNNN.....'],
+    p: ['.....22..22.....', '.....22..22.....', '....NNN.NNN.....'],
   };
   const knightTop = [
     '......DC........',
@@ -108,10 +109,11 @@ A.Art = (function () {
     idle: ['..DCCCCCCCCCD...', '..DDCCCCCCCDD...', '...NN.....NN....'],
     a: ['..DCCCCCCCCCD...', '..DDCCCCCCCDD...', '..NN.......NN...'],
     b: ['..DCCCCCCCCCD...', '..DDCCCCCCCDD...', '....NN...NN.....'],
+    p: ['..DCCCCCCCCCD...', '..DDCCCCCCCDD...', '...NN.....NN....'],
   };
-  R.hero_klinge = ['idle', 'a', 'b'].map(k => knightTop.concat(LEG[k]));
-  R.hero_schuetze = ['idle', 'a', 'b'].map(k => archerTop.concat(LEG[k]));
-  R.hero_weber = ['idle', 'a', 'b'].map(k => weaverTop.concat(weaverLegs[k]));
+  R.hero_klinge = ['idle', 'a', 'p', 'b'].map(k => knightTop.concat(LEG[k]));
+  R.hero_schuetze = ['idle', 'a', 'p', 'b'].map(k => archerTop.concat(LEG[k]));
+  R.hero_weber = ['idle', 'a', 'p', 'b'].map(k => weaverTop.concat(weaverLegs[k]));
 
   R.slime = [[
     '......CCCC......',
