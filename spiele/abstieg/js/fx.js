@@ -62,6 +62,14 @@ A.FX = (function () {
         burst(to.x, to.y - 6, d.crit ? 12 : 6, { color: ['#ffffff', '#fee761', '#feae34'], smin: 80, smax: d.crit ? 260 : 180, life: 0.22, dir, spread: 0.9, add: true, kind: 'spark', drag: 6 });
         burst(to.x, to.y - 4, d.crit ? 9 : 5, { color: g, smin: 40, smax: 140, life: 0.6, dir, spread: 1.1, z: 6, vz: 110, g: 420, stick: true });
         flash(to.x, to.y - 6, d.crit ? 46 : 30, d.crit ? '#feae34' : '#ffffff', 0.09);
+        if (d.kind === 'magic') { // Zauber-Einschlag: farbiger Ring, Sternfunken, Glut, die nach oben steigt
+          const c = d.color || '#7fd8ff';
+          part({ kind: 'ring', x: to.x, y: to.y - 6, life: 0.28, size: 40, color: c, add: true });
+          part({ kind: 'ring', x: to.x, y: to.y - 6, life: 0.16, size: 22, color: '#ffffff', add: true });
+          burst(to.x, to.y - 6, 12, { color: [c, c, '#ffffff'], smin: 60, smax: 200, life: 0.3, add: true, kind: 'spark', drag: 5 });
+          burst(to.x, to.y - 6, 6, { color: [c, '#ffffff'], smin: 5, smax: 30, vz: 70, g: -60, life: 0.7, add: true });
+          flash(to.x, to.y - 6, 70, c, 0.22);
+        }
         if (from.side === 'hero') { freeze(d.crit ? 0.075 : (d.kind === 'magic' ? 0.02 : 0.035)); shake(d.crit ? 0.28 : 0.1); }
         S().hit(d.crit);
         return;
@@ -83,7 +91,17 @@ A.FX = (function () {
       case 'lock': shake(0.35); S().lock(); return;
       case 'cleared': S().cleared(); setTimeout(() => S().open(), 250); banner(A.LANG === 'de' ? 'Raum gesäubert' : 'Room cleared', null, '#fee761', 1.4); return;
       case 'swing': if (d.magic) S().cast(); else S().swing(); return;
-      case 'shoot': if (d.from && d.from.side === 'hero') { if (d.magic) S().cast(); else S().shoot(); } else if (once('eshot', 120)) S().shoot(); return;
+      case 'shoot': {
+        const f = d.from;
+        if (d.magic && f) { // Zauber-Blitz an der Hand: kleine Rune, Funken in Schussrichtung, Lichtblitz
+          const x = f.x + (d.dx || 0) * 14, y = f.y - 12 + (d.dy || 0) * 8, c = d.color || '#7fd8ff';
+          burst(x, y, f.side === 'hero' ? 8 : 4, { color: [c, '#ffffff'], smin: 40, smax: 130, life: 0.22, dir: Math.atan2(d.dy || 0, d.dx || 1), spread: 0.7, add: true, kind: 'spark', drag: 6 });
+          part({ kind: 'ring', x, y, life: 0.18, size: 22, color: c, add: true });
+          if (f.side === 'hero') part({ kind: 'rune', x: f.x, y: f.y + 10, life: 0.4, size: 9, color: c, add: true });
+          flash(x, y, f.side === 'hero' ? 44 : 30, c, 0.12);
+        }
+        if (f && f.side === 'hero') { if (d.magic) S().cast(); else S().shoot(); } else if (once('eshot', 120)) S().shoot(); return;
+      }
       case 'coin': S().coin(); burst(d.x, d.y - 10, 3, { color: ['#fee761', '#ffffff'], smin: 20, smax: 60, life: 0.3, add: true, kind: 'spark' }); return;
       case 'pickPotion': S().potion(); return;
       case 'drop': S().drop(d.rarity); if (d.rarity === 'epic' || d.rarity === 'legendary') { flash(d.x, d.y, 90, d.color, 0.5); burst(d.x, d.y, 16, { color: [d.color, '#ffffff'], smin: 40, smax: 160, life: 0.6, add: true, kind: 'spark' }); } return;
@@ -99,7 +117,16 @@ A.FX = (function () {
       case 'heal': { const e = d.e; if (d.n < 3 && !d.loud) return; burst(e.x, e.y, 8, { color: ['#63c74d', '#c8f5a0'], smin: 10, smax: 40, vz: 80, z: 4, g: -40, life: 0.8, add: true, kind: 'plus' }); healT = 0.35; if (d.loud) S().heal(); return; }
       case 'shield': part({ kind: 'ring', x: d.e.x, y: d.e.y, life: 0.45, size: 46, color: '#2ce8f5', add: true }); flash(d.e.x, d.e.y, 60, '#2ce8f5', 0.3); S().shield(); return;
       case 'buff': burst(d.e.x, d.e.y, 18, { color: ['#e43b44', '#feae34', '#fee761'], smin: 40, smax: 120, life: 0.5, add: true, kind: 'spark' }); S().buff(); return;
-      case 'nova': part({ kind: 'ring', x: d.e.x, y: d.e.y, life: 0.35, size: d.r || 170, color: d.color || '#ffffff', add: true }); flash(d.e.x, d.e.y, (d.r || 170) * 0.8, d.color || '#ffffff', 0.25); shake(0.3); S().nova(); return;
+      case 'nova': { // Flächenzauber / Wirbel: zwei Wellen, Bodenrune, Funkenkranz, bei Feuer aufsteigende Glut
+        const e = d.e, R = d.r || 170, c = d.color || '#ffffff';
+        part({ kind: 'ring', x: e.x, y: e.y, life: 0.35, size: R, color: c, add: true });
+        part({ kind: 'ring', x: e.x, y: e.y, life: 0.55, size: R * 1.15, color: '#ffffff', add: true });
+        if (d.magic) part({ kind: 'rune', x: e.x, y: e.y + 10, life: 0.7, size: 26, color: c, add: true });
+        for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2, sp = rnd(220, 320); part({ kind: 'spark', add: true, x: e.x + Math.cos(a) * 14, y: e.y + Math.sin(a) * 10, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, life: rnd(0.25, 0.4), color: i % 3 ? c : '#ffffff', drag: 4 }); }
+        if (d.magic) for (let i = 0; i < 18; i++) { const a = Math.random() * Math.PI * 2, rr = rnd(20, R * 0.9); part({ add: true, x: e.x + Math.cos(a) * rr, y: e.y + Math.sin(a) * rr * 0.6, vx: rnd(-8, 8), vy: 0, vz: rnd(40, 90), z: 2, life: rnd(0.6, 1.1), color: Math.random() < 0.5 ? c : '#fee761', size: Math.random() < 0.3 ? 2 : 1, drag: 1 }); }
+        else smoke(e.x, e.y + 8, 6, '#8b9bb4', 4);
+        flash(e.x, e.y, R * 0.9, c, 0.3); shake(0.3); S().nova(); return;
+      }
       case 'potion': burst(d.e.x, d.e.y - 10, 12, { color: ['#e43b44', '#f6757a', '#ffffff'], smin: 10, smax: 50, vz: 60, g: -30, life: 0.7, add: true }); S().potion(); return;
       case 'step': part({ kind: 'smoke', x: d.e.x + rnd(-4, 4), y: d.e.y + 14, vx: -d.e.fx * 15, vy: rnd(-8, 0), life: 0.35, size: 2, grow: 4, color: '#8b9bb4', drag: 4 }); return;
       case 'windup': if (once('windup', 160)) S().windup(); return;
