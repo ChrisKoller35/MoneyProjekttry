@@ -206,7 +206,65 @@ window.A = window.A || {};
         if (isF(tx + 1, ty)) col(px + T - 4);
         if (isF(tx - 1, ty)) { c.fillStyle = th.brickLo; c.fillRect(px, py, 1, T); c.fillStyle = th.brickHi; c.fillRect(px + 1, py, 3, T); c.fillStyle = th.capHi; c.fillRect(px, py, 4, 2); }
       }
+      // Stimmung je Farbwelt: schwebende Teilchen, Tropfstellen, leuchtende Pilze, Glutrisse (eigener Zufall, ändert die Räume nicht)
+      const ar = new A.RNG((W.seed ^ 0x2c1b3c6d) >>> 0 || 11), tk = this.themeKey;
+      this.motes = []; this.drips = []; this.cracks = [];
+      for (const r of W.rooms) {
+        const n = Math.round(r.w * r.h / 8);
+        for (let i = 0; i < n; i++) this.motes.push({ room: r.i, x: (r.x + ar.next() * r.w) * T, y: (r.y + ar.next() * r.h) * T, h: r.h * T, y0: r.y * T, ph: ar.next() * 100, s: ar.next() });
+        if (tk === 'grotto' || tk === 'stone') for (let i = 0; i < (tk === 'grotto' ? 3 : 1); i++) {
+          const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)); if (isF(tx, r.y - 1)) continue;
+          this.drips.push({ room: r.i, x: tx * T + 4 + Math.floor(ar.next() * 8), y0: r.y * T - 3, y1: (r.y + 1 + ar.next() * (r.h - 2)) * T, per: 2.4 + ar.next() * 2.6, ph: ar.next() * 5, sp: -1 });
+        }
+        const m = tk === 'grotto' ? 4 : tk === 'rust' ? 3 : 0;
+        for (let i = 0; i < m; i++) {
+          const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)), ty = r.y + 1 + Math.floor(ar.next() * (r.h - 2)); if (!isF(tx, ty)) continue;
+          const px = tx * T + 3 + Math.floor(ar.next() * 8), py = ty * T + 5 + Math.floor(ar.next() * 8);
+          if (tk === 'grotto') { // drei kleine leuchtende Pilze
+            for (let j = 0; j < 3; j++) { const ox = px + j * 3, oy = py + (j === 1 ? -1 : 0); c.fillStyle = '#ead4aa'; c.fillRect(ox, oy, 1, 2); c.fillStyle = j === 1 ? '#2ce8f5' : '#0099db'; c.fillRect(ox - 1, oy - 1, 3, 1); c.fillStyle = '#c0f8ff'; c.fillRect(ox, oy - 1, 1, 1); }
+            this.lights.push({ x: (px + 3) * PX, y: py * PX, r: 24, color: '#2ce8f5', a: 0.6, fl: 0.6, room: r.i });
+          } else { // Glutriss im Boden
+            const pts = []; let x = px, y = py; for (let j = 0; j < 7; j++) { pts.push([x, y]); x += 1; if (ar.next() < 0.4) y += ar.next() < 0.5 ? 1 : -1; }
+            c.fillStyle = '#1f1216'; for (const [qx, qy] of pts) c.fillRect(qx, qy - 1, 1, 3);
+            this.cracks.push({ pts, ph: ar.next() * 6, room: r.i }); this.lights.push({ x: (px + 3) * PX, y: py * PX, r: 22, color: '#f77622', a: 0.5, fl: 0.5, room: r.i });
+          }
+        }
+      }
       this.level = cv; this.lc = c; this.levelW = W; this.litAt = {}; this.cam = null; this.levelAge = 0;
+    }
+    // Stimmung zeichnen (auf dem Leucht-Bild): Staub/Sporen/Glut/Asche, Tropfen mit Spritzer, Glutrisse
+    drawAmbience(cx, cy) {
+      const g = this.g, t = this.t, tk = this.themeKey, bw = this.bw, bh = this.bh;
+      const col = { stone: '#c0cbdc', grotto: '#63c74d', rust: '#feae34', throne: '#f6757a' }[tk] || '#c0cbdc';
+      const rise = tk === 'grotto' || tk === 'rust' ? 1 : -1, sp = tk === 'rust' ? 10 : 4;
+      for (const m of this.motes || []) {
+        if (this.litAt[m.room] == null) continue;
+        const yy = m.y0 + ((((m.y - m.y0) - rise * t * sp * (0.6 + m.s)) % m.h) + m.h) % m.h;
+        const x = Math.round(m.x + Math.sin(t * 0.5 + m.ph) * 6 - cx), y = Math.round(yy - cy);
+        if (x < 0 || y < 0 || x >= bw || y >= bh) continue;
+        g.globalAlpha = (tk === 'rust' ? 0.45 : 0.22) + 0.3 * (0.5 + 0.5 * Math.sin(t * 2 + m.ph)); g.fillStyle = col; g.fillRect(x, y, 1, 1);
+      }
+      for (const d of this.drips || []) {
+        if (this.litAt[d.room] == null) continue;
+        const x = d.x - cx; if (x < -4 || x > bw + 4) continue;
+        const k = (t + d.ph) % d.per, cyc = Math.floor((t + d.ph) / d.per), tf = Math.sqrt(2 * (d.y1 - d.y0) / 320), wc = tk === 'grotto' ? '#7fd8ff' : '#c0cbdc';
+        g.fillStyle = wc;
+        if (k < 1) { g.globalAlpha = 0.3 + k * 0.6; g.fillRect(Math.round(x), Math.round(d.y0 - cy), 1, k > 0.6 ? 2 : 1); }
+        else if (k < 1 + tf) { const q = k - 1; g.globalAlpha = 0.9; g.fillRect(Math.round(x), Math.round(d.y0 + 160 * q * q - cy), 1, 2); }
+        else if (k < 1 + tf + 0.35) {
+          const q = (k - 1 - tf) / 0.35, yy = d.y1 - cy; g.globalAlpha = 0.8 * (1 - q); g.strokeStyle = wc; g.lineWidth = 1;
+          g.beginPath(); g.ellipse(Math.round(x) + 0.5, Math.round(yy) + 0.5, 1 + q * 5, 0.5 + q * 2, 0, 0, TAU); g.stroke();
+          g.fillRect(Math.round(x - 1 - q * 3), Math.round(yy - 2 - Math.sin(q * Math.PI) * 4), 1, 1); g.fillRect(Math.round(x + 1 + q * 3), Math.round(yy - 2 - Math.sin(q * Math.PI) * 3), 1, 1);
+          if (d.sp !== cyc) { d.sp = cyc; const y = d.y1 - cy; if (y > 0 && y < bh && A.Sound && A.Sound.drip) A.Sound.drip(); }
+        }
+      }
+      for (const k of this.cracks || []) {
+        if (this.litAt[k.room] == null) continue;
+        const pu = 0.5 + 0.5 * Math.sin(t * 1.6 + k.ph);
+        k.pts.forEach(([px, py], i) => { g.globalAlpha = 0.45 + 0.5 * pu * Math.sin((i + 1) / (k.pts.length + 1) * Math.PI); g.fillStyle = i % 3 === 1 ? '#fee761' : '#f77622'; g.fillRect(px - cx, py - cy, 1, 1); });
+        if (Math.random() < 0.01 && A.FX) { const [px, py] = k.pts[3]; A.FX.part({ kind: 'px', add: true, x: px * PX, y: py * PX, vx: (Math.random() - 0.5) * 10, vy: -20, life: 0.8, color: '#feae34', drag: 0.5 }); }
+      }
+      g.globalAlpha = 1;
     }
     applyDecals() {
       if (!A.FX) return; const list = A.FX.takeDecals(); if (!list.length || !this.lc) return;
@@ -300,6 +358,7 @@ window.A = window.A || {};
         else g.fillRect(Math.round(x), Math.round(y), p.size, p.size);
       }
       g.globalAlpha = 1;
+      this.drawAmbience(cx, cy);
       // ---------- Licht ----------
       this.drawLights(W, cx, cy);
       // ---------- Zusammensetzen ----------
