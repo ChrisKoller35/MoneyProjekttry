@@ -28,14 +28,28 @@
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.6); } 70% { box-shadow: 0 0 0 12px rgba(255,107,107,0); } 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); } }
   #panel { flex: 0 0 auto; background: var(--panel); border-radius: 18px 18px 0 0; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); z-index: 2; }
   #tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-  .tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px; border-radius: 12px; background: transparent; color: var(--muted); border: 0; font-weight: 700; font-size: 14px; cursor: pointer; position: relative; }
-  .tab svg { width: 22px; height: 22px; }
+  .tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 2px; border-radius: 12px; background: transparent; color: var(--muted); border: 0; font-weight: 700; font-size: 13px; cursor: pointer; position: relative; }
+  .tab svg { width: 20px; height: 20px; flex: none; }
   .tab.on { background: var(--card); color: var(--text); }
   .tab .dot { position: absolute; top: 5px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: none; }
   .tab .dot.show { display: block; }
   #list { display: flex; flex-direction: column; gap: 6px; height: 34vh; max-height: 300px; min-height: 170px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 2px; }
   .card { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 14px; padding: 8px 8px 8px 10px; }
   .card.locked { opacity: 0.45; }
+  .card.done { opacity: 0.6; }
+  .card.prest { background: linear-gradient(90deg, #3a2a5a, #2e2540); border: 1px solid rgba(199,125,255,0.4); }
+  .buy.prestcan { background: #c77dff; color: #2a0a40; }
+  .buy.rew { background: rgba(87,210,255,0.15); color: var(--gem); }
+  .buy.ok { background: rgba(111,220,122,0.15); color: var(--ok); }
+  #skills { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; pointer-events: none; }
+  #beerBtn { margin-left: auto; }
+  .skill { position: relative; width: 54px; height: 54px; border-radius: 50%; border: 0; background: rgba(0,0,0,0.5); color: #fff; font-size: 24px; display: none; place-items: center; cursor: pointer; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.5); pointer-events: auto; }
+  .skill.show { display: grid; }
+  .skill.ready { background: #e07b3c; box-shadow: 0 0 0 0 rgba(255,138,61,0.7); animation: pulse 1.6s infinite; }
+  .skill.active { background: #b8860b; box-shadow: 0 0 0 3px #f5c542, 0 0 16px rgba(245,197,66,0.8); }
+  .skill.active .cd { display: none; }
+  .skill .cd { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(0,0,0,0.75) var(--p, 0%), transparent 0); pointer-events: none; }
+  .skill .lbl { position: absolute; left: 0; right: 0; bottom: 3px; font-size: 9px; font-weight: 800; }
   .ico { width: 44px; height: 44px; flex: none; border-radius: 10px; background: rgba(0,0,0,0.25); display: grid; place-items: center; }
   .ico canvas { width: 40px; height: 40px; }
   .info { flex: 1; min-width: 0; }
@@ -70,6 +84,7 @@
     <canvas id="scene"></canvas>
     <button id="bossBtn"></button>
     <button id="soundBtn" aria-label="Ton"></button>
+    <div id="skills"><button class="skill" id="dynBtn">🧨<span class="cd"></span><span class="lbl"></span></button><button class="skill" id="beerBtn">🍺<span class="cd"></span><span class="lbl"></span></button></div>
     <div id="toast"></div>
   </div>
   <div id="panel">
@@ -77,6 +92,7 @@
       <button class="tab on" data-tab="pick"><svg viewBox="0 0 24 24"><path d="M3 9c4-5 13-6 18-2-5-1-9 0-12 3z" fill="#c0c7d2"/><path d="M10 9l9 12" stroke="#a0703a" stroke-width="3" stroke-linecap="round"/></svg><span id="tPick"></span><i class="dot"></i></button>
       <button class="tab" data-tab="dwarf"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5" fill="#f0c9a0"/><path d="M6 8a6 6 0 0 1 12 0z" fill="#e0a83a"/><path d="M8 11c0 6 4 10 4 10s4-4 4-10z" fill="#d8d0c4"/></svg><span id="tDwarf"></span><i class="dot"></i></button>
       <button class="tab" data-tab="gem"><svg viewBox="0 0 24 24"><path d="M6 4h12l4 6-10 11L2 10z" fill="#57d2ff"/></svg><span id="tGem"></span><i class="dot"></i></button>
+      <button class="tab" data-tab="goal"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#6fdc7a" stroke-width="2.5"/><path d="M7 12l3 3 7-7" stroke="#6fdc7a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="tGoal"></span><i class="dot"></i></button>
     </div>
     <div id="list"></div>
   </div>
@@ -100,6 +116,21 @@ const T = DE ? {
   gemPower: 'Zwergenkraft', gemGold: 'Goldgier', gemCrit: 'Glückstreffer', gemOffline: 'Nachtschicht', gemChest: 'Schatzspürer',
   gemPowerE: 'alles Graben', gemGoldE: 'mehr Gold', gemCritE: 'Volltreffer-Chance', gemOfflineE: 'Gold wenn du weg bist', gemChestE: 'Truhen öfter',
   chestGold: 'Schatztruhe!', chestRage: 'Zwergenwut! ×3', milestone: 'Meilenstein: ×2',
+  goal: 'Ziele', goalDone: 'Ziel erreicht!', goalsDone: '{n} Ziele erreicht!', bought: 'Gekauft', bigBoss: 'Grossboss!', layer: 'Schicht',
+  newMine: 'Neue Mine', heir: 'Erbstücke', move: 'Umziehen', moveFrom: 'Besiege den Grossboss auf Tiefe 50, dann kannst du umziehen und Erbstücke sammeln', no: 'Abbrechen', deeper: 'Je tiefer, desto mehr.',
+  newMineInfo: 'Gold, Zwerge, Hacke und Werkzeuge fangen neu an. Steine und Ziele bleiben.',
+  heirEff: 'je +5 % Gold und Graben, für immer', confirmMove: 'Wirklich umziehen? Du fängst bei Tiefe 1 an, dafür mit {n} neuen Erbstücken.',
+  beer: 'Bierfass', dyn: 'Dynamit', beerOn: 'Bierpause! Zwerge ×3', cool: 'Abklingzeit', ready: 'Bereit',
+  layers: ['Erde', 'Stein', 'Kohle', 'Kupfer', 'Eisen', 'Silber', 'Gold', 'Kristall', 'Lava', 'Tiefe', 'Obsidian', 'Mithril', 'Glutkern', 'Leere'],
+  ups: {
+    spitze: ['Stahlspitze', 'Hacke +50 %'], doppel: ['Doppelschlag', '15 % Chance: Tipp zählt doppelt'], band: ['Förderband', 'Zwerge +25 %'],
+    laterne: ['Grosse Laterne', 'Truhen bleiben doppelt so lang'], dyn: ['Dynamit', 'Knopf: 30 Tipps auf einmal, alle 90 s'], zeit: ['Zeitlupe', 'Boss-Zeit +10 s'],
+    bier: ['Bierfass', 'Knopf: Zwerge ×3 für 20 s, alle 3 min'], waage: ['Goldwaage', 'Bosse geben +50 % Gold'], kurs: ['Sprengkurs', 'Hacke +50 %'],
+    magnet: ['Erz-Magnet', 'Truhen geben doppelt'], gluck: ['Glücksbringer', 'Volltreffer ×6 statt ×5'], lied: ['Zwergenlied', 'Zwerge +30 %'],
+    bohrer: ['Diamantbohrer', 'Hacke ×2'], schicht: ['Doppelschicht', 'Zwerge +50 %'], kugel: ['Kristallkugel', 'Bosse geben doppelt Steine'],
+  },
+  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine' },
+  goals1: { boss: 'Besiege deinen ersten Boss', prest: 'Zieh zum ersten Mal in eine neue Mine' },
 } : {
   pick: 'Pickaxe', dwarf: 'Dwarves', gem: 'Gems', perTap: 'per tap', perSec: 'per sec',
   pickName: 'Pickaxe', boss: 'Boss', retry: 'Retry boss', welcome: 'Welcome back!', away: 'Your dwarves kept digging',
@@ -107,10 +138,25 @@ const T = DE ? {
   gemPower: 'Dwarf Power', gemGold: 'Gold Greed', gemCrit: 'Lucky Strike', gemOffline: 'Night Shift', gemChest: 'Treasure Sense',
   gemPowerE: 'all digging', gemGoldE: 'more gold', gemCritE: 'critical chance', gemOfflineE: 'gold while away', gemChestE: 'chests more often',
   chestGold: 'Treasure chest!', chestRage: 'Dwarf rage! ×3', milestone: 'Milestone: ×2',
+  goal: 'Goals', goalDone: 'Goal reached!', goalsDone: '{n} goals reached!', bought: 'Bought', bigBoss: 'Big boss!', layer: 'Layer',
+  newMine: 'New Mine', heir: 'Heirlooms', move: 'Move', moveFrom: 'Beat the big boss at depth 50, then you can move and collect heirlooms', no: 'Cancel', deeper: 'Deeper means more.',
+  newMineInfo: 'Gold, dwarves, pickaxe and tools start over. Gems and goals stay.',
+  heirEff: 'each +5% gold and digging, forever', confirmMove: 'Really move? You start at depth 1, but with {n} new heirlooms.',
+  beer: 'Beer Keg', dyn: 'Dynamite', beerOn: 'Beer break! Dwarves ×3', cool: 'Cooldown', ready: 'Ready',
+  layers: ['Dirt', 'Stone', 'Coal', 'Copper', 'Iron', 'Silver', 'Gold', 'Crystal', 'Lava', 'Deep', 'Obsidian', 'Mithril', 'Ember Core', 'Void'],
+  ups: {
+    spitze: ['Steel Tip', 'Pickaxe +50%'], doppel: ['Double Strike', '15% chance: tap counts twice'], band: ['Conveyor Belt', 'Dwarves +25%'],
+    laterne: ['Big Lantern', 'Chests stay twice as long'], dyn: ['Dynamite', 'Button: 30 taps at once, every 90 s'], zeit: ['Slow Motion', 'Boss time +10 s'],
+    bier: ['Beer Keg', 'Button: dwarves ×3 for 20 s, every 3 min'], waage: ['Gold Scale', 'Bosses give +50% gold'], kurs: ['Blasting Course', 'Pickaxe +50%'],
+    magnet: ['Ore Magnet', 'Chests give double'], gluck: ['Lucky Charm', 'Crits ×6 instead of ×5'], lied: ['Dwarf Song', 'Dwarves +30%'],
+    bohrer: ['Diamond Drill', 'Pickaxe ×2'], schicht: ['Double Shift', 'Dwarves +50%'], kugel: ['Crystal Ball', 'Bosses give double gems'],
+  },
+  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times' },
+  goals1: { boss: 'Beat your first boss', prest: 'Move to a new mine for the first time' },
 };
 const DWARF_NAMES = DE
-  ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig']
-  : ['Digger', 'Rockbiter', 'Blaster', 'Drill Master', 'Steam Drill', 'Ore King'];
+  ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
+  : ['Digger', 'Rockbiter', 'Blaster', 'Drill Master', 'Steam Drill', 'Ore King', 'Lava Driller', 'Void Prospector'];
 
 // ---------- Spielformeln ----------
 // FORMELN_START (wird vom Balancing-Test gelesen)
@@ -125,6 +171,10 @@ const LAYERS = [
   { rock: '#3d4e72', dark: '#243150', ore: '#7fe7ff', bg: '#0f1626' },  // Kristall
   { rock: '#5a2f2f', dark: '#341818', ore: '#ff8a3d', bg: '#1f0c0c' },  // Lava
   { rock: '#4a3a6e', dark: '#2a1f45', ore: '#e07bff', bg: '#140d22' },  // Tiefe
+  { rock: '#2a2a33', dark: '#141418', ore: '#8af0ff', bg: '#0b0b10' },  // Obsidian
+  { rock: '#5a6a80', dark: '#333d4e', ore: '#c8ffe8', bg: '#121a22' },  // Mithril
+  { rock: '#6a2a1a', dark: '#3a140a', ore: '#ffd23f', bg: '#200a05' },  // Glutkern
+  { rock: '#2a1a3a', dark: '#120a1e', ore: '#ff6bd6', bg: '#07030c' },  // Leere
 ];
 const DWARVES = [
   { dps: 1,      cost: 12,      unlock: 1,  hat: '#d94f3d' },
@@ -133,6 +183,37 @@ const DWARVES = [
   { dps: 300,    cost: 16000,   unlock: 21, hat: '#e0a83a' },
   { dps: 2200,   cost: 220000,  unlock: 31, hat: '#9b59d9' },
   { dps: 18000,  cost: 3600000, unlock: 45, hat: '#e8e8e8' },
+  { dps: 150000, cost: 6e7,     unlock: 60, hat: '#ff6b35' },
+  { dps: 1.2e6,  cost: 1e9,     unlock: 80, hat: '#ff6bd6' },
+];
+// Werkstatt: einmalige Käufe mit Gold (Freischaltung ab Tiefe)
+const UPGRADES = [
+  { key: 'spitze',  cost: 60,     unlock: 3 },
+  { key: 'doppel',  cost: 500,    unlock: 8 },
+  { key: 'band',    cost: 1500,   unlock: 12 },
+  { key: 'laterne', cost: 3000,   unlock: 15 },
+  { key: 'dyn',     cost: 6000,   unlock: 18 },
+  { key: 'zeit',    cost: 8000,   unlock: 20 },
+  { key: 'bier',    cost: 20000,  unlock: 25 },
+  { key: 'waage',   cost: 50000,  unlock: 30 },
+  { key: 'kurs',    cost: 120000, unlock: 35 },
+  { key: 'magnet',  cost: 300000, unlock: 40 },
+  { key: 'gluck',   cost: 800000, unlock: 45 },
+  { key: 'lied',    cost: 2e6,    unlock: 50 },
+  { key: 'bohrer',  cost: 3e7,    unlock: 65 },
+  { key: 'schicht', cost: 2e8,    unlock: 75 },
+  { key: 'kugel',   cost: 3e9,    unlock: 90 },
+];
+// Ziele: Belohnung in Steinen, werden automatisch gutgeschrieben
+const GOALS = [
+  { id: 'd10', type: 'depth', n: 10, gems: 1 }, { id: 'd25', type: 'depth', n: 25, gems: 2 }, { id: 'd50', type: 'depth', n: 50, gems: 4 }, { id: 'd100', type: 'depth', n: 100, gems: 10 }, { id: 'd150', type: 'depth', n: 150, gems: 20 },
+  { id: 't200', type: 'taps', n: 200, gems: 1 }, { id: 't2000', type: 'taps', n: 2000, gems: 2 }, { id: 't10000', type: 'taps', n: 10000, gems: 5 },
+  { id: 'w10', type: 'dw', n: 10, gems: 1 }, { id: 'w50', type: 'dw', n: 50, gems: 1 }, { id: 'w150', type: 'dw', n: 150, gems: 3 }, { id: 'w400', type: 'dw', n: 400, gems: 6 },
+  { id: 'b1', type: 'boss', n: 1, gems: 1 }, { id: 'b5', type: 'boss', n: 5, gems: 2 }, { id: 'b15', type: 'boss', n: 15, gems: 5 },
+  { id: 'c3', type: 'chest', n: 3, gems: 1 }, { id: 'c15', type: 'chest', n: 15, gems: 2 }, { id: 'c50', type: 'chest', n: 50, gems: 5 },
+  { id: 'p10', type: 'pick', n: 10, gems: 1 }, { id: 'p30', type: 'pick', n: 30, gems: 2 }, { id: 'p60', type: 'pick', n: 60, gems: 5 },
+  { id: 'u5', type: 'up', n: 5, gems: 1 }, { id: 'u15', type: 'up', n: 15, gems: 6 },
+  { id: 'n1', type: 'prest', n: 1, gems: 3 }, { id: 'n3', type: 'prest', n: 3, gems: 8 },
 ];
 const GEM_UPS = [
   { key: 'power',   base: 2,  grow: 1.35, max: 999 },
@@ -143,24 +224,35 @@ const GEM_UPS = [
 ];
 const F = {
   isBoss: (d) => d % 10 === 0,
+  isBigBoss: (d) => d % 50 === 0,
   layerOf: (d) => Math.floor((d - 1) / 10) % LAYERS.length,
-  rockHp: (d) => Math.ceil(8 * Math.pow(1.21, d - 1) * (d % 10 === 0 ? 7 : 1)),
-  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 : 1) * (1 + 0.25 * s.gu.gold)),
-  bossGems: (d) => 1 + Math.floor(d / 20),
-  bossTime: 30,
-  powerMult: (s) => 1 + 0.2 * s.gu.power,
+  rockHp: (d) => Math.ceil(8 * Math.pow(1.21, d - 1) * Math.pow(1.025, Math.max(0, d - 40)) * (d % 50 === 0 ? 10 : d % 10 === 0 ? 7 : 1)),
+  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s)),
+  bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
+  bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0),
+  heirMult: (s) => 1 + 0.05 * (s.heir || 0),
+  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s),
+  pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1),
+  dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1),
   pickCost: (L) => Math.ceil(10 * Math.pow(1.19, L)),
-  pickDmg: (L, s) => Math.max(1, Math.floor((1 + L) * Math.pow(1.09, L))) * F.powerMult(s),
+  pickDmg: (L, s) => Math.max(1, Math.floor((1 + L) * Math.pow(1.09, L))) * F.powerMult(s) * F.pickMult(s),
   milestoneMult: (n) => Math.pow(2, [10, 25, 50, 100, 150, 200].filter(m => n >= m).length),
   dwarfCost: (i, n) => Math.ceil(DWARVES[i].cost * Math.pow(1.15, n)),
-  dwarfDps: (i, n, s) => DWARVES[i].dps * n * F.milestoneMult(n) * F.powerMult(s),
+  dwarfDps: (i, n, s) => DWARVES[i].dps * n * F.milestoneMult(n) * F.powerMult(s) * F.dwarfMult(s),
   totalDps: (s) => DWARVES.reduce((a, _, i) => a + F.dwarfDps(i, s.dw[i], s), 0),
   critChance: (s) => 0.04 + 0.02 * s.gu.crit,
-  critMult: 5,
+  critMult: (s) => s.up.gluck ? 6 : 5,
+  doubleChance: (s) => s.up.doppel ? 0.15 : 0,
   gemCost: (k, L) => { const g = GEM_UPS.find(u => u.key === k); return Math.ceil(g.base * Math.pow(g.grow, L)); },
   offlineRate: (s) => 0.25 + 0.075 * s.gu.offline,
   offlineMaxSec: 8 * 3600,
   chestEvery: (s) => Math.max(18, 60 - 5 * s.gu.chest),
+  chestLife: (s) => s.up.laterne ? 18 : 9,
+  chestMult: (s) => s.up.magnet ? 2 : 1,
+  dynCd: 90, dynTaps: 30, beerCd: 180, beerSec: 20, beerMult: 3,
+  canPrestige: (s) => s.maxDepth > 50,
+  heirGain: (s) => s.maxDepth > 50 ? Math.floor(Math.pow((s.maxDepth - 30) / 10, 2)) : 0,
+  goalProgress: (g, s) => ({ depth: s.maxDepth, taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest })[g.type],
 };
 // FORMELN_ENDE
 
@@ -168,7 +260,8 @@ const F = {
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
   return { gold: 0, gems: 0, depth: 1, maxDepth: 1, farm: false, pick: 0, dw: DWARVES.map(() => 0),
-    gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0 };
+    gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
+    up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0 }, cdDyn: 0, cdBeer: 0 };
 }
 let S = freshState();
 function load() {
@@ -177,16 +270,18 @@ function load() {
     if (!raw) return null;
     const d = JSON.parse(raw);
     const f = freshState();
-    S = Object.assign(f, d, { gu: Object.assign(f.gu, d.gu || {}), dw: DWARVES.map((_, i) => (d.dw && d.dw[i]) || 0) });
+    S = Object.assign(f, d, { gu: Object.assign(f.gu, d.gu || {}), dw: DWARVES.map((_, i) => (d.dw && d.dw[i]) || 0), up: Object.assign({}, d.up || {}), goals: Object.assign({}, d.goals || {}), st: Object.assign(f.st, d.st || {}) });
+    if (!d.st) S.st.bosses = Math.floor(((d.maxDepth || 1) - 1) / 10);   // Spielstand von vor den Zielen
     return d.saved || null;
   } catch (e) { return null; }
 }
 function save() { S.saved = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 
 // ---------- Zahlen schön schreiben ----------
-const SUFFIX = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+const SUFFIX = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc'];
 function fmt(n) {
   if (n < 1000) return n < 10 && n % 1 ? n.toFixed(1) : String(Math.floor(n));
+  if (n >= 1e51) return n.toExponential(2).replace('+', '');
   let i = 0; while (n >= 1000 && i < SUFFIX.length - 1) { n /= 1000; i++; }
   return (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)) + SUFFIX[i];
 }
@@ -229,7 +324,13 @@ new ResizeObserver(resize).observe(cv);
 let hpMax = 1;
 let shake = 0, hitFlash = 0, bossTimer = 0, bossActive = false, rage = 0;
 let floats = [], chips = [], coins = [], banner = null, chest = null, chestTimer = 25;
-let swingT = 0, rockSeed = 1, layerShown = -1;
+const bannerQ = [];
+// Meldungen nacheinander zeigen statt sich gegenseitig zu überschreiben
+function showBanner(b) {
+  if (banner && banner.life > 0.9) { bannerQ.push(b); if (bannerQ.length > 4) bannerQ.shift(); }
+  else banner = b;
+}
+let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0;
 
 function rockCenter() { return { x: CW / 2, y: CH * 0.52, r: Math.min(CW * 0.27, CH * 0.3) * (bossActive ? 1.15 : 1) }; }
 
@@ -237,20 +338,21 @@ function spawnRock() {
   bossActive = F.isBoss(S.depth) && !S.farm;
   hpMax = F.rockHp(S.depth);
   S.hp = hpMax;
-  bossTimer = F.bossTime;
+  bossTimer = F.bossTime(S.depth, S);
   rockSeed = (S.depth * 9301 + 49297) % 233280;
   const L = F.layerOf(S.depth);
   if (L !== layerShown) {
-    if (layerShown !== -1) banner = { text: T.newLayer, sub: S.depth, life: 2.2, color: LAYERS[L].ore };
+    if (layerShown !== -1) showBanner({ text: T.newLayer, sub: T.layers[L] + ' · ' + S.depth, life: 2.4, color: LAYERS[L].ore });
     layerShown = L;
   }
+  if (bossActive && F.isBigBoss(S.depth)) showBanner({ text: T.bigBoss, sub: '💎 ×' + F.bossGems(S.depth, S), life: 2.4, color: '#ff6b6b' });
   updateBossBtn();
 }
 
 function damage(amount, fromTap, x, y) {
   if (S.hp <= 0) return;
   let crit = false;
-  if (fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult; crit = true; }
+  if (fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult(S); crit = true; }
   S.hp -= amount;
   if (fromTap) {
     shake = Math.min(1, shake + (crit ? 0.6 : 0.25)); hitFlash = 1;
@@ -278,9 +380,9 @@ function breakRock() {
   floats.push({ x: c.x, y: c.y - c.r - 10, text: '+' + fmt(gold), life: 1.3, gold: true });
   sfx.brk();
   if (bossActive) {
-    const g = F.bossGems(S.depth);
-    S.gems += g;
-    banner = { text: T.bossWin, sub: '+' + g, gem: true, life: 2.4, color: '#57d2ff' };
+    const g = F.bossGems(S.depth, S);
+    S.gems += g; S.st.bosses++;
+    showBanner({ text: T.bossWin, sub: '+' + g, gem: true, life: 2.4, color: '#57d2ff' });
     sfx.boss(); Portal.happytime();
     shake = 1;
   }
@@ -295,7 +397,7 @@ function breakRock() {
 function failBoss() {
   S.farm = true;
   S.depth = Math.max(1, S.depth - 1);
-  banner = { text: '⏱', sub: '', life: 1.6, color: '#ff6b6b' };
+  showBanner({ text: '⏱', sub: '', life: 1.6, color: '#ff6b6b' });
   spawnRock();
 }
 
@@ -318,31 +420,63 @@ cv.addEventListener('pointerdown', (e) => {
   lastTap = now;
   S.taps++;
   swingT = 1;
-  damage(F.pickDmg(S.pick, S) * (rage > 0 ? 3 : 1), true, x, y);
+  damage(F.pickDmg(S.pick, S) * (rage > 0 ? 3 : 1) * (Math.random() < F.doubleChance(S) ? 2 : 1), true, x, y);
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') {
     e.preventDefault(); const c = rockCenter(); swingT = 1; S.taps++;
-    damage(F.pickDmg(S.pick, S) * (rage > 0 ? 3 : 1), true, c.x, c.y);
+    damage(F.pickDmg(S.pick, S) * (rage > 0 ? 3 : 1) * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
   }
+  if (e.code === 'KeyD') useDyn();
+  if (e.code === 'KeyB') useBeer();
 });
+
+// ---------- Fähigkeiten (Werkstatt-Knöpfe) ----------
+const dynBtn = document.getElementById('dynBtn'), beerBtn = document.getElementById('beerBtn');
+function useDyn() {
+  if (!S.up.dyn || S.cdDyn > 0 || S.hp <= 0) return;
+  S.cdDyn = F.dynCd; const c = rockCenter(); swingT = 1; shake = 1;
+  for (let i = 0; i < 18; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, '#ff8a3d'));
+  damage(F.pickDmg(S.pick, S) * F.dynTaps * (rage > 0 ? 3 : 1), true, c.x, c.y - 10);
+  sfx.boss(); updateSkillBtns();
+}
+function useBeer() {
+  if (!S.up.bier || S.cdBeer > 0) return;
+  S.cdBeer = F.beerCd; beer = F.beerSec;
+  showBanner({ text: T.beerOn, sub: F.beerSec + 's', life: 2, color: '#f5c542' });
+  sfx.chest(); updateSkillBtns();
+}
+dynBtn.addEventListener('click', (e) => { e.stopPropagation(); useDyn(); });
+beerBtn.addEventListener('click', (e) => { e.stopPropagation(); useBeer(); });
+function updateSkillBtns() {
+  for (const [btn, have, cd, tot, name] of [[dynBtn, S.up.dyn, S.cdDyn, F.dynCd, T.dyn], [beerBtn, S.up.bier, S.cdBeer, F.beerCd, T.beer]]) {
+    btn.classList.toggle('show', !!have);
+    if (!have) continue;
+    const on = btn === beerBtn && beer > 0;
+    btn.classList.toggle('ready', cd <= 0);
+    btn.classList.toggle('active', on);
+    btn.querySelector('.cd').style.setProperty('--p', Math.max(0, cd / tot * 100) + '%');
+    btn.querySelector('.lbl').textContent = on ? '×3 ' + Math.ceil(beer) + 's' : cd > 0 ? Math.ceil(cd) + 's' : name;
+  }
+}
 
 // ---------- Truhe ----------
 function spawnChest() {
   const left = Math.random() < 0.5;
-  chest = { x: left ? CW * 0.15 : CW * 0.85, y: CH * (0.25 + Math.random() * 0.45), life: 9, bob: 0 };
+  chest = { x: left ? CW * 0.15 : CW * 0.85, y: CH * (0.25 + Math.random() * 0.45), life: F.chestLife(S), bob: 0 };
 }
 function openChest() {
   if (!chest) return;
   const kind = Math.random() < 0.6 ? 'gold' : 'rage';
+  S.st.chests++;
   if (kind === 'gold') {
-    const amount = Math.max(F.rockGold(S.depth, S) * 6, (F.totalDps(S) + F.pickDmg(S.pick, S) * 3) * 25 * F.rockGold(S.depth, S) / F.rockHp(S.depth));
+    const amount = Math.max(F.rockGold(S.depth, S) * 6, (F.totalDps(S) + F.pickDmg(S.pick, S) * 3) * 25 * F.rockGold(S.depth, S) / F.rockHp(S.depth)) * F.chestMult(S);
     S.gold += Math.ceil(amount);
-    banner = { text: T.chestGold, sub: '+' + fmt(amount), life: 2, color: '#f5c542', coin: true };
+    showBanner({ text: T.chestGold, sub: '+' + fmt(amount), life: 2, color: '#f5c542', coin: true });
     for (let i = 0; i < 10; i++) coins.push({ x: chest.x, y: chest.y, t: -i * 0.03, sx: 0, sy: 0 });
   } else {
     rage = 15;
-    banner = { text: T.chestRage, sub: '15s', life: 2, color: '#ff8a3d' };
+    showBanner({ text: T.chestRage, sub: '15s', life: 2, color: '#ff8a3d' });
   }
   for (let i = 0; i < 16; i++) chips.push(chip(chest.x, chest.y, '#f5c542'));
   sfx.chest();
@@ -417,7 +551,7 @@ function drawRock(t) {
   ctx.fillText(fmt(Math.max(0, S.hp)) + ' / ' + fmt(hpMax), CW / 2, by + 6.5);
   if (bossActive) {
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; roundRect(bx, by + 16, bw, 6, 3); ctx.fill();
-    ctx.fillStyle = bossTimer < 8 ? '#ff6b6b' : '#f5c542'; roundRect(bx, by + 16, (bossTimer / F.bossTime) * bw, 6, 3); ctx.fill();
+    ctx.fillStyle = bossTimer < 8 ? '#ff6b6b' : '#f5c542'; roundRect(bx, by + 16, (bossTimer / F.bossTime(S.depth, S)) * bw, 6, 3); ctx.fill();
   }
 }
 
@@ -453,8 +587,11 @@ function drawBackground(t) {
     ctx.fillStyle = lg; ctx.fillRect(lx - 90, CH * 0.2 - 90, 180, 180);
     ctx.fillStyle = '#ffcf6b'; ctx.beginPath(); ctx.arc(lx, CH * 0.2, 5, 0, Math.PI * 2); ctx.fill();
   }
-  // Tiefen-Anzeige als Lineal rechts
-  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.font = '700 11px system-ui, sans-serif'; ctx.textAlign = 'right';
+  // Name der Schicht
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '800 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (banner) return;
+  ctx.fillText(T.layers[F.layerOf(S.depth)] + ' · ' + T.layer + ' ' + (Math.floor((S.depth - 1) / 10) + 1), CW / 2, CH * 0.08 + 30);
+  if (S.heir > 0) { ctx.fillStyle = '#c77dff'; ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText('⚱ ' + S.heir + '  +' + Math.round((F.heirMult(S) - 1) * 100) + '%', CW - 14, CH * 0.08 + 30); }
 }
 
 function drawDwarf(x, y, s, hat, phase, flip) {
@@ -548,10 +685,10 @@ function drawFx(dt) {
     ctx.fillStyle = f.crit ? '#ff8a3d' : f.gold ? '#f5c542' : '#fff'; ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
-  if (banner) {
+  if (banner && toast.style.display !== 'block') {
     const a = Math.min(1, banner.life * 1.5);
     ctx.globalAlpha = a;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'; roundRect(CW / 2 - 140, CH * 0.06, 280, 62, 14); ctx.fill();
+    ctx.fillStyle = 'rgba(14,10,22,0.82)'; roundRect(CW / 2 - 140, CH * 0.06, 280, 62, 14); ctx.fill();
     ctx.fillStyle = banner.color; ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(banner.text, CW / 2, CH * 0.06 + 22);
     ctx.fillStyle = '#fff'; ctx.font = '800 16px system-ui, sans-serif';
@@ -561,7 +698,7 @@ function drawFx(dt) {
   if (rage > 0) {
     ctx.fillStyle = `rgba(255,120,40,${0.08 + Math.sin(performance.now() / 120) * 0.04})`; ctx.fillRect(0, 0, CW, CH);
     ctx.fillStyle = '#ff8a3d'; ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText('×3  ' + Math.ceil(rage) + 's', 14, CH - 16);
+    ctx.textBaseline = 'middle'; ctx.fillText('⛏ ×3  ' + Math.ceil(rage) + 's', 14, CH - 100);
   }
 }
 
@@ -569,13 +706,14 @@ function drawFx(dt) {
 const listEl = document.getElementById('list');
 let tab = 'pick';
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
-  tab = b.dataset.tab;
+  tab = b.dataset.tab; if (tab === 'goal') seenPrest = true;
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
-  buildPanel();
+  buildPanel(); listEl.scrollTop = 0;
 }));
 document.getElementById('tPick').textContent = T.pick;
 document.getElementById('tDwarf').textContent = T.dwarf;
 document.getElementById('tGem').textContent = T.gem;
+document.getElementById('tGoal').textContent = T.goal;
 
 const COIN_SVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#f5c542" stroke="#c9961b" stroke-width="2"/></svg>';
 const GEM_SVG = '<svg viewBox="0 0 24 24"><path d="M6 4h12l4 6-10 11L2 10z" fill="#57d2ff" stroke="#1d8db6" stroke-width="1.4"/></svg>';
@@ -600,6 +738,10 @@ function dwarfIcon(i) {
   };
 }
 const GEM_ICON_COLORS = { power: '#ff8a3d', gold: '#f5c542', crit: '#ff6b6b', offline: '#7f8cff', chest: '#6fdc7a' };
+const UP_EMOJI = { spitze: '⛏️', doppel: '✌️', band: '🛤️', laterne: '🏮', dyn: '🧨', zeit: '⏳', bier: '🍺', waage: '⚖️', kurs: '🎓', magnet: '🧲', gluck: '🍀', lied: '🎵', bohrer: '💎', schicht: '🌙', kugel: '🔮' };
+const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️' };
+function emojiIcon(e) { return (g) => { g.font = '26px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, 20, 22); }; }
+function heirIcon(g) { g.translate(20, 20); g.fillStyle = '#c77dff'; g.beginPath(); g.moveTo(-8, -12); g.lineTo(8, -12); g.lineTo(11, 0); g.lineTo(6, 14); g.lineTo(-6, 14); g.lineTo(-11, 0); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(-5, -8, 3, 14); }
 function gemIcon(key) {
   return (g) => {
     g.translate(20, 20);
@@ -614,10 +756,16 @@ function buildPanel() {
   listEl.innerHTML = ''; rows = [];
   if (tab === 'pick') {
     rows.push(makeRow({ icon: iconCanvas(pickIcon), kind: 'pick' }));
+    const ups = UPGRADES.slice().sort((a, b) => (S.up[a.key] ? 1 : 0) - (S.up[b.key] ? 1 : 0) || a.unlock - b.unlock);
+    ups.forEach((u) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(UP_EMOJI[u.key])), kind: 'up', key: u.key })));
   } else if (tab === 'dwarf') {
     DWARVES.forEach((d, i) => rows.push(makeRow({ icon: iconCanvas(dwarfIcon(i)), kind: 'dwarf', i })));
-  } else {
+  } else if (tab === 'gem') {
     GEM_UPS.forEach((u) => rows.push(makeRow({ icon: iconCanvas(gemIcon(u.key)), kind: 'gem', key: u.key })));
+  } else {
+    rows.push(makeRow({ icon: iconCanvas(heirIcon), kind: 'prest' }));
+    const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
+    gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
   }
   refreshPanel(true);
 }
@@ -644,6 +792,19 @@ function rowData(r) {
     return { name: DWARF_NAMES[r.i], lvl: '×' + n, eff: `<b>${fmt(F.dwarfDps(r.i, n, S))}</b> ${T.perSec} (+${fmt(F.dwarfDps(r.i, n + 1, S) - F.dwarfDps(r.i, n, S))})`,
       cost: F.dwarfCost(r.i, n), cur: 'gold', locked: false, bar: ms ? (n - prev) / (ms - prev) : 1 };
   }
+  if (r.kind === 'up') {
+    const u = UPGRADES.find(x => x.key === r.key), have = !!S.up[r.key];
+    if (!have && S.maxDepth < u.unlock) return { name: T.ups[r.key][0], lvl: '', eff: `${T.unlock} ${u.unlock}`, cost: u.cost, cur: 'gold', locked: true };
+    return { name: T.ups[r.key][0], lvl: '', eff: T.ups[r.key][1], cost: u.cost, cur: 'gold', locked: false, done: have };
+  }
+  if (r.kind === 'goal') {
+    const g = r.g, done = !!S.goals[g.id], p = Math.min(g.n, F.goalProgress(g, S));
+    return { name: goalName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
+  }
+  if (r.kind === 'prest') {
+    const can = F.canPrestige(S), gain = F.heirGain(S);
+    return { name: T.newMine, lvl: S.heir > 0 ? '⚱ ' + S.heir : '', eff: can ? `<b>+${gain} ${T.heir}</b> (${T.heirEff}). ${T.deeper} ${T.newMineInfo}` : `${T.moveFrom} (${T.heirEff}).`, cost: 0, cur: 'prest', locked: false, prest: true, can };
+  }
   const L = S.gu[r.key], g = GEM_UPS.find(u => u.key === r.key);
   const names = { power: T.gemPower, gold: T.gemGold, crit: T.gemCrit, offline: T.gemOffline, chest: T.gemChest };
   const effs = {
@@ -658,39 +819,85 @@ function refreshPanel(force) {
   for (const r of rows) {
     const d = rowData(r);
     const have = d.cur === 'gold' ? S.gold : S.gems;
-    const can = !d.locked && have >= d.cost;
-    const key = [d.name, d.lvl, d.eff, d.cost, can, d.locked, d.bar].join('|');
+    const can = d.prest ? d.can : !d.locked && !d.done && have >= d.cost;
+    const key = [d.name, d.lvl, d.eff, d.cost, can, d.locked, d.bar, d.done].join('|');
     if (!force && key === r.last) continue;
     r.last = key;
     r.nm.textContent = d.name; r.lvl.textContent = d.lvl; r.eff.innerHTML = d.eff;
-    r.el.classList.toggle('locked', d.locked);
-    r.btn.innerHTML = d.maxed ? 'MAX' : (d.cur === 'gold' ? COIN_SVG : GEM_SVG) + fmt(d.cost);
-    r.btn.className = 'buy' + (can ? (d.cur === 'gold' ? ' can' : ' gemcan') : '');
+    r.el.classList.toggle('locked', d.locked); r.el.classList.toggle('done', !!d.done); r.el.classList.toggle('prest', !!d.prest);
+    if (d.prest) { r.btn.innerHTML = T.move; r.btn.className = 'buy' + (can ? ' prestcan' : ''); }
+    else if (d.reward) { r.btn.innerHTML = d.done ? '✓' : GEM_SVG + '+' + d.cost; r.btn.className = 'buy ' + (d.done ? 'ok' : 'rew'); }
+    else {
+      r.btn.innerHTML = d.maxed ? 'MAX' : d.done ? '✓ ' + T.bought : (d.cur === 'gold' ? COIN_SVG : GEM_SVG) + fmt(d.cost);
+      r.btn.className = 'buy' + (can ? (d.cur === 'gold' ? ' can' : ' gemcan') : d.done ? ' ok' : '');
+    }
     r.bar.style.display = d.bar == null ? 'none' : 'block';
     if (d.bar != null) r.barI.style.width = Math.round(d.bar * 100) + '%';
   }
   updateTabDots();
 }
 function updateTabDots() {
-  const canPick = S.gold >= F.pickCost(S.pick);
+  const canPick = S.gold >= F.pickCost(S.pick) || UPGRADES.some(u => !S.up[u.key] && S.maxDepth >= u.unlock && S.gold >= u.cost);
   const canDwarf = DWARVES.some((d, i) => S.maxDepth >= d.unlock && S.gold >= F.dwarfCost(i, S.dw[i]));
   const canGem = GEM_UPS.some(u => S.gu[u.key] < u.max && S.gems >= F.gemCost(u.key, S.gu[u.key]));
-  const dots = { pick: canPick, dwarf: canDwarf, gem: canGem };
+  const dots = { pick: canPick, dwarf: canDwarf, gem: canGem, goal: F.canPrestige(S) && !seenPrest };
   document.querySelectorAll('.tab').forEach(b => b.querySelector('.dot').classList.toggle('show', dots[b.dataset.tab] && b.dataset.tab !== tab));
 }
+let seenPrest = false;
 function buy(r) {
   const d = rowData(r);
-  if (d.locked || d.maxed) return;
+  if (r.kind === 'goal') return;
+  if (r.kind === 'prest') { newMine(); return; }
+  if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
   else { if (S.gems < d.cost) return; S.gems -= d.cost; }
   if (r.kind === 'pick') S.pick++;
+  else if (r.kind === 'up') { S.up[r.key] = true; showBanner({ text: T.ups[r.key][0], sub: T.ups[r.key][1], life: 2.2, color: '#f5c542' }); updateSkillBtns(); }
   else if (r.kind === 'dwarf') {
     const before = F.milestoneMult(S.dw[r.i]);
     S.dw[r.i]++;
-    if (F.milestoneMult(S.dw[r.i]) > before) banner = { text: DWARF_NAMES[r.i], sub: T.milestone, life: 2, color: DWARVES[r.i].hat };
+    if (F.milestoneMult(S.dw[r.i]) > before) showBanner({ text: DWARF_NAMES[r.i], sub: T.milestone, life: 2, color: DWARVES[r.i].hat });
   } else S.gu[r.key]++;
   sfx.buy();
-  refreshPanel(true);
+  if (r.kind === 'up') buildPanel(); else refreshPanel(true);
+  save();
+}
+
+// ---------- Ziele ----------
+function goalName(g) { return (g.n === 1 && T.goals1[g.type]) || T.goals[g.type].replace('{n}', g.n); }
+let goalTimer = 0;
+function checkGoals() {
+  const done = GOALS.filter(g => !S.goals[g.id] && F.goalProgress(g, S) >= g.n);
+  if (!done.length) return;
+  let gems = 0; for (const g of done) { S.goals[g.id] = true; gems += g.gems; }
+  S.gems += gems;
+  showBanner(done.length === 1
+    ? { text: T.goalDone, sub: goalName(done[0]) + '  💎 +' + gems, life: 2.6, color: '#6fdc7a' }
+    : { text: T.goalsDone.replace('{n}', done.length), sub: '💎 +' + gems, life: 2.6, color: '#6fdc7a' });
+  sfx.boss();
+  if (tab === 'goal') buildPanel();
+  save();
+}
+
+// ---------- Neue Mine (Umzug) ----------
+function newMine() {
+  if (!F.canPrestige(S)) return;
+  const gain = F.heirGain(S);
+  askConfirm(T.confirmMove.replace('{n}', gain), () => doNewMine(gain));
+}
+function askConfirm(text, onYes) {
+  toast.innerHTML = `<div style="font-weight:800;max-width:260px">${text}</div><div style="display:flex;gap:8px;justify-content:center"><button id="tNo" style="background:#4a3f60;color:#f3ead8">${T.no}</button><button id="tYes" style="background:#c77dff;color:#2a0a40">${T.move}</button></div>`;
+  toast.style.display = 'block';
+  document.getElementById('tNo').onclick = () => { toast.style.display = 'none'; };
+  document.getElementById('tYes').onclick = () => { toast.style.display = 'none'; onYes(); };
+}
+function doNewMine(gain) {
+  S.heir += gain; S.st.prest++;
+  S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
+  rage = 0; beer = 0; chest = null; chestTimer = 25; layerShown = -1;
+  spawnRock(); buildPanel(); updateSkillBtns(); seenPrest = false;
+  bannerQ.length = 0; banner = null; showBanner({ text: T.newMine, sub: '⚱ +' + gain + ' ' + T.heir, life: 3, color: '#c77dff' });
+  sfx.boss(); Portal.happytime();
   save();
 }
 
@@ -741,10 +948,13 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now; t += dt;
 
   // Zwerge graben
-  const dps = F.totalDps(S);
-  if (dps > 0 && S.hp > 0) damage(dps * dt * (rage > 0 ? 1 : 1), false);
+  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1);
+  if (dps > 0 && S.hp > 0) damage(dps * dt, false);
   if (bossActive) { bossTimer -= dt; if (bossTimer <= 0) failBoss(); }
   if (rage > 0) rage -= dt;
+  if (beer > 0) beer -= dt;
+  if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
+  goalTimer -= dt; if (goalTimer <= 0) { goalTimer = 0.5; checkGoals(); updateSkillBtns(); }
 
   // Truhe
   if (chest) { chest.life -= dt; if (chest.life <= 0) { chest = null; chestTimer = F.chestEvery(S); } }
@@ -760,7 +970,7 @@ function frame(now) {
   if (floats.length > 40) floats.splice(0, floats.length - 40);
   for (const m of coins) m.t += dt;
   coins = coins.filter(m => m.t < 0.7);
-  if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
+  if (banner && toast.style.display !== 'block') { banner.life -= dt * (bannerQ.length ? 1.6 : 1); if (banner.life <= 0) banner = bannerQ.shift() || null; }
 
   // Zeichnen
   drawBackground(t);
@@ -784,13 +994,14 @@ spawnRock();
 if (S.hp <= 0) S.hp = hpMax;
 buildPanel();
 updateBossBtn();
+updateSkillBtns();
 resize();
 setTimeout(() => offlineReward(since), 300);
 Portal.gameplayStart();
 requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
-window.__mine = { get S() { return S; }, F, DWARVES, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, reset: () => { S = freshState(); spawnRock(); buildPanel(); } };
+window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: () => { S = freshState(); spawnRock(); buildPanel(); }, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.farm = false; spawnRock(); buildPanel(); } };
 </script>
 </body>
 </html>
