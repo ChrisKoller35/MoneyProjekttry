@@ -20,7 +20,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 ## Dateien
 
 - `index.html` – das ganze Spiel in einer Datei (kein Internet nötig, ca. 70 KB), Texte Deutsch/Englisch je nach Browser-Sprache
-- `test-mine.js` – Browser-Test mit 29 Prüfungen und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
+- `test-mine.js` – Browser-Test mit 33 Prüfungen und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
 - Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2) und `bilder-v3/` (Ringe und Rekorde)
 
 ## Bedienung
@@ -28,6 +28,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - Handy: tippen auf den Felsen, Reiter unten für Käufe. PC: Klick, Leertaste oder Enter; D für Dynamit, B für Bierfass.
 - Grüner Punkt am Reiter: dort kann man gerade etwas kaufen (beim Reiter «Ziele»: Umzug ist möglich).
 - Spielstand wird im Browser gespeichert (alle 5 Sekunden und beim Verlassen). Alte Spielstände laden weiter, erreichte Ziele werden beim ersten Laden gutgeschrieben.
+- **Ganz neu anfangen:** Knopf unten im Fenster «Rekorde». Nach einer Rückfrage wird alles gelöscht (Gold, Steine, Zwerge, Erbstücke, Ziele, Rekorde), nur die Ton-Einstellung bleibt.
 - Der Ton geht aus, sobald man woanders hinklickt (anderes Fenster oder ausserhalb des Spiels), und wieder an beim nächsten Tipp ins Spiel. Die Zwerge graben weiter.
 
 ## Portal-Anbindung

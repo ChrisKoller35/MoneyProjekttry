@@ -74,6 +74,7 @@
   #toast .big { font-size: 26px; font-weight: 900; color: var(--gold); display: flex; align-items: center; justify-content: center; gap: 8px; }
   #toast .big svg { width: 28px; height: 28px; }
   #toast .small { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  #toast button.ghost { background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,0.18); font-size: 13px; padding: 6px 12px; margin-top: 12px; }
   #toast button { margin-top: 10px; border: 0; border-radius: 12px; padding: 9px 18px; font-weight: 800; background: var(--gold); color: #3a2a00; font-size: 15px; cursor: pointer; }
   #soundBtn { position: absolute; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 10px; border: 0; background: rgba(255,255,255,0.08); display: grid; place-items: center; cursor: pointer; }
   #soundBtn svg { width: 22px; height: 22px; }
@@ -140,7 +141,8 @@ const T = DE ? {
   goals1: { boss: 'Besiege deinen ersten Boss', prest: 'Zieh zum ersten Mal in eine neue Mine' },
   records: 'Rekorde', bestDepth: 'Tiefster Punkt', thisMine: 'Diese Mine', mines: 'Minen', mine: 'Mine', show: 'Ansehen', close: 'Schliessen',
   record: 'Neuer Rekord!', recordSub: 'Dein alter Rekord war Tiefe {n}', ringNew: 'Ring {r} erreicht!', ringSub: 'Neue Farben, leuchtendes Erz',
-  noRuns: 'Noch kein Umzug. Ab Tiefe 51 kannst du in eine neue Mine ziehen.', playTime: 'Spielzeit', moves: 'Umzüge', min: 'min', depthW: 'Tiefe',
+  noRuns: 'Noch kein Umzug. Ab Tiefe 51 kannst du in eine neue Mine ziehen.', playTime: 'Spielzeit',
+  reset: 'Ganz neu anfangen', resetAsk: 'Wirklich ganz von vorne anfangen? Alles wird gelöscht: Gold, Steine, Zwerge, Erbstücke, Ziele und Rekorde.', resetYes: 'Alles löschen', resetDone: 'Neues Spiel!', resetSub: 'Viel Spass beim Graben', moves: 'Umzüge', min: 'min', depthW: 'Tiefe',
 } : {
   pick: 'Pickaxe', dwarf: 'Dwarves', gem: 'Gems', perTap: 'per tap', perSec: 'per sec',
   pickName: 'Pickaxe', boss: 'Boss', retry: 'Retry boss', welcome: 'Welcome back!', away: 'Your dwarves kept digging',
@@ -165,7 +167,8 @@ const T = DE ? {
   goals1: { boss: 'Beat your first boss', prest: 'Move to a new mine for the first time' },
   records: 'Records', bestDepth: 'Deepest point', thisMine: 'This mine', mines: 'Mines', mine: 'Mine', show: 'View', close: 'Close',
   record: 'New record!', recordSub: 'Your old record was depth {n}', ringNew: 'Ring {r} reached!', ringSub: 'New colors, glowing ore',
-  noRuns: 'No move yet. From depth 51 you can move to a new mine.', playTime: 'Play time', moves: 'Moves', min: 'min', depthW: 'Depth',
+  noRuns: 'No move yet. From depth 51 you can move to a new mine.', playTime: 'Play time',
+  reset: 'Start over', resetAsk: 'Really start over from scratch? Everything will be deleted: gold, gems, dwarves, heirlooms, goals and records.', resetYes: 'Delete everything', resetDone: 'New game!', resetSub: 'Happy digging', moves: 'Moves', min: 'min', depthW: 'Depth',
 };
 const DWARF_NAMES = DE
   ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
@@ -971,8 +974,8 @@ function newMine() {
   const gain = F.heirGain(S);
   askConfirm(T.confirmMove.replace('{n}', gain), () => doNewMine(gain));
 }
-function askConfirm(text, onYes) {
-  toast.innerHTML = `<div style="font-weight:800;max-width:260px">${text}</div><div style="display:flex;gap:8px;justify-content:center"><button id="tNo" style="background:#4a3f60;color:#f3ead8">${T.no}</button><button id="tYes" style="background:#c77dff;color:#2a0a40">${T.move}</button></div>`;
+function askConfirm(text, onYes, yes = T.move, yesBg = '#c77dff') {
+  toast.innerHTML = `<div style="font-weight:800;max-width:260px">${text}</div><div style="display:flex;gap:8px;justify-content:center"><button id="tNo" style="background:#4a3f60;color:#f3ead8">${T.no}</button><button id="tYes" style="background:${yesBg};color:#2a0a40">${yes}</button></div>`;
   toast.style.display = 'block';
   document.getElementById('tNo').onclick = () => { toast.style.display = 'none'; };
   document.getElementById('tYes').onclick = () => { toast.style.display = 'none'; onYes(); };
@@ -986,9 +989,20 @@ function showRecords() {
     <div class="small">${T.bestDepth}</div><div class="big">${S.best}</div>
     <div class="runs">${row(`${T.thisMine} (${S.st.prest + 1})`, S.maxDepth, '', dur(S.runTime), 'cur')}${list || `<span class="note">${T.noRuns}</span>`}</div>
     <div class="small">${T.moves} ${S.st.prest} · ⚱ ${S.heir} ${T.heir} · ${T.playTime} ${dur(S.st.time)}</div>
-    <button id="tClose">${T.close}</button>`;
+    <button id="tClose">${T.close}</button>
+    <div><button id="tReset" class="ghost">${T.reset}</button></div>`;
   toast.style.display = 'block';
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+  document.getElementById('tReset').onclick = () => askConfirm(T.resetAsk, startOver, T.resetYes, '#ff6b6b');
+}
+// Ganz von vorne: alles löschen, nur die Ton-Einstellung bleibt
+function startOver() {
+  const sound = S.sound;
+  S = freshState(); S.sound = sound;
+  rage = 0; beer = 0; chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  floats = []; chips = []; coins = []; bannerQ.length = 0; banner = null;
+  spawnRock(); buildPanel(); updateSkillBtns(); save();
+  showBanner({ text: T.resetDone, sub: T.resetSub, life: 2.6, color: '#f5c542' });
 }
 function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
@@ -1104,7 +1118,7 @@ Portal.gameplayStart();
 requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
-window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: () => { S = freshState(); spawnRock(); buildPanel(); }, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; } };
+window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; } };
 </script>
 </body>
 </html>

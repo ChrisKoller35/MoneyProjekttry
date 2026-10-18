@@ -159,6 +159,27 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const foc = await page.evaluate(() => { const m = window.__mine; window.dispatchEvent(new Event('blur')); const a = m.focus; window.dispatchEvent(new Event('focus')); return [a, m.focus]; });
   check(foc[0] === false && foc[1] === true, 'Ton aus, wenn man woanders hinklickt');
 
+  // 9f) Ganz neu anfangen (mit Rückfrage; Abbrechen lässt alles stehen)
+  await page.click('#depthPill'); await page.waitForTimeout(300);
+  await shot('14f-rekorde-neustart-knopf');
+  await page.click('#tReset'); await page.waitForTimeout(200);
+  check(await page.locator('#tYes').isVisible(), 'Rückfrage vor dem Neuanfang');
+  await shot('14g-neustart-frage');
+  await page.click('#tNo'); await page.waitForTimeout(200);
+  s = await S();
+  check(s.heir === 49 && s.best > 100, 'Abbrechen löscht nichts');
+  await page.click('#depthPill'); await page.waitForTimeout(300);
+  await page.click('#tReset'); await page.waitForTimeout(200);
+  await page.click('#tYes'); await page.waitForTimeout(500);
+  s = await S();
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('zwergenmine.v1')));
+  check(s.depth === 1 && s.gold === 0 && s.gems === 0 && s.heir === 0 && s.best === 1 && s.runs.length === 0 && Object.keys(s.goals).length === 0 && stored.heir === 0 && stored.depth === 1,
+    `Ganz neu anfangen löscht alles (Tiefe ${s.depth}, Steine ${s.gems}, Erbstücke ${s.heir}, Ziele ${Object.keys(s.goals).length})`);
+  await shot('14h-neues-spiel');
+  await page.reload(); await page.waitForTimeout(800);
+  s = await S();
+  check(s.depth === 1 && s.heir === 0 && s.best === 1, 'Nach dem Neuladen bleibt es ein neues Spiel');
+
   // 10) Spätere Schichten ansehen
   for (const d of [61, 91, 111, 131]) {
     await page.evaluate((d) => window.__mine.jump(d), d); await page.waitForTimeout(1200);
