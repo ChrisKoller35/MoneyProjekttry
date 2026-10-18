@@ -330,18 +330,21 @@ window.A = window.A || {};
 
     drawHero(h, W, cx, cy) {
       const b = this.b, run = A.Game.run; if (!run) return;
-      const x = h.x / PX - cx, y = h.y / PX - cy + 7;
-      const walk = h.moving ? Math.floor(this.t * 9) % 4 : -1;
-      const frame = walk < 0 ? 0 : [1, 0, 2, 0][walk];
-      const bob = walk < 0 ? (Math.sin(this.t * 2.5) > 0.7 ? -1 : 0) : (walk % 2 === 0 ? -1 : 0);
+      let x = h.x / PX - cx, y = h.y / PX - cy + 7;
+      const walk = h.moving ? Math.floor(this.t * 10) % 4 : -1;
+      const frame = walk < 0 ? 0 : [1, 2, 3, 2][walk];
+      const bob = walk < 0 ? (Math.sin(this.t * 2.5) > 0.7 ? -1 : 0) : (walk % 2 === 1 ? -1 : 0);
       const spr = A.Art.heroSprite(run.race, run.cls, frame); const flip = h.fx < 0;
       const blink = h.inv > 0 && Math.floor(this.t * 20) % 2;
       this.shadow(x, y, 6);
-      if (!h.alive) { this.blit(spr, x, y, flip, { alpha: 0.4 }); return; }
-      // Waffe hinter oder vor dem Körper
+      if (!h.alive) { this.drawFallen(spr, x, y, flip, h); return; }
       const aim = Math.atan2(h.fy, h.fx);
-      const cls = run.cls;
-      const drawWeapon = () => {
+      const cls = run.cls, melee = cls !== 'schuetze' && cls !== 'weber' && cls !== 'rufer';
+      // Ausfallschritt und Stauchen beim Schlag, Zusammenzucken beim Treffer
+      let sx = 1, sy = 1;
+      if (h.swing > 0 && melee) { const p = 1 - h.swing / 0.2; const lunge = Math.sin(Math.min(1, p * 1.6) * Math.PI) * 3; x += h.fx * lunge; y += h.fy * lunge * 0.5; sx = 1 + 0.12 * Math.sin(p * Math.PI); sy = 1 - 0.1 * Math.sin(p * Math.PI); }
+      if (h.flash > 0) { sx *= 1.15; sy *= 0.85; }
+      const drawWeapon = (ghost) => {
         const wpn = A.Art.sprite(cls === 'schuetze' ? 'w_bow' : (cls === 'weber' || cls === 'rufer') ? 'w_staff' : 'w_sword');
         const hx = x + (flip ? -4 : 4), hy = y - 7 + bob;
         b.save(); b.translate(Math.round(hx), Math.round(hy));
@@ -349,26 +352,46 @@ window.A = window.A || {};
         else if (cls === 'weber' || cls === 'rufer') { const lean = h.swing > 0 ? Math.sin(h.swing / 0.25 * Math.PI) * 0.6 : 0.15; b.rotate((flip ? -1 : 1) * lean); b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4); }
         else {
           let ang;
-          if (h.swing > 0) { const p = 1 - h.swing / 0.2; const e = 1 - Math.pow(1 - p, 3); ang = aim - 1.9 + e * 3.4; } else ang = flip ? Math.PI - 0.9 : 0.9;
+          if (h.swing > 0) {
+            const p = 1 - h.swing / 0.2; const e = 1 - Math.pow(1 - p, 3); ang = aim - 1.9 + e * 3.4;
+            // Schwung-Spur: heller Bogen hinter der Klinge
+            if (p > 0.1 && p < 0.9) { b.globalAlpha = 0.95 * (1 - p * 0.6); b.strokeStyle = '#ffffff'; b.lineWidth = 3; b.beginPath(); b.arc(0, 0, wpn.w - 1, aim - 1.9, ang, false); b.stroke(); b.globalAlpha = 0.35 * (1 - p); b.strokeStyle = '#fee761'; b.lineWidth = 1; b.beginPath(); b.arc(0, 0, wpn.w + 1, aim - 1.9, ang, false); b.stroke(); b.globalAlpha = 1; }
+          } else ang = flip ? Math.PI - 0.9 : 0.9;
           b.rotate(ang); b.drawImage(wpn.img, -2, -Math.round(wpn.h / 2));
         }
         b.restore();
       };
       const behind = cls !== 'schuetze' && h.swing <= 0 && h.fy < -0.3;
       if (behind) drawWeapon();
-      if (blink) this.blit(spr, x, y + bob, flip, { alpha: 0.45 });
-      else this.blit(spr, x, y + bob, flip, { white: h.flash > 0 });
+      if (blink) this.blit(spr, x, y + bob, flip, { alpha: 0.45, sx, sy });
+      else this.blit(spr, x, y + bob, flip, { white: h.flash > 0, sx, sy });
       if (!behind) drawWeapon();
       // Schild-Blase
       if (h.shield > 0) { b.globalAlpha = 0.35 + Math.sin(this.t * 6) * 0.1; b.strokeStyle = '#2ce8f5'; b.lineWidth = 1; b.beginPath(); b.ellipse(Math.round(x), Math.round(y - 9), 11, 12, 0, 0, TAU); b.stroke(); b.globalAlpha = 1; }
       if (h.stun > 0) this.stars(x, y - 20);
     }
+    // Umkippen beim Sterben: Figur dreht sich um die Füsse und liegt dann am Boden
+    drawFallen(spr, x, y, flip, e, sc) {
+      const b = this.b; if (e.deathT == null) e.deathT = this.t;
+      const p = clamp((this.t - e.deathT) / 0.35, 0, 1), ang = (1 - Math.pow(1 - p, 2)) * Math.PI / 2 * (flip ? 1 : -1);
+      const s = sc || 1, w = Math.round(spr.w * s), hh = Math.round(spr.h * s);
+      const img = p < 0.25 && e.side !== 'hero' ? A.Art.white(spr, flip) : flip ? A.Art.flipped(spr) : spr.img;
+      b.save(); b.globalAlpha = e.alpha != null ? Math.max(0, Math.min(1, e.alpha)) : 0.6;
+      if (spr.w > spr.h * 1.2) { b.translate(Math.round(x), Math.round(y - hh / 2)); b.scale(1, Math.cos(p * Math.PI) || 0.01); b.drawImage(img, -Math.round(w / 2), -Math.round(hh / 2), w, hh); }
+      else { b.translate(Math.round(x), Math.round(y)); b.rotate(ang); b.drawImage(img, -Math.round(w / 2), -hh, w, hh); }
+      b.restore(); b.globalAlpha = 1;
+    }
     stars(x, y) { const b = this.b; b.fillStyle = '#fee761'; for (let i = 0; i < 3; i++) { const a = this.t * 6 + i * 2.1; b.fillRect(Math.round(x + Math.cos(a) * 6), Math.round(y + Math.sin(a) * 2), 1, 1); } }
 
     drawMon(m, W, cx, cy) {
       const b = this.b, x = m.x / PX - cx; let y = m.y / PX - cy + (m.boss ? 12 : m.elite ? 8 : 7);
-      if (!m.alive) { if (m.alpha > 0.82) { const spr = A.Art.monSprite(m.mid, 0); this.blit(spr, x, y, m.fx < 0, { white: true, sx: m.boss ? 2 : 1, sy: m.boss ? 2 : 1 }); } return; }
       const sc = m.boss ? 2 : 1;
+      if (!m.alive) {
+        const spr = A.Art.monSprite(m.mid, 0);
+        if (m.shape === 'blob') { const q = clamp(m.alpha, 0, 1); this.blit(spr, x, y, m.fx < 0, { alpha: q, sx: sc * (1 + (1 - q) * 0.9), sy: sc * Math.max(0.15, q), white: q > 0.85 }); }
+        else this.drawFallen(spr, x, y, m.fx < 0, m, sc);
+        return;
+      }
       const nf = A.Art.monFrames(m.mid), fly = ['fledermaus', 'glutmotte'].includes(m.mid), ghost = m.shape === 'ghost';
       const moving = m.state !== 'windup' && !(m.spawn > 0);
       const frame = nf > 1 ? Math.floor(this.t * (fly ? 10 : 6) + (m.x % 7)) % nf : 0;
@@ -378,10 +401,12 @@ window.A = window.A || {};
       if (fly) lift = 7 + Math.sin(this.t * 5 + m.x) * 2;
       if (ghost) { lift = 3 + Math.sin(this.t * 3 + m.x) * 2; alpha = 0.85; }
       if (m.spawn > 0) { const p = clamp(1 - m.spawn / 0.5, 0, 1); alpha = p; lift -= (1 - p) * 6; }
-      let ox = 0;
-      if (m.state === 'windup') { ox = Math.sin(this.t * 60) * 1; }
+      let ox = 0, oy = 0;
+      if (m.state === 'windup') { ox = Math.sin(this.t * 60) * 1 - m.fx * 2; oy = -m.fy * 2; }
+      if (m.swing > 0 && m.kind === 'melee') { const l = Math.sin((1 - m.swing / 0.2) * Math.PI) * 5; ox += m.fx * l; oy += m.fy * l * 0.5; }
+      if (m.flash > 0) { sx *= 1.15; sy *= 0.85; }
       this.shadow(x, y, (m.boss ? 13 : m.elite ? 8 : 6) * (fly ? 0.7 : 1));
-      const dx = Math.round(x + ox), dy = Math.round(y - lift);
+      const dx = Math.round(x + ox), dy = Math.round(y - lift + oy);
       if (m.elite && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, ELITE_COL[m.eliteKind] || '#fee761', sc);
       if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
       this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
