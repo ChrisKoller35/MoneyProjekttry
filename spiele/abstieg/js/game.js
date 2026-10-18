@@ -1,4 +1,4 @@
-// Der Abstieg – Spiellogik: Held, Items, Ebenen, Belohnungen, Lager, Speichern
+// Der Abstieg – Spiellogik: Held, Items, Ebenen, Belohnungen, Lager, Speichern (die Welt selbst steht in world.js)
 'use strict';
 window.A = window.A || {};
 
@@ -34,8 +34,8 @@ A.Game = (function () {
       stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
       hp: 0, gold: 10 + me.startGold, potions: me.startPotion,
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
-      bag: [], known: skills, active: skills.slice(0, 3), row: cls.row,
-      kills: 0, quest: null, questProg: 0, questDone: false, choices: null, pendingSkillPick: null,
+      bag: [], known: skills, active: skills.slice(0, 3),
+      kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
       log: [], reviveUsed: false, over: false, won: false,
     };
     run.rng = new A.RNG(run.seed);
@@ -74,21 +74,10 @@ A.Game = (function () {
     return d;
   }
 
-  function heroEntity() {
-    const d = derived(), race = A.RACES.find(x => x.id === run.race), cls = A.CLASSES.find(x => x.id === run.cls);
-    return {
-      id: 'hero', name: A.t(race.name) + ' ' + A.t(cls.name), side: 'hero', row: run.row, melee: cls.row === 'front' && run.row === 'front',
-      hp: run.hp, maxHp: d.maxHp, atk: d.atk, mag: d.mag, def: d.def, spd: d.spd, crit: d.crit, dodge: d.dodge,
-      lifesteal: d.lifesteal, thorns: d.thorns, poisonOnHit: d.poisonOnHit, regen: d.regen, startShield: d.startShield,
-      revive: run.reviveUsed ? 0 : d.revive, trap: d.trap, kind: cls.id === 'weber' || cls.id === 'rufer' ? 'magic' : 'phys',
-      skills: run.active.filter(Boolean), color: cls.color, shape: 'hero', raceColor: race.color,
-    };
-  }
-
   function monsterEntity(m, floor, elite, idx) {
     const hpM = 1 + 0.32 * (floor - 1), atkM = 1 + 0.22 * (floor - 1);
     const e = {
-      id: 'e' + idx, mid: m.id, name: (elite ? A.t(A.UI.elitePrefix) + ' ' : '') + A.t(m.name), side: 'enemy', row: m.row, melee: m.kind === 'melee', kind: m.kind,
+      id: 'e' + idx, mid: m.id, name: (elite ? A.t(A.UI.elitePrefix) + ' ' : '') + A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
       def: Math.round((m.def || 0) * (1 + 0.15 * (floor - 1))), spd: m.spd + (elite ? 2 : 0), crit: m.crit || 5, dodge: m.dodge || 0,
       poisonOnHit: m.poisonOnHit || 0, burn: m.burn || 0, thorns: m.thorns || 0, steal: m.steal || 0, color: m.color, shape: m.shape,
@@ -97,16 +86,6 @@ A.Game = (function () {
     e.hp = e.maxHp;
     if (elite) { const t = run ? run.rng.pick(['giftig', 'gepanzert', 'schnell']) : 'gepanzert'; e.eliteKind = t; if (t === 'giftig') e.poisonOnHit += 3; if (t === 'gepanzert') e.def += 5; if (t === 'schnell') e.spd += 4; }
     return e;
-  }
-
-  function enemyGroup(type) {
-    const f = run.floor, rng = run.rng;
-    if (type === 'boss') return [monsterEntity(A.BOSSES[f], f, false, 1)];
-    const pool = A.MONSTERS.filter(m => f >= m.floors[0] && f <= m.floors[1]);
-    const n = type === 'elite' ? rng.int(1, 2) : (f <= 1 ? rng.int(1, 2) : f <= 3 ? rng.int(2, 3) : rng.int(2, 4));
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(monsterEntity(rng.pick(pool), f, type === 'elite' && i === 0, i + 1));
-    return out;
   }
 
   // ---------- Items ----------
@@ -187,80 +166,61 @@ A.Game = (function () {
   function sell(it) { run.gold += sellValue(it); run.bag = run.bag.filter(x => x.uid !== it.uid); save(); }
   function addToBag(it) { run.bag.push(it); while (run.bag.length > 8) { const worst = run.bag.slice().sort((a, b) => A.RARITY[a.rarity].mult - A.RARITY[b.rarity].mult)[0]; run.gold += sellValue(worst); run.bag = run.bag.filter(x => x.uid !== worst.uid); } save(); }
 
-  // ---------- Ebenen und Wege ----------
+  // ---------- Ebenen (Räume) ----------
   function newFloor() {
-    run.step = 0; run.usedRest = false; run.usedShop = false;
+    run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
-    nextChoices();
+    run.shopItems = null; run.currentEvent = null;
   }
-  function nextChoices() {
-    const rng = run.rng;
-    const STEPS = 4;
-    if (run.step >= STEPS) { run.choices = [{ type: A.BOSSES[run.floor] ? 'boss' : 'fight', final: true }]; save(); return; }
-    const types = [];
-    types.push(rng.chance(0.75) ? 'fight' : 'elite');
-    const extra = ['event', 'treasure', 'fight', 'elite'];
-    if (!run.usedShop) extra.push('shop', 'shop');
-    if (!run.usedRest) extra.push('rest', 'rest');
-    const n = rng.int(2, 3);
-    while (types.length < n) { const t = rng.pick(extra); if (!types.includes(t)) types.push(t); }
-    run.choices = rng.shuffle(types).map(t => ({ type: t }));
+  function descend() {
+    if (run.floor >= A.MAX_FLOOR) { run.over = true; run.won = true; finishRun(); return 'won'; }
+    run.floor++; newFloor(); save(); return 'descend';
+  }
+  // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
+  function roomContent(kind) {
+    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5) }));
+    if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
-  function choose(choice) {
-    run.current = choice; run.step++;
-    if (choice.type === 'shop') run.usedShop = true;
-    if (choice.type === 'rest') run.usedRest = true;
-    if (choice.type === 'event') run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent && run.currentEvent.id;
-    if (choice.type === 'shop') run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5) }));
-    if (['fight', 'elite', 'boss'].includes(choice.type)) run.enemies = enemyGroup(choice.type);
-    save();
+  function questEvent(kind) {
+    const q = run.quest; if (!q || run.questDone) return;
+    if (q.type === 'crits' && kind === 'crit') run.questProg++;
+    if (q.type === 'elite' && kind === 'elite') run.questProg = 1;
+    if (q.type === 'nodmg' && kind === 'nodmg') run.questProg = 1;
+    if (q.type === 'kills') run.questProg = run.floorKills;
+    if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
   }
-  function afterRoom() {
-    if (run.current && run.current.final) {
-      if (run.floor >= A.MAX_FLOOR) { run.over = true; run.won = true; finishRun(); return 'won'; }
-      run.floor++; newFloor(); return 'descend';
-    }
-    nextChoices(); return 'next';
-  }
-
-  // ---------- Kampf-Ergebnis ----------
-  function resolveFight(result) {
-    run.hp = result.heroHp;
-    if (result.heroRevive === 0 && derived().revive > 0) run.reviveUsed = true;
-    if (!result.won) {
-      if (result.fled) { save(); return { fled: true }; }
-      run.over = true; finishRun(); return { dead: true };
-    }
-    const f = run.floor, type = run.current.type;
-    const n = run.enemies.length;
-    const d = derived();
-    let gold = Math.round(run.rng.int(6, 12) * n * (1 + 0.25 * (f - 1)) * (type === 'elite' ? 1.6 : type === 'boss' ? 4 : 1) * (1 + d.goldPct / 100));
-    gold = Math.max(0, gold - result.stats.goldStolen);
-    const xp = Math.round((10 + f * 5) * n * (type === 'elite' ? 2 : type === 'boss' ? 5 : 1) * (1 + d.xpPct / 100));
-    run.gold += gold; run.kills += result.stats.kills; run.floorKills += result.stats.kills; meta.totalKills += result.stats.kills;
-    const rewards = [];
-    const nItems = type === 'boss' ? 3 : type === 'elite' ? 3 : 2;
-    for (let i = 0; i < nItems; i++) rewards.push(randomItem(type === 'boss' ? (i === 0 ? 'legendary' : rollRarity(2)) : type === 'elite' ? rollRarity(1) : undefined));
+  // Belohnung für einen getöteten Gegner
+  function killReward(e) {
+    const f = run.floor, d = derived();
+    const mult = e.boss ? 10 : e.elite ? 2.5 : 1;
+    const gold = Math.round(run.rng.int(3, 6) * (1 + 0.25 * (f - 1)) * mult * (1 + d.goldPct / 100));
+    const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 2 : 1) * (1 + d.xpPct / 100));
+    run.kills++; run.floorKills++; meta.totalKills++;
+    const items = [];
+    if (e.boss) { items.push(randomItem('legendary'), randomItem(rollRarity(2))); }
+    else if (e.elite) { items.push(randomItem(rollRarity(1))); questEvent('elite'); }
+    else if (run.rng.chance(0.08 + d.itemLuck * 0.03)) items.push(randomItem());
     const levels = addXp(xp);
-    // Aufgabe
-    const q = run.quest;
-    if (q && !run.questDone) {
-      if (q.type === 'kills') run.questProg = run.floorKills;
-      if (q.type === 'nodmg' && result.stats.dmgTaken === 0) run.questProg = 1;
-      if (q.type === 'crits') run.questProg += result.stats.crits;
-      if (q.type === 'elite' && type === 'elite') run.questProg = 1;
-    }
-    let questReward = null;
-    if (q && !run.questDone && run.questProg >= q.n) { run.questDone = true; questReward = q.reward; if (q.reward.gold) run.gold += q.reward.gold; if (q.reward.xp) addXp(q.reward.xp); if (q.reward.item) rewards.push(randomItem(q.reward.item)); }
+    questEvent('kill');
     save();
-    return { gold, xp, rewards, levels, questReward, boss: type === 'boss' };
+    return { gold, coins: e.boss ? 8 : e.elite ? 4 : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(0.04) };
+  }
+  // Raum gesäubert: ein Item als Belohnung, Aufgabe prüfen
+  function roomCleared(room, stats) {
+    const items = [];
+    if (room.type === 'fight') items.push(randomItem());
+    if (room.type === 'elite') items.push(randomItem(rollRarity(1)));
+    if (stats && stats.dmgRoom === 0) questEvent('nodmg');
+    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
+    save();
+    return { items };
   }
   function xpNeed(l) { return Math.round(40 * Math.pow(l, 1.4)); }
   function addXp(xp) {
     run.xp += xp; let ups = 0;
     while (run.xp >= xpNeed(run.level)) { run.xp -= xpNeed(run.level); run.level++; run.points += 3; ups++; if (run.level % 3 === 0) run.pendingSkillPick = (run.pendingSkillPick || 0) + 1; }
-    if (ups) { const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.2 * ups)); }
+    if (ups) { const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.2 * ups)); run.levelUpFlag = true; }
     return ups;
   }
   function spend(stat) { if (run.points <= 0) return; run.points--; run.stats[stat]++; const before = derived(); run.hp = Math.min(before.maxHp, run.hp + (stat === 'tou' ? 8 : 0)); save(); }
@@ -273,7 +233,7 @@ A.Game = (function () {
   function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
 
   // ---------- Räume ----------
-  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.35)); else run.points++; save(); }
+  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5)); else run.points++; save(); }
   function doEvent(choiceIdx) {
     const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
     let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
@@ -299,7 +259,7 @@ A.Game = (function () {
 
   // ---------- Ende ----------
   function finishRun() {
-    const sparks = run.floor * 8 + Math.floor(run.kills * 1.5) + (run.won ? 60 : 0) + run.level * 2;
+    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2;
     run.sparksEarned = sparks; meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
@@ -314,9 +274,9 @@ A.Game = (function () {
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, heroEntity, monsterEntity, enemyGroup,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
-    choose, afterRoom, resolveFight, xpNeed, spend, skillOffer, learnSkill, setActive,
+    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive,
     doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy,
   };
 })();

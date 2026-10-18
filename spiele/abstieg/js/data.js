@@ -10,6 +10,7 @@ A.t = (o) => (o && typeof o === 'object' && (o.de || o.en)) ? (o[A.LANG] || o.de
 A.UI = {
   title: { de: 'Der Abstieg', en: 'The Descent' },
   tagline: { de: '18 Ebenen. Unten ist der Ausgang. Angeblich.', en: '18 floors. The exit is at the bottom. Allegedly.' },
+  howto: { de: 'Laufen: Joystick links / WASD · Schlagen: gelber Knopf / Leertaste · Fähigkeiten: 1-3 · Trank: Q · Benutzen: E · Heldenblatt: I', en: 'Move: joystick left / WASD · Attack: yellow button / Space · Skills: 1-3 · Potion: Q · Use: E · Hero sheet: I' },
   play: { de: 'Abstieg beginnen', en: 'Begin descent' },
   continueRun: { de: 'Durchlauf fortsetzen', en: 'Continue run' },
   meta: { de: 'Seelenfunken', en: 'Soul sparks' },
@@ -81,14 +82,14 @@ A.SKILLS = {
   hieb:      { name: { de: 'Wuchthieb', en: 'Heavy Blow' }, kind: 'attack', pow: 1.8, cd: 2, desc: { de: '180 % Schaden auf einen Gegner.', en: '180% damage to one enemy.' } },
   wirbel:    { name: { de: 'Wirbelsturm', en: 'Whirlwind' }, kind: 'multi', pow: 0.9, cd: 3, desc: { de: '90 % Schaden auf alle Gegner.', en: '90% damage to all enemies.' } },
   schild:    { name: { de: 'Schildwall', en: 'Shield Wall' }, kind: 'shield', pow: 0.6, cd: 4, desc: { de: 'Schild in Höhe von 60 % des max. Lebens.', en: 'Shield worth 60% of max health.' } },
-  kampfschrei: { name: { de: 'Kampfschrei', en: 'War Cry' }, kind: 'buff', stat: 'atk', pow: 0.3, dur: 3, cd: 5, desc: { de: '+30 % Angriff für 3 Runden.', en: '+30% attack for 3 rounds.' } },
+  kampfschrei: { name: { de: 'Kampfschrei', en: 'War Cry' }, kind: 'buff', stat: 'atk', pow: 0.3, dur: 3, cd: 5, desc: { de: '+30 % Angriff für 6 Sekunden.', en: '+30% attack for 6 seconds.' } },
   rache:     { name: { de: 'Vergeltung', en: 'Retribution' }, kind: 'attack', pow: 1.2, cd: 3, bonusMissingHp: 2, desc: { de: '120 % Schaden, bis zu +200 % je nach fehlendem Leben.', en: '120% damage, up to +200% based on missing health.' } },
   hinrichtung: { name: { de: 'Hinrichtung', en: 'Execute' }, kind: 'attack', pow: 1.0, cd: 3, execute: 0.3, desc: { de: '100 % Schaden, tötet Gegner unter 30 % Leben sofort.', en: '100% damage, instantly kills enemies below 30% health.' } },
   // Pfeilschütze
   zielschuss: { name: { de: 'Zielschuss', en: 'Aimed Shot' }, kind: 'attack', pow: 1.6, cd: 2, critBonus: 30, desc: { de: '160 % Schaden, +30 % Volltreffer-Chance.', en: '160% damage, +30% crit chance.' } },
   pfeilregen: { name: { de: 'Pfeilregen', en: 'Arrow Rain' }, kind: 'multi', pow: 0.7, cd: 3, desc: { de: '70 % Schaden auf alle Gegner.', en: '70% damage to all enemies.' } },
-  giftpfeil: { name: { de: 'Giftpfeil', en: 'Poison Arrow' }, kind: 'attack', pow: 0.8, cd: 2, poison: 1.0, desc: { de: '80 % Schaden und Gift (100 % Angriff über 3 Runden).', en: '80% damage plus poison (100% attack over 3 rounds).' } },
-  rueckzug:  { name: { de: 'Rückzug', en: 'Fall Back' }, kind: 'buff', stat: 'dodge', pow: 40, dur: 2, cd: 4, desc: { de: '+40 % Ausweichen für 2 Runden.', en: '+40% dodge for 2 rounds.' } },
+  giftpfeil: { name: { de: 'Giftpfeil', en: 'Poison Arrow' }, kind: 'attack', pow: 0.8, cd: 2, poison: 1.0, desc: { de: '80 % Schaden und Gift (100 % Angriff über 3 Sekunden).', en: '80% damage plus poison (100% attack over 3 seconds).' } },
+  rueckzug:  { name: { de: 'Rückzug', en: 'Fall Back' }, kind: 'buff', stat: 'dodge', pow: 40, dur: 2, cd: 4, desc: { de: '+40 % Ausweichen für 4 Sekunden.', en: '+40% dodge for 4 seconds.' } },
   doppelschuss: { name: { de: 'Doppelschuss', en: 'Double Shot' }, kind: 'attack', pow: 0.9, hits: 2, cd: 2, desc: { de: 'Zwei Treffer zu je 90 %.', en: 'Two hits of 90% each.' } },
   kopfschuss: { name: { de: 'Kopfschuss', en: 'Headshot' }, kind: 'attack', pow: 2.6, cd: 4, desc: { de: '260 % Schaden auf einen Gegner.', en: '260% damage to one enemy.' } },
   // Fadenweber
@@ -96,7 +97,7 @@ A.SKILLS = {
   flaeche:   { name: { de: 'Gewebebrand', en: 'Weave Burn' }, kind: 'magic', multi: true, pow: 0.9, cd: 3, burn: 0.5, desc: { de: '90 % Zauberschaden auf alle, dazu Brand.', en: '90% magic damage to all, plus burn.' } },
   gewebe:    { name: { de: 'Schutzgewebe', en: 'Ward Weave' }, kind: 'shield', pow: 0.5, magic: true, cd: 3, desc: { de: 'Schild in Höhe von 50 % des max. Lebens.', en: 'Shield worth 50% of max health.' } },
   flicken:   { name: { de: 'Flicken', en: 'Mend' }, kind: 'heal', pow: 0.3, cd: 4, desc: { de: 'Heilt 30 % des max. Lebens.', en: 'Heals 30% of max health.' } },
-  fesseln:   { name: { de: 'Fadenfessel', en: 'Thread Bind' }, kind: 'magic', pow: 0.8, cd: 3, stun: 1, desc: { de: '80 % Zauberschaden, Gegner setzt eine Runde aus.', en: '80% magic damage, enemy skips a turn.' } },
+  fesseln:   { name: { de: 'Fadenfessel', en: 'Thread Bind' }, kind: 'magic', pow: 0.8, cd: 3, stun: 1, desc: { de: '80 % Zauberschaden, Gegner ist 1 Sekunde betäubt.', en: '80% magic damage, stuns the enemy for 1 second.' } },
   entladung: { name: { de: 'Entladung', en: 'Discharge' }, kind: 'magic', multi: true, pow: 1.6, cd: 5, desc: { de: '160 % Zauberschaden auf alle Gegner.', en: '160% magic damage to all enemies.' } },
 };
 
@@ -106,10 +107,10 @@ A.CLASSES = [
     perk: { de: 'Nahkampf. Schaden und Verteidigung.', en: 'Melee. Damage and defense.' },
     base: { str: 3, tou: 2, dex: 0, mind: 0, luck: 0 }, skills: ['hieb', 'schild', 'kampfschrei', 'wirbel', 'rache', 'hinrichtung'], startSkills: ['hieb', 'schild'], weapon: 'schwert' },
   { id: 'schuetze', name: { de: 'Pfeilschütze', en: 'Arrowshot' }, color: '#5cb85c', unlock: 0, row: 'back',
-    perk: { de: 'Trifft aus der zweiten Reihe. Volltreffer.', en: 'Strikes from the back row. Crits.' },
+    perk: { de: 'Schiesst aus der Ferne. Volltreffer.', en: 'Shoots from afar. Crits.' },
     base: { str: 1, tou: 0, dex: 3, mind: 0, luck: 1 }, skills: ['zielschuss', 'giftpfeil', 'doppelschuss', 'pfeilregen', 'rueckzug', 'kopfschuss'], startSkills: ['zielschuss', 'giftpfeil'], weapon: 'bogen' },
   { id: 'weber', name: { de: 'Fadenweber', en: 'Threadweaver' }, color: '#5bc0de', unlock: 0, row: 'back',
-    perk: { de: 'Zauber auf Flächen, Schilde, Heilung.', en: 'Area spells, shields, healing.' },
+    perk: { de: 'Zauber aus der Ferne, Flächen, Schilde, Heilung.', en: 'Area spells, shields, healing.' },
     base: { str: 0, tou: 1, dex: 0, mind: 4, luck: 0 }, skills: ['funke', 'gewebe', 'flaeche', 'flicken', 'fesseln', 'entladung'], startSkills: ['funke', 'gewebe'], weapon: 'stab' },
   { id: 'rufer', name: { de: 'Rufer', en: 'Caller' }, color: '#b07cd8', unlock: 150, row: 'back', soon: true,
     perk: { de: 'Beschwört Wesen, die mitkämpfen. (Bald)', en: 'Summons creatures that fight along. (Soon)' },
@@ -169,9 +170,9 @@ A.AFFIXES = [
   { key: 'thorns', val: 15, name: { de: 'der Dornen', en: 'of Thorns' }, text: { de: 'Angreifer erleiden {v} % zurück', en: 'Attackers take {v}% back' } },
   { key: 'goldPct', val: 25, name: { de: 'des Krämers', en: 'of the Peddler' }, text: { de: '+{v} % Gold', en: '+{v}% gold' } },
   { key: 'xpPct', val: 20, name: { de: 'des Lehrlings', en: 'of the Apprentice' }, text: { de: '+{v} % Erfahrung', en: '+{v}% experience' } },
-  { key: 'poisonOnHit', val: 3, name: { de: 'der Natter', en: 'of the Viper' }, text: { de: 'Treffer vergiften ({v}/Runde)', en: 'Hits poison ({v}/round)' } },
-  { key: 'startShield', val: 15, name: { de: 'der Vorsicht', en: 'of Caution' }, text: { de: 'Kampfstart: Schild {v} %', en: 'Battle start: shield {v}%' } },
-  { key: 'regen', val: 3, name: { de: 'des Moores', en: 'of the Moor' }, text: { de: '+{v} % Leben pro Runde', en: '+{v}% health per round' } },
+  { key: 'poisonOnHit', val: 3, name: { de: 'der Natter', en: 'of the Viper' }, text: { de: 'Treffer vergiften ({v}/Sekunde)', en: 'Hits poison ({v}/second)' } },
+  { key: 'startShield', val: 15, name: { de: 'der Vorsicht', en: 'of Caution' }, text: { de: 'Ebenen-Start: Schild {v} %', en: 'Floor start: shield {v}%' } },
+  { key: 'regen', val: 3, name: { de: 'des Moores', en: 'of the Moor' }, text: { de: '+{v} % Leben alle 2 Sekunden', en: '+{v}% health every 2 seconds' } },
 ];
 
 // Frech-Texte für Items (reine Deko)
@@ -193,7 +194,7 @@ A.UNIQUES = [
   { id: 'u_loeffel', base: 'loeffel', rarity: 'legendary', name: { de: 'Löffel der Verzweiflung', en: 'Spoon of Despair' }, stats: { atkPct: 40, magPct: 40, dodge: -10 }, flavor: { de: 'Gegner lachen dich aus. Dann sterben sie.', en: 'Enemies laugh at you. Then they die.' } },
   { id: 'u_socke', base: 'socke', rarity: 'legendary', name: { de: 'Socke der zweiten Chance', en: 'Sock of Second Chances' }, stats: { revive: 1, dodge: 5 }, flavor: { de: 'Einmal pro Durchlauf überlebst du mit 1 Leben.', en: 'Once per run you survive with 1 health.' } },
   { id: 'u_kessel', base: 'teekessel', rarity: 'legendary', name: { de: 'Helm aus Teekesseln', en: 'Helm of Tea Kettles' }, stats: { def: 10, magPct: 25 }, flavor: { de: 'Pfeift bei jedem Treffer. Gegner hassen das.', en: 'Whistles on every hit. Enemies hate it.' } },
-  { id: 'u_zahn', base: 'zahn', rarity: 'cursed', name: { de: 'Verfluchter Goldzahn', en: 'Cursed Gold Tooth' }, stats: { goldPct: 200, regen: -2 }, flavor: { de: 'Dreifaches Gold. Du verlierst jede Runde 2 % Leben.', en: 'Triple gold. You lose 2% health every round.' } },
+  { id: 'u_zahn', base: 'zahn', rarity: 'cursed', name: { de: 'Verfluchter Goldzahn', en: 'Cursed Gold Tooth' }, stats: { goldPct: 200, regen: -2 }, flavor: { de: 'Dreifaches Gold. Du verlierst laufend Leben.', en: 'Triple gold. You keep losing health.' } },
   { id: 'u_axt', base: 'axt', rarity: 'cursed', name: { de: 'Axt des Wahnsinns', en: 'Axe of Madness' }, stats: { atkPct: 70, def: -8 }, flavor: { de: 'Schlägt doppelt so hart. Vergisst, sich zu ducken.', en: 'Hits twice as hard. Forgets to duck.' } },
   { id: 'u_ring', base: 'ring', rarity: 'legendary', name: { de: 'Ring des Gönners', en: 'Patron\'s Ring' }, stats: { goldPct: 50, xpPct: 30, luck: 3 }, flavor: { de: 'Jemand da oben mag dich. Vorerst.', en: 'Someone up there likes you. For now.' } },
 ];
@@ -274,7 +275,7 @@ A.META_SHOP = [
 // ---------- Aufgaben je Ebene ----------
 A.QUESTS = [
   { id: 'kill5', text: { de: 'Besiege 5 Gegner auf dieser Ebene', en: 'Defeat 5 enemies on this floor' }, type: 'kills', n: 5, reward: { gold: 30 } },
-  { id: 'nodmg', text: { de: 'Gewinne einen Kampf ohne Schaden', en: 'Win a fight without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
+  { id: 'nodmg', text: { de: 'Säubere einen Raum ohne Schaden', en: 'Clear a room without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
   { id: 'crit3', text: { de: 'Lande 3 Volltreffer', en: 'Land 3 critical hits' }, type: 'crits', n: 3, reward: { xp: 40 } },
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
 ];
