@@ -1,4 +1,4 @@
-# Der Abstieg (Stufe 1)
+# Der Abstieg
 
 Dungeon-Action-Roguelite für Spieleportale: Rasse und Klasse wählen, den Helden selbst durch die Räume steuern (Joystick am Handy, WASD am PC), Gegner in Echtzeit bekämpfen, Items sammeln, aufsteigen, sterben, Seelenfunken ausgeben, nochmal.
 
@@ -13,6 +13,14 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 - Seelenfunken nach jedem Durchlauf, Lager mit 10 Freischaltungen.
 - Speichert im Browser (laufender Durchlauf und Lager). Deutsch/Englisch nach Browser-Sprache.
 
+## Welten und Segen (19.10.2026)
+- **6 Welten mit je 4 Ebenen** (Graue Gewölbe, Dschungel-Ruinen, Wüstengrab, Versunkene Stadt, Vulkanschmiede, Abgrund), Boss auf jeder 4. Ebene. Nach Ebene 24 geht es endlos weiter: die Welten kommen wieder (II, III …), die Gegner werden stärker.
+- Jede Welt hat eigenen Boden, eigene Wände, eigene Hindernisse (Säulen, Bäume, Kakteen, Korallen, Obsidian, Kristalle), eigene Gruben (Wasser, Lava, Leere; nicht begehbar, Geschosse fliegen darüber), eigenen Gefahr-Boden (Schlamm, Treibsand, seichtes Wasser, Glut, Schatten; bremst oder brennt), eigene Gegner, eigenen Boss und eigene Musik.
+- **Räume in vielen Formen** (`js/levels.js`): Rechteck, Achteck, rund, Kreuz, L, Ring, Säulenhalle, zweigeteilt, Insel, Teich, Streifen, Garten. 7 bis 12 Räume je Ebene auf einem 4×4-Raster, Gegner laufen über ein Wegenetz um Hindernisse herum.
+- **Schrein auf jeder Ebene** (`js/boons.js`): 3 Angebote, eins davon nehmen oder für Gold verzichten. Arten: neuer Zauber (11 Zauber für alle Klassen: Feuerball, Eisnova, Kettenblitz, Blitzschritt, Giftwolke, Meteor, Heilquelle, Geisterschwarm, Geisterwolf, Erdstoss, Klingenfächer), passiver Segen (23 Talente, z. B. Kettenreaktion, Kreisende Klingen, Treuer Begleiter, Frostaura, Glaskanone) oder Verstärkung eines Zaubers (bis Stufe III, je +30 % Stärke und 20 % schneller). Nach Elite- und Boss-Kämpfen gibt es eine zweite Wahl.
+- **Grenzen:** 4 Zauber-Knöpfe (weitere liegen im Zauberbuch und lassen sich tauschen), 6 passive Segen (Mensch 7). Ist alles voll, wählt man, was ersetzt wird (eigene Fenster im Spiel, keine Browser-Rückfragen).
+- Spielstand-Schlüssel `abstieg.v2`: ein alter laufender Durchlauf beginnt neu, Seelenfunken und Freischaltungen bleiben.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -22,7 +30,9 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
 ## Dateien
 - `index.html` + `js/*.js` – Quelltext:
   - `rng`, `data`, `game` – Zufall, Inhalte (Rassen, Klassen, Gegenstände, Monster), Spielstand.
-  - `world` – Räume, Gegner, Treffer.
+  - `boons` – Schrein: Zauber für alle, passive Talente, Verstärkungen.
+  - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
+  - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.
   - `draw` – Dungeon zeichnen, Licht und Schatten, Minikarte, Boss-Balken.
   - `draw3` – 3D-Look (gebündelt aus `src3d/draw3.js` plus three.js; nicht von Hand ändern, sondern `src3d/draw3.js` ändern und `node build3d.js` laufen lassen).

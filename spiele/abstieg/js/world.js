@@ -72,8 +72,17 @@ A.World = (function () {
   function shotSolid(x, y) { const v = tile(x, y); return v === 0 || v === 2 || v === 3; }
   function blocked(x, y, r) { return solid(x - r, y - r) || solid(x + r, y - r) || solid(x - r, y + r) || solid(x + r, y + r); }
   function moveEnt(e, dx, dy) {
-    if (dx && !blocked(e.x + dx, e.y, e.r)) e.x += dx; else if (dx) { const s = Math.sign(dx); let k = 0; while (!blocked(e.x + s, e.y, e.r) && k++ < 40) e.x += s; }
-    if (dy && !blocked(e.x, e.y + dy, e.r)) e.y += dy; else if (dy) { const s = Math.sign(dy); let k = 0; while (!blocked(e.x, e.y + s, e.r) && k++ < 40) e.y += s; }
+    if (dx && !blocked(e.x + dx, e.y, e.r)) e.x += dx; else if (dx) { const s = Math.sign(dx); let k = 0; while (!blocked(e.x + s, e.y, e.r) && k++ < 40) e.x += s; if (Math.abs(dy) < Math.abs(dx) * 0.5) slide(e, s, 0, Math.abs(dx)); }
+    if (dy && !blocked(e.x, e.y + dy, e.r)) e.y += dy; else if (dy) { const s = Math.sign(dy); let k = 0; while (!blocked(e.x, e.y + s, e.r) && k++ < 40) e.y += s; if (Math.abs(dx) < Math.abs(dy) * 0.5) slide(e, 0, s, Math.abs(dy)); }
+  }
+  // An einer Ecke hängen geblieben (Säule, Baum, Türrand)? Seitlich vorbeirutschen, wenn ein paar Pixel daneben frei ist
+  function slide(e, sx, sy, amt) {
+    for (let k = 3; k <= 14; k += 3) for (const side of [1, -1]) {
+      const ox = sy ? side * k : 0, oy = sx ? side * k : 0;
+      if (blocked(e.x + ox, e.y + oy, e.r) || blocked(e.x + ox + sx * 3, e.y + oy + sy * 3, e.r)) continue;
+      const m = Math.min(amt, k); if (!blocked(e.x + Math.sign(ox) * m, e.y + Math.sign(oy) * m, e.r)) { e.x += Math.sign(ox) * m; e.y += Math.sign(oy) * m; }
+      return;
+    }
   }
   function roomOf(x, y) { const cx = Math.floor(x / TS / CW), cy = Math.floor(y / TS / CH); return W.rooms.find(r => r.cx === cx && r.cy === cy) || null; }
   function inside(r, x, y) { const tx = x / TS, ty = y / TS; return tx >= r.x + 0.5 && tx <= r.x + r.w - 0.5 && ty >= r.y + 0.5 && ty <= r.y + r.h - 0.5; }
@@ -494,7 +503,7 @@ A.World = (function () {
       p.t += dt;
       if (p.vz != null && (p.z > 0 || p.vz !== 0)) {   // Hüpfen nach dem Herausfallen
         const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt; if (!solid(nx, ny)) { p.x = nx; p.y = ny; } else { p.vx = -p.vx * 0.5; p.vy = -p.vy * 0.5; }
-        p.vz -= 700 * dt; p.z += p.vz * dt; if (p.z <= 0) { p.z = 0; p.vz = Math.abs(p.vz) > 60 ? -p.vz * 0.42 : 0; p.vx *= 0.6; p.vy *= 0.6; }
+        p.vz -= 700 * dt; p.z += p.vz * dt; if (p.z <= 0) { p.z = 0; p.vz = Math.abs(p.vz) > 60 ? -p.vz * 0.42 : 0; p.vx *= 0.6; p.vy *= 0.6; if (p.vz === 0) { p.vx = p.vy = 0; [p.x, p.y] = freeSpot(p.x, p.y, 13); } }   // liegen geblieben: an eine Stelle rücken, die der Held erreicht
       }
       const d = dist(p, h);
       if (p.kind === 'gold' && d < (h.tal.gold ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }

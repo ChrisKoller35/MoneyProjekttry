@@ -195,6 +195,35 @@ A.Levels = (function () {
     }
     // Hindernisse in Ecken (Fässer, Kisten, Töpfe ... je Welt) und aus den Formen
     const rngF = new A.RNG((seed ^ 0x7f4a7c15) >>> 0 || 3);
+    // Ausstattung je Welt: verstreute Hindernisse (Bäume, Kakteen, Korallen ...) und Flecken Gefahr-Boden, nie vor Türen und nie so, dass etwas abgeschnitten wird
+    for (const r of rooms) {
+      if (r.type === 'boss' || r.type === 'start' || r.type === 'stairs') continue;
+      const fight = r.type === 'fight' || r.type === 'elite';
+      const changed = [];
+      const nearDoor = (x, y) => r.doors.some(([dx, dy]) => Math.abs(dx - x) + Math.abs(dy - y) <= 3);
+      const allFloor = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (tiles[y + dy][x + dx] !== 1) return false; return true; };
+      const nObst = fight ? rngF.int(2, 4) + (wd.dense || 0) : rngF.int(0, 2);
+      for (let k = 0, tries = 0; k < nObst && tries < 40; tries++) {
+        const x = r.x + 2 + rngF.int(0, r.w - 5), y = r.y + 2 + rngF.int(0, r.h - 5);
+        if (!allFloor(x, y) || nearDoor(x, y) || Math.abs(x - (r.x + r.w / 2)) + Math.abs(y - (r.y + r.h / 2)) < 2) continue;
+        tiles[y][x] = 3; changed.push([x, y, 1]); k++;
+      }
+      if (wd.hazard && fight && rngF.chance(0.75)) {
+        const n = rngF.int(1, 2);
+        for (let k = 0; k < n; k++) {
+          const cx = r.x + 2 + rngF.int(0, r.w - 5), cy = r.y + 2 + rngF.int(0, r.h - 5), rr = rngF.int(1, 2);
+          for (let y = cy - rr; y <= cy + rr; y++) for (let x = cx - rr - 1; x <= cx + rr + 1; x++) {
+            if (y <= r.y || x <= r.x || y >= r.y + r.h - 1 || x >= r.x + r.w - 1 || tiles[y][x] !== 1) continue;
+            if (((x - cx) / (rr + 1.2)) ** 2 + ((y - cy) / (rr + 0.4)) ** 2 > 1) continue;
+            tiles[y][x] = 5; changed.push([x, y, 1]);
+          }
+        }
+      }
+      // alles noch erreichbar? Sonst diesen Raum zurücksetzen
+      const re = flood(tiles, sr.x + Math.floor(sr.w / 2), sr.y + Math.floor(sr.h / 2));
+      const ok = rooms.every(q => q.doors.every(([x, y]) => re[y * MW + x])) && countReach(re, r) >= countReach(reach, r) - changed.length;
+      if (!ok) for (const [x, y, v] of changed) tiles[y][x] = v;
+    }
     for (const r of rooms) {
       r.furn = [];
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (tiles[y][x] === 3) r.furn.push({ tx: x, ty: y, kind: rngF.pick(wd.obst) });

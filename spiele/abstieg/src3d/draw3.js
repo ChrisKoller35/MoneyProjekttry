@@ -337,8 +337,11 @@ import {
       fm.receiveShadow = true; fm.frustumCulled = false;
       floors.forEach(([x, y], i) => {
         _o.position.set(x + 0.5, -0.08 + (hash(x, y, seed + 5) - 0.5) * 0.02, y + 0.5); _o.rotation.set(0, Math.floor(hash(x, y, seed + 6) * 4) * Math.PI / 2, 0); _o.scale.setScalar(1); _o.updateMatrix(); fm.setMatrixAt(i, _o.matrix);
-        const base = this.themeKey === 'throne' ? FL[(x + y) & 1] : FL[Math.floor(hash(x, y, seed + 7) * FL.length)];
-        const c = shade(base, 1.25 + (hash(x, y, seed + 8) - 0.5) * 0.3); fm.setColorAt(i, c);
+        // Grube (Wasser, Lava, Abgrund) tiefer und in ihrer Farbe, Gefahr-Boden (Schlamm, Treibsand, Glut) eingefärbt
+        const tv = tile(x, y), pit = tv === 4 && th.pit, hz = tv === 5 && th.haz;
+        if (pit) { _o.position.y = -0.3; _o.updateMatrix(); fm.setMatrixAt(i, _o.matrix); }
+        const base = pit ? (hash(x, y, seed + 9) < 0.2 ? th.pit.mid : th.pit.base) : hz ? (hash(x, y, seed + 9) < 0.3 ? th.haz.mid : th.haz.base) : FL[Math.floor(hash(x, y, seed + 7) * FL.length)];
+        const c = shade(base, (pit && (th.pit.lava || th.pit.void) ? 1.6 : 1.25) + (hash(x, y, seed + 8) - 0.5) * 0.3); fm.setColorAt(i, c);
       });
       fm.instanceColor.needsUpdate = true; lvl.add(fm);
       // Fugenplatte unter allem
