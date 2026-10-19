@@ -23,7 +23,7 @@ A.UI = {
   chooseRoom: { de: 'Wähle deinen Weg', en: 'Choose your path' },
   prep: { de: 'Aufstellung', en: 'Loadout' }, fightBtn: { de: 'Kämpfen!', en: 'Fight!' },
   front: { de: 'Vorne', en: 'Front' }, backRow: { de: 'Hinten', en: 'Back' },
-  skills: { de: 'Fähigkeiten', en: 'Skills' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
+  skills: { de: 'Zauber', en: 'Spells' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
   stats: { de: 'Werte', en: 'Stats' },
   stat: { str: { de: 'Stärke', en: 'Strength' }, tou: { de: 'Zähigkeit', en: 'Toughness' }, dex: { de: 'Geschick', en: 'Dexterity' }, mind: { de: 'Geist', en: 'Mind' }, luck: { de: 'Glück', en: 'Luck' } },
   derived: { atk: { de: 'Angriff', en: 'Attack' }, def: { de: 'Rüstung', en: 'Armor' }, spd: { de: 'Tempo', en: 'Speed' }, crit: { de: 'Volltreffer', en: 'Crit' }, dodge: { de: 'Ausweichen', en: 'Dodge' }, mag: { de: 'Zauberkraft', en: 'Magic' } },
@@ -31,7 +31,7 @@ A.UI = {
   victory: { de: 'Sieg!', en: 'Victory!' }, defeat: { de: 'Gefallen', en: 'Fallen' },
   pickReward: { de: 'Wähle eine Belohnung', en: 'Choose a reward' }, skip: { de: 'Nichts nehmen', en: 'Take nothing' },
   equip: { de: 'Anlegen', en: 'Equip' }, sell: { de: 'Verkaufen', en: 'Sell' }, buy: { de: 'Kaufen', en: 'Buy' }, take: { de: 'Nehmen', en: 'Take' },
-  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neue Fähigkeit wählen', en: 'Choose a new skill' },
+  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neuen Zauber wählen', en: 'Choose a new spell' },
   heal: { de: 'Ausruhen (+50 % Leben)', en: 'Rest (+50% health)' }, train: { de: 'Trainieren (+1 Statpunkt)', en: 'Train (+1 stat point)' },
   leave: { de: 'Weiter', en: 'Continue' }, descend: { de: 'Tiefer', en: 'Descend' },
   runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
@@ -58,8 +58,8 @@ A.UI = {
 // base: Grundwerte; perk: kurzer Text; mod: Änderungen an abgeleiteten Werten
 A.RACES = [
   { id: 'mensch', name: { de: 'Mensch', en: 'Human' }, color: '#e8b98a', unlock: 0,
-    perk: { de: 'Ausgeglichen. Ein Fähigkeitsplatz mehr.', en: 'Balanced. One extra skill slot.' },
-    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { skillSlots: 1 } },
+    perk: { de: 'Ausgeglichen. Ein Platz mehr für passive Segen.', en: 'Balanced. One extra slot for passive blessings.' },
+    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { talentSlots: 1 } },
   { id: 'fels', name: { de: 'Felsgeborener', en: 'Stoneborn' }, color: '#9a9aa8', unlock: 0,
     perk: { de: 'Viel Leben und Rüstung, langsam.', en: 'Lots of health and armor, slow.' },
     base: { str: 6, tou: 9, dex: 2, mind: 3, luck: 5 }, mod: { hpMul: 1.25, def: 4, spd: -2 } },

@@ -429,11 +429,13 @@ window.A = window.A || {};
       b.globalAlpha = 1;
       // Alles nach Tiefe sortiert
       for (const m of W.mons) this.drawWarn(m, cx, cy);
+      this.drawBoonsGround(W, cx, cy);
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
       for (const p of W.picks) list.push({ y: p.y / PX, f: () => this.drawPick(p, cx, cy) });
       for (const m of W.mons) list.push({ y: m.y / PX + 6, f: () => this.drawMon(m, W, cx, cy) });
+      for (const a of W.allies || []) list.push({ y: a.y / PX + 6, f: () => this.drawAlly(a, cx, cy) });
       list.push({ y: h.y / PX + 7, f: () => this.drawHero(h, W, cx, cy) });
       list.sort((a, b2) => a.y - b2.y);
       for (const it of list) it.f();
@@ -463,11 +465,12 @@ window.A = window.A || {};
           const a = Math.atan2(f.fy, f.fx), p = 1 - f.life / 0.22, R = f.r / PX * 0.75, n = f.big ? 4 : 3;
           g.save(); g.translate(x + Math.cos(a) * R, y - 6 + Math.sin(a) * R * 0.6); g.rotate(a + Math.PI / 2);
           const len = (f.big ? 16 : 10) * Math.min(1, p * 3);
-          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
+          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : f.ally ? '#2ce8f5' : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
           g.restore();
         } else if (f.kind === 'ring') { g.globalAlpha = clamp(f.life / 0.4, 0, 1); g.strokeStyle = f.color; g.lineWidth = 2; g.beginPath(); g.arc(x, y, f.r * (1.2 - f.life) / PX, 0, TAU); g.stroke(); }
       }
       g.globalAlpha = 1;
+      this.drawBoonsTop(W, cx, cy);
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -911,6 +914,12 @@ window.A = window.A || {};
       }
       for (const p of W.picks) if (p.kind === 'item') L(p.x, p.y - 6, 28, A.RARITY[p.it.rarity].color, 0.7);
       for (const s of W.shots) L(s.x, s.y - 10, s.side === 'hero' ? 26 : 22, s.side === 'hero' ? (s.opts.kind === 'magic' ? s.color : '#ffe2b8') : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), s.side === 'hero' && s.opts.kind !== 'magic' ? 0.25 : 0.8);
+      for (const z of W.zones || []) if (!z.trail) L(z.x, z.y, z.r / PX * 1.3, z.col, 0.35);
+      for (const o of W.orbs || []) if (o.x != null) L(o.x, o.y - 14, 22, o.col, 0.6);
+      for (const a of W.allies || []) L(a.x, a.y - 10, 34, '#2ce8f5', 0.55);
+      for (const k of W.marks || []) if (k.kind === 'meteor') L(k.x, k.y, k.r / PX * 1.2, '#e43b44', 0.3 + 0.3 * Math.sin(t * 20));
+      for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
+      if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -925,6 +934,92 @@ window.A = window.A || {};
       if (run && (run.cls === 'weber' || run.cls === 'rufer') && h.alive) L(h.x + (h.fx < 0 ? -8 : 8), h.y - 34, 22, '#2ce8f5', 0.7 + (h.swing > 0 ? 0.3 : 0));
       if (A.FX) for (const f of A.FX.flashes) L(f.x, f.y, f.r / PX * 1.2, f.color, f.life / f.max);
       l.globalAlpha = 1; l.globalCompositeOperation = 'source-over';
+    }
+
+
+    // ---------- Schrein-Zauber und Talente ----------
+    // am Boden: Giftwolken, Heilquellen, Giftspur, Meteor-Markierung, Frostaura
+    drawBoonsGround(W, cx, cy) {
+      const b = this.b, g = this.g, t = this.t, h = W.hero;
+      for (const z of W.zones || []) {
+        const x = z.x / PX - cx, y = z.y / PX - cy, R = z.r / PX, life = clamp((z.until - W.t) / 0.5, 0, 1) * clamp((W.t - z.t0) / 0.25, 0, 1);
+        if (z.trail) { b.globalAlpha = 0.35 * life; b.fillStyle = '#3e8948'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); b.fill(); continue; }
+        const heal = z.kind === 'heal';
+        b.globalAlpha = 0.22 * life; b.fillStyle = heal ? '#63c74d' : '#265c42'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+        g.globalAlpha = 0.5 * life; g.strokeStyle = z.col; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
+        // Blasen (Gift) oder aufsteigende Pluszeichen (Quelle)
+        g.fillStyle = heal ? '#c8f5a0' : '#63c74d';
+        for (let i = 0; i < 9; i++) {
+          const a = i * 2.39 + z.x, rr = R * (0.2 + (i * 0.37 % 0.8)), q = (t * (heal ? 0.7 : 0.5) + i * 0.13) % 1;
+          const px = Math.round(x + Math.cos(a) * rr), py = Math.round(y + Math.sin(a) * rr * 0.55 - q * (heal ? 14 : 8));
+          g.globalAlpha = (1 - q) * 0.8 * life;
+          if (heal) { g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); } else g.fillRect(px, py, q > 0.6 ? 2 : 1, q > 0.6 ? 2 : 1);
+        }
+      }
+      for (const k of W.marks || []) {
+        if (k.kind !== 'meteor') continue;
+        const x = k.x / PX - cx, y = k.y / PX - cy, R = k.r / PX, p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1);
+        b.globalAlpha = 0.18; b.fillStyle = '#e43b44'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+        b.globalAlpha = 0.35; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R * p, R * 0.55 * p, 0, 0, TAU); b.fill();
+        g.globalAlpha = 0.9; g.strokeStyle = '#ff0044'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
+      }
+      if (h.tal && h.tal.frost && h.alive) {
+        const x = h.x / PX - cx, y = h.y / PX - cy + 7, R = 110 / PX;
+        g.globalAlpha = 0.25 + Math.sin(t * 2) * 0.08; g.strokeStyle = '#9be8ff'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); g.stroke();
+        g.fillStyle = '#ffffff'; for (let i = 0; i < 6; i++) { const a = t * 0.8 + i / 6 * TAU; g.globalAlpha = 0.5; g.fillRect(Math.round(x + Math.cos(a) * R), Math.round(y + Math.sin(a) * R * 0.5), 1, 1); }
+      }
+      b.globalAlpha = 1; g.globalAlpha = 1;
+    }
+    // Geisterwolf: halb durchsichtig, leuchtender Umriss, kleine Funken
+    drawAlly(a, cx, cy) {
+      const x = a.x / PX - cx, y = a.y / PX - cy + 7;
+      const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
+      const spr = A.Art.monSprite('geisterwolf', frame), flip = a.fx < 0;
+      let alpha = 0.85; if (a.spawn > 0) alpha *= clamp(1 - a.spawn / 0.35, 0, 1); if (a.until && a.until - (A.World.W ? A.World.W.t : 0) < 1.5) alpha *= 0.5 + Math.sin(this.t * 20) * 0.3;
+      let ox = 0; if (a.swing > 0) ox = a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 4;
+      this.shadow(x, y, 6);
+      this.outlineGlow(spr, x + ox, y, flip, '#2ce8f5');
+      this.blit(spr, x + ox, y, flip, { alpha });
+      if (A.FX && !A.FX.low && Math.random() < 0.15) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 20, y: a.y, vx: 0, vy: -20, life: 0.5, color: '#7fe8ff', drag: 1 });
+    }
+    // über den Figuren: kreisende Geister/Klingen, Blitze, Blitzschritt-Spur
+    drawBoonsTop(W, cx, cy) {
+      const b = this.b, g = this.g, t = this.t;
+      for (const o of W.orbs || []) {
+        if (o.x == null) continue;
+        const x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy) - 7;
+        if (o.kind === 'blade') { // Klinge dreht sich
+          const a = t * 14 + o.a, dx = Math.round(Math.cos(a) * 4), dy = Math.round(Math.sin(a) * 2);
+          g.globalAlpha = 0.9; g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.beginPath(); g.moveTo(x - dx + 0.5, y - dy + 0.5); g.lineTo(x + dx + 0.5, y + dy + 0.5); g.stroke();
+          b.fillStyle = '#c0cbdc'; b.fillRect(x - 1, y - 1, 2, 2);
+        } else { // Geist mit Schweif
+          const fade = clamp((o.until - W.t) / 0.6, 0, 1);
+          for (let i = 3; i >= 0; i--) { const a = o.a - i * 0.18, px = Math.round((W.hero.x + Math.cos(a) * o.R) / PX - cx), py = Math.round((W.hero.y + Math.sin(a) * o.R * 0.7) / PX - cy) - 7; g.globalAlpha = (1 - i / 4) * 0.7 * fade; g.fillStyle = i ? '#8b9bb4' : '#ffffff'; g.fillRect(px - 1, py - 1, i ? 2 : 3, i ? 2 : 3); }
+          b.globalAlpha = fade; b.fillStyle = '#181425'; b.fillRect(x, y, 1, 1); b.globalAlpha = 1;
+        }
+      }
+      for (const bo of W.bolts || []) { // gezackter Blitz
+        const x0 = bo.x0 / PX - cx, y0 = bo.y0 / PX - cy, x1 = bo.x1 / PX - cx, y1 = bo.y1 / PX - cy, n = 6, a = bo.life / bo.max;
+        for (const [w, col] of [[3, bo.col], [1, '#ffffff']]) {
+          g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0);
+          for (let i = 1; i < n; i++) { const k = i / n, j = Math.sin(bo.seed + i * 7.3 + t * 40) * 4; g.lineTo(x0 + (x1 - x0) * k + j, y0 + (y1 - y0) * k - j * 0.6); }
+          g.lineTo(x1, y1); g.stroke();
+        }
+      }
+      for (const f of W.fx) if (f.kind === 'dash') { // Nachbild des Blitzschritts
+        const a = f.life / 0.32, x0 = f.x / PX - cx, y0 = f.y / PX - cy - 8, x1 = f.x1 / PX - cx, y1 = f.y1 / PX - cy - 8;
+        g.globalAlpha = a * 0.8; g.strokeStyle = f.color; g.lineWidth = 6 * a; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+        g.globalAlpha = a; g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      }
+      // Meteor im Anflug
+      for (const k of W.marks || []) {
+        if (k.kind !== 'meteor') continue; const left = k.at - W.t; if (left > 0.45) continue;
+        const q = 1 - left / 0.45, x = k.x / PX - cx + (1 - q) * 40, y = k.y / PX - cy - (1 - q) * 110;
+        g.globalAlpha = 1; g.fillStyle = '#fee761'; g.beginPath(); g.arc(x, y, 5, 0, TAU); g.fill();
+        g.fillStyle = '#f77622'; for (let i = 1; i < 6; i++) { g.globalAlpha = 1 - i / 6; g.beginPath(); g.arc(x + i * 5, y - i * 13, 5 - i * 0.7, 0, TAU); g.fill(); }
+        b.fillStyle = '#5d275d'; b.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6); b.fillStyle = '#b13e53'; b.fillRect(Math.round(x) - 2, Math.round(y) - 2, 3, 3);
+      }
+      g.globalAlpha = 1; b.globalAlpha = 1;
     }
 
     // ---------- Oberfläche über dem Bild (volle Auflösung) ----------

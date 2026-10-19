@@ -35,7 +35,7 @@ A.World = (function () {
     hooks = hooksIn || hooks;
     const f = genFloor(floor, seed, saved);
     if (A.FX) A.FX.reset();
-    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
+    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], zones: [], orbs: [], allies: [], marks: [], bolts: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
     const sr = f.start;
     W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
@@ -52,6 +52,17 @@ A.World = (function () {
     h = h || W.hero; const d = G().derived(), r = G().run, cls = A.CLASSES.find(c => c.id === r.cls), race = A.RACES.find(x => x.id === r.race);
     Object.assign(h, d, { melee: cls.row === 'front', magic: cls.id === 'weber' || cls.id === 'rufer', color: cls.color, raceColor: race.color, name: A.t(race.name) + ' ' + A.t(cls.name), skills: r.active.filter(Boolean) });
     h.hp = Math.min(h.hp, h.maxHp); h.speed = 150 + d.spd * 4; h.atkRate = clamp(1.05 - d.spd * 0.03, 0.32, 1.05);
+    h.tal = {}; for (const id of r.talents || []) h.tal[id] = true;
+    if (W && W.orbs) syncPerm(h);
+  }
+  // Dauerhafte Begleiter aus Talenten: kreisende Klingen, treuer Geisterwolf
+  function syncPerm(h) {
+    const blades = W.orbs.filter(o => o.perm);
+    if (h.tal.klingen && !blades.length) for (let i = 0; i < 2; i++) W.orbs.push({ perm: true, kind: 'blade', a: i * Math.PI, R: 48, spin: 4, pow: 0.35, col: '#c0cbdc', hits: new Map() });
+    if (!h.tal.klingen && blades.length) W.orbs = W.orbs.filter(o => !o.perm);
+    const wolf = W.allies.find(a => a.perm);
+    if (h.tal.begleiter && !wolf) W.allies.push(mkAlly(h, 0.5, 0, true));
+    if (!h.tal.begleiter && wolf) W.allies = W.allies.filter(a => !a.perm);
   }
 
   // ---------- Kacheln und Kollision ----------
@@ -196,8 +207,11 @@ A.World = (function () {
   function hit(from, to, raw, opts) {
     opts = opts || {};
     if (!to.alive || to.spawn > 0) return 0;
+    if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
+    if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
+    if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def')) * 4);
     let crit = false;
     if (Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75; crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
@@ -248,6 +262,13 @@ A.World = (function () {
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
     fx('death', { e });
+    const h = W.hero;
+    if (h && h.alive && h.tal) {
+      if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
+      if (h.tal.rausch) h.rushUntil = W.t + 3;
+      if (h.tal.seele) heal(h, Math.max(1, Math.round(h.maxHp * 0.03)));
+      if (h.tal.strom) for (const k in h.cds) h.cds[k] -= 1;
+    }
     if (rw.levels && hooks.onLevel) hooks.onLevel(rw.levels);
   }
 
@@ -285,30 +306,153 @@ A.World = (function () {
   function heroAttack() {
     const h = W.hero; if (!h.alive || h.atkCd > 0 || h.stun > 0) return false;
     if (!h.moving) faceTarget(h);
-    h.atkCd = h.atkRate; h.swing = 0.2;
-    if (h.melee) arc(h, 58, 1, { kind: 'phys' });
-    else { const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; shoot(h, tx, ty, h.magic ? statOf(h, 'mag') : statOf(h, 'atk'), { kind: h.magic ? 'magic' : 'phys' }); }
+    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1); h.swing = 0.2;
+    h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = big ? 2 : 1;   // Doppelte Wucht: jeder dritte Schlag
+    if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
+    if (h.melee) arc(h, h.tal.spalt ? 82 : 58, mul, { kind: 'phys', basic: true });
+    else {
+      const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100;
+      const dmg = (h.magic ? statOf(h, 'mag') : statOf(h, 'atk')) * mul, kind = h.magic ? 'magic' : 'phys';
+      shoot(h, tx, ty, dmg, { kind, basic: true, r: big ? 8 : 5 });
+      if (h.tal.spalt) { const a0 = Math.atan2(ty - h.y, tx - h.x); for (const da of [-0.28, 0.28]) shoot(h, h.x + Math.cos(a0 + da) * 100, h.y + Math.sin(a0 + da) * 100, dmg * 0.5, { kind, basic: true }); }
+    }
     return true;
   }
+  // Stärke für einen Zauber: Zauber für alle nutzen den höheren Wert aus Angriff und Zauberkraft
+  function heroPower(h) { return Math.max(statOf(h, 'atk'), statOf(h, 'mag')); }
+  function skPower(h, sk) { return sk.any ? heroPower(h) : sk.kind === 'magic' ? statOf(h, 'mag') : statOf(h, 'atk'); }
+  function frontPoint(h, d) { return { x: h.x + h.fx * d, y: h.y + h.fy * d }; }
   function useSkill(idx) {
     const h = W.hero, id = h.skills[idx]; if (!id || !h.alive || h.stun > 0) return false;
     if ((h.cds[id] || 0) > W.t) return false;
-    const sk = A.SKILLS[id]; h.cds[id] = W.t + sk.cd * 2; h.swing = 0.25;
+    const sk = A.SKILLS[id], B = A.Boons, pw = B.pow(id), P = skPower(h, sk);
+    h.cds[id] = W.t + B.cd(id); h.swing = 0.25;
     if (!h.moving) faceTarget(h);
-    float(h.x, h.y - 44, A.t(sk.name), '#fee761', 12);
-    const magic = sk.kind === 'magic';
-    if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * sk.pow)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
-    else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * sk.pow), true);
-    else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: sk.pow, until: W.t + sk.dur * 2 } : { mul: sk.pow, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
-    else if (sk.kind === 'multi' || sk.multi) { if (h.melee && !magic) h.spinT = W.t; const nc = magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff'; fx('nova', { e: h, r: 170, color: nc, magic }); let n = 0; for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < 170 + m.r) { hit(h, m, (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * sk.pow, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc }); n++; } } }
-    else { // Einzelziel (attack / magic)
-      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute };
-      let pow = sk.pow; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
+    float(h.x, h.y - 44, B.skName(id), '#fee761', 12);
+    if (h.tal.echo && Math.random() < 0.25) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); }
+    const magic = sk.kind === 'magic' || !!sk.any;
+    if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * pw)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
+    else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * pw), true);
+    else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: pw, until: W.t + sk.dur * 2 } : { mul: pw, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
+    else if (sk.kind === 'dash') dash(h, P * pw, sk.col);
+    else if (sk.kind === 'zone') {
+      const m = sk.zone === 'poison' ? nearestMon(h.x, h.y, 360) : null, p = sk.zone === 'heal' ? h : m || frontPoint(h, 90);
+      W.zones.push({ kind: sk.zone, x: p.x, y: p.y + 6, r: sk.radius, t0: W.t, until: W.t + sk.dur, tick: W.t, dmg: P * pw, heal: pw, col: sk.col });
+      fx('boom', { x: p.x, y: p.y, r: sk.radius, color: sk.col, soft: true });
+    }
+    else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
+    else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
+    else if (sk.kind === 'multi' || sk.multi) {
+      const R = sk.radius || 170;
+      if (h.melee && !magic) h.spinT = W.t;
+      const nc = sk.col || (magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff');
+      fx('nova', { e: h, r: R, color: nc, magic });
+      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun }); }
+    }
+    else if (sk.chain) chain(h, P * pw, sk.chain, sk.col);
+    else { // Einzelziel (attack / magic), Feuerball explodiert beim Aufprall
+      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast };
+      let pow = pw; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
       const hits = sk.hits || 1;
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
-      else { const m = nearestMon(h.x, h.y, 360); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; for (let i = 0; i < hits; i++) shoot(h, tx + (i ? (Math.random() - 0.5) * 30 : 0), ty + (i ? (Math.random() - 0.5) * 30 : 0), (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * pow, Object.assign({ r: 7, speed: 460, color: magic ? '#c77dff' : '#ffe08a' }, opts)); }
+      else { const m = nearestMon(h.x, h.y, 360); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; for (let i = 0; i < hits; i++) shoot(h, tx + (i ? (Math.random() - 0.5) * 30 : 0), ty + (i ? (Math.random() - 0.5) * 30 : 0), P * pow, Object.assign({ r: sk.blast ? 9 : 7, speed: sk.blast ? 380 : 460, color: sk.col || (magic ? '#c77dff' : '#ffe08a') }, opts)); }
     }
     return true;
+  }
+  // ---------- Neue Zauber und Talente in der Welt ----------
+  // Explosion: trifft alle Gegner im Umkreis
+  function boom(x, y, r, dmg, opts, col) {
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
+    fx('boom', { x, y, r, color: col });
+  }
+  // Kettenblitz: springt vom Helden zum nächsten Gegner und weiter
+  function chain(h, dmg, n, col) {
+    let from = h; const done = new Set();
+    for (let i = 0; i <= n; i++) {
+      let best = null, bd = i ? 190 : 380;
+      for (const m of W.mons) { if (!m.alive || m.spawn > 0 || done.has(m)) continue; const d = dist(from, m); if (d < bd) { bd = d; best = m; } }
+      if (!best) break; done.add(best);
+      W.bolts.push({ x0: from.x, y0: from.y - 12, x1: best.x, y1: best.y - 10, life: 0.28, max: 0.28, col, seed: Math.random() * 99 });
+      hit(h, best, dmg * (i ? 0.85 : 1), { kind: 'magic', color: col }); from = best;
+    }
+    if (!done.size) W.bolts.push({ x0: h.x, y0: h.y - 12, x1: h.x + h.fx * 90, y1: h.y + h.fy * 90 - 12, life: 0.2, max: 0.2, col, seed: 1 });
+    fx('zap', { x: h.x, y: h.y, color: col });
+  }
+  // Blitzschritt: nach vorn springen, alles auf dem Weg treffen
+  function dash(h, dmg, col) {
+    const sx = h.x, sy = h.y, got = new Set();
+    for (let k = 0; k < 22; k++) {
+      const bx = h.x, by = h.y; moveEnt(h, h.fx * 8, h.fy * 8); if (Math.abs(h.x - bx) + Math.abs(h.y - by) < 1) break;
+      for (const m of W.mons) if (m.alive && !(m.spawn > 0) && !got.has(m) && dist(h, m) < h.r + m.r + 14) { got.add(m); hit(h, m, dmg, { kind: 'magic', color: col }); }
+    }
+    h.inv = Math.max(h.inv, 0.4);
+    W.fx.push({ kind: 'dash', x: sx, y: sy, x1: h.x, y1: h.y, life: 0.32, color: col });
+    fx('zap', { x: h.x, y: h.y, color: col });
+  }
+  // Geisterwolf (Zauber oder Talent): jagt Gegner, folgt sonst dem Helden
+  function mkAlly(h, pow, until, perm) {
+    const a = { side: 'hero', ally: true, hp: 1e9, maxHp: 1e9, x: h.x - h.fx * 30, y: h.y - h.fy * 30 + 10, r: 11, fx: h.fx, fy: 0, pow, until, perm, cd: 0.4, swing: 0, alive: true, crit: 0, spawn: 0.35 };
+    fx('spawn', { m: a });
+    return a;
+  }
+  function allyStep(a, dt) {
+    const h = W.hero;
+    if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); return; }
+    if (a.spawn > 0) { a.spawn -= dt; return; }
+    a.cd -= dt; if (a.swing > 0) a.swing -= dt; a.crit = h.crit;
+    let tgt = null, bd = 400;
+    for (const m of W.mons) { if (!m.alive || m.spawn > 0) continue; const d = dist(a, m); if (d < bd && clearLine(a, m)) { bd = d; tgt = m; } }
+    const goal = tgt || h, d = dist(a, goal) || 1;
+    a.moving = false;
+    if (tgt) {
+      a.fx = (tgt.x - a.x) / d; a.fy = (tgt.y - a.y) / d;
+      if (d > a.r + tgt.r + 6) { moveEnt(a, a.fx * 250 * dt, a.fy * 250 * dt); a.moving = true; }
+      else if (a.cd <= 0) { a.cd = 0.65; a.swing = 0.2; hit(a, tgt, heroPower(h) * a.pow, { kind: 'phys', color: '#2ce8f5' }); W.fx.push({ kind: 'claw', x: a.x, y: a.y, fx: a.fx, fy: a.fy, r: a.r + tgt.r + 10, life: 0.2, ally: true }); }
+    } else if (d > 64) {
+      if (d > 360) { a.x = h.x - h.fx * 30; a.y = h.y + 12; fx('spawn', { m: a }); return; }
+      let mx = (h.x - a.x) / d, my = (h.y - a.y) / d;
+      if (!clearLine(a, h)) { const fd = flowDir(a); if (fd) { mx = fd[0]; my = fd[1]; } }
+      a.fx = mx; a.fy = my; moveEnt(a, mx * 230 * dt, my * 230 * dt); a.moving = true;
+    }
+  }
+  // kreisende Geister und Klingen
+  function orbStep(o, dt) {
+    const h = W.hero;
+    o.a += o.spin * dt; o.x = h.x + Math.cos(o.a) * o.R; o.y = h.y + Math.sin(o.a) * o.R * 0.7;
+    const dmg = o.perm ? heroPower(h) * o.pow : o.dmg;
+    for (const m of W.mons) {
+      if (!m.alive || m.spawn > 0 || Math.hypot(m.x - o.x, m.y - o.y) > m.r + 10) continue;
+      if ((o.hits.get(m) || 0) > W.t) continue; o.hits.set(m, W.t + 0.5);
+      hit(h, m, dmg, { kind: o.kind === 'blade' ? 'phys' : 'magic', color: o.col }); fx('wallhit', { x: o.x, y: o.y, color: o.col });
+    }
+  }
+  // Wolken und Quellen am Boden (Giftwolke, Giftspur, Heilquelle)
+  function zoneStep(z) {
+    if (W.t < z.tick) return; z.tick = W.t + 0.5;
+    const h = W.hero;
+    if (z.kind === 'heal') { if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) heal(h, Math.max(1, Math.round(h.maxHp * z.heal))); return; }
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r * 0.5) hit(h, m, z.dmg, { kind: 'poison', noDodge: true });
+  }
+  // Verzögerte Treffer: Meteor (mit roter Markierung) und Explosionen (Kettenreaktion, Schwarzpulver)
+  function markStep(k) {
+    if (W.t < k.at) return;
+    k.done = true;
+    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, { burn: k.burn }, k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
+    else boom(k.x, k.y, k.r, k.dmg, {}, k.col);
+  }
+  function boonStep(dt) {
+    const h = W.hero;
+    for (const z of W.zones) zoneStep(z); W.zones = W.zones.filter(z => z.until > W.t);
+    for (const o of W.orbs) orbStep(o, dt); W.orbs = W.orbs.filter(o => o.perm || o.until > W.t);
+    for (const a of W.allies) allyStep(a, dt); W.allies = W.allies.filter(a => !a.gone);
+    for (const k of W.marks) markStep(k); W.marks = W.marks.filter(k => !k.done);
+    for (const b of W.bolts) b.life -= dt; W.bolts = W.bolts.filter(b => b.life > 0);
+    // Frostaura: Gegner in der Nähe werden langsam
+    if (h.tal.frost) for (const m of W.mons) if (m.alive && dist(h, m) < 110 + m.r) { m.slowUntil = Math.max(m.slowUntil || 0, W.t + 0.25); m.slowPow = Math.min(m.slowPow || 1, 0.6); }
+    // Giftspur beim Laufen
+    if (h.tal.giftspur && h.moving && (h.trailT = (h.trailT || 0) - dt) <= 0) { h.trailT = 0.3; W.zones.push({ kind: 'poison', trail: true, x: h.x, y: h.y + 10, r: 26, t0: W.t, until: W.t + 2.5, tick: W.t + 0.3, dmg: heroPower(h) * 0.15, col: '#63c74d' }); }
   }
   function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * 0.4) - (h.hp - G().run.hp > 0 ? 0 : 0)); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); return true; }
 
@@ -328,7 +472,8 @@ A.World = (function () {
     // Gefahr-Boden unter dem Helden
     const hz = hazardAt(h); h.onHazard = hz;
     if (hz && A.HAZARDS[hz].burn && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
-    if (W.active) updateFlow();
+    if (W.active || W.allies.length) updateFlow();
+    boonStep(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -338,10 +483,11 @@ A.World = (function () {
     // Geschosse
     for (const s of W.shots) {
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (shotSolid(s.x, s.y)) { s.life = 0; fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
-      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
+      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
+    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); }   // Feuerball verpufft nicht
     W.shots = W.shots.filter(s => s.life > 0);
     // Beute aufsammeln
     for (const p of W.picks) {
@@ -351,7 +497,7 @@ A.World = (function () {
         p.vz -= 700 * dt; p.z += p.vz * dt; if (p.z <= 0) { p.z = 0; p.vz = Math.abs(p.vz) > 60 ? -p.vz * 0.42 : 0; p.vx *= 0.6; p.vy *= 0.6; }
       }
       const d = dist(p, h);
-      if (p.kind === 'gold' && d < 110 && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
+      if (p.kind === 'gold' && d < (h.tal.gold ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
         if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); }
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
@@ -364,7 +510,8 @@ A.World = (function () {
     // Raum-Logik
     const r = roomOf(h.x, h.y);
     if (r && r !== W.room) { W.room = r; }
-    if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = ''; } G().save(); }
+    if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
+      if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); } } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });

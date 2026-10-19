@@ -127,6 +127,16 @@
   .skill .nm { font-weight: 700; font-size: 16px; }
   .skill .ds { color: var(--mist); font-size: 13.5px; line-height: 1.3; margin-top: 2px; }
   .skill .cd { margin-left: auto; font-size: 13px; color: var(--mist); white-space: nowrap; }
+  .skill .tg { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .skill .tg.spell { color: #7fd8ff; } .skill .tg.talent { color: #63c74d; } .skill .tg.upg { color: var(--gold2); }
+  .boon { padding: 11px 12px; }
+  .boon .si { width: 52px; height: 52px; }
+  .boon.talent .si { background: radial-gradient(circle, #2e6b3a, #181425 75%); border-color: #3e8948; }
+  .boon.upg .si { background: radial-gradient(circle, #8a6a1f, #181425 75%); border-color: #feae34; }
+  .boon:hover, .boon:focus-visible { box-shadow: inset 0 0 0 2px var(--gold); }
+  .slots { display: flex; gap: 6px; justify-content: center; margin: 4px 0 10px; flex-wrap: wrap; }
+  .slots span { width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid #333b5c; border-radius: 50%; background: #181425; }
+  .slots span.on { border-color: #3e8948; }
   .tabs { display: flex; gap: 5px; margin-bottom: 12px; }
   .tabs button { flex: 1; border: 3px solid var(--ink); clip-path: var(--notch); padding: 8px 4px 10px; font-weight: 700; font-size: 15px; background: #262b44; color: var(--mist); box-shadow: inset 0 -3px 0 #1d1a2e; cursor: pointer; }
   .tabs button.on { background: #3a4466; color: var(--gold2); box-shadow: inset 0 3px 0 #5a6988, inset 0 -3px 0 #262b44; }
@@ -273,7 +283,7 @@ A.UI = {
   chooseRoom: { de: 'Wähle deinen Weg', en: 'Choose your path' },
   prep: { de: 'Aufstellung', en: 'Loadout' }, fightBtn: { de: 'Kämpfen!', en: 'Fight!' },
   front: { de: 'Vorne', en: 'Front' }, backRow: { de: 'Hinten', en: 'Back' },
-  skills: { de: 'Fähigkeiten', en: 'Skills' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
+  skills: { de: 'Zauber', en: 'Spells' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
   stats: { de: 'Werte', en: 'Stats' },
   stat: { str: { de: 'Stärke', en: 'Strength' }, tou: { de: 'Zähigkeit', en: 'Toughness' }, dex: { de: 'Geschick', en: 'Dexterity' }, mind: { de: 'Geist', en: 'Mind' }, luck: { de: 'Glück', en: 'Luck' } },
   derived: { atk: { de: 'Angriff', en: 'Attack' }, def: { de: 'Rüstung', en: 'Armor' }, spd: { de: 'Tempo', en: 'Speed' }, crit: { de: 'Volltreffer', en: 'Crit' }, dodge: { de: 'Ausweichen', en: 'Dodge' }, mag: { de: 'Zauberkraft', en: 'Magic' } },
@@ -281,7 +291,7 @@ A.UI = {
   victory: { de: 'Sieg!', en: 'Victory!' }, defeat: { de: 'Gefallen', en: 'Fallen' },
   pickReward: { de: 'Wähle eine Belohnung', en: 'Choose a reward' }, skip: { de: 'Nichts nehmen', en: 'Take nothing' },
   equip: { de: 'Anlegen', en: 'Equip' }, sell: { de: 'Verkaufen', en: 'Sell' }, buy: { de: 'Kaufen', en: 'Buy' }, take: { de: 'Nehmen', en: 'Take' },
-  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neue Fähigkeit wählen', en: 'Choose a new skill' },
+  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neuen Zauber wählen', en: 'Choose a new spell' },
   heal: { de: 'Ausruhen (+50 % Leben)', en: 'Rest (+50% health)' }, train: { de: 'Trainieren (+1 Statpunkt)', en: 'Train (+1 stat point)' },
   leave: { de: 'Weiter', en: 'Continue' }, descend: { de: 'Tiefer', en: 'Descend' },
   runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
@@ -308,8 +318,8 @@ A.UI = {
 // base: Grundwerte; perk: kurzer Text; mod: Änderungen an abgeleiteten Werten
 A.RACES = [
   { id: 'mensch', name: { de: 'Mensch', en: 'Human' }, color: '#e8b98a', unlock: 0,
-    perk: { de: 'Ausgeglichen. Ein Fähigkeitsplatz mehr.', en: 'Balanced. One extra skill slot.' },
-    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { skillSlots: 1 } },
+    perk: { de: 'Ausgeglichen. Ein Platz mehr für passive Segen.', en: 'Balanced. One extra slot for passive blessings.' },
+    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { talentSlots: 1 } },
   { id: 'fels', name: { de: 'Felsgeborener', en: 'Stoneborn' }, color: '#9a9aa8', unlock: 0,
     perk: { de: 'Viel Leben und Rüstung, langsam.', en: 'Lots of health and armor, slow.' },
     base: { str: 6, tou: 9, dex: 2, mind: 3, luck: 5 }, mod: { hpMul: 1.25, def: 4, spd: -2 } },
@@ -590,6 +600,91 @@ A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter
 
 </script>
 <script>
+// Der Abstieg – Segen am Schrein: neue Zauber für alle Klassen, passive Talente und Verstärkungen bestehender Zauber
+'use strict';
+window.A = window.A || {};
+
+// ---------- Zauber für alle (nur am Schrein) ----------
+// any: Stärke ist der höhere Wert aus Angriff und Zauberkraft; col: Farbe; icon: Symbol
+// neue Arten: dash (Sprung nach vorn), zone (Wolke/Quelle am Boden), meteor (schlägt verzögert ein), orbit (kreisende Geister), ally (Begleiter), fan (Fächer aus Geschossen)
+Object.assign(A.SKILLS, {
+  feuerball: { name: { de: 'Feuerball', en: 'Fireball' }, kind: 'magic', any: true, pow: 1.5, cd: 3, blast: 80, burn: 0.4, col: '#f77622', icon: 's_fire', desc: { de: 'Explodiert beim Aufprall: 150 % Schaden in der Fläche, dazu Brand.', en: 'Explodes on impact: 150% area damage plus burn.' } },
+  eisnova: { name: { de: 'Eisnova', en: 'Ice Nova' }, kind: 'magic', multi: true, any: true, pow: 0.8, cd: 4, radius: 150, slow: true, col: '#9be8ff', icon: 's_ice', desc: { de: '80 % Schaden rundherum, alle Getroffenen werden langsam.', en: '80% damage around you, slows everything hit.' } },
+  kettenblitz: { name: { de: 'Kettenblitz', en: 'Chain Lightning' }, kind: 'magic', any: true, pow: 1.1, cd: 3, chain: 4, col: '#fee761', icon: 's_bolt', desc: { de: 'Blitz springt über bis zu 5 Gegner, je 110 % Schaden.', en: 'Lightning jumps across up to 5 enemies, 110% each.' } },
+  blitzschritt: { name: { de: 'Blitzschritt', en: 'Flash Step' }, kind: 'dash', any: true, pow: 1.2, cd: 3, col: '#2ce8f5', icon: 's_dash', desc: { de: 'Springt nach vorn, unverwundbar, 120 % Schaden an allem auf dem Weg.', en: 'Dash forward, invulnerable, 120% damage to everything in the way.' } },
+  giftwolke: { name: { de: 'Giftwolke', en: 'Poison Cloud' }, kind: 'zone', zone: 'poison', any: true, pow: 0.3, dur: 5, radius: 80, cd: 4, col: '#63c74d', icon: 's_cloud', desc: { de: 'Wolke beim nächsten Gegner, vergiftet 5 Sekunden lang alles darin.', en: 'Cloud at the nearest enemy, poisons everything inside for 5 seconds.' } },
+  meteor: { name: { de: 'Meteor', en: 'Meteor' }, kind: 'meteor', any: true, pow: 3.0, cd: 5, radius: 95, burn: 0.6, col: '#f77622', icon: 's_meteor', desc: { de: 'Nach kurzer Zeit schlägt ein Meteor ein: 300 % Schaden. Rote Markierung zeigt wo.', en: 'After a moment a meteor hits: 300% damage. A red mark shows where.' } },
+  heilquelle: { name: { de: 'Heilquelle', en: 'Healing Spring' }, kind: 'zone', zone: 'heal', pow: 0.025, dur: 6, radius: 70, cd: 6, col: '#63c74d', icon: 's_spring', desc: { de: 'Quelle unter dir: heilt 6 Sekunden lang, solange du drinstehst.', en: 'A spring under you: heals for 6 seconds while you stand in it.' } },
+  geisterschwarm: { name: { de: 'Geisterschwarm', en: 'Spirit Swarm' }, kind: 'orbit', any: true, n: 3, pow: 0.6, dur: 8, cd: 5, col: '#c0cbdc', icon: 's_ghost', desc: { de: '3 Geister kreisen 8 Sekunden um dich und beissen alles, was sie berühren.', en: '3 spirits circle you for 8 seconds and bite whatever they touch.' } },
+  geisterwolf: { name: { de: 'Geisterwolf', en: 'Spirit Wolf' }, kind: 'ally', any: true, pow: 0.8, dur: 15, cd: 8, col: '#2ce8f5', icon: 's_wolf', desc: { de: 'Ein Geisterwolf jagt 15 Sekunden lang deine Gegner.', en: 'A spirit wolf hunts your enemies for 15 seconds.' } },
+  erdstoss: { name: { de: 'Erdstoss', en: 'Earthquake' }, kind: 'magic', multi: true, any: true, pow: 1.0, cd: 4, radius: 115, stun: 0.8, col: '#d77643', icon: 's_quake', desc: { de: '100 % Schaden rundherum, Gegner sind kurz betäubt.', en: '100% damage around you, enemies are briefly stunned.' } },
+  klingenfaecher: { name: { de: 'Klingenfächer', en: 'Blade Fan' }, kind: 'fan', any: true, n: 7, pow: 0.6, cd: 3, col: '#c0cbdc', icon: 's_fan', desc: { de: '7 Klingen im Fächer nach vorn, je 60 % Schaden.', en: '7 blades in a fan, 60% damage each.' } },
+});
+A.SHRINE_SPELLS = ['feuerball', 'eisnova', 'kettenblitz', 'blitzschritt', 'giftwolke', 'meteor', 'heilquelle', 'geisterschwarm', 'geisterwolf', 'erdstoss', 'klingenfaecher'];
+
+// ---------- Passive Talente ----------
+// mod: verändert die Heldenwerte (in derived); alles andere wirkt direkt in der Welt (world.js, h.tal)
+A.TALENTS = {
+  vampir:     { name: { de: 'Vampirzahn', en: 'Vampire Fang' }, icon: 't_fang', mod: { lifesteal: 5 }, desc: { de: '5 % des Schadens kommen als Leben zurück.', en: '5% of damage dealt returns as health.' } },
+  dornen:     { name: { de: 'Dornenpanzer', en: 'Thorn Armor' }, icon: 't_thorn', mod: { thorns: 25, def: 2 }, desc: { de: 'Wer dich schlägt, bekommt 25 % zurück. +2 Rüstung.', en: 'Attackers take 25% back. +2 armor.' } },
+  glaskanone: { name: { de: 'Glaskanone', en: 'Glass Cannon' }, icon: 't_glass', mod: { dmgPct: 35, hpPct: -20 }, desc: { de: '+35 % Schaden, aber 20 % weniger Leben.', en: '+35% damage, but 20% less health.' } },
+  berserker:  { name: { de: 'Berserker', en: 'Berserker' }, icon: 't_rage', desc: { de: 'Je weniger Leben, desto mehr Schaden (bis +60 %).', en: 'The lower your health, the more damage (up to +60%).' } },
+  kette:      { name: { de: 'Kettenreaktion', en: 'Chain Reaction' }, icon: 't_boom', desc: { de: 'Besiegte Gegner explodieren und treffen alle in der Nähe.', en: 'Defeated enemies explode and hit everything nearby.' } },
+  wucht:      { name: { de: 'Doppelte Wucht', en: 'Double Impact' }, icon: 't_double', desc: { de: 'Jeder dritte normale Angriff trifft doppelt so hart.', en: 'Every third basic attack hits twice as hard.' } },
+  rausch:     { name: { de: 'Blutrausch', en: 'Bloodlust' }, icon: 't_blood', desc: { de: 'Nach jedem Sieg über einen Gegner 3 Sekunden viel schneller angreifen.', en: 'After each kill, attack much faster for 3 seconds.' } },
+  flink:      { name: { de: 'Flinke Füsse', en: 'Quick Feet' }, icon: 't_boots', mod: { spd: 3, dodge: 6 }, desc: { de: 'Schneller laufen, +6 % Ausweichen.', en: 'Move faster, +6% dodge.' } },
+  frost:      { name: { de: 'Frostaura', en: 'Frost Aura' }, icon: 's_ice', desc: { de: 'Gegner in deiner Nähe werden langsam.', en: 'Enemies near you are slowed.' } },
+  giftspur:   { name: { de: 'Giftspur', en: 'Poison Trail' }, icon: 's_poison', desc: { de: 'Beim Laufen bleibt eine giftige Spur am Boden.', en: 'You leave a poisonous trail when you move.' } },
+  klingen:    { name: { de: 'Kreisende Klingen', en: 'Orbiting Blades' }, icon: 's_fan', desc: { de: 'Zwei Klingen kreisen ständig um dich.', en: 'Two blades constantly circle you.' } },
+  engel:      { name: { de: 'Schutzengel', en: 'Guardian Angel' }, icon: 't_angel', desc: { de: 'Jeder Kampf beginnt mit einem Schild (25 % Leben).', en: 'Every fight starts with a shield (25% health).' } },
+  geist:      { name: { de: 'Schneller Geist', en: 'Quick Mind' }, icon: 't_mind', desc: { de: 'Alle Zauber laden 20 % schneller.', en: 'All spells recharge 20% faster.' } },
+  echo:       { name: { de: 'Zauberecho', en: 'Spell Echo' }, icon: 't_echo', desc: { de: '25 % Chance, dass ein Zauber sofort wieder bereit ist.', en: '25% chance a spell is ready again instantly.' } },
+  strom:      { name: { de: 'Zauberstrom', en: 'Spell Surge' }, icon: 'u_spark', desc: { de: 'Jeder besiegte Gegner lädt alle Zauber 1 Sekunde schneller.', en: 'Each kill recharges all spells by 1 second.' } },
+  gold:       { name: { de: 'Goldgier', en: 'Gold Greed' }, icon: 'coin', mod: { goldPct: 40 }, desc: { de: '+40 % Gold, Münzen fliegen von weiter her zu dir.', en: '+40% gold, coins fly to you from further away.' } },
+  glueck:     { name: { de: 'Glückspilz', en: 'Lucky Mushroom' }, icon: 'u_star', mod: { crit: 8, itemLuck: 1 }, desc: { de: '+8 % Volltreffer, bessere Beute.', en: '+8% crit, better loot.' } },
+  pulver:     { name: { de: 'Schwarzpulver', en: 'Black Powder' }, icon: 't_powder', desc: { de: 'Normale Angriffe explodieren manchmal (25 %).', en: 'Basic attacks sometimes explode (25%).' } },
+  eisen:      { name: { de: 'Eiserne Haut', en: 'Iron Skin' }, icon: 's_shield', mod: { hpPct: 25, def: 3 }, desc: { de: '+25 % Leben und +3 Rüstung.', en: '+25% health and +3 armor.' } },
+  spalt:      { name: { de: 'Gespaltener Schlag', en: 'Split Strike' }, icon: 's_whirl', desc: { de: 'Normale Angriffe: Nahkampf trifft weiter, Fernkampf schiesst 2 Extra-Geschosse.', en: 'Basic attacks: melee reaches further, ranged fires 2 extra shots.' } },
+  seele:      { name: { de: 'Seelenfresser', en: 'Soul Eater' }, icon: 'u_skull', desc: { de: 'Jeder besiegte Gegner heilt dich um 3 % deines Lebens.', en: 'Each kill heals you for 3% of your health.' } },
+  zaeh:       { name: { de: 'Zähes Leben', en: 'Tenacity' }, icon: 'u_heart', mod: { regen: 1, hpPct: 10 }, desc: { de: '+10 % Leben, heilt sich langsam selbst.', en: '+10% health, slowly regenerates.' } },
+  begleiter:  { name: { de: 'Treuer Begleiter', en: 'Loyal Companion' }, icon: 's_wolf', desc: { de: 'Ein Geisterwolf kämpft dauerhaft an deiner Seite.', en: 'A spirit wolf fights at your side permanently.' } },
+};
+
+// ---------- Helfer ----------
+A.Boons = (function () {
+  const MAX_UPG = 2;
+  const run = () => A.Game.run;
+  const has = (id, r) => { r = r || run(); return !!(r && r.talents && r.talents.includes(id)); };
+  const upgOf = (id, r) => { r = r || run(); return (r && r.upg && r.upg[id]) || 0; };
+  // Stärke und Abklingzeit (Sekunden) eines Zaubers mit Verstärkungen und Talenten
+  function pow(id) { return A.SKILLS[id].pow * (1 + 0.3 * upgOf(id)); }
+  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1); }
+  function icon(id) { const s = A.SKILLS[id]; return s && s.icon; }
+  // Name mit Stufe (Feuerball II)
+  function skName(id) { const n = A.t(A.SKILLS[id].name), u = upgOf(id); return u ? n + ' ' + ['', 'II', 'III'][u] : n; }
+  // Summe der Talent-Werte für derived()
+  function mods(r) {
+    const o = {}; if (!r || !r.talents) return o;
+    for (const id of r.talents) { const T = A.TALENTS[id]; if (T && T.mod) for (const k in T.mod) o[k] = (o[k] || 0) + T.mod[k]; }
+    return o;
+  }
+  // Drei Angebote: möglichst je ein neuer Zauber, ein Talent und eine Verstärkung
+  function offer(r, rng) {
+    const cls = A.CLASSES.find(c => c.id === r.cls);
+    const spells = rng.shuffle(A.SHRINE_SPELLS.concat(cls.skills).filter((s, i, a) => a.indexOf(s) === i && !r.known.includes(s))).map(id => ({ type: 'spell', id }));
+    const tals = rng.shuffle(Object.keys(A.TALENTS).filter(id => !(r.talents || []).includes(id))).map(id => ({ type: 'talent', id }));
+    const ups = rng.shuffle(r.active.filter(id => id && upgOf(id, r) < MAX_UPG)).map(id => ({ type: 'upg', id }));
+    const out = [];
+    for (const list of [spells, tals, ups]) if (list.length) out.push(list.shift());
+    const rest = rng.shuffle(spells.concat(tals, ups));
+    while (out.length < 3 && rest.length) out.push(rest.shift());
+    return rng.shuffle(out);
+  }
+  return { MAX_UPG, has, upgOf, pow, cd, icon, skName, mods, offer };
+})();
+
+</script>
+<script>
 // Der Abstieg – Spiellogik: Held, Items, Ebenen, Belohnungen, Lager, Speichern (die Welt selbst steht in world.js)
 'use strict';
 window.A = window.A || {};
@@ -626,7 +721,7 @@ A.Game = (function () {
       stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
       hp: 0, gold: 10 + me.startGold, potions: me.startPotion,
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
-      bag: [], known: skills, active: skills.slice(0, 3),
+      bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
       log: [], reviveUsed: false, over: false, won: false,
     };
@@ -649,19 +744,20 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const atkPct = sum('atkPct') / 100 + me.dmgMul, magPct = sum('magPct') / 100 + me.dmgMul;
+    const tm = A.Boons.mods(r), tv = (k) => tm[k] || 0;   // passive Talente vom Schrein
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100;
     const d = {
-      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul)),
+      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
       mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
-      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0)),
-      spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0)),
-      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0)),
-      dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0)),
-      lifesteal: sum('lifesteal'), thorns: sum('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
-      regen: sum('regen') + (mod.regen || 0), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100,
+      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def')),
+      spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0) + tv('spd')),
+      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit')),
+      dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
+      lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
+      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
       xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'),
-      skillSlots: 3 + (mod.skillSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0),
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     return d;
   }
@@ -806,6 +902,7 @@ A.Game = (function () {
     const items = [];
     if (room.type === 'fight') items.push(randomItem());
     if (room.type === 'elite') items.push(randomItem(rollRarity(1)));
+    if (room.type === 'elite' || room.type === 'boss') run.pendingBoon = (run.pendingBoon || 0) + 1;   // zweite Wahl nach Elite- und Boss-Kämpfen
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
     save();
@@ -824,7 +921,28 @@ A.Game = (function () {
     const rest = cls.skills.filter(s => !run.known.includes(s));
     return run.rng.shuffle(rest).slice(0, 3);
   }
-  function learnSkill(id) { run.known.push(id); run.pendingSkillPick--; if (run.active.length < derived().skillSlots) run.active.push(id); save(); }
+  // Neuer Zauber: kommt auf einen freien Knopf; sind alle voll, ersetzt er replaceId (der alte bleibt im Zauberbuch)
+  function addSkill(id, replaceId) {
+    if (!run.known.includes(id)) run.known.push(id);
+    if (run.active.includes(id)) return;
+    if (run.active.length < derived().skillSlots) run.active.push(id);
+    else if (replaceId && run.active.includes(replaceId)) run.active[run.active.indexOf(replaceId)] = id;
+  }
+  function learnSkill(id, replaceId) { addSkill(id, replaceId); run.pendingSkillPick--; save(); }
+  // ---------- Segen am Schrein ----------
+  function boonOffer() { if (!run.boonOffer) { run.boonOffer = A.Boons.offer(run, run.rng); save(); } return run.boonOffer; }
+  function takeBoon(b, replaceId) {
+    if (b.type === 'spell') addSkill(b.id, replaceId);
+    else if (b.type === 'talent') {
+      if (run.talents.length < derived().talentSlots) run.talents.push(b.id);
+      else if (replaceId && run.talents.includes(replaceId)) run.talents[run.talents.indexOf(replaceId)] = b.id;
+      const d = derived(); run.hp = Math.min(run.hp, d.maxHp);
+    }
+    else if (b.type === 'upg') run.upg[b.id] = Math.min(A.Boons.MAX_UPG, (run.upg[b.id] || 0) + 1);
+    run.boonOffer = null; run.pendingBoon = Math.max(0, (run.pendingBoon || 0) - 1); save();
+  }
+  function skipBoon() { const g = boonGold(); run.gold += g; run.boonOffer = null; run.pendingBoon = Math.max(0, (run.pendingBoon || 0) - 1); save(); return g; }
+  function boonGold() { return 20 + run.floor * 6; }
   function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
 
   // ---------- Räume ----------
@@ -862,7 +980,7 @@ A.Game = (function () {
 
   // ---------- Speichern ----------
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); return run; } catch (e) { return null; } }
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; return run; } catch (e) { return null; } }
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 }; saveMeta(); }
 
@@ -871,7 +989,7 @@ A.Game = (function () {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
-    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive,
+    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy,
   };
 })();
@@ -2027,6 +2145,271 @@ A.Art = (function () {
     'c.......c',
   ]];
 
+
+  // ---------- Symbole für Schrein-Zauber und Talente ----------
+  R.s_fire = [[
+    '....y....',
+    '...yf....',
+    '...fYf...',
+    '..fYYf.f.',
+    '.fYY6Yff.',
+    '.fY666Yf.',
+    '.fY666Yf.',
+    '..fYYYf..',
+    '...fff...',
+  ]];
+  R.s_ice = [[
+    '....6....',
+    '.c..c..c.',
+    '..c.c.c..',
+    '...ccc...',
+    '6ccc6ccc6',
+    '...ccc...',
+    '..c.c.c..',
+    '.c..c..c.',
+    '....6....',
+  ]];
+  R.s_dash = [[
+    '.........',
+    '.....cc..',
+    'c...cBBc.',
+    '.c.cB66Bc',
+    'cccB6666B',
+    '.c.cB66Bc',
+    'c...cBBc.',
+    '.....cc..',
+    '.........',
+  ]];
+  R.s_cloud = [[
+    '.........',
+    '...lll...',
+    '..lGGGl..',
+    '.lGGlGGll',
+    'lGGGGGGGl',
+    'lGlGGGlGl',
+    '.lllllll.',
+    '..l..l...',
+    '.l..l..l.',
+  ]];
+  R.s_meteor = [[
+    'Y........',
+    '.f.......',
+    '..f......',
+    '...fyy...',
+    '...yRRo..',
+    '...yRoro.',
+    '....oroo.',
+    '.....oo..',
+    '.........',
+  ]];
+  R.s_spring = [[
+    '....l....',
+    '...lGl...',
+    '..l.G.l..',
+    '....G....',
+    '..BBBBB..',
+    '.BcccccB.',
+    'BccBBBccB',
+    '.BBBBBBB.',
+    '.........',
+  ]];
+  R.s_ghost = [[
+    '...666...',
+    '..66666..',
+    '.6606066.',
+    '.6606066.',
+    '.6666666.',
+    '.6655566.',
+    '.6666666.',
+    '.66.6.66.',
+    '.6...6.6.',
+  ]];
+  R.s_wolf = [[
+    '.c.......',
+    '.cc......',
+    'cc6c.....',
+    'c0cccccc.',
+    'cccccccBc',
+    '..cccccB.',
+    '..cB.cB..',
+    '..c..c...',
+    '.........',
+  ]];
+  R.s_quake = [[
+    '.........',
+    '....O....',
+    '...OMO...',
+    '.O.OMO.O.',
+    'OMO...OMO',
+    '.........',
+    'NNN0NNNNN',
+    'N0NN0N0NN',
+    'NNNNNNNNN',
+  ]];
+  R.s_fan = [[
+    '5...5...5',
+    '.5..5..5.',
+    '..5.5.5..',
+    '...565...',
+    '....6....',
+    '....4....',
+    '...343...',
+    '....3....',
+    '....3....',
+  ]];
+  R.t_fang = [[
+    '.........',
+    'rRRRRRRRr',
+    'RR6RRR6RR',
+    '.R66R66R.',
+    '..6..6...',
+    '..6..6...',
+    '..R..R...',
+    '.........',
+    '.........',
+  ]];
+  R.t_thorn = [[
+    '....4....',
+    '.4.454.4.',
+    '..45554..',
+    '445565544',
+    '..45554..',
+    '.4.454.4.',
+    '....4....',
+    '.........',
+    '.........',
+  ]];
+  R.t_glass = [[
+    '..55555..',
+    '..5ccc5..',
+    '...5c5...',
+    '....5....',
+    '...5c5...',
+    '..5cRc5..',
+    '..5RRR5..',
+    '..55555..',
+    '.........',
+  ]];
+  R.t_rage = [[
+    'R.......R',
+    '.R.....R.',
+    '..xx.xx..',
+    '.xRRxRRx.',
+    '.xRRRRRx.',
+    '..xRRRx..',
+    '...xRx...',
+    '....x....',
+    '.........',
+  ]];
+  R.t_boom = [[
+    'y...Y...y',
+    '.y.YfY.y.',
+    '..YfffY..',
+    '.Yff6ffY.',
+    'Yff666ffY',
+    '.Yff6ffY.',
+    '..YfffY..',
+    '.y.YfY.y.',
+    'y...Y...y',
+  ]];
+  R.t_double = [[
+    '.5....5..',
+    '.55...55.',
+    '.565..565',
+    '..565..56',
+    '...565..5',
+    '...N5N...',
+    '..N..N...',
+    '.N..N....',
+    'N..N.....',
+  ]];
+  R.t_blood = [[
+    '....R....',
+    '...RR....',
+    '..RRwR...',
+    '.RRRRwR..',
+    '.RRRRRR..',
+    '.rRRRRr..',
+    '..rrrr...',
+    '......R..',
+    '.....RRR.',
+  ]];
+  R.t_boots = [[
+    '...NN....',
+    '...Nm.c..',
+    '...Nm..c.',
+    '...Nm.c..',
+    '...NmN...',
+    '..NmmmN.c',
+    '.NmmmmmN.',
+    '.0000000.',
+    '.........',
+  ]];
+  R.t_angel = [[
+    '...YYY...',
+    '.........',
+    '66.666.66',
+    '6665e5666',
+    '.665e566.',
+    '..65e56..',
+    '...555...',
+    '...5.5...',
+    '.........',
+  ]];
+  R.t_mind = [[
+    '..VVVVV..',
+    '.VcVVVcV.',
+    'VVVcVcVVV',
+    'VcVVcVVcV',
+    'VVcV6VcVV',
+    '.VVcVcVV.',
+    '..VVVVV..',
+    '...V.V...',
+    '.........',
+  ]];
+  R.t_echo = [[
+    '.........',
+    '..c...c..',
+    '.c.c.c.c.',
+    'c.cB6Bc.c',
+    'c.cB6Bc.c',
+    '.c.c.c.c.',
+    '..c...c..',
+    '.........',
+    '.........',
+  ]];
+  R.t_powder = [[
+    '......Y..',
+    '.....f.f.',
+    '....N....',
+    '..0000...',
+    '.012200..',
+    '.022200..',
+    '.000000..',
+    '..0000...',
+    '.........',
+  ]];
+  // Geisterwolf (Begleiter des Helden)
+  R.wolf = [[
+    '..........C.C.',
+    '.........CCCC.',
+    '.........C0CHH',
+    'CC.CCCCCCCCCCD',
+    '.CCCCCCCCCCCC.',
+    '..CCCCCCCCC...',
+    '..CD.CD.CD.CD.',
+    '..C..C..C..C..',
+  ], [
+    '..........C.C.',
+    '.........CCCC.',
+    '.........C0CHH',
+    '.CCCCCCCCCCCCD',
+    'C.CCCCCCCCCCC.',
+    '..CCCCCCCCC...',
+    '...CDCD..CDCD.',
+    '...C.C....C.C.',
+  ]];
+
   // ---------- Neue Gegner der Welten ----------
   R.frog = [[
     '...66....66...',
@@ -2442,6 +2825,7 @@ A.Art = (function () {
     schattenfaenger: { spr: 'ghost', C: '#68386c', D: '#262b44', H: '#b55088', '0': '#fee761' },
     spiegelgeist: { spr: 'ghost', C: '#c0cbdc', D: '#8b9bb4', H: '#ffffff', '0': '#0099db' },
     tunnelwurm: { spr: 'worm' }, kobolddieb: { spr: 'kobold' },
+    geisterwolf: { spr: 'wolf', C: '#7fe8ff', D: '#124e89', H: '#ffffff' },
     frosch: { spr: 'frog', C: '#63c74d', D: '#265c42', H: '#c8f5a0' },
     ranke: { spr: 'vine', C: '#3e8948', D: '#265c42', H: '#63c74d' },
     dornenmutter: { spr: 'vine', C: '#265c42', D: '#193c3e', H: '#3e8948', R: '#b55088' },
@@ -2549,22 +2933,35 @@ A.Sound = (function () {
     o.connect(g); g.connect(out || master); o.start(t); o.stop(t + dur + 0.02);
   }
   // ---------- Musik: leise, düstere Schleife aus Code ----------
-  // Grundton je Farbwelt, Bass-Folge i / VI / iv / V in Moll, darüber sparsame Töne aus der Moll-Pentatonik.
-  const MUS_ROOT = { stone: 110, grotto: 130.8, rust: 123.5, throne: 98 };
-  const MUS_PROG = [0, 8, 5, 7], PENTA = [0, 3, 5, 7, 10, 12, 15];
+  // Grundton, Tempo, Tonleiter und Klangfarbe je Welt; Bass-Folge i / VI / iv / V, darüber sparsame Töne aus der Tonleiter.
+  // jungle: Trommeln, desert: orientalische Tonleiter mit Schellen, water: langsam und weich mit Blubbern,
+  // volcano: schnell mit schwerer Pauke, abyss: langsam, schief und hallig
+  const MUS = {
+    stone:   { root: 110,   bpm: 84,  scale: [0, 3, 5, 7, 10, 12, 15], lead: 'triangle', kick: 0.11 },
+    jungle:  { root: 130.8, bpm: 100, scale: [0, 3, 5, 7, 10, 12, 15], lead: 'triangle', kick: 0.09, drums: true },
+    desert:  { root: 123.5, bpm: 90,  scale: [0, 1, 4, 5, 7, 8, 11, 12], lead: 'sawtooth', kick: 0.1, bells: true },
+    water:   { root: 98,    bpm: 70,  scale: [0, 2, 3, 7, 9, 12, 14], lead: 'sine', kick: 0.07, bubbles: true },
+    volcano: { root: 87.3,  bpm: 112, scale: [0, 3, 5, 6, 7, 10, 12], lead: 'square', kick: 0.17 },
+    abyss:   { root: 92.5,  bpm: 66,  scale: [0, 1, 3, 6, 7, 10, 13], lead: 'sine', kick: 0.13, hollow: true },
+  };
+  const MUS_PROG = [0, 8, 5, 7];
   let mus = null;
   function musicTick() {
     const a = ctx(); if (!a || !mus) return;
     if (!on()) { mus.next = a.currentTime; return; }
-    const bpm = mus.theme === 'throne' ? 96 : 84, beat = 60 / bpm, st = beat / 2;
+    const M = MUS[mus.theme] || MUS.stone, beat = 60 / M.bpm, st = beat / 2;
     while (mus.next < a.currentTime + 0.3) {
       const i = mus.step, bar = Math.floor(i / 8) % 4, pos = i % 8, d = Math.max(0, mus.next - a.currentTime);
       const root = mus.base * Math.pow(2, MUS_PROG[bar] / 12);
       if (pos === 0) { tone(root / 2, root / 2, beat * 3.6, 'triangle', 0.1, d, musGain, 0.05); tone(root / 4, root / 4, beat * 3.8, 'sine', 0.08, d, musGain, 0.1); }
-      if (pos === 0 || pos === 4) { tone(70, 35, 0.18, 'sine', mus.theme === 'throne' ? 0.16 : 0.11, d, musGain); }
+      if (pos === 0 || pos === 4) { tone(70, 35, 0.18, 'sine', M.kick, d, musGain); }
       if (pos === 6 && mus.rng() < 0.6) { noise(0.03, 0.015, 'highpass', 6000, 8000, d); }
+      if (M.drums && (pos === 3 || pos === 5 || (pos === 7 && mus.rng() < 0.5))) { const f = pos === 5 ? 260 : 190; tone(f, f * 0.6, 0.09, 'sine', 0.06, d, musGain); }
+      if (M.bells && pos % 2 === 1 && mus.rng() < 0.4) noise(0.05, 0.02, 'bandpass', 7000, 9000, d, 6);
+      if (M.bubbles && mus.rng() < 0.12) { const f = 500 + mus.rng() * 500; tone(f, f * 2.2, 0.06, 'sine', 0.025, d, musGain); }
+      if (M.hollow && i % 16 === 8) tone(root * 1.414, root * 1.4, beat * 5, 'sine', 0.02, d, musGain, 1.5);
       if (i % 32 === 16) tone(root * 2, root * 2, beat * 7, 'sine', 0.025, d, musGain, 1.2);
-      if (mus.rng() < (pos % 2 === 0 ? 0.42 : 0.18)) { const n = PENTA[Math.floor(mus.rng() * PENTA.length)]; const f = root * 2 * Math.pow(2, n / 12); tone(f, f, st * (mus.rng() < 0.3 ? 3 : 1.6), 'triangle', 0.04, d, musGain, 0.02); if (mus.rng() < 0.3) tone(f * 1.002, f, st * 2.5, 'sine', 0.02, d + 0.01, musGain, 0.3); }
+      if (mus.rng() < (pos % 2 === 0 ? 0.42 : 0.18)) { const n = M.scale[Math.floor(mus.rng() * M.scale.length)]; const f = root * 2 * Math.pow(2, n / 12); tone(f, f, st * (mus.rng() < 0.3 ? 3 : 1.6), M.lead, M.lead === 'triangle' || M.lead === 'sine' ? 0.04 : 0.015, d, musGain, 0.02); if (mus.rng() < 0.3) tone(f * 1.002, f, st * 2.5, 'sine', 0.02, d + 0.01, musGain, 0.3); }
       mus.next += st; mus.step++;
     }
   }
@@ -2622,7 +3019,7 @@ A.Sound = (function () {
       if (!theme) { mus = null; if (musGain && ac) { musGain.gain.cancelScheduledValues(ac.currentTime); musGain.gain.setTargetAtTime(0.0001, ac.currentTime, 0.4); } return; }
       const a = ctx(); if (!a) { mus = { theme, pending: true }; return; }
       musGain.gain.cancelScheduledValues(a.currentTime); musGain.gain.setTargetAtTime(0.3, a.currentTime, 0.6);
-      mus = { theme, base: MUS_ROOT[theme] || 110, next: a.currentTime + 0.1, step: 0, rng: mulberry(Date.now() & 0xffff), timer: setInterval(musicTick, 120) };
+      mus = { theme, base: (MUS[theme] || MUS.stone).root, next: a.currentTime + 0.1, step: 0, rng: mulberry(Date.now() & 0xffff), timer: setInterval(musicTick, 120) };
       musicTick();
     },
     musicTheme() { return mus ? mus.theme : null; },
@@ -2784,6 +3181,15 @@ A.FX = (function () {
       case 'ignite': S().ignite(); return;
       case 'wallhit': burst(d.x, d.y, 5, { color: [d.color || '#ffffff', '#ffffff'], smin: 30, smax: 100, life: 0.25, add: true, kind: 'spark', drag: 4 }); return;
       case 'stun': return;
+      case 'boom': { // Explosion (Feuerball, Meteor, Kettenreaktion, Schwarzpulver) oder weiches Aufploppen (Wolke, Quelle)
+        const c = d.color || '#feae34', R = d.r || 70;
+        part({ kind: 'ring', x: d.x, y: d.y, life: 0.35, size: R, color: c, add: true });
+        const n = d.soft ? 10 : 20;
+        for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, sp = rnd(R * 1.2, R * 2.4); part({ kind: 'spark', add: true, x: d.x, y: d.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, life: rnd(0.2, 0.35), color: i % 3 ? c : '#ffffff', drag: 4 }); }
+        if (!d.soft) { smoke(d.x, d.y, 4, '#5d275d', 5); flash(d.x, d.y, R, c, 0.3); shake(0.2); if (once('boom', 90)) S().nova(); }
+        return;
+      }
+      case 'zap': flash(d.x, d.y, 60, d.color || '#fee761', 0.25); if (once('zap', 80)) S().cast(); return;
     }
   }
 
@@ -3100,7 +3506,7 @@ A.World = (function () {
     hooks = hooksIn || hooks;
     const f = genFloor(floor, seed, saved);
     if (A.FX) A.FX.reset();
-    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
+    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], zones: [], orbs: [], allies: [], marks: [], bolts: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
     const sr = f.start;
     W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
@@ -3117,6 +3523,17 @@ A.World = (function () {
     h = h || W.hero; const d = G().derived(), r = G().run, cls = A.CLASSES.find(c => c.id === r.cls), race = A.RACES.find(x => x.id === r.race);
     Object.assign(h, d, { melee: cls.row === 'front', magic: cls.id === 'weber' || cls.id === 'rufer', color: cls.color, raceColor: race.color, name: A.t(race.name) + ' ' + A.t(cls.name), skills: r.active.filter(Boolean) });
     h.hp = Math.min(h.hp, h.maxHp); h.speed = 150 + d.spd * 4; h.atkRate = clamp(1.05 - d.spd * 0.03, 0.32, 1.05);
+    h.tal = {}; for (const id of r.talents || []) h.tal[id] = true;
+    if (W && W.orbs) syncPerm(h);
+  }
+  // Dauerhafte Begleiter aus Talenten: kreisende Klingen, treuer Geisterwolf
+  function syncPerm(h) {
+    const blades = W.orbs.filter(o => o.perm);
+    if (h.tal.klingen && !blades.length) for (let i = 0; i < 2; i++) W.orbs.push({ perm: true, kind: 'blade', a: i * Math.PI, R: 48, spin: 4, pow: 0.35, col: '#c0cbdc', hits: new Map() });
+    if (!h.tal.klingen && blades.length) W.orbs = W.orbs.filter(o => !o.perm);
+    const wolf = W.allies.find(a => a.perm);
+    if (h.tal.begleiter && !wolf) W.allies.push(mkAlly(h, 0.5, 0, true));
+    if (!h.tal.begleiter && wolf) W.allies = W.allies.filter(a => !a.perm);
   }
 
   // ---------- Kacheln und Kollision ----------
@@ -3261,8 +3678,11 @@ A.World = (function () {
   function hit(from, to, raw, opts) {
     opts = opts || {};
     if (!to.alive || to.spawn > 0) return 0;
+    if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
+    if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
+    if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def')) * 4);
     let crit = false;
     if (Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75; crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
@@ -3313,6 +3733,13 @@ A.World = (function () {
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
     fx('death', { e });
+    const h = W.hero;
+    if (h && h.alive && h.tal) {
+      if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
+      if (h.tal.rausch) h.rushUntil = W.t + 3;
+      if (h.tal.seele) heal(h, Math.max(1, Math.round(h.maxHp * 0.03)));
+      if (h.tal.strom) for (const k in h.cds) h.cds[k] -= 1;
+    }
     if (rw.levels && hooks.onLevel) hooks.onLevel(rw.levels);
   }
 
@@ -3350,30 +3777,153 @@ A.World = (function () {
   function heroAttack() {
     const h = W.hero; if (!h.alive || h.atkCd > 0 || h.stun > 0) return false;
     if (!h.moving) faceTarget(h);
-    h.atkCd = h.atkRate; h.swing = 0.2;
-    if (h.melee) arc(h, 58, 1, { kind: 'phys' });
-    else { const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; shoot(h, tx, ty, h.magic ? statOf(h, 'mag') : statOf(h, 'atk'), { kind: h.magic ? 'magic' : 'phys' }); }
+    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1); h.swing = 0.2;
+    h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = big ? 2 : 1;   // Doppelte Wucht: jeder dritte Schlag
+    if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
+    if (h.melee) arc(h, h.tal.spalt ? 82 : 58, mul, { kind: 'phys', basic: true });
+    else {
+      const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100;
+      const dmg = (h.magic ? statOf(h, 'mag') : statOf(h, 'atk')) * mul, kind = h.magic ? 'magic' : 'phys';
+      shoot(h, tx, ty, dmg, { kind, basic: true, r: big ? 8 : 5 });
+      if (h.tal.spalt) { const a0 = Math.atan2(ty - h.y, tx - h.x); for (const da of [-0.28, 0.28]) shoot(h, h.x + Math.cos(a0 + da) * 100, h.y + Math.sin(a0 + da) * 100, dmg * 0.5, { kind, basic: true }); }
+    }
     return true;
   }
+  // Stärke für einen Zauber: Zauber für alle nutzen den höheren Wert aus Angriff und Zauberkraft
+  function heroPower(h) { return Math.max(statOf(h, 'atk'), statOf(h, 'mag')); }
+  function skPower(h, sk) { return sk.any ? heroPower(h) : sk.kind === 'magic' ? statOf(h, 'mag') : statOf(h, 'atk'); }
+  function frontPoint(h, d) { return { x: h.x + h.fx * d, y: h.y + h.fy * d }; }
   function useSkill(idx) {
     const h = W.hero, id = h.skills[idx]; if (!id || !h.alive || h.stun > 0) return false;
     if ((h.cds[id] || 0) > W.t) return false;
-    const sk = A.SKILLS[id]; h.cds[id] = W.t + sk.cd * 2; h.swing = 0.25;
+    const sk = A.SKILLS[id], B = A.Boons, pw = B.pow(id), P = skPower(h, sk);
+    h.cds[id] = W.t + B.cd(id); h.swing = 0.25;
     if (!h.moving) faceTarget(h);
-    float(h.x, h.y - 44, A.t(sk.name), '#fee761', 12);
-    const magic = sk.kind === 'magic';
-    if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * sk.pow)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
-    else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * sk.pow), true);
-    else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: sk.pow, until: W.t + sk.dur * 2 } : { mul: sk.pow, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
-    else if (sk.kind === 'multi' || sk.multi) { if (h.melee && !magic) h.spinT = W.t; const nc = magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff'; fx('nova', { e: h, r: 170, color: nc, magic }); let n = 0; for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < 170 + m.r) { hit(h, m, (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * sk.pow, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc }); n++; } } }
-    else { // Einzelziel (attack / magic)
-      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute };
-      let pow = sk.pow; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
+    float(h.x, h.y - 44, B.skName(id), '#fee761', 12);
+    if (h.tal.echo && Math.random() < 0.25) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); }
+    const magic = sk.kind === 'magic' || !!sk.any;
+    if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * pw)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
+    else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * pw), true);
+    else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: pw, until: W.t + sk.dur * 2 } : { mul: pw, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
+    else if (sk.kind === 'dash') dash(h, P * pw, sk.col);
+    else if (sk.kind === 'zone') {
+      const m = sk.zone === 'poison' ? nearestMon(h.x, h.y, 360) : null, p = sk.zone === 'heal' ? h : m || frontPoint(h, 90);
+      W.zones.push({ kind: sk.zone, x: p.x, y: p.y + 6, r: sk.radius, t0: W.t, until: W.t + sk.dur, tick: W.t, dmg: P * pw, heal: pw, col: sk.col });
+      fx('boom', { x: p.x, y: p.y, r: sk.radius, color: sk.col, soft: true });
+    }
+    else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
+    else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
+    else if (sk.kind === 'multi' || sk.multi) {
+      const R = sk.radius || 170;
+      if (h.melee && !magic) h.spinT = W.t;
+      const nc = sk.col || (magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff');
+      fx('nova', { e: h, r: R, color: nc, magic });
+      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun }); }
+    }
+    else if (sk.chain) chain(h, P * pw, sk.chain, sk.col);
+    else { // Einzelziel (attack / magic), Feuerball explodiert beim Aufprall
+      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast };
+      let pow = pw; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
       const hits = sk.hits || 1;
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
-      else { const m = nearestMon(h.x, h.y, 360); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; for (let i = 0; i < hits; i++) shoot(h, tx + (i ? (Math.random() - 0.5) * 30 : 0), ty + (i ? (Math.random() - 0.5) * 30 : 0), (magic ? statOf(h, 'mag') : statOf(h, 'atk')) * pow, Object.assign({ r: 7, speed: 460, color: magic ? '#c77dff' : '#ffe08a' }, opts)); }
+      else { const m = nearestMon(h.x, h.y, 360); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; for (let i = 0; i < hits; i++) shoot(h, tx + (i ? (Math.random() - 0.5) * 30 : 0), ty + (i ? (Math.random() - 0.5) * 30 : 0), P * pow, Object.assign({ r: sk.blast ? 9 : 7, speed: sk.blast ? 380 : 460, color: sk.col || (magic ? '#c77dff' : '#ffe08a') }, opts)); }
     }
     return true;
+  }
+  // ---------- Neue Zauber und Talente in der Welt ----------
+  // Explosion: trifft alle Gegner im Umkreis
+  function boom(x, y, r, dmg, opts, col) {
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
+    fx('boom', { x, y, r, color: col });
+  }
+  // Kettenblitz: springt vom Helden zum nächsten Gegner und weiter
+  function chain(h, dmg, n, col) {
+    let from = h; const done = new Set();
+    for (let i = 0; i <= n; i++) {
+      let best = null, bd = i ? 190 : 380;
+      for (const m of W.mons) { if (!m.alive || m.spawn > 0 || done.has(m)) continue; const d = dist(from, m); if (d < bd) { bd = d; best = m; } }
+      if (!best) break; done.add(best);
+      W.bolts.push({ x0: from.x, y0: from.y - 12, x1: best.x, y1: best.y - 10, life: 0.28, max: 0.28, col, seed: Math.random() * 99 });
+      hit(h, best, dmg * (i ? 0.85 : 1), { kind: 'magic', color: col }); from = best;
+    }
+    if (!done.size) W.bolts.push({ x0: h.x, y0: h.y - 12, x1: h.x + h.fx * 90, y1: h.y + h.fy * 90 - 12, life: 0.2, max: 0.2, col, seed: 1 });
+    fx('zap', { x: h.x, y: h.y, color: col });
+  }
+  // Blitzschritt: nach vorn springen, alles auf dem Weg treffen
+  function dash(h, dmg, col) {
+    const sx = h.x, sy = h.y, got = new Set();
+    for (let k = 0; k < 22; k++) {
+      const bx = h.x, by = h.y; moveEnt(h, h.fx * 8, h.fy * 8); if (Math.abs(h.x - bx) + Math.abs(h.y - by) < 1) break;
+      for (const m of W.mons) if (m.alive && !(m.spawn > 0) && !got.has(m) && dist(h, m) < h.r + m.r + 14) { got.add(m); hit(h, m, dmg, { kind: 'magic', color: col }); }
+    }
+    h.inv = Math.max(h.inv, 0.4);
+    W.fx.push({ kind: 'dash', x: sx, y: sy, x1: h.x, y1: h.y, life: 0.32, color: col });
+    fx('zap', { x: h.x, y: h.y, color: col });
+  }
+  // Geisterwolf (Zauber oder Talent): jagt Gegner, folgt sonst dem Helden
+  function mkAlly(h, pow, until, perm) {
+    const a = { side: 'hero', ally: true, hp: 1e9, maxHp: 1e9, x: h.x - h.fx * 30, y: h.y - h.fy * 30 + 10, r: 11, fx: h.fx, fy: 0, pow, until, perm, cd: 0.4, swing: 0, alive: true, crit: 0, spawn: 0.35 };
+    fx('spawn', { m: a });
+    return a;
+  }
+  function allyStep(a, dt) {
+    const h = W.hero;
+    if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); return; }
+    if (a.spawn > 0) { a.spawn -= dt; return; }
+    a.cd -= dt; if (a.swing > 0) a.swing -= dt; a.crit = h.crit;
+    let tgt = null, bd = 400;
+    for (const m of W.mons) { if (!m.alive || m.spawn > 0) continue; const d = dist(a, m); if (d < bd && clearLine(a, m)) { bd = d; tgt = m; } }
+    const goal = tgt || h, d = dist(a, goal) || 1;
+    a.moving = false;
+    if (tgt) {
+      a.fx = (tgt.x - a.x) / d; a.fy = (tgt.y - a.y) / d;
+      if (d > a.r + tgt.r + 6) { moveEnt(a, a.fx * 250 * dt, a.fy * 250 * dt); a.moving = true; }
+      else if (a.cd <= 0) { a.cd = 0.65; a.swing = 0.2; hit(a, tgt, heroPower(h) * a.pow, { kind: 'phys', color: '#2ce8f5' }); W.fx.push({ kind: 'claw', x: a.x, y: a.y, fx: a.fx, fy: a.fy, r: a.r + tgt.r + 10, life: 0.2, ally: true }); }
+    } else if (d > 64) {
+      if (d > 360) { a.x = h.x - h.fx * 30; a.y = h.y + 12; fx('spawn', { m: a }); return; }
+      let mx = (h.x - a.x) / d, my = (h.y - a.y) / d;
+      if (!clearLine(a, h)) { const fd = flowDir(a); if (fd) { mx = fd[0]; my = fd[1]; } }
+      a.fx = mx; a.fy = my; moveEnt(a, mx * 230 * dt, my * 230 * dt); a.moving = true;
+    }
+  }
+  // kreisende Geister und Klingen
+  function orbStep(o, dt) {
+    const h = W.hero;
+    o.a += o.spin * dt; o.x = h.x + Math.cos(o.a) * o.R; o.y = h.y + Math.sin(o.a) * o.R * 0.7;
+    const dmg = o.perm ? heroPower(h) * o.pow : o.dmg;
+    for (const m of W.mons) {
+      if (!m.alive || m.spawn > 0 || Math.hypot(m.x - o.x, m.y - o.y) > m.r + 10) continue;
+      if ((o.hits.get(m) || 0) > W.t) continue; o.hits.set(m, W.t + 0.5);
+      hit(h, m, dmg, { kind: o.kind === 'blade' ? 'phys' : 'magic', color: o.col }); fx('wallhit', { x: o.x, y: o.y, color: o.col });
+    }
+  }
+  // Wolken und Quellen am Boden (Giftwolke, Giftspur, Heilquelle)
+  function zoneStep(z) {
+    if (W.t < z.tick) return; z.tick = W.t + 0.5;
+    const h = W.hero;
+    if (z.kind === 'heal') { if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) heal(h, Math.max(1, Math.round(h.maxHp * z.heal))); return; }
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r * 0.5) hit(h, m, z.dmg, { kind: 'poison', noDodge: true });
+  }
+  // Verzögerte Treffer: Meteor (mit roter Markierung) und Explosionen (Kettenreaktion, Schwarzpulver)
+  function markStep(k) {
+    if (W.t < k.at) return;
+    k.done = true;
+    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, { burn: k.burn }, k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
+    else boom(k.x, k.y, k.r, k.dmg, {}, k.col);
+  }
+  function boonStep(dt) {
+    const h = W.hero;
+    for (const z of W.zones) zoneStep(z); W.zones = W.zones.filter(z => z.until > W.t);
+    for (const o of W.orbs) orbStep(o, dt); W.orbs = W.orbs.filter(o => o.perm || o.until > W.t);
+    for (const a of W.allies) allyStep(a, dt); W.allies = W.allies.filter(a => !a.gone);
+    for (const k of W.marks) markStep(k); W.marks = W.marks.filter(k => !k.done);
+    for (const b of W.bolts) b.life -= dt; W.bolts = W.bolts.filter(b => b.life > 0);
+    // Frostaura: Gegner in der Nähe werden langsam
+    if (h.tal.frost) for (const m of W.mons) if (m.alive && dist(h, m) < 110 + m.r) { m.slowUntil = Math.max(m.slowUntil || 0, W.t + 0.25); m.slowPow = Math.min(m.slowPow || 1, 0.6); }
+    // Giftspur beim Laufen
+    if (h.tal.giftspur && h.moving && (h.trailT = (h.trailT || 0) - dt) <= 0) { h.trailT = 0.3; W.zones.push({ kind: 'poison', trail: true, x: h.x, y: h.y + 10, r: 26, t0: W.t, until: W.t + 2.5, tick: W.t + 0.3, dmg: heroPower(h) * 0.15, col: '#63c74d' }); }
   }
   function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * 0.4) - (h.hp - G().run.hp > 0 ? 0 : 0)); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); return true; }
 
@@ -3393,7 +3943,8 @@ A.World = (function () {
     // Gefahr-Boden unter dem Helden
     const hz = hazardAt(h); h.onHazard = hz;
     if (hz && A.HAZARDS[hz].burn && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
-    if (W.active) updateFlow();
+    if (W.active || W.allies.length) updateFlow();
+    boonStep(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -3403,10 +3954,11 @@ A.World = (function () {
     // Geschosse
     for (const s of W.shots) {
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (shotSolid(s.x, s.y)) { s.life = 0; fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
-      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
+      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
+    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); }   // Feuerball verpufft nicht
     W.shots = W.shots.filter(s => s.life > 0);
     // Beute aufsammeln
     for (const p of W.picks) {
@@ -3416,7 +3968,7 @@ A.World = (function () {
         p.vz -= 700 * dt; p.z += p.vz * dt; if (p.z <= 0) { p.z = 0; p.vz = Math.abs(p.vz) > 60 ? -p.vz * 0.42 : 0; p.vx *= 0.6; p.vy *= 0.6; }
       }
       const d = dist(p, h);
-      if (p.kind === 'gold' && d < 110 && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
+      if (p.kind === 'gold' && d < (h.tal.gold ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
         if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); }
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
@@ -3429,7 +3981,8 @@ A.World = (function () {
     // Raum-Logik
     const r = roomOf(h.x, h.y);
     if (r && r !== W.room) { W.room = r; }
-    if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = ''; } G().save(); }
+    if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
+      if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); } } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -3882,11 +4435,13 @@ window.A = window.A || {};
       b.globalAlpha = 1;
       // Alles nach Tiefe sortiert
       for (const m of W.mons) this.drawWarn(m, cx, cy);
+      this.drawBoonsGround(W, cx, cy);
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
       for (const p of W.picks) list.push({ y: p.y / PX, f: () => this.drawPick(p, cx, cy) });
       for (const m of W.mons) list.push({ y: m.y / PX + 6, f: () => this.drawMon(m, W, cx, cy) });
+      for (const a of W.allies || []) list.push({ y: a.y / PX + 6, f: () => this.drawAlly(a, cx, cy) });
       list.push({ y: h.y / PX + 7, f: () => this.drawHero(h, W, cx, cy) });
       list.sort((a, b2) => a.y - b2.y);
       for (const it of list) it.f();
@@ -3916,11 +4471,12 @@ window.A = window.A || {};
           const a = Math.atan2(f.fy, f.fx), p = 1 - f.life / 0.22, R = f.r / PX * 0.75, n = f.big ? 4 : 3;
           g.save(); g.translate(x + Math.cos(a) * R, y - 6 + Math.sin(a) * R * 0.6); g.rotate(a + Math.PI / 2);
           const len = (f.big ? 16 : 10) * Math.min(1, p * 3);
-          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
+          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : f.ally ? '#2ce8f5' : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
           g.restore();
         } else if (f.kind === 'ring') { g.globalAlpha = clamp(f.life / 0.4, 0, 1); g.strokeStyle = f.color; g.lineWidth = 2; g.beginPath(); g.arc(x, y, f.r * (1.2 - f.life) / PX, 0, TAU); g.stroke(); }
       }
       g.globalAlpha = 1;
+      this.drawBoonsTop(W, cx, cy);
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -4364,6 +4920,12 @@ window.A = window.A || {};
       }
       for (const p of W.picks) if (p.kind === 'item') L(p.x, p.y - 6, 28, A.RARITY[p.it.rarity].color, 0.7);
       for (const s of W.shots) L(s.x, s.y - 10, s.side === 'hero' ? 26 : 22, s.side === 'hero' ? (s.opts.kind === 'magic' ? s.color : '#ffe2b8') : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), s.side === 'hero' && s.opts.kind !== 'magic' ? 0.25 : 0.8);
+      for (const z of W.zones || []) if (!z.trail) L(z.x, z.y, z.r / PX * 1.3, z.col, 0.35);
+      for (const o of W.orbs || []) if (o.x != null) L(o.x, o.y - 14, 22, o.col, 0.6);
+      for (const a of W.allies || []) L(a.x, a.y - 10, 34, '#2ce8f5', 0.55);
+      for (const k of W.marks || []) if (k.kind === 'meteor') L(k.x, k.y, k.r / PX * 1.2, '#e43b44', 0.3 + 0.3 * Math.sin(t * 20));
+      for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
+      if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -4378,6 +4940,92 @@ window.A = window.A || {};
       if (run && (run.cls === 'weber' || run.cls === 'rufer') && h.alive) L(h.x + (h.fx < 0 ? -8 : 8), h.y - 34, 22, '#2ce8f5', 0.7 + (h.swing > 0 ? 0.3 : 0));
       if (A.FX) for (const f of A.FX.flashes) L(f.x, f.y, f.r / PX * 1.2, f.color, f.life / f.max);
       l.globalAlpha = 1; l.globalCompositeOperation = 'source-over';
+    }
+
+
+    // ---------- Schrein-Zauber und Talente ----------
+    // am Boden: Giftwolken, Heilquellen, Giftspur, Meteor-Markierung, Frostaura
+    drawBoonsGround(W, cx, cy) {
+      const b = this.b, g = this.g, t = this.t, h = W.hero;
+      for (const z of W.zones || []) {
+        const x = z.x / PX - cx, y = z.y / PX - cy, R = z.r / PX, life = clamp((z.until - W.t) / 0.5, 0, 1) * clamp((W.t - z.t0) / 0.25, 0, 1);
+        if (z.trail) { b.globalAlpha = 0.35 * life; b.fillStyle = '#3e8948'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); b.fill(); continue; }
+        const heal = z.kind === 'heal';
+        b.globalAlpha = 0.22 * life; b.fillStyle = heal ? '#63c74d' : '#265c42'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+        g.globalAlpha = 0.5 * life; g.strokeStyle = z.col; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
+        // Blasen (Gift) oder aufsteigende Pluszeichen (Quelle)
+        g.fillStyle = heal ? '#c8f5a0' : '#63c74d';
+        for (let i = 0; i < 9; i++) {
+          const a = i * 2.39 + z.x, rr = R * (0.2 + (i * 0.37 % 0.8)), q = (t * (heal ? 0.7 : 0.5) + i * 0.13) % 1;
+          const px = Math.round(x + Math.cos(a) * rr), py = Math.round(y + Math.sin(a) * rr * 0.55 - q * (heal ? 14 : 8));
+          g.globalAlpha = (1 - q) * 0.8 * life;
+          if (heal) { g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); } else g.fillRect(px, py, q > 0.6 ? 2 : 1, q > 0.6 ? 2 : 1);
+        }
+      }
+      for (const k of W.marks || []) {
+        if (k.kind !== 'meteor') continue;
+        const x = k.x / PX - cx, y = k.y / PX - cy, R = k.r / PX, p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1);
+        b.globalAlpha = 0.18; b.fillStyle = '#e43b44'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+        b.globalAlpha = 0.35; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R * p, R * 0.55 * p, 0, 0, TAU); b.fill();
+        g.globalAlpha = 0.9; g.strokeStyle = '#ff0044'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
+      }
+      if (h.tal && h.tal.frost && h.alive) {
+        const x = h.x / PX - cx, y = h.y / PX - cy + 7, R = 110 / PX;
+        g.globalAlpha = 0.25 + Math.sin(t * 2) * 0.08; g.strokeStyle = '#9be8ff'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); g.stroke();
+        g.fillStyle = '#ffffff'; for (let i = 0; i < 6; i++) { const a = t * 0.8 + i / 6 * TAU; g.globalAlpha = 0.5; g.fillRect(Math.round(x + Math.cos(a) * R), Math.round(y + Math.sin(a) * R * 0.5), 1, 1); }
+      }
+      b.globalAlpha = 1; g.globalAlpha = 1;
+    }
+    // Geisterwolf: halb durchsichtig, leuchtender Umriss, kleine Funken
+    drawAlly(a, cx, cy) {
+      const x = a.x / PX - cx, y = a.y / PX - cy + 7;
+      const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
+      const spr = A.Art.monSprite('geisterwolf', frame), flip = a.fx < 0;
+      let alpha = 0.85; if (a.spawn > 0) alpha *= clamp(1 - a.spawn / 0.35, 0, 1); if (a.until && a.until - (A.World.W ? A.World.W.t : 0) < 1.5) alpha *= 0.5 + Math.sin(this.t * 20) * 0.3;
+      let ox = 0; if (a.swing > 0) ox = a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 4;
+      this.shadow(x, y, 6);
+      this.outlineGlow(spr, x + ox, y, flip, '#2ce8f5');
+      this.blit(spr, x + ox, y, flip, { alpha });
+      if (A.FX && !A.FX.low && Math.random() < 0.15) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 20, y: a.y, vx: 0, vy: -20, life: 0.5, color: '#7fe8ff', drag: 1 });
+    }
+    // über den Figuren: kreisende Geister/Klingen, Blitze, Blitzschritt-Spur
+    drawBoonsTop(W, cx, cy) {
+      const b = this.b, g = this.g, t = this.t;
+      for (const o of W.orbs || []) {
+        if (o.x == null) continue;
+        const x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy) - 7;
+        if (o.kind === 'blade') { // Klinge dreht sich
+          const a = t * 14 + o.a, dx = Math.round(Math.cos(a) * 4), dy = Math.round(Math.sin(a) * 2);
+          g.globalAlpha = 0.9; g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.beginPath(); g.moveTo(x - dx + 0.5, y - dy + 0.5); g.lineTo(x + dx + 0.5, y + dy + 0.5); g.stroke();
+          b.fillStyle = '#c0cbdc'; b.fillRect(x - 1, y - 1, 2, 2);
+        } else { // Geist mit Schweif
+          const fade = clamp((o.until - W.t) / 0.6, 0, 1);
+          for (let i = 3; i >= 0; i--) { const a = o.a - i * 0.18, px = Math.round((W.hero.x + Math.cos(a) * o.R) / PX - cx), py = Math.round((W.hero.y + Math.sin(a) * o.R * 0.7) / PX - cy) - 7; g.globalAlpha = (1 - i / 4) * 0.7 * fade; g.fillStyle = i ? '#8b9bb4' : '#ffffff'; g.fillRect(px - 1, py - 1, i ? 2 : 3, i ? 2 : 3); }
+          b.globalAlpha = fade; b.fillStyle = '#181425'; b.fillRect(x, y, 1, 1); b.globalAlpha = 1;
+        }
+      }
+      for (const bo of W.bolts || []) { // gezackter Blitz
+        const x0 = bo.x0 / PX - cx, y0 = bo.y0 / PX - cy, x1 = bo.x1 / PX - cx, y1 = bo.y1 / PX - cy, n = 6, a = bo.life / bo.max;
+        for (const [w, col] of [[3, bo.col], [1, '#ffffff']]) {
+          g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0);
+          for (let i = 1; i < n; i++) { const k = i / n, j = Math.sin(bo.seed + i * 7.3 + t * 40) * 4; g.lineTo(x0 + (x1 - x0) * k + j, y0 + (y1 - y0) * k - j * 0.6); }
+          g.lineTo(x1, y1); g.stroke();
+        }
+      }
+      for (const f of W.fx) if (f.kind === 'dash') { // Nachbild des Blitzschritts
+        const a = f.life / 0.32, x0 = f.x / PX - cx, y0 = f.y / PX - cy - 8, x1 = f.x1 / PX - cx, y1 = f.y1 / PX - cy - 8;
+        g.globalAlpha = a * 0.8; g.strokeStyle = f.color; g.lineWidth = 6 * a; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+        g.globalAlpha = a; g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      }
+      // Meteor im Anflug
+      for (const k of W.marks || []) {
+        if (k.kind !== 'meteor') continue; const left = k.at - W.t; if (left > 0.45) continue;
+        const q = 1 - left / 0.45, x = k.x / PX - cx + (1 - q) * 40, y = k.y / PX - cy - (1 - q) * 110;
+        g.globalAlpha = 1; g.fillStyle = '#fee761'; g.beginPath(); g.arc(x, y, 5, 0, TAU); g.fill();
+        g.fillStyle = '#f77622'; for (let i = 1; i < 6; i++) { g.globalAlpha = 1 - i / 6; g.beginPath(); g.arc(x + i * 5, y - i * 13, 5 - i * 0.7, 0, TAU); g.fill(); }
+        b.fillStyle = '#5d275d'; b.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6); b.fillStyle = '#b13e53'; b.fillRect(Math.round(x) - 2, Math.round(y) - 2, 3, 3);
+      }
+      g.globalAlpha = 1; b.globalAlpha = 1;
     }
 
     // ---------- Oberfläche über dem Bild (volle Auflösung) ----------
@@ -9029,7 +9677,9 @@ window.A = window.A || {};
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
   const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
-  const skIcon = (id, size) => ic(SKILL_ICON[id] || 's_strike', size || 26);
+  const skIcon = (id, size) => ic(SKILL_ICON[id] || A.Boons.icon(id) || 's_strike', size || 26);
+  const cdTxt = (id) => (Math.round(A.Boons.cd(id) * 10) / 10) + ' s';
+  const talIcon = (id, size) => ic(A.TALENTS[id].icon || 'u_star', size || 26);
   const itIcon = (it, size) => ic(Art.itemIcon(it.base), size || 36);
   const rarCol = (r) => (A.RARITY[r] || A.RARITY.common).color;
   const portrait = (race, cls) => `<img class="px" src="${Art.heroPortrait(race, cls)}" width="36" height="26" alt="">`;
@@ -9205,7 +9855,7 @@ window.A = window.A || {};
     const hooks = {
       onItem: (it) => foundItem(it),
       onProp: (p) => useProp(p),
-      onCleared: (room) => { if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(() => { if (r.pendingSkillPick > 0) skillPick(); }, 400); },
+      onCleared: (room) => { if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); setTimeout(() => runOver(), 1100); },
       onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
     };
@@ -9214,8 +9864,9 @@ window.A = window.A || {};
     buildControls(); pads(); applyLook(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor), '#fee761', 2.6);
-    if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten', 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
+    if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
     if (!last) { last = performance.now(); requestAnimationFrame(loop); }
+    setTimeout(pendingPicks, 900);
   }
   function loop(now) {
     requestAnimationFrame(loop);
@@ -9250,7 +9901,7 @@ window.A = window.A || {};
     const r = G.run;
     const sk = r.active.filter(Boolean);
     $('#controls').innerHTML = `<div id="btnGrid">
-      ${sk.map((id, i) => `<button class="cbtn sk" data-sk="${i}" style="grid-column:${4 - sk.length + i + 1 > 4 ? 4 : 4 - sk.length + i + 1}" aria-label="${esc(t(A.SKILLS[id].name))}"><span class="ring"></span>${skIcon(id, 36)}<span class="key">${i + 1}</span></button>`).join('')}
+      ${sk.map((id, i) => `<button class="cbtn sk" data-sk="${i}" style="grid-column:${4 - sk.length + i + 1 > 4 ? 4 : 4 - sk.length + i + 1}" aria-label="${esc(A.Boons.skName(id))}"><span class="ring"></span>${skIcon(id, 36)}<span class="key">${i + 1}</span></button>`).join('')}
       <button class="cbtn use" id="bUse" style="display:none"></button>
       <button class="cbtn pot" id="bPotion" aria-label="${esc(t(U.potion))}">${ic('potion', 33)}<span class="n"></span><span class="key">Q</span></button>
       <button class="cbtn atk" id="bAtk" aria-label="${L('Schlagen', 'Attack')}">${ic(WEAPON_ICON[r.cls] || 'i_schwert', 54)}<span class="key">${L('Leertaste', 'Space')}</span></button>
@@ -9266,7 +9917,7 @@ window.A = window.A || {};
     const h = Wd.W.hero, r = G.run;
     ctl.sk.forEach((b, i) => {
       const id = h.skills[i]; if (!id) return;
-      const cd = Math.max(0, (h.cds[id] || 0) - Wd.W.t); const tot = A.SKILLS[id].cd * 2; const cold = cd > 0;
+      const cd = Math.max(0, (h.cds[id] || 0) - Wd.W.t); const tot = A.Boons.cd(id); const cold = cd > 0;
       if (ctl.cd[i] && !cold) { b.classList.remove('ready'); void b.offsetWidth; b.classList.add('ready'); }
       if (ctl.cd[i] !== cold) { ctl.cd[i] = cold; b.classList.toggle('cold', cold); }
       const p = (cd / tot * 100).toFixed(1) + '%'; if (b._p !== p) { b._p = p; b.firstChild.style.setProperty('--p', p); }
@@ -9310,7 +9961,7 @@ window.A = window.A || {};
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
     else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
-    else if (p.kind === 'shrine') { Wd.markUsed(p); }
+    else if (p.kind === 'shrine') { r.pendingBoon = (r.pendingBoon || 0) + 1; Wd.markUsed(p); boonPick(); }
   }
   // ---------- Heldenblatt ----------
   function showSheet(tab) {
@@ -9323,25 +9974,80 @@ window.A = window.A || {};
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
     const gear = A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : emptySlot(s); }).join('');
     const bag = r.bag.length ? r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, slotCurrent(it))).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
-    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${sk.cd * 2} s</div></div>`; }).join('');
+    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${esc(A.Boons.skName(id))}</div><div class="ds">${t(sk.desc)}${A.Boons.upgOf(id) ? ` <b class="goldc">+${A.Boons.upgOf(id) * 30} %</b>` : ''}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${cdTxt(id)}</div></div>`; }).join('');
+    const tals = (r.talents || []).map(id => { const T = A.TALENTS[id]; return `<div class="skill on" style="cursor:default"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(T.name))}</div><div class="ds">${esc(t(T.desc))}</div></div></div>`; }).join('');
     const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}` :
       tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/8)</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${t(U.usePotion)}</button>` : ''}` :
-      `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}`;
-    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
+      tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
+      `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}`;
+    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.click(); showSheet(b.dataset.tab); });
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); S.click(); showSheet('stats'); });
     overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { G.equip(r.bag.find(x => x.uid === b.dataset.eq)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
-    $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); if (r.pendingSkillPick > 0) skillPick(); };
+    $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
   }
   function skillPick() {
     const r = G.run; const offer = G.skillOffer();
     if (!offer.length) { r.pendingSkillPick = 0; G.save(); return; }
     S.level();
-    ov(`<h2>${ic('u_scroll', 30)}${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd * 2} s</div></div>`; }).join('')}`);
-    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { G.learnSkill(el.dataset.pick); S.buy(); if (r.pendingSkillPick > 0) skillPick(); else { ovClose(); buildControls(); } });
+    ov(`<h2>${ic('u_scroll', 30)}${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${cdTxt(id)}</div></div>`; }).join('')}`);
+    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { const id = el.dataset.pick; S.click(); chooseSlot(id, (rep) => { G.learnSkill(id, rep); S.buy(); ovClose(); buildControls(); pendingPicks(); }); });
+  }
+  // Offene Wahlen nacheinander zeigen (Stufenaufstieg, dann Segen); wartet, solange ein anderes Fenster offen ist
+  function pendingPicks() {
+    const r = G.run; if (!r || r.over || !dungeonEl.classList.contains('on')) return;
+    if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0)) return;
+    if (overlay.classList.contains('on')) { setTimeout(pendingPicks, 600); return; }
+    if (r.pendingSkillPick > 0) skillPick(); else boonPick();
+  }
+  // Alle Zauber-Knöpfe belegt? Dann fragen, welcher Platz frei wird (der alte bleibt im Zauberbuch)
+  function chooseSlot(id, done) {
+    const r = G.run, d = G.derived();
+    if (r.active.includes(id) || r.active.length < d.skillSlots) { done(null); return; }
+    const sk = A.SKILLS[id];
+    ov(`<div class="center"><div class="bigicon">${skIcon(id, 54)}</div><h2 class="mid">${esc(t(sk.name))}</h2><div class="sub">${L(`Alle ${d.skillSlots} Zauber-Knöpfe sind belegt. Welchen Zauber ersetzen? Der alte bleibt im Zauberbuch (Heldenbild oben links) und lässt sich später wieder tauschen.`, `All ${d.skillSlots} spell buttons are taken. Which spell should it replace? The old one stays in your spell book (hero picture top left).`)}</div></div>
+      ${r.active.map(a => `<div class="skill" data-rep="${a}"><div class="si">${skIcon(a, 36)}</div><div><div class="nm">${esc(A.Boons.skName(a))}</div><div class="ds">${esc(t(A.SKILLS[a].desc))}</div></div><div class="cd">${L('ersetzen', 'replace')}</div></div>`).join('')}
+      <button class="btn" id="bBook">${ic('u_scroll', 22)}${L('Nur ins Zauberbuch legen', 'Just add to spell book')}</button>`);
+    overlay.querySelectorAll('[data-rep]').forEach(el => el.onclick = () => { S.click(); done(el.dataset.rep); });
+    $('#bBook').onclick = () => { S.click(); done(null); };
+  }
+  // ---------- Segen am Schrein: 3 Angebote (neuer Zauber, passiver Effekt, Verstärkung) ----------
+  function boonText(b) {
+    if (b.type === 'spell') { const sk = A.SKILLS[b.id]; return { tg: L('Neuer Zauber', 'New spell'), nm: t(sk.name), ds: t(sk.desc), cd: cdTxt(b.id), icon: skIcon(b.id, 40) }; }
+    if (b.type === 'talent') { const T = A.TALENTS[b.id]; return { tg: L('Passiv', 'Passive'), nm: t(T.name), ds: t(T.desc), cd: '', icon: talIcon(b.id, 34) }; }
+    const u = A.Boons.upgOf(b.id) + 1, nm = t(A.SKILLS[b.id].name) + ' ' + ['', 'II', 'III'][u];
+    return { tg: L('Verstärkung', 'Upgrade'), nm, ds: L(`Dein Zauber wird 30 % stärker und lädt 20 % schneller.`, `Your spell gets 30% stronger and recharges 20% faster.`), cd: '', icon: skIcon(b.id, 40) };
+  }
+  function boonPick() {
+    const r = G.run, d = G.derived(); if (!(r.pendingBoon > 0)) return;
+    const offer = G.boonOffer();
+    if (!offer.length) { G.skipBoon(); return; }
+    S.level();
+    const nT = (r.talents || []).length;
+    ov(`<h2>${ic('u_star', 30)}${L('Wähle einen Segen', 'Choose a blessing')}</h2>
+      <div class="sub center">${L('Der Schrein flüstert. Eins davon darfst du behalten.', 'The shrine whispers. You may keep one of these.')}<br><span class="mini">${L('Zauber', 'Spells')} ${r.active.length}/${d.skillSlots} · ${L('Passiv', 'Passive')} ${nT}/${d.talentSlots}</span></div>
+      ${offer.map((b, i) => { const x = boonText(b); return `<div class="skill boon ${b.type}" data-b="${i}" tabindex="0"><div class="si">${x.icon}</div><div><div class="tg ${b.type}">${x.tg}</div><div class="nm">${esc(x.nm)}</div><div class="ds">${esc(x.ds)}</div></div><div class="cd">${x.cd}</div></div>`; }).join('')}
+      <button class="btn" id="bSkip">${L('Verzichten', 'Skip')} ${coin('+' + G.boonGold())}</button>`);
+    overlay.querySelectorAll('[data-b]').forEach(el => el.onclick = () => {
+      const b = offer[+el.dataset.b]; S.click();
+      const finish = (rep) => { G.takeBoon(b, rep); S.buy(); ovClose(); buildControls(); const x = boonText(b); A.FX.banner(x.nm, x.tg, b.type === 'talent' ? '#63c74d' : b.type === 'upg' ? '#feae34' : '#7fd8ff', 1.8); if (Wd.W) A.FX.ev('nova', { e: Wd.W.hero, r: 90, color: '#2ce8f5', magic: true }); pendingPicks(); };
+      if (b.type === 'spell') chooseSlot(b.id, finish);
+      else if (b.type === 'talent' && nT >= d.talentSlots) chooseTalent(b, finish);
+      else finish(null);
+    });
+    $('#bSkip').onclick = () => { const g = G.skipBoon(); S.coin(); ovClose(); A.FX.banner('+' + g + ' ' + t(U.gold), null, '#feae34', 1.4); pendingPicks(); };
+  }
+  // Alle Talent-Plätze voll: eins wird ersetzt
+  function chooseTalent(b, done) {
+    const r = G.run, T = A.TALENTS[b.id];
+    ov(`<div class="center"><div class="bigicon">${talIcon(b.id, 48)}</div><h2 class="mid">${esc(t(T.name))}</h2><div class="sub">${L('Alle Plätze für passive Segen sind voll. Welchen gibst du dafür her? Er ist dann weg.', 'All passive slots are full. Which one do you give up? It will be gone.')}</div></div>
+      ${r.talents.map(id => `<div class="skill" data-rep="${id}"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(A.TALENTS[id].name))}</div><div class="ds">${esc(t(A.TALENTS[id].desc))}</div></div><div class="cd">${L('hergeben', 'give up')}</div></div>`).join('')}
+      <button class="btn" id="bClose">${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-rep]').forEach(el => el.onclick = () => { S.click(); done(el.dataset.rep); });
+    $('#bClose').onclick = () => { S.click(); boonPick(); };
   }
 
   // ---------- Räume ----------
@@ -9398,7 +10104,7 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, shop, rest, eventScreen, treasure, runOver, useProp } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, runOver, useProp } };
   title();
 })();
 

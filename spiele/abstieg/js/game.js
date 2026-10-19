@@ -34,7 +34,7 @@ A.Game = (function () {
       stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
       hp: 0, gold: 10 + me.startGold, potions: me.startPotion,
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
-      bag: [], known: skills, active: skills.slice(0, 3),
+      bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
       log: [], reviveUsed: false, over: false, won: false,
     };
@@ -57,19 +57,20 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const atkPct = sum('atkPct') / 100 + me.dmgMul, magPct = sum('magPct') / 100 + me.dmgMul;
+    const tm = A.Boons.mods(r), tv = (k) => tm[k] || 0;   // passive Talente vom Schrein
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100;
     const d = {
-      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul)),
+      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
       mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
-      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0)),
-      spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0)),
-      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0)),
-      dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0)),
-      lifesteal: sum('lifesteal'), thorns: sum('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
-      regen: sum('regen') + (mod.regen || 0), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100,
+      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def')),
+      spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0) + tv('spd')),
+      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit')),
+      dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
+      lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
+      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
       xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'),
-      skillSlots: 3 + (mod.skillSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0),
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     return d;
   }
@@ -214,6 +215,7 @@ A.Game = (function () {
     const items = [];
     if (room.type === 'fight') items.push(randomItem());
     if (room.type === 'elite') items.push(randomItem(rollRarity(1)));
+    if (room.type === 'elite' || room.type === 'boss') run.pendingBoon = (run.pendingBoon || 0) + 1;   // zweite Wahl nach Elite- und Boss-Kämpfen
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
     save();
@@ -232,7 +234,28 @@ A.Game = (function () {
     const rest = cls.skills.filter(s => !run.known.includes(s));
     return run.rng.shuffle(rest).slice(0, 3);
   }
-  function learnSkill(id) { run.known.push(id); run.pendingSkillPick--; if (run.active.length < derived().skillSlots) run.active.push(id); save(); }
+  // Neuer Zauber: kommt auf einen freien Knopf; sind alle voll, ersetzt er replaceId (der alte bleibt im Zauberbuch)
+  function addSkill(id, replaceId) {
+    if (!run.known.includes(id)) run.known.push(id);
+    if (run.active.includes(id)) return;
+    if (run.active.length < derived().skillSlots) run.active.push(id);
+    else if (replaceId && run.active.includes(replaceId)) run.active[run.active.indexOf(replaceId)] = id;
+  }
+  function learnSkill(id, replaceId) { addSkill(id, replaceId); run.pendingSkillPick--; save(); }
+  // ---------- Segen am Schrein ----------
+  function boonOffer() { if (!run.boonOffer) { run.boonOffer = A.Boons.offer(run, run.rng); save(); } return run.boonOffer; }
+  function takeBoon(b, replaceId) {
+    if (b.type === 'spell') addSkill(b.id, replaceId);
+    else if (b.type === 'talent') {
+      if (run.talents.length < derived().talentSlots) run.talents.push(b.id);
+      else if (replaceId && run.talents.includes(replaceId)) run.talents[run.talents.indexOf(replaceId)] = b.id;
+      const d = derived(); run.hp = Math.min(run.hp, d.maxHp);
+    }
+    else if (b.type === 'upg') run.upg[b.id] = Math.min(A.Boons.MAX_UPG, (run.upg[b.id] || 0) + 1);
+    run.boonOffer = null; run.pendingBoon = Math.max(0, (run.pendingBoon || 0) - 1); save();
+  }
+  function skipBoon() { const g = boonGold(); run.gold += g; run.boonOffer = null; run.pendingBoon = Math.max(0, (run.pendingBoon || 0) - 1); save(); return g; }
+  function boonGold() { return 20 + run.floor * 6; }
   function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
 
   // ---------- Räume ----------
@@ -270,7 +293,7 @@ A.Game = (function () {
 
   // ---------- Speichern ----------
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); return run; } catch (e) { return null; } }
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; return run; } catch (e) { return null; } }
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 }; saveMeta(); }
 
@@ -279,7 +302,7 @@ A.Game = (function () {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
-    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive,
+    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy,
   };
 })();

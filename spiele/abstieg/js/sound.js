@@ -28,22 +28,35 @@ A.Sound = (function () {
     o.connect(g); g.connect(out || master); o.start(t); o.stop(t + dur + 0.02);
   }
   // ---------- Musik: leise, düstere Schleife aus Code ----------
-  // Grundton je Farbwelt, Bass-Folge i / VI / iv / V in Moll, darüber sparsame Töne aus der Moll-Pentatonik.
-  const MUS_ROOT = { stone: 110, grotto: 130.8, rust: 123.5, throne: 98 };
-  const MUS_PROG = [0, 8, 5, 7], PENTA = [0, 3, 5, 7, 10, 12, 15];
+  // Grundton, Tempo, Tonleiter und Klangfarbe je Welt; Bass-Folge i / VI / iv / V, darüber sparsame Töne aus der Tonleiter.
+  // jungle: Trommeln, desert: orientalische Tonleiter mit Schellen, water: langsam und weich mit Blubbern,
+  // volcano: schnell mit schwerer Pauke, abyss: langsam, schief und hallig
+  const MUS = {
+    stone:   { root: 110,   bpm: 84,  scale: [0, 3, 5, 7, 10, 12, 15], lead: 'triangle', kick: 0.11 },
+    jungle:  { root: 130.8, bpm: 100, scale: [0, 3, 5, 7, 10, 12, 15], lead: 'triangle', kick: 0.09, drums: true },
+    desert:  { root: 123.5, bpm: 90,  scale: [0, 1, 4, 5, 7, 8, 11, 12], lead: 'sawtooth', kick: 0.1, bells: true },
+    water:   { root: 98,    bpm: 70,  scale: [0, 2, 3, 7, 9, 12, 14], lead: 'sine', kick: 0.07, bubbles: true },
+    volcano: { root: 87.3,  bpm: 112, scale: [0, 3, 5, 6, 7, 10, 12], lead: 'square', kick: 0.17 },
+    abyss:   { root: 92.5,  bpm: 66,  scale: [0, 1, 3, 6, 7, 10, 13], lead: 'sine', kick: 0.13, hollow: true },
+  };
+  const MUS_PROG = [0, 8, 5, 7];
   let mus = null;
   function musicTick() {
     const a = ctx(); if (!a || !mus) return;
     if (!on()) { mus.next = a.currentTime; return; }
-    const bpm = mus.theme === 'throne' ? 96 : 84, beat = 60 / bpm, st = beat / 2;
+    const M = MUS[mus.theme] || MUS.stone, beat = 60 / M.bpm, st = beat / 2;
     while (mus.next < a.currentTime + 0.3) {
       const i = mus.step, bar = Math.floor(i / 8) % 4, pos = i % 8, d = Math.max(0, mus.next - a.currentTime);
       const root = mus.base * Math.pow(2, MUS_PROG[bar] / 12);
       if (pos === 0) { tone(root / 2, root / 2, beat * 3.6, 'triangle', 0.1, d, musGain, 0.05); tone(root / 4, root / 4, beat * 3.8, 'sine', 0.08, d, musGain, 0.1); }
-      if (pos === 0 || pos === 4) { tone(70, 35, 0.18, 'sine', mus.theme === 'throne' ? 0.16 : 0.11, d, musGain); }
+      if (pos === 0 || pos === 4) { tone(70, 35, 0.18, 'sine', M.kick, d, musGain); }
       if (pos === 6 && mus.rng() < 0.6) { noise(0.03, 0.015, 'highpass', 6000, 8000, d); }
+      if (M.drums && (pos === 3 || pos === 5 || (pos === 7 && mus.rng() < 0.5))) { const f = pos === 5 ? 260 : 190; tone(f, f * 0.6, 0.09, 'sine', 0.06, d, musGain); }
+      if (M.bells && pos % 2 === 1 && mus.rng() < 0.4) noise(0.05, 0.02, 'bandpass', 7000, 9000, d, 6);
+      if (M.bubbles && mus.rng() < 0.12) { const f = 500 + mus.rng() * 500; tone(f, f * 2.2, 0.06, 'sine', 0.025, d, musGain); }
+      if (M.hollow && i % 16 === 8) tone(root * 1.414, root * 1.4, beat * 5, 'sine', 0.02, d, musGain, 1.5);
       if (i % 32 === 16) tone(root * 2, root * 2, beat * 7, 'sine', 0.025, d, musGain, 1.2);
-      if (mus.rng() < (pos % 2 === 0 ? 0.42 : 0.18)) { const n = PENTA[Math.floor(mus.rng() * PENTA.length)]; const f = root * 2 * Math.pow(2, n / 12); tone(f, f, st * (mus.rng() < 0.3 ? 3 : 1.6), 'triangle', 0.04, d, musGain, 0.02); if (mus.rng() < 0.3) tone(f * 1.002, f, st * 2.5, 'sine', 0.02, d + 0.01, musGain, 0.3); }
+      if (mus.rng() < (pos % 2 === 0 ? 0.42 : 0.18)) { const n = M.scale[Math.floor(mus.rng() * M.scale.length)]; const f = root * 2 * Math.pow(2, n / 12); tone(f, f, st * (mus.rng() < 0.3 ? 3 : 1.6), M.lead, M.lead === 'triangle' || M.lead === 'sine' ? 0.04 : 0.015, d, musGain, 0.02); if (mus.rng() < 0.3) tone(f * 1.002, f, st * 2.5, 'sine', 0.02, d + 0.01, musGain, 0.3); }
       mus.next += st; mus.step++;
     }
   }
@@ -101,7 +114,7 @@ A.Sound = (function () {
       if (!theme) { mus = null; if (musGain && ac) { musGain.gain.cancelScheduledValues(ac.currentTime); musGain.gain.setTargetAtTime(0.0001, ac.currentTime, 0.4); } return; }
       const a = ctx(); if (!a) { mus = { theme, pending: true }; return; }
       musGain.gain.cancelScheduledValues(a.currentTime); musGain.gain.setTargetAtTime(0.3, a.currentTime, 0.6);
-      mus = { theme, base: MUS_ROOT[theme] || 110, next: a.currentTime + 0.1, step: 0, rng: mulberry(Date.now() & 0xffff), timer: setInterval(musicTick, 120) };
+      mus = { theme, base: (MUS[theme] || MUS.stone).root, next: a.currentTime + 0.1, step: 0, rng: mulberry(Date.now() & 0xffff), timer: setInterval(musicTick, 120) };
       musicTick();
     },
     musicTheme() { return mus ? mus.theme : null; },
