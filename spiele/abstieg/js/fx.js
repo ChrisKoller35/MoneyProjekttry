@@ -147,6 +147,15 @@ A.FX = (function () {
       case 'ignite': S().ignite(); return;
       case 'wallhit': burst(d.x, d.y, 5, { color: [d.color || '#ffffff', '#ffffff'], smin: 30, smax: 100, life: 0.25, add: true, kind: 'spark', drag: 4 }); return;
       case 'stun': return;
+      case 'boom': { // Explosion (Feuerball, Meteor, Kettenreaktion, Schwarzpulver) oder weiches Aufploppen (Wolke, Quelle)
+        const c = d.color || '#feae34', R = d.r || 70;
+        part({ kind: 'ring', x: d.x, y: d.y, life: 0.35, size: R, color: c, add: true });
+        const n = d.soft ? 10 : 20;
+        for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, sp = rnd(R * 1.2, R * 2.4); part({ kind: 'spark', add: true, x: d.x, y: d.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, life: rnd(0.2, 0.35), color: i % 3 ? c : '#ffffff', drag: 4 }); }
+        if (!d.soft) { smoke(d.x, d.y, 4, '#5d275d', 5); flash(d.x, d.y, R, c, 0.3); shake(0.2); if (once('boom', 90)) S().nova(); }
+        return;
+      }
+      case 'zap': flash(d.x, d.y, 60, d.color || '#fee761', 0.25); if (once('zap', 80)) S().cast(); return;
     }
   }
 

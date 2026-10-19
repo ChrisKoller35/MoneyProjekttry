@@ -9,7 +9,7 @@ A.t = (o) => (o && typeof o === 'object' && (o.de || o.en)) ? (o[A.LANG] || o.de
 // ---------- Texte der Oberfläche ----------
 A.UI = {
   title: { de: 'Der Abstieg', en: 'The Descent' },
-  tagline: { de: '18 Ebenen. Unten ist der Ausgang. Angeblich.', en: '18 floors. The exit is at the bottom. Allegedly.' },
+  tagline: { de: 'Sechs Welten. Unten ist der Ausgang. Angeblich.', en: 'Six worlds. The exit is at the bottom. Allegedly.' },
   howto: { de: 'Laufen: Joystick links / WASD · Schlagen: gelber Knopf / Leertaste · Fähigkeiten: 1-3 · Trank: Q · Benutzen: E · Heldenblatt: I', en: 'Move: joystick left / WASD · Attack: yellow button / Space · Skills: 1-3 · Potion: Q · Use: E · Hero sheet: I' },
   play: { de: 'Abstieg beginnen', en: 'Begin descent' },
   continueRun: { de: 'Durchlauf fortsetzen', en: 'Continue run' },
@@ -19,11 +19,11 @@ A.UI = {
   start: { de: 'Los', en: 'Go' }, back: { de: 'Zurück', en: 'Back' },
   floor: { de: 'Ebene', en: 'Floor' }, gold: { de: 'Gold', en: 'Gold' }, hp: { de: 'Leben', en: 'Health' },
   level: { de: 'Stufe', en: 'Level' }, xp: { de: 'EP', en: 'XP' },
-  node: { fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' } },
+  node: { shrine: { de: 'Schrein', en: 'Shrine' }, fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' } },
   chooseRoom: { de: 'Wähle deinen Weg', en: 'Choose your path' },
   prep: { de: 'Aufstellung', en: 'Loadout' }, fightBtn: { de: 'Kämpfen!', en: 'Fight!' },
   front: { de: 'Vorne', en: 'Front' }, backRow: { de: 'Hinten', en: 'Back' },
-  skills: { de: 'Fähigkeiten', en: 'Skills' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
+  skills: { de: 'Zauber', en: 'Spells' }, items: { de: 'Ausrüstung', en: 'Gear' }, bag: { de: 'Beutel', en: 'Bag' },
   stats: { de: 'Werte', en: 'Stats' },
   stat: { str: { de: 'Stärke', en: 'Strength' }, tou: { de: 'Zähigkeit', en: 'Toughness' }, dex: { de: 'Geschick', en: 'Dexterity' }, mind: { de: 'Geist', en: 'Mind' }, luck: { de: 'Glück', en: 'Luck' } },
   derived: { atk: { de: 'Angriff', en: 'Attack' }, def: { de: 'Rüstung', en: 'Armor' }, spd: { de: 'Tempo', en: 'Speed' }, crit: { de: 'Volltreffer', en: 'Crit' }, dodge: { de: 'Ausweichen', en: 'Dodge' }, mag: { de: 'Zauberkraft', en: 'Magic' } },
@@ -31,7 +31,7 @@ A.UI = {
   victory: { de: 'Sieg!', en: 'Victory!' }, defeat: { de: 'Gefallen', en: 'Fallen' },
   pickReward: { de: 'Wähle eine Belohnung', en: 'Choose a reward' }, skip: { de: 'Nichts nehmen', en: 'Take nothing' },
   equip: { de: 'Anlegen', en: 'Equip' }, sell: { de: 'Verkaufen', en: 'Sell' }, buy: { de: 'Kaufen', en: 'Buy' }, take: { de: 'Nehmen', en: 'Take' },
-  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neue Fähigkeit wählen', en: 'Choose a new skill' },
+  levelUp: { de: 'Stufenaufstieg!', en: 'Level up!' }, newSkill: { de: 'Neuen Zauber wählen', en: 'Choose a new spell' },
   heal: { de: 'Ausruhen (+50 % Leben)', en: 'Rest (+50% health)' }, train: { de: 'Trainieren (+1 Statpunkt)', en: 'Train (+1 stat point)' },
   leave: { de: 'Weiter', en: 'Continue' }, descend: { de: 'Tiefer', en: 'Descend' },
   runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
@@ -42,7 +42,7 @@ A.UI = {
   speed: { de: 'Tempo', en: 'Speed' },
   cooldown: { de: 'Abklingzeit', en: 'Cooldown' }, rounds: { de: 'Runden', en: 'rounds' },
   blocked: { de: 'Ebene 7 ist versperrt. Noch. Der Abstieg geht bald weiter.', en: 'Floor 7 is sealed. For now. The descent continues soon.' },
-  win: { de: 'Du hast das Ende der bekannten Tiefe erreicht!', en: 'You reached the end of the known depths!' },
+  win: { de: 'Du hast alle sechs Welten bezwungen! Und bist trotzdem weitergegangen.', en: 'You conquered all six worlds! And kept going anyway.' },
   potion: { de: 'Trank', en: 'Potion' }, usePotion: { de: 'Trank trinken (+40 %)', en: 'Drink potion (+40%)' },
   cursed: { de: 'verflucht', en: 'cursed' },
   rarity: { common: { de: 'gewöhnlich', en: 'common' }, good: { de: 'gut', en: 'good' }, rare: { de: 'selten', en: 'rare' }, epic: { de: 'episch', en: 'epic' }, legendary: { de: 'legendär', en: 'legendary' }, cursed: { de: 'verflucht', en: 'cursed' } },
@@ -58,8 +58,8 @@ A.UI = {
 // base: Grundwerte; perk: kurzer Text; mod: Änderungen an abgeleiteten Werten
 A.RACES = [
   { id: 'mensch', name: { de: 'Mensch', en: 'Human' }, color: '#e8b98a', unlock: 0,
-    perk: { de: 'Ausgeglichen. Ein Fähigkeitsplatz mehr.', en: 'Balanced. One extra skill slot.' },
-    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { skillSlots: 1 } },
+    perk: { de: 'Ausgeglichen. Ein Platz mehr für passive Segen.', en: 'Balanced. One extra slot for passive blessings.' },
+    base: { str: 5, tou: 5, dex: 5, mind: 5, luck: 5 }, mod: { talentSlots: 1 } },
   { id: 'fels', name: { de: 'Felsgeborener', en: 'Stoneborn' }, color: '#9a9aa8', unlock: 0,
     perk: { de: 'Viel Leben und Rüstung, langsam.', en: 'Lots of health and armor, slow.' },
     base: { str: 6, tou: 9, dex: 2, mind: 3, luck: 5 }, mod: { hpMul: 1.25, def: 4, spd: -2 } },
@@ -215,12 +215,68 @@ A.MONSTERS = [
   { id: 'spiegelgeist', name: { de: 'Spiegelgeist', en: 'Mirror Ghost' }, hp: 28, atk: 9, def: 0, spd: 6, row: 'back', kind: 'magic', floors: [5, 6], color: '#9fd8ff', shape: 'ghost', thorns: 30 },
   { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1 },
 ];
+// Neue Gegner der Welten (Werte bei Ebene 1, sie wachsen mit der Tiefe)
+// Besonderes: leap (springt), rooted (steht fest), spread (Fächer aus Geschossen), slowOnHit (bremst), teleport (verschwindet und taucht neben dir auf), fly (schwebt über Gefahr-Boden)
+A.MONSTERS.push(
+  { id: 'frosch', name: { de: 'Giftfrosch', en: 'Poison Frog' }, hp: 24, atk: 7, def: 1, spd: 5, kind: 'melee', color: '#63c74d', shape: 'frog', leap: true, poisonOnHit: 2 },
+  { id: 'ranke', name: { de: 'Rankenschlinger', en: 'Vine Lasher' }, hp: 36, atk: 7, def: 2, spd: 0, kind: 'ranged', color: '#3e8948', shape: 'vine', rooted: true, spread: 3, shotCol: '#63c74d' },
+  { id: 'skorpion', name: { de: 'Sandskorpion', en: 'Sand Scorpion' }, hp: 30, atk: 8, def: 4, spd: 6, kind: 'melee', color: '#d77643', shape: 'scorpion', poisonOnHit: 3 },
+  { id: 'mumie', name: { de: 'Mumie', en: 'Mummy' }, hp: 50, atk: 9, def: 2, spd: 2, kind: 'melee', color: '#ead4aa', shape: 'mummy', slowOnHit: true },
+  { id: 'krabbe', name: { de: 'Panzerkrabbe', en: 'Shell Crab' }, hp: 38, atk: 8, def: 8, spd: 4, kind: 'melee', color: '#e43b44', shape: 'crab' },
+  { id: 'qualle', name: { de: 'Blitzqualle', en: 'Shock Jelly' }, hp: 24, atk: 8, def: 0, spd: 5, kind: 'magic', color: '#2ce8f5', shape: 'jelly', fly: true, dodge: 10, shotCol: '#2ce8f5' },
+  { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
+  { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
+);
+for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
+// Bosse, je einer am Ende jeder Welt (jede 4. Ebene)
 A.BOSSES = {
-  3: { id: 'schleimkoenig', name: { de: 'Schleimkönig', en: 'Slime King' }, hp: 160, atk: 11, def: 2, spd: 3, row: 'front', kind: 'melee', color: '#3fbf5a', shape: 'blob', boss: true,
+  schleimkoenig: { id: 'schleimkoenig', name: { de: 'Schleimkönig', en: 'Slime King' }, hp: 170, atk: 11, def: 2, spd: 3, kind: 'melee', color: '#3fbf5a', shape: 'blob', boss: true,
        trick: { de: 'Teilt sich bei 50 % Leben in zwei Schleimer.', en: 'Splits into two slimers at 50% health.' }, split: true },
-  6: { id: 'rostkoenig', name: { de: 'Rostkönig', en: 'Rust King' }, hp: 320, atk: 16, def: 9, spd: 2, row: 'front', kind: 'melee', color: '#8a3a1a', shape: 'golem', boss: true,
+  dornenmutter: { id: 'dornenmutter', name: { de: 'Dornenmutter', en: 'Thorn Mother' }, hp: 200, atk: 11, def: 3, spd: 1, kind: 'ranged', color: '#63c74d', shape: 'vine', boss: true, spread: 5, shotCol: '#a2e05a', summon: 'frosch', summonCd: 9,
+       trick: { de: 'Schiesst Dornenfächer und ruft Giftfrösche.', en: 'Fires thorn fans and calls poison frogs.' } },
+  sandpharao: { id: 'sandpharao', name: { de: 'Sandpharao', en: 'Sand Pharaoh' }, hp: 230, atk: 13, def: 6, spd: 3, kind: 'melee', color: '#feae34', shape: 'mummy', boss: true, ring: 8, ringCd: 6, summon: 'mumie', summonCd: 12, slowOnHit: true,
+       trick: { de: 'Sandsturm-Ring alle paar Sekunden. Weckt Mumien.', en: 'Sandstorm ring every few seconds. Wakes mummies.' } },
+  kraken: { id: 'kraken', name: { de: 'Tiefenkraken', en: 'Deep Kraken' }, hp: 250, atk: 12, def: 5, spd: 2, kind: 'magic', color: '#b55088', shape: 'octopus', boss: true, ring: 10, ringCd: 4, spread: 3, shotCol: '#68386c',
+       trick: { de: 'Tintenringe! Zwischen den Kugeln durchschlüpfen.', en: 'Ink rings! Slip between the orbs.' } },
+  rostkoenig: { id: 'rostkoenig', name: { de: 'Rostkönig', en: 'Rust King' }, hp: 280, atk: 15, def: 9, spd: 2, kind: 'melee', color: '#8a3a1a', shape: 'golem', boss: true, ring: 6, ringCd: 7,
        trick: { de: 'Jeder Waffentreffer heilt ihn um 5 %. Zauber und Gift nicht.', en: 'Every weapon hit heals him 5%. Spells and poison do not.' }, healOnPhys: 0.05 },
+  waechter: { id: 'waechter', name: { de: 'Wächter der Tiefe', en: 'Warden of the Deep' }, hp: 320, atk: 16, def: 8, spd: 4, kind: 'magic', color: '#e43b44', shape: 'eye', boss: true, ring: 12, ringCd: 5, teleport: true, summon: 'leerenauge', summonCd: 10, fly: true,
+       trick: { de: 'Verschwindet, taucht neben dir auf, Ringe aus Leere.', en: 'Vanishes, reappears beside you, rings of void.' } },
 };
+
+// ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
+// pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
+A.WORLDS = [
+  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
+    pit: null, hazard: null, obst: ['pillar'], corner: ['barrel', 'crate', 'pot', 'barrel'], favor: ['pillars', 'octagon', 'cross'] },
+  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
+    pit: 'water', hazard: 'mud', obst: ['tree', 'bush', 'tree'], corner: ['bush', 'pot', 'bush'], favor: ['garden', 'garden', 'island'], dense: 3 },
+  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
+    pit: null, hazard: 'quicksand', obst: ['cactus', 'obelisk', 'urn'], corner: ['urn', 'pot', 'urn'], favor: ['pool', 'pillars', 'garden'], dense: 1 },
+  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
+    pit: 'water', hazard: 'shallow', obst: ['coral', 'column'], corner: ['barrel', 'crate', 'coral'], favor: ['island', 'stripes', 'ring'] },
+  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
+    pit: 'lava', hazard: 'embers', obst: ['obsidian', 'anvil'], corner: ['barrel', 'crate', 'anvil'], favor: ['stripes', 'pool', 'ring'] },
+  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
+    pit: 'void', hazard: 'shadow', obst: ['crystal'], corner: ['crystal', 'pot'], favor: ['island', 'stripes', 'cross'] },
+];
+// Gefahr-Boden: slow = Tempo-Faktor, burn = brennt
+A.HAZARDS = {
+  mud: { slow: 0.6, name: { de: 'Schlamm', en: 'Mud' } },
+  quicksand: { slow: 0.45, name: { de: 'Treibsand', en: 'Quicksand' } },
+  shallow: { slow: 0.7, name: { de: 'Seichtes Wasser', en: 'Shallows' } },
+  embers: { burn: true, name: { de: 'Glut', en: 'Embers' } },
+  shadow: { slow: 0.6, name: { de: 'Schattenpfütze', en: 'Shadow pool' } },
+};
+A.FLOORS_PER_WORLD = 4;
+A.worldIndex = (f) => Math.floor((Math.max(1, f) - 1) / A.FLOORS_PER_WORLD);
+A.worldOf = (f) => A.WORLDS[A.worldIndex(f) % A.WORLDS.length];
+A.worldRound = (f) => Math.floor(A.worldIndex(f) / A.WORLDS.length);      // 0 = erster Durchgang, 1 = die Welten kommen wieder ...
+A.isBossFloor = (f) => f % A.FLOORS_PER_WORLD === 0;
+A.bossOf = (f) => A.isBossFloor(f) ? A.BOSSES[A.worldOf(f).boss] : null;
+A.worldName = (f) => { const n = A.t(A.worldOf(f).name), r = A.worldRound(f); return r ? n + ' ' + ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][Math.min(r, 7)] : n; };
+// Gegner-Auswahl: auf der ersten Ebene einer Welt die ersten drei Arten, dann je Ebene eine mehr
+A.monsterPool = (f) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return w.mons.slice(0, 3 + k).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
 
 // ---------- Ereignisse ----------
 A.EVENTS = [
@@ -280,4 +336,4 @@ A.QUESTS = [
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
 ];
 
-A.MAX_FLOOR = 6;
+A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter

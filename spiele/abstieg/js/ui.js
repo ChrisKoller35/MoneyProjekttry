@@ -32,11 +32,13 @@ window.A = window.A || {};
   // ---------- Symbole ----------
   const WEAPON_ICON = { klinge: 'i_schwert', schuetze: 'i_bogen', weber: 'i_stab', rufer: 'i_zepter', brau: 'potion' };
   const SKILL_ICON = { hieb: 's_strike', rache: 's_strike', wirbel: 's_whirl', schild: 's_shield', gewebe: 's_shield', kampfschrei: 's_buff', rueckzug: 's_buff', hinrichtung: 'u_skull', zielschuss: 's_arrow', pfeilregen: 's_arrow', doppelschuss: 's_arrow', kopfschuss: 's_arrow', giftpfeil: 's_poison', funke: 's_bolt', flaeche: 's_nova', entladung: 's_nova', flicken: 's_heal', fesseln: 's_bind' };
-  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down' };
+  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
   const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
-  const skIcon = (id, size) => ic(SKILL_ICON[id] || 's_strike', size || 26);
+  const skIcon = (id, size) => ic(SKILL_ICON[id] || A.Boons.icon(id) || 's_strike', size || 26);
+  const cdTxt = (id) => (Math.round(A.Boons.cd(id) * 10) / 10) + ' s';
+  const talIcon = (id, size) => ic(A.TALENTS[id].icon || 'u_star', size || 26);
   const itIcon = (it, size) => ic(Art.itemIcon(it.base), size || 36);
   const rarCol = (r) => (A.RARITY[r] || A.RARITY.common).color;
   const portrait = (race, cls) => `<img class="px" src="${Art.heroPortrait(race, cls)}" width="36" height="26" alt="">`;
@@ -212,7 +214,7 @@ window.A = window.A || {};
     const hooks = {
       onItem: (it) => foundItem(it),
       onProp: (p) => useProp(p),
-      onCleared: (room) => { if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(() => { if (r.pendingSkillPick > 0) skillPick(); }, 400); },
+      onCleared: (room) => { if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); setTimeout(() => runOver(), 1100); },
       onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
     };
@@ -220,10 +222,10 @@ window.A = window.A || {};
     r.rooms = Wd.saveRooms();
     buildControls(); pads(); applyLook(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
-    const th = A.Draw.THEMES[A.Draw.themeOf(r.floor)];
-    A.FX.banner(t(U.floor) + ' ' + r.floor, th ? t(th.name) : '', '#fee761', 2.6);
-    if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten', 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
+    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor), '#fee761', 2.6);
+    if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
     if (!last) { last = performance.now(); requestAnimationFrame(loop); }
+    setTimeout(pendingPicks, 900);
   }
   function loop(now) {
     requestAnimationFrame(loop);
@@ -258,7 +260,7 @@ window.A = window.A || {};
     const r = G.run;
     const sk = r.active.filter(Boolean);
     $('#controls').innerHTML = `<div id="btnGrid">
-      ${sk.map((id, i) => `<button class="cbtn sk" data-sk="${i}" style="grid-column:${4 - sk.length + i + 1 > 4 ? 4 : 4 - sk.length + i + 1}" aria-label="${esc(t(A.SKILLS[id].name))}"><span class="ring"></span>${skIcon(id, 36)}<span class="key">${i + 1}</span></button>`).join('')}
+      ${sk.map((id, i) => `<button class="cbtn sk" data-sk="${i}" style="grid-column:${4 - sk.length + i + 1 > 4 ? 4 : 4 - sk.length + i + 1}" aria-label="${esc(A.Boons.skName(id))}"><span class="ring"></span>${skIcon(id, 36)}<span class="key">${i + 1}</span></button>`).join('')}
       <button class="cbtn use" id="bUse" style="display:none"></button>
       <button class="cbtn pot" id="bPotion" aria-label="${esc(t(U.potion))}">${ic('potion', 33)}<span class="n"></span><span class="key">Q</span></button>
       <button class="cbtn atk" id="bAtk" aria-label="${L('Schlagen', 'Attack')}">${ic(WEAPON_ICON[r.cls] || 'i_schwert', 54)}<span class="key">${L('Leertaste', 'Space')}</span></button>
@@ -274,7 +276,7 @@ window.A = window.A || {};
     const h = Wd.W.hero, r = G.run;
     ctl.sk.forEach((b, i) => {
       const id = h.skills[i]; if (!id) return;
-      const cd = Math.max(0, (h.cds[id] || 0) - Wd.W.t); const tot = A.SKILLS[id].cd * 2; const cold = cd > 0;
+      const cd = Math.max(0, (h.cds[id] || 0) - Wd.W.t); const tot = A.Boons.cd(id); const cold = cd > 0;
       if (ctl.cd[i] && !cold) { b.classList.remove('ready'); void b.offsetWidth; b.classList.add('ready'); }
       if (ctl.cd[i] !== cold) { ctl.cd[i] = cold; b.classList.toggle('cold', cold); }
       const p = (cd / tot * 100).toFixed(1) + '%'; if (b._p !== p) { b._p = p; b.firstChild.style.setProperty('--p', p); }
@@ -286,7 +288,7 @@ window.A = window.A || {};
   input.onKey = (code, e) => {
     if (!dungeonEl.classList.contains('on')) return;
     if (overlay.classList.contains('on')) { if (code === 'Escape' || code === 'KeyI' || code === 'Tab') { const b = $('#bClose'); if (b) b.click(); e.preventDefault(); } return; }
-    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
+    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3' || code === 'Digit4') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
     if (code === 'KeyQ') { if (Wd.usePotion()) hudUpdate(); }
     if (code === 'KeyE' || code === 'Enter') Wd.interact();
     if (code === 'KeyL') { toggleLook(); A.FX.banner(L('Look', 'Look') + ': ' + (G.meta.look === '3d' ? '3D' : 'Retro'), null, '#fee761', 1.2); }
@@ -309,8 +311,8 @@ window.A = window.A || {};
   function useProp(p) {
     const r = G.run;
     if (p.kind === 'stairs') {
-      const nt = A.Draw.THEMES[A.Draw.themeOf(r.floor + 1)];
-      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${r.floor + 1}</h2><div class="sub">${nt ? `<b class="goldc">${esc(t(nt.name))}</b><br>` : ''}${L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor);
+      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
       $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
@@ -318,6 +320,7 @@ window.A = window.A || {};
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
     else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
+    else if (p.kind === 'shrine') { r.pendingBoon = (r.pendingBoon || 0) + 1; Wd.markUsed(p); boonPick(); }
   }
   // ---------- Heldenblatt ----------
   function showSheet(tab) {
@@ -330,25 +333,80 @@ window.A = window.A || {};
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
     const gear = A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : emptySlot(s); }).join('');
     const bag = r.bag.length ? r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, slotCurrent(it))).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
-    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${sk.cd * 2} s</div></div>`; }).join('');
+    const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${esc(A.Boons.skName(id))}</div><div class="ds">${t(sk.desc)}${A.Boons.upgOf(id) ? ` <b class="goldc">+${A.Boons.upgOf(id) * 30} %</b>` : ''}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${cdTxt(id)}</div></div>`; }).join('');
+    const tals = (r.talents || []).map(id => { const T = A.TALENTS[id]; return `<div class="skill on" style="cursor:default"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(T.name))}</div><div class="ds">${esc(t(T.desc))}</div></div></div>`; }).join('');
     const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}` :
       tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/8)</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${t(U.usePotion)}</button>` : ''}` :
-      `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}`;
-    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
+      tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
+      `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}`;
+    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.click(); showSheet(b.dataset.tab); });
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); S.click(); showSheet('stats'); });
     overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { G.equip(r.bag.find(x => x.uid === b.dataset.eq)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
-    $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); if (r.pendingSkillPick > 0) skillPick(); };
+    $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
   }
   function skillPick() {
     const r = G.run; const offer = G.skillOffer();
     if (!offer.length) { r.pendingSkillPick = 0; G.save(); return; }
     S.level();
-    ov(`<h2>${ic('u_scroll', 30)}${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${sk.cd * 2} s</div></div>`; }).join('')}`);
-    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { G.learnSkill(el.dataset.pick); S.buy(); if (r.pendingSkillPick > 0) skillPick(); else { ovClose(); buildControls(); } });
+    ov(`<h2>${ic('u_scroll', 30)}${t(U.newSkill)}</h2>${offer.map(id => { const sk = A.SKILLS[id]; return `<div class="skill" data-pick="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${t(sk.name)}</div><div class="ds">${t(sk.desc)}</div></div><div class="cd">${cdTxt(id)}</div></div>`; }).join('')}`);
+    overlay.querySelectorAll('[data-pick]').forEach(el => el.onclick = () => { const id = el.dataset.pick; S.click(); chooseSlot(id, (rep) => { G.learnSkill(id, rep); S.buy(); ovClose(); buildControls(); pendingPicks(); }); });
+  }
+  // Offene Wahlen nacheinander zeigen (Stufenaufstieg, dann Segen); wartet, solange ein anderes Fenster offen ist
+  function pendingPicks() {
+    const r = G.run; if (!r || r.over || !dungeonEl.classList.contains('on')) return;
+    if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0)) return;
+    if (overlay.classList.contains('on')) { setTimeout(pendingPicks, 600); return; }
+    if (r.pendingSkillPick > 0) skillPick(); else boonPick();
+  }
+  // Alle Zauber-Knöpfe belegt? Dann fragen, welcher Platz frei wird (der alte bleibt im Zauberbuch)
+  function chooseSlot(id, done) {
+    const r = G.run, d = G.derived();
+    if (r.active.includes(id) || r.active.length < d.skillSlots) { done(null); return; }
+    const sk = A.SKILLS[id];
+    ov(`<div class="center"><div class="bigicon">${skIcon(id, 54)}</div><h2 class="mid">${esc(t(sk.name))}</h2><div class="sub">${L(`Alle ${d.skillSlots} Zauber-Knöpfe sind belegt. Welchen Zauber ersetzen? Der alte bleibt im Zauberbuch (Heldenbild oben links) und lässt sich später wieder tauschen.`, `All ${d.skillSlots} spell buttons are taken. Which spell should it replace? The old one stays in your spell book (hero picture top left).`)}</div></div>
+      ${r.active.map(a => `<div class="skill" data-rep="${a}"><div class="si">${skIcon(a, 36)}</div><div><div class="nm">${esc(A.Boons.skName(a))}</div><div class="ds">${esc(t(A.SKILLS[a].desc))}</div></div><div class="cd">${L('ersetzen', 'replace')}</div></div>`).join('')}
+      <button class="btn" id="bBook">${ic('u_scroll', 22)}${L('Nur ins Zauberbuch legen', 'Just add to spell book')}</button>`);
+    overlay.querySelectorAll('[data-rep]').forEach(el => el.onclick = () => { S.click(); done(el.dataset.rep); });
+    $('#bBook').onclick = () => { S.click(); done(null); };
+  }
+  // ---------- Segen am Schrein: 3 Angebote (neuer Zauber, passiver Effekt, Verstärkung) ----------
+  function boonText(b) {
+    if (b.type === 'spell') { const sk = A.SKILLS[b.id]; return { tg: L('Neuer Zauber', 'New spell'), nm: t(sk.name), ds: t(sk.desc), cd: cdTxt(b.id), icon: skIcon(b.id, 40) }; }
+    if (b.type === 'talent') { const T = A.TALENTS[b.id]; return { tg: L('Passiv', 'Passive'), nm: t(T.name), ds: t(T.desc), cd: '', icon: talIcon(b.id, 34) }; }
+    const u = A.Boons.upgOf(b.id) + 1, nm = t(A.SKILLS[b.id].name) + ' ' + ['', 'II', 'III'][u];
+    return { tg: L('Verstärkung', 'Upgrade'), nm, ds: L(`Dein Zauber wird 30 % stärker und lädt 20 % schneller.`, `Your spell gets 30% stronger and recharges 20% faster.`), cd: '', icon: skIcon(b.id, 40) };
+  }
+  function boonPick() {
+    const r = G.run, d = G.derived(); if (!(r.pendingBoon > 0)) return;
+    const offer = G.boonOffer();
+    if (!offer.length) { G.skipBoon(); return; }
+    S.level();
+    const nT = (r.talents || []).length;
+    ov(`<h2>${ic('u_star', 30)}${L('Wähle einen Segen', 'Choose a blessing')}</h2>
+      <div class="sub center">${L('Der Schrein flüstert. Eins davon darfst du behalten.', 'The shrine whispers. You may keep one of these.')}<br><span class="mini">${L('Zauber', 'Spells')} ${r.active.length}/${d.skillSlots} · ${L('Passiv', 'Passive')} ${nT}/${d.talentSlots}</span></div>
+      ${offer.map((b, i) => { const x = boonText(b); return `<div class="skill boon ${b.type}" data-b="${i}" tabindex="0"><div class="si">${x.icon}</div><div><div class="tg ${b.type}">${x.tg}</div><div class="nm">${esc(x.nm)}</div><div class="ds">${esc(x.ds)}</div></div><div class="cd">${x.cd}</div></div>`; }).join('')}
+      <button class="btn" id="bSkip">${L('Verzichten', 'Skip')} ${coin('+' + G.boonGold())}</button>`);
+    overlay.querySelectorAll('[data-b]').forEach(el => el.onclick = () => {
+      const b = offer[+el.dataset.b]; S.click();
+      const finish = (rep) => { G.takeBoon(b, rep); S.buy(); ovClose(); buildControls(); const x = boonText(b); A.FX.banner(x.nm, x.tg, b.type === 'talent' ? '#63c74d' : b.type === 'upg' ? '#feae34' : '#7fd8ff', 1.8); if (Wd.W) A.FX.ev('nova', { e: Wd.W.hero, r: 90, color: '#2ce8f5', magic: true }); pendingPicks(); };
+      if (b.type === 'spell') chooseSlot(b.id, finish);
+      else if (b.type === 'talent' && nT >= d.talentSlots) chooseTalent(b, finish);
+      else finish(null);
+    });
+    $('#bSkip').onclick = () => { const g = G.skipBoon(); S.coin(); ovClose(); A.FX.banner('+' + g + ' ' + t(U.gold), null, '#feae34', 1.4); pendingPicks(); };
+  }
+  // Alle Talent-Plätze voll: eins wird ersetzt
+  function chooseTalent(b, done) {
+    const r = G.run, T = A.TALENTS[b.id];
+    ov(`<div class="center"><div class="bigicon">${talIcon(b.id, 48)}</div><h2 class="mid">${esc(t(T.name))}</h2><div class="sub">${L('Alle Plätze für passive Segen sind voll. Welchen gibst du dafür her? Er ist dann weg.', 'All passive slots are full. Which one do you give up? It will be gone.')}</div></div>
+      ${r.talents.map(id => `<div class="skill" data-rep="${id}"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(A.TALENTS[id].name))}</div><div class="ds">${esc(t(A.TALENTS[id].desc))}</div></div><div class="cd">${L('hergeben', 'give up')}</div></div>`).join('')}
+      <button class="btn" id="bClose">${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-rep]').forEach(el => el.onclick = () => { S.click(); done(el.dataset.rep); });
+    $('#bClose').onclick = () => { S.click(); boonPick(); };
   }
 
   // ---------- Räume ----------
@@ -396,7 +454,7 @@ window.A = window.A || {};
     show(`<div class="center fade-in" style="padding-top:5vh">
       <div class="bigicon">${won ? ic('crown', 63) : ic('u_skull', 60)}</div>
       <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
-      ${won ? `<div class="msg">${t(U.win)} ${t(U.blocked)}</div>` : `<div class="sub">${t(U.dead)} ${r.floor}.</div>`}
+      ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
@@ -405,6 +463,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, shop, rest, eventScreen, treasure, runOver, useProp } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, runOver, useProp } };
   title();
 })();
