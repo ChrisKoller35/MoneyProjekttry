@@ -259,7 +259,7 @@ A.t = (o) => (o && typeof o === 'object' && (o.de || o.en)) ? (o[A.LANG] || o.de
 // ---------- Texte der Oberfläche ----------
 A.UI = {
   title: { de: 'Der Abstieg', en: 'The Descent' },
-  tagline: { de: '18 Ebenen. Unten ist der Ausgang. Angeblich.', en: '18 floors. The exit is at the bottom. Allegedly.' },
+  tagline: { de: 'Sechs Welten. Unten ist der Ausgang. Angeblich.', en: 'Six worlds. The exit is at the bottom. Allegedly.' },
   howto: { de: 'Laufen: Joystick links / WASD · Schlagen: gelber Knopf / Leertaste · Fähigkeiten: 1-3 · Trank: Q · Benutzen: E · Heldenblatt: I', en: 'Move: joystick left / WASD · Attack: yellow button / Space · Skills: 1-3 · Potion: Q · Use: E · Hero sheet: I' },
   play: { de: 'Abstieg beginnen', en: 'Begin descent' },
   continueRun: { de: 'Durchlauf fortsetzen', en: 'Continue run' },
@@ -269,7 +269,7 @@ A.UI = {
   start: { de: 'Los', en: 'Go' }, back: { de: 'Zurück', en: 'Back' },
   floor: { de: 'Ebene', en: 'Floor' }, gold: { de: 'Gold', en: 'Gold' }, hp: { de: 'Leben', en: 'Health' },
   level: { de: 'Stufe', en: 'Level' }, xp: { de: 'EP', en: 'XP' },
-  node: { fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' } },
+  node: { shrine: { de: 'Schrein', en: 'Shrine' }, fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' } },
   chooseRoom: { de: 'Wähle deinen Weg', en: 'Choose your path' },
   prep: { de: 'Aufstellung', en: 'Loadout' }, fightBtn: { de: 'Kämpfen!', en: 'Fight!' },
   front: { de: 'Vorne', en: 'Front' }, backRow: { de: 'Hinten', en: 'Back' },
@@ -292,7 +292,7 @@ A.UI = {
   speed: { de: 'Tempo', en: 'Speed' },
   cooldown: { de: 'Abklingzeit', en: 'Cooldown' }, rounds: { de: 'Runden', en: 'rounds' },
   blocked: { de: 'Ebene 7 ist versperrt. Noch. Der Abstieg geht bald weiter.', en: 'Floor 7 is sealed. For now. The descent continues soon.' },
-  win: { de: 'Du hast das Ende der bekannten Tiefe erreicht!', en: 'You reached the end of the known depths!' },
+  win: { de: 'Du hast alle sechs Welten bezwungen! Und bist trotzdem weitergegangen.', en: 'You conquered all six worlds! And kept going anyway.' },
   potion: { de: 'Trank', en: 'Potion' }, usePotion: { de: 'Trank trinken (+40 %)', en: 'Drink potion (+40%)' },
   cursed: { de: 'verflucht', en: 'cursed' },
   rarity: { common: { de: 'gewöhnlich', en: 'common' }, good: { de: 'gut', en: 'good' }, rare: { de: 'selten', en: 'rare' }, epic: { de: 'episch', en: 'epic' }, legendary: { de: 'legendär', en: 'legendary' }, cursed: { de: 'verflucht', en: 'cursed' } },
@@ -465,12 +465,68 @@ A.MONSTERS = [
   { id: 'spiegelgeist', name: { de: 'Spiegelgeist', en: 'Mirror Ghost' }, hp: 28, atk: 9, def: 0, spd: 6, row: 'back', kind: 'magic', floors: [5, 6], color: '#9fd8ff', shape: 'ghost', thorns: 30 },
   { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1 },
 ];
+// Neue Gegner der Welten (Werte bei Ebene 1, sie wachsen mit der Tiefe)
+// Besonderes: leap (springt), rooted (steht fest), spread (Fächer aus Geschossen), slowOnHit (bremst), teleport (verschwindet und taucht neben dir auf), fly (schwebt über Gefahr-Boden)
+A.MONSTERS.push(
+  { id: 'frosch', name: { de: 'Giftfrosch', en: 'Poison Frog' }, hp: 24, atk: 7, def: 1, spd: 5, kind: 'melee', color: '#63c74d', shape: 'frog', leap: true, poisonOnHit: 2 },
+  { id: 'ranke', name: { de: 'Rankenschlinger', en: 'Vine Lasher' }, hp: 36, atk: 7, def: 2, spd: 0, kind: 'ranged', color: '#3e8948', shape: 'vine', rooted: true, spread: 3, shotCol: '#63c74d' },
+  { id: 'skorpion', name: { de: 'Sandskorpion', en: 'Sand Scorpion' }, hp: 30, atk: 8, def: 4, spd: 6, kind: 'melee', color: '#d77643', shape: 'scorpion', poisonOnHit: 3 },
+  { id: 'mumie', name: { de: 'Mumie', en: 'Mummy' }, hp: 50, atk: 9, def: 2, spd: 2, kind: 'melee', color: '#ead4aa', shape: 'mummy', slowOnHit: true },
+  { id: 'krabbe', name: { de: 'Panzerkrabbe', en: 'Shell Crab' }, hp: 38, atk: 8, def: 8, spd: 4, kind: 'melee', color: '#e43b44', shape: 'crab' },
+  { id: 'qualle', name: { de: 'Blitzqualle', en: 'Shock Jelly' }, hp: 24, atk: 8, def: 0, spd: 5, kind: 'magic', color: '#2ce8f5', shape: 'jelly', fly: true, dodge: 10, shotCol: '#2ce8f5' },
+  { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
+  { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
+);
+for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
+// Bosse, je einer am Ende jeder Welt (jede 4. Ebene)
 A.BOSSES = {
-  3: { id: 'schleimkoenig', name: { de: 'Schleimkönig', en: 'Slime King' }, hp: 160, atk: 11, def: 2, spd: 3, row: 'front', kind: 'melee', color: '#3fbf5a', shape: 'blob', boss: true,
+  schleimkoenig: { id: 'schleimkoenig', name: { de: 'Schleimkönig', en: 'Slime King' }, hp: 170, atk: 11, def: 2, spd: 3, kind: 'melee', color: '#3fbf5a', shape: 'blob', boss: true,
        trick: { de: 'Teilt sich bei 50 % Leben in zwei Schleimer.', en: 'Splits into two slimers at 50% health.' }, split: true },
-  6: { id: 'rostkoenig', name: { de: 'Rostkönig', en: 'Rust King' }, hp: 320, atk: 16, def: 9, spd: 2, row: 'front', kind: 'melee', color: '#8a3a1a', shape: 'golem', boss: true,
+  dornenmutter: { id: 'dornenmutter', name: { de: 'Dornenmutter', en: 'Thorn Mother' }, hp: 200, atk: 11, def: 3, spd: 1, kind: 'ranged', color: '#63c74d', shape: 'vine', boss: true, spread: 5, shotCol: '#a2e05a', summon: 'frosch', summonCd: 9,
+       trick: { de: 'Schiesst Dornenfächer und ruft Giftfrösche.', en: 'Fires thorn fans and calls poison frogs.' } },
+  sandpharao: { id: 'sandpharao', name: { de: 'Sandpharao', en: 'Sand Pharaoh' }, hp: 230, atk: 13, def: 6, spd: 3, kind: 'melee', color: '#feae34', shape: 'mummy', boss: true, ring: 8, ringCd: 6, summon: 'mumie', summonCd: 12, slowOnHit: true,
+       trick: { de: 'Sandsturm-Ring alle paar Sekunden. Weckt Mumien.', en: 'Sandstorm ring every few seconds. Wakes mummies.' } },
+  kraken: { id: 'kraken', name: { de: 'Tiefenkraken', en: 'Deep Kraken' }, hp: 250, atk: 12, def: 5, spd: 2, kind: 'magic', color: '#b55088', shape: 'octopus', boss: true, ring: 10, ringCd: 4, spread: 3, shotCol: '#68386c',
+       trick: { de: 'Tintenringe! Zwischen den Kugeln durchschlüpfen.', en: 'Ink rings! Slip between the orbs.' } },
+  rostkoenig: { id: 'rostkoenig', name: { de: 'Rostkönig', en: 'Rust King' }, hp: 280, atk: 15, def: 9, spd: 2, kind: 'melee', color: '#8a3a1a', shape: 'golem', boss: true, ring: 6, ringCd: 7,
        trick: { de: 'Jeder Waffentreffer heilt ihn um 5 %. Zauber und Gift nicht.', en: 'Every weapon hit heals him 5%. Spells and poison do not.' }, healOnPhys: 0.05 },
+  waechter: { id: 'waechter', name: { de: 'Wächter der Tiefe', en: 'Warden of the Deep' }, hp: 320, atk: 16, def: 8, spd: 4, kind: 'magic', color: '#e43b44', shape: 'eye', boss: true, ring: 12, ringCd: 5, teleport: true, summon: 'leerenauge', summonCd: 10, fly: true,
+       trick: { de: 'Verschwindet, taucht neben dir auf, Ringe aus Leere.', en: 'Vanishes, reappears beside you, rings of void.' } },
 };
+
+// ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
+// pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
+A.WORLDS = [
+  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
+    pit: null, hazard: null, obst: ['pillar'], corner: ['barrel', 'crate', 'pot', 'barrel'], favor: ['pillars', 'octagon', 'cross'] },
+  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
+    pit: 'water', hazard: 'mud', obst: ['tree', 'bush', 'tree'], corner: ['bush', 'pot', 'bush'], favor: ['garden', 'garden', 'island'] },
+  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
+    pit: null, hazard: 'quicksand', obst: ['cactus', 'obelisk', 'urn'], corner: ['urn', 'pot', 'urn'], favor: ['pool', 'pillars', 'garden'] },
+  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
+    pit: 'water', hazard: 'shallow', obst: ['coral', 'column'], corner: ['barrel', 'crate', 'coral'], favor: ['island', 'stripes', 'ring'] },
+  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
+    pit: 'lava', hazard: 'embers', obst: ['obsidian', 'anvil'], corner: ['barrel', 'crate', 'anvil'], favor: ['stripes', 'pool', 'ring'] },
+  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
+    pit: 'void', hazard: 'shadow', obst: ['crystal'], corner: ['crystal', 'pot'], favor: ['island', 'stripes', 'cross'] },
+];
+// Gefahr-Boden: slow = Tempo-Faktor, burn = brennt
+A.HAZARDS = {
+  mud: { slow: 0.6, name: { de: 'Schlamm', en: 'Mud' } },
+  quicksand: { slow: 0.45, name: { de: 'Treibsand', en: 'Quicksand' } },
+  shallow: { slow: 0.7, name: { de: 'Seichtes Wasser', en: 'Shallows' } },
+  embers: { burn: true, name: { de: 'Glut', en: 'Embers' } },
+  shadow: { slow: 0.6, name: { de: 'Schattenpfütze', en: 'Shadow pool' } },
+};
+A.FLOORS_PER_WORLD = 4;
+A.worldIndex = (f) => Math.floor((Math.max(1, f) - 1) / A.FLOORS_PER_WORLD);
+A.worldOf = (f) => A.WORLDS[A.worldIndex(f) % A.WORLDS.length];
+A.worldRound = (f) => Math.floor(A.worldIndex(f) / A.WORLDS.length);      // 0 = erster Durchgang, 1 = die Welten kommen wieder ...
+A.isBossFloor = (f) => f % A.FLOORS_PER_WORLD === 0;
+A.bossOf = (f) => A.isBossFloor(f) ? A.BOSSES[A.worldOf(f).boss] : null;
+A.worldName = (f) => { const n = A.t(A.worldOf(f).name), r = A.worldRound(f); return r ? n + ' ' + ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][Math.min(r, 7)] : n; };
+// Gegner-Auswahl: auf der ersten Ebene einer Welt die ersten drei Arten, dann je Ebene eine mehr
+A.monsterPool = (f) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return w.mons.slice(0, 3 + k).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
 
 // ---------- Ereignisse ----------
 A.EVENTS = [
@@ -530,7 +586,7 @@ A.QUESTS = [
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
 ];
 
-A.MAX_FLOOR = 6;
+A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter
 
 </script>
 <script>
@@ -539,7 +595,7 @@ A.MAX_FLOOR = 6;
 window.A = window.A || {};
 
 A.Game = (function () {
-  const SAVE = 'abstieg.v1';
+  const SAVE = 'abstieg.v2';   // v2: neue Ebenen (Welten, Raumformen); alte Durchläufe passen nicht mehr
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
@@ -611,13 +667,15 @@ A.Game = (function () {
   }
 
   function monsterEntity(m, floor, elite, idx) {
-    const hpM = 1 + 0.32 * (floor - 1), atkM = 1 + 0.22 * (floor - 1);
+    const hpM = 1 + 0.28 * (floor - 1), atkM = 1 + 0.18 * (floor - 1);
     const e = {
       id: 'e' + idx, mid: m.id, name: (elite ? A.t(A.UI.elitePrefix) + ' ' : '') + A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
       def: Math.round((m.def || 0) * (1 + 0.15 * (floor - 1))), spd: m.spd + (elite ? 2 : 0), crit: m.crit || 5, dodge: m.dodge || 0,
       poisonOnHit: m.poisonOnHit || 0, burn: m.burn || 0, thorns: m.thorns || 0, steal: m.steal || 0, color: m.color, shape: m.shape,
       boss: !!m.boss, elite: !!elite, split: !!m.split, healOnPhys: m.healOnPhys || 0, skills: [],
+      leap: !!m.leap, rooted: !!m.rooted, spread: m.spread || 0, ring: m.ring || 0, ringCd: m.ringCd || 0, summon: m.summon || null, summonCd: m.summonCd || 0,
+      teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
     };
     e.hp = e.maxHp;
     if (elite) { const t = run ? run.rng.pick(['giftig', 'gepanzert', 'schnell']) : 'gepanzert'; e.eliteKind = t; if (t === 'giftig') e.poisonOnHit += 3; if (t === 'gepanzert') e.def += 5; if (t === 'schnell') e.spd += 4; }
@@ -709,7 +767,8 @@ A.Game = (function () {
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
-    if (run.floor >= A.MAX_FLOOR) { run.over = true; run.won = true; finishRun(); return 'won'; }
+    // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
+    if (run.floor === A.MAX_FLOOR) { run.won = true; meta.won = (meta.won || 0) + 1; saveMeta(); }
     run.floor++; newFloor(); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
@@ -1968,6 +2027,408 @@ A.Art = (function () {
     'c.......c',
   ]];
 
+  // ---------- Neue Gegner der Welten ----------
+  R.frog = [[
+    '...66....66...',
+    '..6006..6006..',
+    '..CCCCCCCCCC..',
+    '.CCHHCCCCCCCC.',
+    'CCCHCCCCCCCCCC',
+    'CCCCCC0000CCCC',
+    '.DCCCCCCCCCCD.',
+    'DDD.DDCCDD.DDD',
+    'D.D........D.D',
+  ], [
+    '...66....66...',
+    '..6006..6006..',
+    '..CCCCCCCCCC..',
+    '.CCHHCCCCCCCC.',
+    'CCCHCCCCCCCCCC',
+    'CCCCCCCCCCCCCC',
+    '.DCCCCCCCCCCD.',
+    '..DDDCCCCDDD..',
+    '.DD........DD.',
+  ]];
+  R.vine = [[
+    '...C...CC.....',
+    '..CHC.CHHC....',
+    '..CRRRRRRRC...',
+    '.CRR6R6R6RRC..',
+    '.CR0000000RC..',
+    '.CRR6R6R6RRC..',
+    '..CRRRRRRRC...',
+    '...CCCCCCC....',
+    '.....DD..D....',
+    '.D...DD.D.....',
+    '..D..DDD......',
+    '...DDDD.......',
+    '.....DD.......',
+    '...gDDDDg.....',
+    '..gggggggg....',
+  ], [
+    '..C....CC.....',
+    '.CHC..CHHC....',
+    '..CRRRRRRRC...',
+    '.CRR6R6R6RRC..',
+    '.CRRRRRRRRRC..',
+    '.CRR6R6R6RRC..',
+    '..CRRRRRRRC...',
+    '...CCCCCCC....',
+    '....DD...D....',
+    '..D.DD..D.....',
+    '...DDDD.......',
+    '....DDD.......',
+    '.....DD.......',
+    '...gDDDDg.....',
+    '..gggggggg....',
+  ]];
+  R.scorpion = [[
+    '.........yYy....',
+    '........y...C...',
+    '............C...',
+    '...........CC...',
+    '.CC.......CC....',
+    'C..C.CCCCCCC....',
+    'CC..CCHHCCCC....',
+    '...CC0CC0CCC....',
+    '....CCCCCCC.....',
+    '...D.D.D.D.D....',
+    '..D.D.D.D.D.....',
+  ], [
+    '..........yYy...',
+    '.........y..C...',
+    '............C...',
+    '...........CC...',
+    '.CC.......CC....',
+    'C..C.CCCCCCC....',
+    'CC..CCHHCCCC....',
+    '...CC0CC0CCC....',
+    '....CCCCCCC.....',
+    '....D.D.D.D.D...',
+    '...D.D.D.D.D....',
+  ]];
+  R.mummy = [[
+    '...ssss.....',
+    '..sMsssM....',
+    '..sYsYss....',
+    '..ssMsss....',
+    '...sss......',
+    '.MsssMssss..',
+    'sMssMssMsss.',
+    's.ssMsss..s.',
+    's.sMssss..M.',
+    '..ssssMs....',
+    '..sMssss....',
+    '..ss..ss....',
+    '..sM..Ms....',
+    '..ss..ss....',
+  ], [
+    '...ssss.....',
+    '..sMsssM....',
+    '..sYsYss....',
+    '..ssMsss....',
+    '...sss......',
+    '.MsssMssss..',
+    'sMssMssMsss.',
+    's.ssMsss..s.',
+    'M.sMssss..s.',
+    '..ssssMs....',
+    '..sMssss....',
+    '..ss..ss....',
+    '.sM....Ms...',
+    '.ss....ss...',
+  ]];
+  R.crab = [[
+    '.CC..........CC.',
+    'CHHC........CHHC',
+    '.CC..6....6..CC.',
+    '..C..0....0..C..',
+    '..CCCCCCCCCCCC..',
+    '.CCHHCCCCCCCCCC.',
+    '.DCCCCCCCCCCCCD.',
+    '..DDDDDDDDDDDD..',
+    '.D.D.D....D.D.D.',
+  ], [
+    'CC............CC',
+    'CHHC........CHHC',
+    '.CC..6....6..CC.',
+    '..C..0....0..C..',
+    '..CCCCCCCCCCCC..',
+    '.CCHHCCCCCCCCCC.',
+    '.DCCCCCCCCCCCCD.',
+    '..DDDDDDDDDDDD..',
+    'D.D.D......D.D.D',
+  ]];
+  R.jelly = [[
+    '...CCCCCC...',
+    '..CHHCCCCC..',
+    '.CH6CCCCCCC.',
+    '.CCCCCCCCCC.',
+    '.CC0CCCC0CC.',
+    '.CCCCCCCCCC.',
+    '.DCDCDCDCDC.',
+    '..C.D.C.D...',
+    '..D.C.D.C...',
+    '.C..D.C..D..',
+    '..C..C.D....',
+  ], [
+    '...CCCCCC...',
+    '..CHHCCCCC..',
+    '.CH6CCCCCCC.',
+    '.CCCCCCCCCC.',
+    '.CC0CCCC0CC.',
+    '.CCCCCCCCCC.',
+    '.DCDCDCDCDC.',
+    '...C.D.C.D..',
+    '...D.C.D.C..',
+    '..D.C..D.C..',
+    '...D.C..C...',
+  ]];
+  R.imp = [[
+    '.f........f.',
+    '.ff......ff.',
+    '..fCCCCCCf..',
+    '..CCYCCYCC..',
+    '..CCCCCCCC..',
+    '...CC00CC...',
+    '....CCCC....',
+    '..CCCCCCCC..',
+    '.CC.CCCC.CC.',
+    '.Y..CCCC..Y.',
+    '....C..C....',
+    '...DD..DD...',
+  ], [
+    '.f........f.',
+    '.ff......ff.',
+    '..fCCCCCCf..',
+    '..CCYCCYCC..',
+    '..CCCCCCCC..',
+    '...CC00CC...',
+    '....CCCC....',
+    '.CCCCCCCCCC.',
+    'Y...CCCC...Y',
+    '....CCCC....',
+    '...C....C...',
+    '..DD....DD..',
+  ]];
+  R.eye = [[
+    '....DDDDDD....',
+    '..DDCCCCCCDD..',
+    '.DCC666666CCD.',
+    'DC6666RR6666CD',
+    'DC666R00R666CD',
+    'DC666R00R666CD',
+    'DC6666RR6666CD',
+    '.DCC666666CCD.',
+    '..DDCCCCCCDD..',
+    '....DDDDDD....',
+    '...D..D..D....',
+    '..D...D...D...',
+  ], [
+    '....DDDDDD....',
+    '..DDCCCCCCDD..',
+    '.DCC666666CCD.',
+    'DC666RR66666CD',
+    'DC66R00R6666CD',
+    'DC66R00R6666CD',
+    'DC666RR66666CD',
+    '.DCC666666CCD.',
+    '..DDCCCCCCDD..',
+    '....DDDDDD....',
+    '....D..D..D...',
+    '...D...D...D..',
+  ]];
+  R.octopus = [[
+    '.....CCCCCC.....',
+    '...CCHHCCCCCC...',
+    '..CCHCCCCCCCCC..',
+    '..CCCCCCCCCCCC..',
+    '..CC66CCCC66CC..',
+    '..CC60CCCC60CC..',
+    '..CCCCCCCCCCCC..',
+    '...CCCC00CCCC...',
+    '..CCDCCCCCCDCC..',
+    '.CC.DC.CC.CD.CC.',
+    '.C..D..CC..D..C.',
+    'C...DC.DD.CD...C',
+    'C....C.D..C....C',
+    '.....C....C.....',
+  ], [
+    '.....CCCCCC.....',
+    '...CCHHCCCCCC...',
+    '..CCHCCCCCCCCC..',
+    '..CCCCCCCCCCCC..',
+    '..CC66CCCC66CC..',
+    '..CC60CCCC60CC..',
+    '..CCCCCCCCCCCC..',
+    '...CCCC00CCCC...',
+    '..CCDCCCCCCDCC..',
+    '.CC.DC.CC.CD.CC.',
+    'C...D..CC..D...C',
+    'C..DC..DD..CD..C',
+    '.C.C...D....C.C.',
+    '..C.........C...',
+  ]];
+
+  // ---------- Hindernisse der Welten ----------
+  R.pillar = [[
+    '344444443',
+    '455555554',
+    '.3444443.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.2343432.',
+    '344444443',
+    '233333332',
+  ]];
+  R.tree = [[
+    '......GGlG......',
+    '....GGlllGGG....',
+    '...GllGGGllGG...',
+    '..GGlGGgGGGlGG..',
+    '.GGGGgGGGGgGGGG.',
+    '.GlGGGGlGGGGGlG.',
+    '.GGgGGGGGgGGGGG.',
+    '..GGGgGGGGGGgG..',
+    '...ggGGgGGgGg...',
+    '.....ggNNgg.....',
+    '.......NN.......',
+    '.......mN.......',
+    '.......NN.......',
+    '......NmNN......',
+    '.....NN..NN.....',
+  ]];
+  R.bush = [[
+    '...GlG.G....',
+    '.GGlGGGlGG..',
+    'GGlGGgGRGGG.',
+    'GGGgGGGlGgG.',
+    '.gGRgGGGGg..',
+    '..gg.gg.g...',
+  ]];
+  R.cactus = [[
+    '....Gl....',
+    '...GlGG...',
+    '...GlGG.G.',
+    '.G.GlGG.GG',
+    '.GGGlGGGGG',
+    '..GGlGG...',
+    '...GlGG...',
+    '...GlGG...',
+    '...GlGG...',
+    '..mMMMMm..',
+  ]];
+  R.obelisk = [[
+    '...y...',
+    '..yYy..',
+    '..mMM..',
+    '..mM0..',
+    '..mMM..',
+    '..m0M..',
+    '..mMM..',
+    '.mmMMM.',
+    '.mm0MM.',
+    '.mmMMM.',
+    '.m0MMM.',
+    '.mmMMM.',
+    'NNNNNNN',
+    'NmmmmmN',
+  ]];
+  R.urn = [[
+    '..NNNN..',
+    '...mm...',
+    '..mMMm..',
+    '.mMyyMm.',
+    '.mMMMMm.',
+    '.mMyyMm.',
+    '..mMMm..',
+    '...NN...',
+  ]];
+  R.coral = [[
+    '.R....R...',
+    '.RR..Rw.R.',
+    '..R.RR..R.',
+    '..RRR..RR.',
+    '...RR.RR..',
+    '...RRRR...',
+    '....RR....',
+    '...rrrr...',
+  ]];
+  R.column = [[
+    '..34.43..',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3454543.',
+    '.3G545G3.',
+    '.2GG3GG2.',
+    '344444443',
+    '233333332',
+  ]];
+  R.obsidian = [[
+    '...v......',
+    '...1v...1.',
+    '..11v..1v.',
+    '..112v.12.',
+    '.1112v112v',
+    '.11122112v',
+    '1111221122',
+    '0111111110',
+  ]];
+  R.anvil = [[
+    '2222222222',
+    '.34444443.',
+    '....33....',
+    '...3443...',
+    '..233332..',
+  ]];
+  R.crystal = [[
+    '...w....',
+    '..wVw...',
+    '..wVw.w.',
+    '.wVVwVw.',
+    '.wVVwVVw',
+    '.vVVwVVv',
+    '..vVvVv.',
+    '..vvvvv.',
+  ]];
+  R.shrine = [[
+    '....cBc....',
+    '...cB6Bc...',
+    '...cBBBc...',
+    '....cBc....',
+    '...........',
+    '..4555554..',
+    '.345555543.',
+    '..3444443..',
+    '...34543...',
+    '...34543...',
+    '...34543...',
+    '..3444443..',
+    '.233333332.',
+  ], [
+    '...........',
+    '....cBc....',
+    '...cB6Bc...',
+    '...cBBBc...',
+    '....cBc....',
+    '..4555554..',
+    '.345555543.',
+    '..3444443..',
+    '...34543...',
+    '...34543...',
+    '...34543...',
+    '..3444443..',
+    '.233333332.',
+  ]];
+
   // ---------- Paletten je Figur ----------
   const RACE_SKIN = { mensch: ['#e8b796', '#c28569'], fels: ['#5a6988', '#3a4466'], schatten: ['#b55088', '#68386c'], pilz: ['#63c74d', '#3e8948'], kobold: ['#feae34', '#be4a2f'] };
   const CLASS_CLOTH = { klinge: ['#a22633', '#e43b44', '#f6757a'], schuetze: ['#265c42', '#3e8948', '#63c74d'], weber: ['#124e89', '#0099db', '#2ce8f5'], rufer: ['#68386c', '#b55088', '#f6757a'], brau: ['#be4a2f', '#d77643', '#feae34'] };
@@ -1981,6 +2442,18 @@ A.Art = (function () {
     schattenfaenger: { spr: 'ghost', C: '#68386c', D: '#262b44', H: '#b55088', '0': '#fee761' },
     spiegelgeist: { spr: 'ghost', C: '#c0cbdc', D: '#8b9bb4', H: '#ffffff', '0': '#0099db' },
     tunnelwurm: { spr: 'worm' }, kobolddieb: { spr: 'kobold' },
+    frosch: { spr: 'frog', C: '#63c74d', D: '#265c42', H: '#c8f5a0' },
+    ranke: { spr: 'vine', C: '#3e8948', D: '#265c42', H: '#63c74d' },
+    dornenmutter: { spr: 'vine', C: '#265c42', D: '#193c3e', H: '#3e8948', R: '#b55088' },
+    skorpion: { spr: 'scorpion', C: '#d77643', D: '#733e39', H: '#e4a672' },
+    mumie: { spr: 'mummy' },
+    sandpharao: { spr: 'mummy', s: '#feae34', M: '#be4a2f', Y: '#2ce8f5' },
+    krabbe: { spr: 'crab', C: '#e43b44', D: '#a22633', H: '#f6757a' },
+    qualle: { spr: 'jelly', C: '#2ce8f5', D: '#0099db', H: '#c0f8ff' },
+    glutwicht: { spr: 'imp', C: '#f77622', D: '#be4a2f' },
+    leerenauge: { spr: 'eye', C: '#b55088', D: '#68386c' },
+    waechter: { spr: 'eye', C: '#e43b44', D: '#a22633', R: '#feae34' },
+    kraken: { spr: 'octopus', C: '#b55088', D: '#68386c', H: '#f6757a' },
   };
 
   // ---------- Zwischenspeicher ----------
@@ -2346,12 +2819,256 @@ A.FX = (function () {
 
 </script>
 <script>
+// Der Abstieg – Ebenen-Bau: Räume in verschiedenen Formen (Rechteck, Achteck, Rund, Kreuz, L, Ring, Säulenhalle,
+// Zwillingskammern, Insel, Becken, Stege ...), verbunden über Gänge, dazu Hindernisse und Gefahren je Welt.
+// Kacheln: 0 Wand, 1 Boden, 2 verschlossene Tür, 3 Hindernis, 4 Grube (Wasser, Lava, Abgrund: nicht begehbar, Geschosse fliegen drüber),
+//          5 Gefahr-Boden (Treibsand, Schlamm, seichtes Wasser, Glut: begehbar, bremst oder brennt)
+'use strict';
+window.A = window.A || {};
+
+A.Levels = (function () {
+  const GX = 4, GY = 4, CW = 17, CH = 13;   // Raster aus Zellen, je Zelle ein Raum
+  const DX = 8, DY = 6;                      // Lage der Türen in der Zelle (zwei Kacheln breit: DX/DX+1 bzw. DY/DY+1)
+  const MW = GX * CW, MH = GY * CH;
+  const walk = (v) => v === 1 || v === 5;
+
+  // ---------- Raumformen ----------
+  // Liefert ein Raster (Zeilen) mit 0 Wand, 1 Boden, 3 Hindernis, 4 Grube, 5 Gefahr
+  function shapeMask(kind, w, h, rng, wd) {
+    const m = []; for (let y = 0; y < h; y++) m.push(new Array(w).fill(1));
+    const cx = (w - 1) / 2, cy = (h - 1) / 2;
+    const pit = wd.pit ? 4 : 0;
+    switch (kind) {
+      case 'octagon': {
+        const c = Math.min(3, Math.floor(Math.min(w, h) / 3));
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (x + y < c || (w - 1 - x) + y < c || x + (h - 1 - y) < c || (w - 1 - x) + (h - 1 - y) < c) m[y][x] = 0;
+        break;
+      }
+      case 'circle': {
+        const rx = w / 2, ry = h / 2;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = (x - cx) / rx, dy = (y - cy) / ry; if (dx * dx + dy * dy > 1.08) m[y][x] = 0; }
+        break;
+      }
+      case 'cross': {
+        const ax = Math.max(2, Math.floor(w / 5)), ay = Math.max(2, Math.floor(h / 5));
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (Math.abs(x - cx) > ax + 0.5 && Math.abs(y - cy) > ay + 0.5) m[y][x] = 0;
+        break;
+      }
+      case 'L': {
+        const qw = Math.floor(w * 0.45), qh = Math.floor(h * 0.45), left = rng.chance(0.5), top = rng.chance(0.5);
+        for (let y = 0; y < qh; y++) for (let x = 0; x < qw; x++) m[top ? y : h - 1 - y][left ? x : w - 1 - x] = 0;
+        break;
+      }
+      case 'ring': {
+        // Mitte versperrt: Mauerblock, in Welten mit Gruben ein Teich, Kanal oder Abgrund
+        const fill = pit && rng.chance(0.7) ? 4 : 0;
+        for (let y = 3; y < h - 3; y++) for (let x = 3; x < w - 3; x++) m[y][x] = fill;
+        break;
+      }
+      case 'pillars': {
+        for (let y = 2; y < h - 2; y += 3) for (let x = 2; x < w - 2; x += 3) m[y][x] = 3;
+        break;
+      }
+      case 'twin': {
+        // zwei Kammern, getrennt durch eine Mauer mit Durchgang
+        if (w >= h) { const wx = Math.floor(w / 2), gy = rng.int(1, h - 3); for (let y = 0; y < h; y++) if (y !== gy && y !== gy + 1) m[y][wx] = 0; }
+        else { const wy = Math.floor(h / 2), gx = rng.int(1, w - 3); for (let x = 0; x < w; x++) if (x !== gx && x !== gx + 1) m[wy][x] = 0; }
+        break;
+      }
+      case 'island': {
+        // Graben rund um eine Insel, Brücken in der Mitte jeder Seite
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          const d = Math.min(x, y, w - 1 - x, h - 1 - y);
+          if ((d === 2 || d === 3) && Math.abs(x - cx) > 1 && Math.abs(y - cy) > 1) m[y][x] = pit || 3;
+        }
+        break;
+      }
+      case 'pool': {
+        // Becken mit Gefahr-Boden in der Mitte (Treibsand, Schlamm, Glut, seichtes Wasser)
+        const rx = Math.max(2, w / 3), ry = Math.max(1.6, h / 3);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = (x - cx) / rx, dy = (y - cy) / ry; const d = dx * dx + dy * dy; if (d < 1) m[y][x] = 5; }
+        if (pit) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = (x - cx) / (rx * 0.45), dy = (y - cy) / (ry * 0.45); if (dx * dx + dy * dy < 1) m[y][x] = 4; }
+        break;
+      }
+      case 'stripes': {
+        // Gräben quer durch den Raum, je mit einem Steg
+        const vert = w >= h;
+        if (vert) for (let x = 3; x < w - 3; x += 4) { const g = rng.int(1, h - 3); for (let y = 0; y < h; y++) if (y !== g && y !== g + 1) m[y][x] = pit || 3; }
+        else for (let y = 3; y < h - 3; y += 4) { const g = rng.int(1, w - 3); for (let x = 0; x < w; x++) if (x !== g && x !== g + 1) m[y][x] = pit || 3; }
+        break;
+      }
+      case 'garden': {
+        // verstreute Hindernisse (Bäume, Kakteen, Korallen ...) und kleine Gefahrenflecken
+        for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) if (rng.chance(0.09)) m[y][x] = 3;
+        if (wd.hazard) for (let i = 0; i < 3; i++) { const px = rng.int(2, w - 3), py = rng.int(2, h - 3); for (let y = py - 1; y <= py + 1; y++) for (let x = px - 2; x <= px + 2; x++) if (m[y] && m[y][x] === 1 && rng.chance(0.75)) m[y][x] = 5; }
+        break;
+      }
+      case 'hall': {
+        // grosse Halle: Achteck mit Säulenpaaren
+        const c = 2;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (x + y < c || (w - 1 - x) + y < c || x + (h - 1 - y) < c || (w - 1 - x) + (h - 1 - y) < c) m[y][x] = 0;
+        for (const [px, py] of [[3, 3], [w - 4, 3], [3, h - 4], [w - 4, h - 4]]) m[py][px] = 3;
+        break;
+      }
+    }
+    // Ränder des Rechtecks immer Wand, damit Wände sauber gezeichnet werden (nur Formen ohne eigenen Rand)
+    return m;
+  }
+
+  const SMALL = ['rect', 'octagon', 'circle', 'rect'];
+  const FIGHT = ['rect', 'octagon', 'circle', 'cross', 'L', 'ring', 'pillars', 'twin', 'island', 'pool', 'stripes', 'garden'];
+
+  function pickShape(type, wd, rng) {
+    if (type === 'boss') return { kind: rng.pick(['hall', 'octagon', 'circle']), w: 15, h: 11 };
+    if (type === 'start') return { kind: rng.pick(['rect', 'octagon']), w: rng.int(9, 11), h: rng.int(7, 9) };
+    if (type !== 'fight' && type !== 'elite') return { kind: rng.pick(SMALL), w: rng.int(9, 12), h: rng.int(7, 9) };
+    // Kampfräume: Formen nach Welt gewichtet; Insel/Becken/Stege nur, wo die Welt Gruben oder Gefahr-Boden hat
+    let list = FIGHT.filter(k => (k !== 'island' && k !== 'stripes') || wd.pit).filter(k => k !== 'pool' || wd.hazard);
+    if (wd.favor) list = list.concat(wd.favor, wd.favor);
+    const kind = rng.pick(list);
+    const big = ['island', 'ring', 'pool', 'stripes', 'pillars', 'twin', 'cross'].includes(kind);
+    return { kind, w: big ? rng.int(12, 15) : rng.int(9, 15), h: big ? rng.int(9, 11) : rng.int(7, 11) };
+  }
+
+  // ---------- Ganze Ebene ----------
+  function gen(floor, seed, wd) {
+    const rng = new A.RNG(seed);
+    const n = Math.max(7, Math.min(12, 7 + Math.floor((floor - 1) / 3)));
+    const key = (c) => c.x + ',' + c.y;
+    const start = { x: rng.int(0, GX - 1), y: rng.int(0, GY - 1) };
+    const cells = [start], edges = [];
+    let guard = 0;
+    while (cells.length < n && guard++ < 2000) {
+      const from = rng.pick(cells);
+      for (const [dx, dy] of rng.shuffle([[1, 0], [-1, 0], [0, 1], [0, -1]])) {
+        const c = { x: from.x + dx, y: from.y + dy };
+        if (c.x < 0 || c.y < 0 || c.x >= GX || c.y >= GY || cells.some(p => key(p) === key(c))) continue;
+        cells.push(c); edges.push([from, c]); break;
+      }
+    }
+    // ein paar Extra-Verbindungen für Rundwege
+    for (let i = 0; i < cells.length; i++) for (let j = i + 1; j < cells.length; j++) {
+      const a = cells[i], b = cells[j];
+      if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) !== 1) continue;
+      if (edges.some(([p, q]) => (key(p) === key(a) && key(q) === key(b)) || (key(p) === key(b) && key(q) === key(a)))) continue;
+      if (rng.chance(0.25)) edges.push([a, b]);
+    }
+    // Entfernung vom Start: der fernste Raum wird Treppe oder Boss
+    const distMap = { [key(start)]: 0 }; const queue = [start];
+    while (queue.length) { const c = queue.shift(); for (const [p, q] of edges) { const o = key(p) === key(c) ? q : key(q) === key(c) ? p : null; if (o && distMap[key(o)] == null) { distMap[key(o)] = distMap[key(c)] + 1; queue.push(o); } } }
+    const far = cells.slice().sort((a, b) => distMap[key(b)] - distMap[key(a)])[0];
+    const types = {}; types[key(start)] = 'start'; types[key(far)] = A.isBossFloor(floor) ? 'boss' : 'stairs';
+    const rest = cells.filter(c => !types[key(c)]);
+    const pool = ['shrine', 'fight', 'fight'];
+    if (floor >= 2) pool.push('elite');
+    const extra = rng.shuffle(['shop', 'treasure', 'rest', 'event', 'fight', floor >= 6 ? 'elite' : 'fight', 'fight', 'treasure', 'fight', 'event', 'fight']);
+    while (pool.length < rest.length) pool.push(extra.shift() || 'fight');
+    rng.shuffle(rest).forEach((c, i) => types[key(c)] = pool[i]);
+
+    // Kacheln
+    const tiles = []; for (let y = 0; y < MH; y++) tiles.push(new Array(MW).fill(0));
+    const rooms = cells.map((c, i) => {
+      const type = types[key(c)];
+      const sh = pickShape(type, wd, rng);
+      const w = sh.w, h = sh.h;
+      // Lage in der Zelle: die Türlinien (DX, DY) müssen im Raum liegen
+      const ox = rng.int(Math.max(1, DX + 2 - w), Math.min(CW - 1 - w, DX)), oy = rng.int(Math.max(1, DY + 2 - h), Math.min(CH - 1 - h, DY));
+      const r = { i, cx: c.x, cy: c.y, type, shape: sh.kind, x: c.x * CW + ox, y: c.y * CH + oy, w, h, doors: [], cleared: false, used: false, visited: false, props: [] };
+      stamp(r, shapeMask(sh.kind, w, h, rng, wd));
+      return r;
+    });
+    function stamp(r, mask) { for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) tiles[r.y + y][r.x + x] = mask[y][x]; }
+    const roomAt = (c) => rooms.find(r => r.cx === c.x && r.cy === c.y);
+    // Gänge: von der Zellgrenze nach innen, bis begehbarer Boden erreicht ist
+    function carve(r) {
+      for (const [p, q] of edges) {
+        const a = roomAt(p), b = roomAt(q); if (a !== r && b !== r) continue;
+        const o = a === r ? b : a;
+        if (o.cy === r.cy) {
+          const yy = r.cy * CH + DY, dir = o.cx > r.cx ? 1 : -1;
+          let x = dir > 0 ? r.cx * CW + CW - 1 : r.cx * CW;
+          for (let k = 0; k < CW; k++, x -= dir) { if (walk(tiles[yy][x]) && walk(tiles[yy + 1][x]) && k > 0) break; tiles[yy][x] = 1; tiles[yy + 1][x] = 1; }
+        } else {
+          const xx = r.cx * CW + DX, dir = o.cy > r.cy ? 1 : -1;
+          let y = dir > 0 ? r.cy * CH + CH - 1 : r.cy * CH;
+          for (let k = 0; k < CH; k++, y -= dir) { if (walk(tiles[y][xx]) && walk(tiles[y][xx + 1]) && k > 0) break; tiles[y][xx] = 1; tiles[y][xx + 1] = 1; }
+        }
+      }
+    }
+    rooms.forEach(carve);
+    for (const [p, q] of edges) {
+      const a = roomAt(p), b = roomAt(q); const door = [];
+      if (p.y === q.y) { const l = Math.min(p.x, q.x); const x0 = l * CW + CW - 1, yy = p.y * CH + DY; door.push([x0, yy], [x0 + 1, yy], [x0, yy + 1], [x0 + 1, yy + 1]); }
+      else { const t = Math.min(p.y, q.y); const y0 = t * CH + CH - 1, xx = p.x * CW + DX; door.push([xx, y0], [xx, y0 + 1], [xx + 1, y0], [xx + 1, y0 + 1]); }
+      a.doors.push(...door); b.doors.push(...door);
+    }
+    // Erreichbarkeit prüfen: Räume, deren Mitte oder Türen nicht erreichbar sind, werden zu einfachen Rechtecken
+    const sr = rooms.find(r => r.type === 'start');
+    let reach = null;
+    for (let pass = 0; pass < 4; pass++) {
+      reach = flood(tiles, sr.x + Math.floor(sr.w / 2), sr.y + Math.floor(sr.h / 2));
+      let bad = false;
+      for (const r of rooms) {
+        const ok = r.doors.every(([x, y]) => reach[y * MW + x]) && countReach(reach, r) >= r.w * r.h * 0.35;
+        if (!ok) { bad = true; r.shape = 'rect'; const m = shapeMask('rect', r.w, r.h, rng, wd); stamp(r, m); carve(r); }
+      }
+      if (!bad) break;
+    }
+    // Hindernisse in Ecken (Fässer, Kisten, Töpfe ... je Welt) und aus den Formen
+    const rngF = new A.RNG((seed ^ 0x7f4a7c15) >>> 0 || 3);
+    for (const r of rooms) {
+      r.furn = [];
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (tiles[y][x] === 3) r.furn.push({ tx: x, ty: y, kind: rngF.pick(wd.obst) });
+      if (r.type === 'boss' || r.type === 'start') continue;
+      for (const [tx, ty] of [[r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1]]) {
+        if (!rngF.chance(0.4) || tiles[ty][tx] !== 1) continue;
+        // nicht neben einen Gang stellen
+        if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => r.doors.some(([x, y]) => Math.abs(x - tx - dx) + Math.abs(y - ty - dy) === 0))) continue;
+        tiles[ty][tx] = 3; r.furn.push({ tx, ty, kind: rngF.pick(wd.corner || ['barrel', 'crate', 'pot', 'barrel']) });
+      }
+    }
+    reach = flood(tiles, sr.x + Math.floor(sr.w / 2), sr.y + Math.floor(sr.h / 2));
+    // Ankerpunkt je Raum: erreichbarer Boden nahe der Mitte mit Platz rundherum (für Truhe, Feuer, Treppe, Held)
+    for (const r of rooms) r.anchor = anchorOf(tiles, reach, r);
+    return { rooms, tiles, edges, start: sr, reach };
+  }
+  function countReach(reach, r) { let n = 0; for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (reach[y * MW + x]) n++; return n; }
+  function flood(tiles, sx, sy) {
+    const reach = new Uint8Array(MW * MH); const q = [];
+    // Startpunkt: nächster begehbarer Punkt
+    if (!walk(tiles[sy][sx])) { outer: for (let d = 1; d < 8; d++) for (let y = sy - d; y <= sy + d; y++) for (let x = sx - d; x <= sx + d; x++) if (tiles[y] && walk(tiles[y][x])) { sx = x; sy = y; break outer; } }
+    reach[sy * MW + sx] = 1; q.push(sx, sy);
+    while (q.length) {
+      const y = q.pop(), x = q.pop();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue;
+        const k = ny * MW + nx; if (reach[k]) continue; const v = tiles[ny][nx];
+        if (walk(v) || v === 2) { reach[k] = 1; q.push(nx, ny); }
+      }
+    }
+    return reach;
+  }
+  function anchorOf(tiles, reach, r) {
+    const cx = r.x + Math.floor(r.w / 2), cy = r.y + Math.floor(r.h / 2);
+    const free = (x, y) => { for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) if (!tiles[yy] || tiles[yy][xx] !== 1 || !reach[yy * MW + xx]) return false; return true; };
+    for (let d = 0; d < 8; d++) for (let y = cy - d; y <= cy + d; y++) for (let x = cx - d; x <= cx + d; x++) {
+      if (Math.max(Math.abs(x - cx), Math.abs(y - cy)) !== d) continue;
+      if (x > r.x && y > r.y && x < r.x + r.w - 1 && y < r.y + r.h - 1 && free(x, y)) return { tx: x, ty: y };
+    }
+    return { tx: cx, ty: cy };
+  }
+
+  return { GX, GY, CW, CH, DX, DY, MW, MH, gen, flood, shapeMask, walk };
+})();
+
+</script>
+<script>
 // Der Abstieg – Die Welt: Ebenen aus Räumen, Held in Echtzeit steuern, Gegner, Angriffe, Beute.
 'use strict';
 window.A = window.A || {};
 
 A.World = (function () {
-  const TS = 32, CW = 15, CH = 11, GX = 3, GY = 3;   // Kachelgrösse, Zellen-Grösse in Kacheln, Raster
+  const TS = 32, CW = A.Levels.CW, CH = A.Levels.CH, GX = A.Levels.GX, GY = A.Levels.GY;   // Kachelgrösse, Zellen-Grösse in Kacheln, Raster
   const MW = GX * CW, MH = GY * CH;                     // Karte in Kacheln
   const G = () => A.Game;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2360,75 +3077,21 @@ A.World = (function () {
   let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
 
-  // ---------- Ebene bauen ----------
+  // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
   function genFloor(floor, seed, saved) {
-    const rng = new A.RNG(seed);
-    const n = Math.min(GX * GY - 1, 5 + floor);
-    const key = (c) => c.x + ',' + c.y;
-    const start = { x: rng.int(0, GX - 1), y: rng.int(0, GY - 1) };
-    const cells = [start], edges = [];
-    let guard = 0;
-    while (cells.length < n && guard++ < 500) {
-      const from = rng.pick(cells);
-      for (const [dx, dy] of rng.shuffle([[1, 0], [-1, 0], [0, 1], [0, -1]])) {
-        const c = { x: from.x + dx, y: from.y + dy };
-        if (c.x < 0 || c.y < 0 || c.x >= GX || c.y >= GY || cells.some(p => key(p) === key(c))) continue;
-        cells.push(c); edges.push([from, c]); break;
-      }
-    }
-    // Ein paar Extra-Verbindungen für Rundwege
-    for (let i = 0; i < cells.length; i++) for (let j = i + 1; j < cells.length; j++) {
-      const a = cells[i], b = cells[j];
-      if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) !== 1) continue;
-      if (edges.some(([p, q]) => (key(p) === key(a) && key(q) === key(b)) || (key(p) === key(b) && key(q) === key(a)))) continue;
-      if (rng.chance(0.3)) edges.push([a, b]);
-    }
-    // Entfernung vom Start
-    const distMap = { [key(start)]: 0 }; const queue = [start];
-    while (queue.length) { const c = queue.shift(); for (const [p, q] of edges) { const o = key(p) === key(c) ? q : key(q) === key(c) ? p : null; if (o && distMap[key(o)] == null) { distMap[key(o)] = distMap[key(c)] + 1; queue.push(o); } } }
-    const far = cells.slice().sort((a, b) => distMap[key(b)] - distMap[key(a)])[0];
-    // Raumtypen
-    const types = {}; types[key(start)] = 'start'; types[key(far)] = A.BOSSES[floor] ? 'boss' : 'stairs';
-    const rest = cells.filter(c => !types[key(c)]);
-    const pool = ['fight', 'fight'];
-    const extra = rng.shuffle(['shop', 'rest', 'treasure', 'event', floor >= 2 ? 'elite' : 'fight', 'fight']);
-    while (pool.length < rest.length) pool.push(extra.shift() || 'fight');
-    rng.shuffle(rest).forEach((c, i) => types[key(c)] = pool[i]);
-    // Kacheln: 0 Wand, 1 Boden, 2 verschlossene Tür
-    const tiles = []; for (let y = 0; y < MH; y++) { tiles.push(new Array(MW).fill(0)); }
-    const rooms = cells.map((c, i) => {
-      const r = { i, cx: c.x, cy: c.y, type: types[key(c)], x: c.x * CW + 1, y: c.y * CH + 1, w: CW - 2, h: CH - 2, doors: [], cleared: false, used: false, visited: false, props: [] };
-      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) tiles[y][x] = 1;
-      return r;
-    });
-    const roomAt = (c) => rooms.find(r => r.cx === c.x && r.cy === c.y);
-    for (const [p, q] of edges) {
-      const a = roomAt(p), b = roomAt(q); const door = [];
-      if (p.y === q.y) { const l = Math.min(p.x, q.x); const x0 = l * CW + CW - 1; const yy = p.y * CH + 5; door.push([x0, yy], [x0 + 1, yy], [x0, yy + 1], [x0 + 1, yy + 1]); }
-      else { const t = Math.min(p.y, q.y); const y0 = t * CH + CH - 1; const xx = p.x * CW + 7; door.push([xx, y0], [xx, y0 + 1], [xx + 1, y0], [xx + 1, y0 + 1]); }
-      for (const [x, y] of door) tiles[y][x] = 1;
-      a.doors.push(...door); b.doors.push(...door);
-    }
-    // Möbel in den Ecken (Fässer, Kisten, Töpfe): Hindernisse, auch Deckung gegen Geschosse
-    const rngF = new A.RNG((seed ^ 0x7f4a7c15) >>> 0 || 3);
+    const wd = A.worldOf(floor);
+    const lv = A.Levels.gen(floor, seed, wd);
+    const { rooms, tiles, edges } = lv;
+    // Gegenstände im Raum, auf dem Ankerpunkt (freier Boden nahe der Mitte)
     for (const r of rooms) {
-      r.furn = [];
-      for (const [tx, ty] of [[r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1]]) {
-        if (!rngF.chance(0.4) || tiles[ty][tx] !== 1) continue;
-        tiles[ty][tx] = 3; r.furn.push({ tx, ty, kind: rngF.pick(['barrel', 'crate', 'pot', 'barrel']) });
-      }
-    }
-    // Gegenstände im Raum
-    for (const r of rooms) {
-      const cx = (r.x + r.w / 2) * TS, cy = (r.y + r.h / 2) * TS;
-      const kind = { treasure: 'chest', shop: 'merchant', rest: 'fire', event: 'statue', stairs: 'stairs' }[r.type];
+      const cx = (r.anchor.tx + 0.5) * TS, cy = (r.anchor.ty + 0.5) * TS;
+      const kind = { treasure: 'chest', shop: 'merchant', rest: 'fire', event: 'statue', stairs: 'stairs', shrine: 'shrine' }[r.type];
       if (kind) r.props.push({ kind, x: cx, y: cy, room: r.i, used: false });
       if (r.type === 'boss') r.props.push({ kind: 'stairs', x: cx, y: cy, room: r.i, used: false, hidden: true });
       if (r.type === 'start') r.props.push({ kind: 'sign', x: cx, y: cy - TS * 2, room: r.i, used: false, text: A.LANG === 'de' ? 'Ebene ' + floor : 'Floor ' + floor });
     }
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
-    const sr = rooms.find(r => r.type === 'start');
-    return { floor, seed, rooms, tiles, start: sr, edges };
+    return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach: lv.reach };
   }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
 
@@ -2439,7 +3102,7 @@ A.World = (function () {
     if (A.FX) A.FX.reset();
     W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
     const sr = f.start;
-    W.hero = mkHero((sr.x + sr.w / 2) * TS, (sr.y + sr.h / 2 + 1) * TS);
+    W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
     return W;
   }
@@ -2457,44 +3120,140 @@ A.World = (function () {
   }
 
   // ---------- Kacheln und Kollision ----------
+  // begehbar: 1 Boden, 5 Gefahr-Boden; Geschosse halten nur Wände (0), Türen (2) und Hindernisse (3) auf
   function tile(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); if (tx < 0 || ty < 0 || tx >= MW || ty >= MH) return 0; return W.tiles[ty][tx]; }
-  function solid(x, y) { return tile(x, y) !== 1; }
+  function solid(x, y) { const v = tile(x, y); return v !== 1 && v !== 5; }
+  function shotSolid(x, y) { const v = tile(x, y); return v === 0 || v === 2 || v === 3; }
   function blocked(x, y, r) { return solid(x - r, y - r) || solid(x + r, y - r) || solid(x - r, y + r) || solid(x + r, y + r); }
   function moveEnt(e, dx, dy) {
-    if (dx && !blocked(e.x + dx, e.y, e.r)) e.x += dx; else if (dx) { const s = Math.sign(dx); while (!blocked(e.x + s, e.y, e.r)) e.x += s; }
-    if (dy && !blocked(e.x, e.y + dy, e.r)) e.y += dy; else if (dy) { const s = Math.sign(dy); while (!blocked(e.x, e.y + s, e.r)) e.y += s; }
+    if (dx && !blocked(e.x + dx, e.y, e.r)) e.x += dx; else if (dx) { const s = Math.sign(dx); let k = 0; while (!blocked(e.x + s, e.y, e.r) && k++ < 40) e.x += s; }
+    if (dy && !blocked(e.x, e.y + dy, e.r)) e.y += dy; else if (dy) { const s = Math.sign(dy); let k = 0; while (!blocked(e.x, e.y + s, e.r) && k++ < 40) e.y += s; }
   }
   function roomOf(x, y) { const cx = Math.floor(x / TS / CW), cy = Math.floor(y / TS / CH); return W.rooms.find(r => r.cx === cx && r.cy === cy) || null; }
   function inside(r, x, y) { const tx = x / TS, ty = y / TS; return tx >= r.x + 0.5 && tx <= r.x + r.w - 0.5 && ty >= r.y + 0.5 && ty <= r.y + r.h - 0.5; }
   function setDoors(r, v) { for (const [x, y] of r.doors) W.tiles[y][x] = v; }
+  // freie Sicht zwischen zwei Punkten (für Gegner: direkt laufen oder dem Wegenetz folgen)
+  function clearLine(a, b) { const d = dist(a, b), n = Math.ceil(d / 14); for (let i = 1; i < n; i++) { const k = i / n; if (solid(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k)) return false; } return true; }
+  // Wegenetz: Schritte von jeder Kachel bis zum Helden (neu berechnet, wenn der Held die Kachel wechselt)
+  function updateFlow() {
+    const h = W.hero, hx = Math.floor(h.x / TS), hy = Math.floor(h.y / TS), k0 = hy * MW + hx;
+    if (W.flowAt === k0) return; W.flowAt = k0;
+    const fl = W.flow || (W.flow = new Int16Array(MW * MH)); fl.fill(-1);
+    const q = [k0]; fl[k0] = 0;
+    for (let qi = 0; qi < q.length; qi++) {
+      const k = q[qi], x = k % MW, y = (k - x) / MW, d = fl[k]; if (d > 60) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue; const nk = ny * MW + nx; if (fl[nk] >= 0) continue; const v = W.tiles[ny][nx]; if (v !== 1 && v !== 5) continue; fl[nk] = d + 1; q.push(nk); }
+    }
+  }
+  // Richtung zum Helden über das Wegenetz (um Säulen, Gruben und Mauern herum)
+  function flowDir(m) {
+    const fl = W.flow; if (!fl) return null; const x = Math.floor(m.x / TS), y = Math.floor(m.y / TS); const here = fl[y * MW + x];
+    let best = null, bd = here >= 0 ? here : 1e9;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+      const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue; const v = fl[ny * MW + nx]; if (v < 0 || v >= bd) continue;
+      if (dx && dy && (fl[y * MW + nx] < 0 || fl[ny * MW + x] < 0)) continue;   // keine Ecken schneiden
+      bd = v; best = [dx, dy];
+    }
+    if (!best) return null;
+    const tx = (x + best[0] + 0.5) * TS - m.x, ty = (y + best[1] + 0.5) * TS - m.y, l = Math.hypot(tx, ty) || 1;
+    return [tx / l, ty / l];
+  }
+  // Gefahr-Boden unter einer Figur: bremst (Treibsand, Schlamm, seichtes Wasser, Schatten) oder brennt (Glut)
+  function hazardAt(e) { return tile(e.x, e.y + (e.r || 0) * 0.5) === 5 ? W.world.hazard : null; }
+  function hazardSlow(e) { const hz = hazardAt(e); if (!hz || e.fly) return 1; const H = A.HAZARDS[hz]; return H && H.slow ? H.slow : 1; }
 
   // ---------- Gegner ----------
+  function reachable(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return !W.reach || !!W.reach[ty * MW + tx]; }
   function spawnRoom(r) {
     const run = G().run, rng = run.rng, f = run.floor;
     const list = [];
-    if (r.type === 'boss') list.push(G().monsterEntity(A.BOSSES[f], f, false, 1));
+    if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
     else {
-      const pool = A.MONSTERS.filter(m => f >= m.floors[0] && f <= m.floors[1]);
-      const n = r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5);
+      const pool = A.monsterPool(f);
+      const n = r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > 130 && f >= 6 ? 1 : 0);
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, r.type === 'elite' && i === 0, i + 1));
     }
     list.forEach((m, i) => {
       let x, y, tries = 0;
-      do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < 130 || blocked(x, y, 26)) && tries++ < 40);
+      do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < 130 || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
     });
     r.monsters = list.length;
   }
   function freeSpot(x, y, r) {
-    if (!blocked(x, y, r)) return [x, y];
-    for (let d = 8; d < 200; d += 8) for (let a = 0; a < 8; a++) { const nx = x + Math.cos(a * Math.PI / 4) * d, ny = y + Math.sin(a * Math.PI / 4) * d; if (!blocked(nx, ny, r)) return [nx, ny]; }
+    if (!blocked(x, y, r) && reachable(x, y)) return [x, y];
+    for (let d = 8; d < 260; d += 8) for (let a = 0; a < 8; a++) { const nx = x + Math.cos(a * Math.PI / 4) * d, ny = y + Math.sin(a * Math.PI / 4) * d; if (!blocked(nx, ny, r) && reachable(nx, ny)) return [nx, ny]; }
     return [x, y];
   }
   function addMon(m, x, y) {
     [x, y] = freeSpot(x, y, m.boss ? 24 : m.elite ? 17 : 14);
-    Object.assign(m, { x, y, r: m.boss ? 24 : m.elite ? 17 : 14, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1 });
+    Object.assign(m, { x, y, r: m.boss ? 24 : m.elite ? 17 : 14, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
     W.mons.push(m); return m;
   }
+  // Besondere Fähigkeiten von Gegnern und Bossen: Ring aus Geschossen, Fächer, Sprung, Beschwören, Verschwinden
+  function ringShot(m, n, col) { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + W.t; shoot(m, m.x + Math.cos(a) * 100, m.y + Math.sin(a) * 100, m.atk * 0.8, { kind: 'magic', speed: 190, r: 6, color: col || '#c77dff', life: 2.4 }); } }
+  function monSpecial(m, dt, d, nx, ny) {
+    const h = W.hero;
+    m.skT -= dt;
+    if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
+    if (m.summon) {
+      m.sumT -= dt;
+      const alive = W.mons.filter(o => o.alive && o.summoned).length;
+      if (m.sumT <= 0 && alive < (m.boss ? 3 : 2)) {
+        m.sumT = m.summonCd || 9; const base = A.MONSTERS.find(x => x.id === m.summon);
+        if (base) for (let i = 0; i < (m.boss ? 2 : 1); i++) { const s = G().monsterEntity(base, W.floor, false, 80 + i); const a = Math.random() * Math.PI * 2; const mm = addMon(s, m.x + Math.cos(a) * 60, m.y + Math.sin(a) * 50); mm.summoned = true; mm.spawn = 0.5; fx('spawn', { m: mm }); }
+        float(m.x, m.y - 60, A.LANG === 'de' ? 'Ruft Hilfe!' : 'Calls for help!', '#fee761', 14);
+      }
+    }
+    if (m.teleport && m.skT <= 0 && !m.ring) { m.skT = 4 + Math.random() * 2; blink(m); }
+    if (m.teleport && m.ring && m.hp < m.maxHp * 0.5 && (m.tpT = (m.tpT || 6) - dt) <= 0) { m.tpT = 6; blink(m); }
+    if (m.leap && m.state !== 'leap' && m.cd <= 0 && d > 70 && d < 260 && clearLine(m, h)) { m.state = 'leap'; m.st = 0.32; m.lx = nx; m.ly = ny; m.cd = 2.2; fx('windup', { m }); return true; }
+    if (m.state === 'leap') { m.st -= dt; moveEnt(m, m.lx * 520 * dt, m.ly * 520 * dt); if (m.st <= 0) { m.state = 'chase'; if (dist(m, h) < m.r + h.r + 14) hit(m, h, m.atk * 1.2, { kind: 'phys' }); fx('strike', { m }); } return true; }
+    return false;
+  }
+  function blink(m) {
+    const h = W.hero; fx('appear', { m });
+    for (let k = 0; k < 20; k++) { const a = Math.random() * Math.PI * 2, rr = 120 + Math.random() * 120; const x = h.x + Math.cos(a) * rr, y = h.y + Math.sin(a) * rr; if (!blocked(x, y, m.r) && reachable(x, y) && roomOf(x, y) === W.active) { m.x = x; m.y = y; break; } }
+    m.spawn = 0.25; fx('spawn', { m });
+  }
+
+  // ---------- Gegner-Verhalten ----------
+  function monStep(m, dt) {
+    const h = W.hero;
+    if (m.flash > 0) m.flash -= dt; if (m.swing > 0) m.swing -= dt;
+    if (m.spawn > 0) { m.spawn -= dt; if (m.spawn <= 0) fx('appear', { m }); return; }
+    m.cd -= dt;
+    if (m.kbT > 0) { m.kbT -= dt; if (!m.rooted) moveEnt(m, m.kbx * dt, m.kby * dt); }
+    if (m.stun > 0) { m.stun -= dt; return; }
+    const d = dist(m, h) || 1, nx = (h.x - m.x) / d, ny = (h.y - m.y) / d;
+    if (d < 420) { m.fx = nx; m.fy = ny; }
+    if (monSpecial(m, dt, d, nx, ny)) return;
+    if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; W.fx.push({ kind: 'claw', x: m.x, y: m.y, fx: m.fx, fy: m.fy, r: m.r + h.r + 22, life: 0.22, big: m.boss || m.elite }); fx('strike', { m }); if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys', slow: m.slowOnHit }); } return; }
+    // Laufrichtung: direkt, wenn frei; sonst über das Wegenetz um Hindernisse herum
+    let mx = nx, my = ny;
+    if (!m.fly && !clearLine(m, h)) { const fd = flowDir(m); if (fd) { mx = fd[0]; my = fd[1]; } }
+    const sp = m.speed * slowMul(m) * hazardSlow(m);
+    if (m.kind === 'melee') {
+      if (d > m.r + h.r + 4) moveEnt(m, mx * sp * dt, my * sp * dt);
+      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
+    } else {
+      const want = 170, see = clearLine(m, h);
+      if (!see) moveEnt(m, mx * sp * dt, my * sp * dt);
+      else if (d < want - 30) moveEnt(m, -nx * sp * 0.8 * dt, -ny * sp * 0.8 * dt);
+      else if (d > want + 40) moveEnt(m, nx * sp * dt, ny * sp * dt);
+      else { const px = -ny, py = nx; const s = Math.sin(W.t * 1.3 + m.x) > 0 ? 1 : -1; moveEnt(m, px * s * sp * 0.4 * dt, py * s * sp * 0.4 * dt); }
+      if (m.cd <= 0 && d < 340 && see) {
+        m.cd = (m.boss ? 1.4 : 2.1) - m.spd * 0.05; m.swing = 0.2;
+        const col = m.kind === 'magic' ? '#c77dff' : '#ffb08a', n = m.spread || 1;
+        for (let i = 0; i < n; i++) { const a = Math.atan2(ny, nx) + (i - (n - 1) / 2) * 0.28; shoot(m, m.x + Math.cos(a) * 100, m.y + Math.sin(a) * 100, m.atk, { kind: m.kind === 'magic' ? 'magic' : 'phys', speed: 230, r: 6, color: m.shotCol || col, life: 1.8, burn: m.burn ? 0.3 : 0 }); }
+      }
+    }
+    // Gefahr-Boden: Glut brennt auch Gegner
+    if (hazardAt(m) && A.HAZARDS[W.world.hazard].burn && !m.fly && (m.hzT = (m.hzT || 0) - dt) <= 0) { m.hzT = 1; addEffect(m, 'burn', Math.max(1, Math.round(m.maxHp * 0.04)), 1.2); }
+    // Gegner nicht übereinander
+    for (const o of W.mons) { if (o === m || !o.alive) continue; const dd = dist(m, o); if (dd < m.r + o.r && dd > 0) { moveEnt(m, (m.x - o.x) / dd * 40 * dt, (m.y - o.y) / dd * 40 * dt); } }
+  }
+  function slowMul(e) { return e.slowUntil && e.slowUntil > W.t ? (e.slowPow || 0.5) : 1; }
 
   // ---------- Treffer-Rechnung ----------
   function statOf(e, k) { const b = e.buffs && e.buffs[k]; let v = e[k] || 0; if (b && b.until > W.t) v = b.mul ? v * (1 + b.mul) : v + b.add; return v; }
@@ -2529,12 +3288,13 @@ A.World = (function () {
       if (opts.poison) addEffect(to, 'poison', Math.max(1, Math.round(statOf(from, 'atk') * opts.poison / 3)), 3);
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
+      if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
       if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); checkDeath(from); }
       if (to.healOnPhys && opts.kind !== 'magic') heal(to, Math.round(to.maxHp * to.healOnPhys));
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy') { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
-    if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === 'schleimer'); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
+    if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
     checkDeath(to);
     return dmg;
   }
@@ -2617,31 +3377,6 @@ A.World = (function () {
   }
   function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * 0.4) - (h.hp - G().run.hp > 0 ? 0 : 0)); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); return true; }
 
-  // ---------- Gegner-Verhalten ----------
-  function monStep(m, dt) {
-    const h = W.hero;
-    if (m.flash > 0) m.flash -= dt; if (m.swing > 0) m.swing -= dt;
-    if (m.spawn > 0) { m.spawn -= dt; if (m.spawn <= 0) fx('appear', { m }); return; }
-    m.cd -= dt;
-    if (m.kbT > 0) { m.kbT -= dt; moveEnt(m, m.kbx * dt, m.kby * dt); }
-    if (m.stun > 0) { m.stun -= dt; return; }
-    const d = dist(m, h) || 1, nx = (h.x - m.x) / d, ny = (h.y - m.y) / d;
-    if (d < 420) { m.fx = nx; m.fy = ny; }
-    if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; W.fx.push({ kind: 'claw', x: m.x, y: m.y, fx: m.fx, fy: m.fy, r: m.r + h.r + 22, life: 0.22, big: m.boss || m.elite }); fx('strike', { m }); if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys' }); } return; }
-    if (m.kind === 'melee') {
-      if (d > m.r + h.r + 4) moveEnt(m, nx * m.speed * dt, ny * m.speed * dt);
-      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
-    } else {
-      const want = 170;
-      if (d < want - 30) moveEnt(m, -nx * m.speed * 0.8 * dt, -ny * m.speed * 0.8 * dt);
-      else if (d > want + 40) moveEnt(m, nx * m.speed * dt, ny * m.speed * dt);
-      else { const px = -ny, py = nx; const s = Math.sin(W.t * 1.3 + m.x) > 0 ? 1 : -1; moveEnt(m, px * s * m.speed * 0.4 * dt, py * s * m.speed * 0.4 * dt); }
-      if (m.cd <= 0 && d < 330) { m.cd = (m.boss ? 1.4 : 2.1) - m.spd * 0.05; m.swing = 0.2; shoot(m, h.x, h.y, m.atk, { kind: m.kind === 'magic' ? 'magic' : 'phys', speed: 230, r: 6, color: m.kind === 'magic' ? '#c77dff' : '#ffb08a', life: 1.8 }); }
-    }
-    // Gegner nicht übereinander
-    for (const o of W.mons) { if (o === m || !o.alive) continue; const dd = dist(m, o); if (dd < m.r + o.r && dd > 0) { moveEnt(m, (m.x - o.x) / dd * 40 * dt, (m.y - o.y) / dd * 40 * dt); } }
-  }
-
   // ---------- Hauptschritt ----------
   function step(dt, input) {
     if (!W || W.paused) return;
@@ -2653,8 +3388,12 @@ A.World = (function () {
     let mx = input.mx, my = input.my; const len = Math.hypot(mx, my);
     if (h.stun > 0) { h.stun -= dt; mx = my = 0; }
     h.moving = len > 0.15;
-    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); moveEnt(h, mx * h.speed * dt, my * h.speed * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
+    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
     if (input.attack) heroAttack();
+    // Gefahr-Boden unter dem Helden
+    const hz = hazardAt(h); h.onHazard = hz;
+    if (hz && A.HAZARDS[hz].burn && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
+    if (W.active) updateFlow();
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -2664,7 +3403,7 @@ A.World = (function () {
     // Geschosse
     for (const s of W.shots) {
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (solid(s.x, s.y)) { s.life = 0; fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (shotSolid(s.x, s.y)) { s.life = 0; fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
       if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
@@ -2724,14 +3463,23 @@ window.A = window.A || {};
   const hash = (x, y, k) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(k | 0, 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // Farbwelten je Tiefe
+  // Welten: Farben, Boden- und Wandart, Gruben und Gefahr-Boden (Welt-Daten in data.js, A.WORLDS)
   const THEMES = {
-    stone: { floor: ['#4d5878', '#48536f', '#525e80', '#45506c'], mortar: '#2a2f48', brick: ['#5e6a92', '#57638a', '#64719a'], brickHi: '#7d8ab0', brickLo: '#2a2f4c', cap: '#1d1c2e', capHi: '#41445f', ambient: '#4b4870', banner: ['#a22633', '#e43b44', '#f6757a'], moss: ['#3e8948', '#265c42'], name: { de: 'Graue Gewölbe', en: 'Grey Vaults' } },
-    grotto: { floor: ['#2f4d4b', '#2b4744', '#345451', '#29423f'], mortar: '#162a2b', brick: ['#365c56', '#31544f', '#3c645d'], brickHi: '#527f74', brickLo: '#14262a', cap: '#0f1b1d', capHi: '#2a4644', ambient: '#324c4e', banner: ['#265c42', '#3e8948', '#63c74d'], moss: ['#3e8948', '#63c74d', '#265c42'], name: { de: 'Schleimgrotte', en: 'Slime Grotto' } },
-    rust: { floor: ['#5b3d3d', '#543737', '#624343', '#4f3333'], mortar: '#2b1a20', brick: ['#7b4b41', '#71453b', '#84534a'], brickHi: '#a3685b', brickLo: '#2e1a1e', cap: '#1f1216', capHi: '#4a2b2c', ambient: '#4e3838', banner: ['#be4a2f', '#f77622', '#feae34'], moss: ['#733e39', '#3e2731'], name: { de: 'Rostschmiede', en: 'Rust Forge' } },
-    throne: { floor: ['#4c2d3c', '#3c2331'], mortar: '#25141e', brick: ['#5b3149', '#532b42', '#643751'], brickHi: '#804b68', brickLo: '#2b1421', cap: '#1b0f17', capHi: '#432536', ambient: '#47334a', banner: ['#a22633', '#e43b44', '#feae34'], moss: ['#3e2731'], name: { de: 'Thronsaal', en: 'Throne Hall' } },
+    stone: { floor: ['#4d5878', '#48536f', '#525e80', '#45506c'], mortar: '#2a2f48', brick: ['#5e6a92', '#57638a', '#64719a'], brickHi: '#7d8ab0', brickLo: '#2a2f4c', cap: '#1d1c2e', capHi: '#41445f', ambient: '#4b4870', banner: ['#a22633', '#e43b44', '#f6757a'], moss: ['#3e8948', '#265c42'],
+      floorStyle: 'slabs', wallStyle: 'brick', mote: '#c0cbdc', rise: -1, shaft: [200, 210, 255], tint: [20, 18, 44], puddle: 'water' },
+    jungle: { floor: ['#3e5a3a', '#38533a', '#44613f', '#334d35'], mortar: '#1e2e22', brick: ['#55684f', '#4f624a', '#5c7155'], brickHi: '#7a9070', brickLo: '#1f2c22', cap: '#121c15', capHi: '#2c4030', ambient: '#4a6a52', banner: ['#265c42', '#3e8948', '#63c74d'], moss: ['#3e8948', '#63c74d', '#265c42'],
+      floorStyle: 'grass', wallStyle: 'vines', mote: '#a2e05a', rise: -1, shaft: [190, 255, 160], tint: [8, 30, 14], puddle: 'water', pit: { base: '#124e89', mid: '#1a5f8f', hi: '#7fd8ff', rim: '#2b4a30' }, haz: { base: '#4a3a24', mid: '#3a2c1a', hi: '#6a5434' } },
+    desert: { floor: ['#c9a26b', '#c19a63', '#d1ab74', '#b8915c'], mortar: '#8a6440', brick: ['#c8945a', '#bd8a52', '#d39e63'], brickHi: '#ead4aa', brickLo: '#6e4a2a', cap: '#3e2a1c', capHi: '#8a6440', ambient: '#86705c', banner: ['#be4a2f', '#feae34', '#fee761'], moss: ['#b86f50', '#e4a672'],
+      floorStyle: 'sand', wallStyle: 'sandstone', mote: '#ead4aa', rise: 0, shaft: [255, 230, 170], tint: [44, 26, 8], puddle: null, haz: { base: '#a87a46', mid: '#8a6036', hi: '#d8b080' } },
+    water: { floor: ['#2f5a6e', '#2b5366', '#346377', '#284d5f'], mortar: '#15303d', brick: ['#3a6680', '#355e77', '#40708a'], brickHi: '#5f93ad', brickLo: '#132a38', cap: '#0d1d27', capHi: '#24485c', ambient: '#3c5e78', banner: ['#124e89', '#0099db', '#2ce8f5'], moss: ['#3e8948', '#265c42', '#2ce8f5'],
+      floorStyle: 'slabs', wallStyle: 'algae', mote: '#7fd8ff', rise: 1, shaft: [140, 220, 255], tint: [4, 22, 40], puddle: 'water', pit: { base: '#0b2e5a', mid: '#124e89', hi: '#7fd8ff', rim: '#1f4a5e' }, haz: { base: '#2c6a8a', mid: '#25607f', hi: '#9fd8ff', shallow: true } },
+    volcano: { floor: ['#3a2a2e', '#352629', '#413034', '#30222a'], mortar: '#170d10', brick: ['#4a2a28', '#432624', '#542f2c'], brickHi: '#7a3e34', brickLo: '#1a0c0c', cap: '#120808', capHi: '#3a1814', ambient: '#5e3c36', banner: ['#be4a2f', '#f77622', '#feae34'], moss: ['#733e39', '#3e2731'],
+      floorStyle: 'basalt', wallStyle: 'rock', mote: '#feae34', rise: 1, shaft: [255, 150, 80], tint: [44, 10, 6], puddle: 'lava', pit: { base: '#be4a2f', mid: '#f77622', hi: '#fee761', rim: '#2a1418', lava: true }, haz: { base: '#2a1418', mid: '#3a1c1c', hi: '#f77622', embers: true } },
+    abyss: { floor: ['#3a2a4c', '#2e2140'], mortar: '#170f22', brick: ['#4a3366', '#432e5c', '#523a70'], brickHi: '#7a5aa0', brickLo: '#1c1230', cap: '#0e0818', capHi: '#35244c', ambient: '#43355e', banner: ['#68386c', '#b55088', '#f6757a'], moss: ['#68386c'],
+      floorStyle: 'checker', wallStyle: 'brick', mote: '#f6757a', rise: 1, shaft: [255, 140, 220], tint: [36, 8, 40], puddle: null, pit: { base: '#08060e', mid: '#120c1c', hi: '#b55088', rim: '#2a1c3c', void: true }, haz: { base: '#24183a', mid: '#1c1230', hi: '#b55088' } },
   };
-  const themeOf = (f) => f >= 6 ? 'throne' : f >= 4 ? 'rust' : f === 3 ? 'grotto' : 'stone';
+  for (const w of A.WORLDS) if (THEMES[w.id]) THEMES[w.id].name = w.name;
+  const themeOf = (f) => A.worldOf(f).id;
   const RAR_COL = () => A.RARITY;
   const ELITE_COL = { giftig: '#63c74d', gepanzert: '#8b9bb4', schnell: '#fee761' };
 
@@ -2771,7 +3519,7 @@ window.A = window.A || {};
     // ---------- Ebene vorab malen (Boden, Wände, Deko) ----------
     buildLevel(W) {
       const MW = A.World.MW, MH = A.World.MH;
-      const th = THEMES[themeOf(W.floor)]; this.theme = th; this.themeKey = themeOf(W.floor);
+      const th = THEMES[themeOf(W.floor)] || THEMES.stone; this.theme = th; this.themeKey = themeOf(W.floor);
       const cv = A.Art.mk(MW * T, MH * T), c = cv.getContext('2d');
       const img = c.createImageData(cv.width, cv.height), D = img.data, IW = cv.width;
       const seed = (W.seed >>> 0) % 100000;
@@ -2779,63 +3527,76 @@ window.A = window.A || {};
       const isF = (x, y) => tile(x, y) !== 0;
       const put = (x, y, col, d) => { const i = (y * IW + x) * 4; D[i] = clamp(col[0] + d, 0, 255); D[i + 1] = clamp(col[1] + d, 0, 255); D[i + 2] = clamp(col[2] + d, 0, 255); D[i + 3] = 255; };
       const dark = (x, y, f) => { const i = (y * IW + x) * 4; D[i] *= f; D[i + 1] *= f; D[i + 2] *= f; };
+      const tintPx = (x, y, col, k) => { const i = (y * IW + x) * 4; D[i] += (col[0] - D[i]) * k; D[i + 1] += (col[1] - D[i + 1]) * k; D[i + 2] += (col[2] - D[i + 2]) * k; };
       const FL = th.floor.map(rgb), MO = rgb(th.mortar), BR = th.brick.map(rgb), BH = rgb(th.brickHi), BL = rgb(th.brickLo), CP = rgb(th.cap), CH = rgb(th.capHi);
+      const style = th.floorStyle, wst = th.wallStyle;
+      // Platten (Grundmuster für Stein, Wasser, Basalt und Gras-Pflaster)
+      const slabs = (tx, ty, px, py, pal, sd) => {
+        const v = hash(tx, ty, seed + 1);
+        const rects = v < 0.3 ? [[0, 0, 16, 16]] : v < 0.55 ? [[0, 0, 8, 16], [8, 0, 8, 16]] : v < 0.8 ? [[0, 0, 16, 8], [0, 8, 16, 8]] : [[0, 0, 8, 8], [8, 0, 8, 8], [0, 8, 8, 8], [8, 8, 8, 8]];
+        rects.forEach(([rx, ry, rw, rh], i) => {
+          const base = pal[Math.floor(hash(tx * 4 + i, ty, seed + 7) * pal.length)]; const sh = Math.round((hash(tx, ty * 4 + i, seed + 9) - 0.5) * 10);
+          for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
+            if (x === rx + rw - 1 || y === ry + rh - 1) { put(px + x, py + y, MO, 0); continue; }
+            let d = sh + Math.round((hash(px + x, py + y, seed) - 0.5) * 7);
+            if (x === rx || y === ry) d += 9; else if (x === rx + rw - 2 || y === ry + rh - 2) d -= 7;
+            put(px + x, py + y, base, d + (sd || 0));
+          }
+        });
+      };
+      this.pits = []; this.hazTiles = []; this.lights = [];
       for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
-        const px = tx * T, py = ty * T;
+        const px = tx * T, py = ty * T, tv = tile(tx, ty);
         if (isF(tx, ty)) {
-          if (this.themeKey === 'throne') {
+          if (style === 'checker') {
             const base = FL[(tx + ty) & 1];
             for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const edge = x === T - 1 || y === T - 1; put(px + x, py + y, edge ? MO : base, edge ? 0 : (x === 0 || y === 0 ? 8 : 0) + Math.round((hash(px + x, py + y, seed) - 0.5) * 6)); }
-            continue;
+            if (hash(tx, ty, seed + 51) < 0.06) { const gc = rgb('#b55088'); for (let k = 0; k < 5; k++) put(px + 5 + k, py + 8 + (k % 2), gc, -40); }   // Runen
+          } else if (style === 'grass') {
+            // Gras mit alten Platten dazwischen, Halme und kleine Blüten
+            if (hash(tx >> 1, ty >> 1, seed + 61) < 0.32) slabs(tx, ty, px, py, [rgb('#5a6a58'), rgb('#55654f'), rgb('#606f5c')], -6);
+            else for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const gx = px + x, gy = py + y; const n = hash(gx >> 1, gy >> 1, seed + 62); put(gx, gy, FL[Math.floor(n * FL.length)], Math.round((hash(gx, gy, seed + 63) - 0.5) * 14) + (n > 0.85 ? 10 : 0)); }
+            for (let k = 0; k < 5; k++) { const x = px + Math.floor(hash(tx, ty * 7 + k, seed + 64) * 15), y = py + 2 + Math.floor(hash(tx * 7 + k, ty, seed + 65) * 13); put(x, y, rgb('#63c74d'), 0); put(x, y - 1, rgb('#3e8948'), 0); }
+            if (hash(tx, ty, seed + 66) < 0.12) { const x = px + 3 + Math.floor(hash(tx, ty, 67) * 10), y = py + 3 + Math.floor(hash(tx, ty, 68) * 10); const fc = rgb(hash(tx, ty, 69) < 0.5 ? '#fee761' : '#f6757a'); put(x, y, fc, 0); put(x + 1, y, fc, -30); put(x, y + 1, fc, -30); }
+          } else if (style === 'sand') {
+            // Sand mit Wellen, ab und zu eine Sandsteinplatte
+            if (hash(tx >> 1, ty, seed + 71) < 0.22) slabs(tx, ty, px, py, [rgb('#b8865a'), rgb('#c08e60'), rgb('#ad7e52')], 0);
+            else for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const gx = px + x, gy = py + y; const w = (gx * 0.35 + gy * 1.1 + Math.sin(gx * 0.12 + seed) * 3) % 7; put(gx, gy, FL[Math.floor(hash(gx >> 2, gy >> 2, seed + 72) * FL.length)], (w < 1 ? -14 : w < 2 ? 8 : 0) + Math.round((hash(gx, gy, seed + 73) - 0.5) * 8)); }
+          } else if (style === 'basalt') {
+            slabs(tx, ty, px, py, FL, 0);
+            if (hash(tx, ty, seed + 81) < 0.18) { let x = 2 + Math.floor(hash(tx, ty, 82) * 10), y = 2 + Math.floor(hash(tx, ty, 83) * 10); const gc = rgb('#f77622'), gy2 = rgb('#feae34'); for (let k = 0; k < 8; k++) { put(px + clamp(x, 0, 15), py + clamp(y, 0, 15), k % 3 ? gc : gy2, -20); x += hash(tx + k, ty, 84) < 0.5 ? 1 : 0; y += hash(tx, ty + k, 85) < 0.6 ? 1 : -1; } }
+          } else {
+            slabs(tx, ty, px, py, FL, 0);
+            // Risse und Steinchen
+            if (hash(tx, ty, seed + 3) < 0.13) { let x = 2 + Math.floor(hash(tx, ty, 4) * 10), y = 2 + Math.floor(hash(tx, ty, 5) * 10); for (let k = 0; k < 7; k++) { put(px + clamp(x, 0, 15), py + clamp(y, 0, 15), MO, 4); x += hash(tx + k, ty, 6) < 0.5 ? 1 : 0; y += hash(tx, ty + k, 7) < 0.6 ? 1 : -1; } }
+            if (hash(tx, ty, seed + 11) < 0.4) { const x = Math.floor(hash(tx, ty, 12) * 14) + 1, y = Math.floor(hash(tx, ty, 13) * 14) + 1; put(px + x, py + y, MO, 10); put(px + x + 1, py + y, FL[0], 18); }
           }
-          const v = hash(tx, ty, seed + 1);
-          const rects = v < 0.3 ? [[0, 0, 16, 16]] : v < 0.55 ? [[0, 0, 8, 16], [8, 0, 8, 16]] : v < 0.8 ? [[0, 0, 16, 8], [0, 8, 16, 8]] : [[0, 0, 8, 8], [8, 0, 8, 8], [0, 8, 8, 8], [8, 8, 8, 8]];
-          rects.forEach(([rx, ry, rw, rh], i) => {
-            const base = FL[Math.floor(hash(tx * 4 + i, ty, seed + 7) * FL.length)]; const sh = Math.round((hash(tx, ty * 4 + i, seed + 9) - 0.5) * 10);
-            for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
-              if (x === rx + rw - 1 || y === ry + rh - 1) { put(px + x, py + y, MO, 0); continue; }
-              let d = sh + Math.round((hash(px + x, py + y, seed) - 0.5) * 7);
-              if (x === rx || y === ry) d += 9; else if (x === rx + rw - 2 || y === ry + rh - 2) d -= 7;
-              put(px + x, py + y, base, d);
-            }
-          });
-          // Risse
-          if (hash(tx, ty, seed + 3) < 0.13) { let x = 2 + Math.floor(hash(tx, ty, 4) * 10), y = 2 + Math.floor(hash(tx, ty, 5) * 10); for (let k = 0; k < 7; k++) { put(px + clamp(x, 0, 15), py + clamp(y, 0, 15), MO, 4); x += hash(tx + k, ty, 6) < 0.5 ? 1 : 0; y += hash(tx, ty + k, 7) < 0.6 ? 1 : -1; } }
-          // Steinchen
-          if (hash(tx, ty, seed + 11) < 0.4) { const x = Math.floor(hash(tx, ty, 12) * 14) + 1, y = Math.floor(hash(tx, ty, 13) * 14) + 1; put(px + x, py + y, MO, 10); put(px + x + 1, py + y, FL[0], 18); }
+          if (tv === 4) this.paintPit(tx, ty, px, py, th, put, tile, seed);
+          else if (tv === 5) this.paintHaz(tx, ty, px, py, th, put, tintPx, tile, seed);
         } else if (isF(tx, ty + 1)) {
-          // Wand-Vorderseite (Ziegel)
+          // Wand-Vorderseite
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
             const gx = px + x; let col, d = 0;
             const tall = !isF(tx, ty - 1);
             if (!tall && y === 0) { col = CH; d = 6; }
             else if (!tall && y === 1) { col = BH; d = -4; }
             else if (y === T - 1) { col = BL; }
-            else {
-              const yy = y - 2, course = Math.floor(yy / 4), off = (course & 1) * 4, cy = ty * 4 + course;
-              if (yy % 4 === 3 || (gx + off) % 8 === 7) { col = BL; d = 6; }
-              else { const bi = Math.floor((gx + off) / 8); col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)]; d = Math.round((hash(gx, py + y, seed + 22) - 0.5) * 8) + (yy % 4 === 0 ? 10 : 0) - (y > 11 ? 8 : 0); if (hash(bi, cy, seed + 23) < 0.06) d -= 22; }
-            }
+            else [col, d] = this.wallPix(gx, py + y, y, ty, false, BR, BL, seed, wst);
             put(gx, py + y, col, d);
           }
-          // Moos an der Wand
-          if (hash(tx, ty, seed + 31) < (this.themeKey === 'grotto' ? 0.5 : 0.12)) { const mc = th.moss.map(rgb); for (let k = 0; k < 9; k++) { const x = Math.floor(hash(tx, k, 32) * 16), y = 10 + Math.floor(hash(k, ty, 33) * 5); put(px + x, py + y, mc[k % mc.length], 0); if (hash(x, y, 34) < 0.4 && y > 1) put(px + x, py + y - 1, mc[0], -10); } }
+          this.wallDeco(tx, ty, px, py, th, put, seed, true);
         } else if (isF(tx, ty + 2) && !isF(tx, ty + 1)) {
-          // Oberes Wandstück: die Wand ist zwei Kacheln hoch, oben der Deckel-Rand, darunter dunklere Ziegel
+          // Oberes Wandstück: die Wand ist zwei Kacheln hoch, oben der Deckel-Rand, darunter dunklere Steine
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
             const gx = px + x; let col, d = 0;
             if (y === 0) { col = CH; d = 6; }
             else if (y === 1) { col = BH; d = -4; }
-            else {
-              const yy = y - 2, course = Math.floor(yy / 4), off = (course & 1) * 4, cy = ty * 4 + course;
-              if (yy % 4 === 3 || (gx + off) % 8 === 7) { col = BL; d = 2; }
-              else { const bi = Math.floor((gx + off) / 8); col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)]; d = Math.round((hash(gx, py + y, seed + 22) - 0.5) * 8) + (yy % 4 === 0 ? 6 : 0) - 6; if (hash(bi, cy, seed + 23) < 0.06) d -= 22; }
-            }
+            else [col, d] = this.wallPix(gx, py + y, y, ty, true, BR, BL, seed, wst);
             put(gx, py + y, col, d);
           }
+          this.wallDeco(tx, ty, px, py, th, put, seed, false);
         } else {
-          // Wand oben (Deckel)
-          // Fels: grobe Flecken und feines Rauschen, damit die Fläche zwischen den Räumen nicht leer wirkt
+          // Wand oben (Deckel): grobe Flecken und feines Rauschen
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const gx = px + x, gy = py + y; put(gx, gy, CP, Math.round((hash(gx >> 2, gy >> 2, seed + 43) - 0.5) * 9 + (hash(gx >> 3, (gy + 4) >> 3, seed + 44) - 0.5) * 7 + (hash(gx, gy, seed + 41) - 0.5) * 5)); }
           const rim = (x, y) => put(px + x, py + y, CH, 0);
           if (isF(tx, ty - 1)) for (let x = 0; x < T; x++) { rim(x, 0); put(px + x, py + 1, CH, -14); }
@@ -2853,7 +3614,7 @@ window.A = window.A || {};
       }
       c.putImageData(img, 0, 0);
       // Deko und Lichter
-      this.lights = []; this.torches = []; this.deco = []; this.glows = [];
+      this.torches = []; this.deco = []; this.glows = [];
       const rng = new A.RNG((W.seed ^ 0x5bd1e995) >>> 0 || 7);
       const S = (n, f, pal, key) => A.Art.sprite(n, f || 0, pal, key);
       const blit = (s, x, y) => { if (s) c.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h)); };
@@ -2876,19 +3637,19 @@ window.A = window.A || {};
         const nb = r.type === 'start' ? 0 : rng.int(1, 4);
         for (let i = 0; i < nb; i++) { const s = S(rng.chance(0.4) ? 'skull' : 'bones'); const x = rx + 12 + rng.next() * (rw - 24), y = ry + 14 + rng.next() * (rh - 24); c.globalAlpha = 0.85; blit(s, x, y); c.globalAlpha = 1; }
         const mc = th.moss;
-        for (let i = 0; i < (this.themeKey === 'grotto' ? 6 : 2); i++) { const x = rx + rng.next() * rw, y = rng.chance(0.5) ? ry + 2 + rng.next() * 6 : ry + rh - 4 - rng.next() * 6; for (let k = 0; k < 14; k++) { c.fillStyle = mc[k % mc.length]; c.globalAlpha = 0.7; c.fillRect(Math.round(x + (rng.next() - 0.5) * 12), Math.round(y + (rng.next() - 0.5) * 6), 1, 1); } c.globalAlpha = 1; }
+        for (let i = 0; i < (this.themeKey === 'jungle' ? 6 : 2); i++) { const x = rx + rng.next() * rw, y = rng.chance(0.5) ? ry + 2 + rng.next() * 6 : ry + rh - 4 - rng.next() * 6; for (let k = 0; k < 14; k++) { c.fillStyle = mc[k % mc.length]; c.globalAlpha = 0.7; c.fillRect(Math.round(x + (rng.next() - 0.5) * 12), Math.round(y + (rng.next() - 0.5) * 6), 1, 1); } c.globalAlpha = 1; }
         // Pfützen
-        if (rng.chance(this.themeKey === 'grotto' ? 0.8 : 0.35)) {
+        if (th.puddle && rng.chance(th.puddle === 'water' && this.themeKey !== 'stone' ? 0.6 : 0.35)) {
           const x = rx + 24 + rng.next() * (rw - 48), y = ry + 24 + rng.next() * (rh - 48), w = 8 + rng.next() * 10, h = 3 + rng.next() * 3;
-          const slime = this.themeKey === 'grotto', lava = this.themeKey === 'rust';
+          const slime = false, lava = th.puddle === 'lava';
           c.fillStyle = slime ? 'rgba(99,199,77,0.45)' : lava ? 'rgba(247,118,34,0.55)' : 'rgba(40,60,110,0.55)';
           c.beginPath(); c.ellipse(Math.round(x), Math.round(y), w, h, 0, 0, TAU); c.fill();
           c.fillStyle = slime ? 'rgba(200,245,160,0.5)' : lava ? 'rgba(254,231,97,0.7)' : 'rgba(160,190,230,0.45)'; c.fillRect(Math.round(x - w / 3), Math.round(y - h / 3), 3, 1);
           if (slime || lava) this.lights.push({ x: x * PX, y: y * PX, r: 30, color: slime ? '#63c74d' : '#f77622', a: 0.5, fl: lava ? 2 : 0.6 });
         }
         // Leuchtpilze (Grotte) und Glutrisse (Rost)
-        if (this.themeKey === 'grotto') for (let i = 0; i < rng.int(1, 3); i++) { const x = rx + 8 + rng.next() * (rw - 16), y = ry + (rng.chance(0.5) ? 10 : rh - 4); blit(S('mushglow', i % 2), x, y); this.lights.push({ x: x * PX, y: (y - 3) * PX, r: 34, color: '#2ce8f5', a: 0.75, fl: 0.4 }); }
-        if (this.themeKey === 'rust') for (let i = 0; i < rng.int(1, 2); i++) { let x = rx + 10 + rng.next() * (rw - 20), y = ry + 10 + rng.next() * (rh - 20); c.fillStyle = '#f77622'; for (let k = 0; k < 14; k++) { c.fillRect(Math.round(x), Math.round(y), 1, 1); if (k % 3 === 0) { c.fillStyle = '#feae34'; c.fillRect(Math.round(x), Math.round(y), 1, 1); c.fillStyle = '#f77622'; } x += rng.chance(0.5) ? 1 : -1; y += rng.chance(0.7) ? 1 : 0; } this.lights.push({ x: x * PX, y: y * PX, r: 26, color: '#f77622', a: 0.55, fl: 2 }); }
+        if (this.themeKey === 'jungle') for (let i = 0; i < rng.int(1, 3); i++) { const x = rx + 8 + rng.next() * (rw - 16), y = ry + (rng.chance(0.5) ? 10 : rh - 4); blit(S('mushglow', i % 2), x, y); this.lights.push({ x: x * PX, y: (y - 3) * PX, r: 34, color: '#2ce8f5', a: 0.75, fl: 0.4 }); }
+        if (this.themeKey === 'volcano') for (let i = 0; i < rng.int(1, 2); i++) { let x = rx + 10 + rng.next() * (rw - 20), y = ry + 10 + rng.next() * (rh - 20); c.fillStyle = '#f77622'; for (let k = 0; k < 14; k++) { c.fillRect(Math.round(x), Math.round(y), 1, 1); if (k % 3 === 0) { c.fillStyle = '#feae34'; c.fillRect(Math.round(x), Math.round(y), 1, 1); c.fillStyle = '#f77622'; } x += rng.chance(0.5) ? 1 : -1; y += rng.chance(0.7) ? 1 : 0; } this.lights.push({ x: x * PX, y: y * PX, r: 26, color: '#f77622', a: 0.55, fl: 2 }); }
         // Räume mit Sonderausstattung
         const cx = rx + rw / 2, cy = ry + rh / 2;
         if (r.type === 'boss' || r.type === 'event') {
@@ -2925,17 +3686,17 @@ window.A = window.A || {};
       this.motes = []; this.drips = []; this.cracks = []; this.shafts = [];
       for (const r of W.rooms) {
         const n = Math.round(r.w * r.h / 8);
-        for (let i = 0; i < n; i++) this.motes.push({ room: r.i, x: (r.x + ar.next() * r.w) * T, y: (r.y + ar.next() * r.h) * T, h: r.h * T, y0: r.y * T, ph: ar.next() * 100, s: ar.next() });
-        if (tk === 'grotto' || tk === 'stone') for (let i = 0; i < (tk === 'grotto' ? 3 : 1); i++) {
+        for (let i = 0; i < n; i++) this.motes.push({ room: r.i, x: (r.x + ar.next() * r.w) * T, y: (r.y + ar.next() * r.h) * T, h: r.h * T, y0: r.y * T, w: r.w * T, x0: r.x * T, ph: ar.next() * 100, s: ar.next() });
+        if (tk === 'jungle' || tk === 'stone' || tk === 'water') for (let i = 0; i < (tk === 'water' ? 3 : tk === 'jungle' ? 2 : 1); i++) {
           const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)); if (isF(tx, r.y - 1)) continue;
           this.drips.push({ room: r.i, x: tx * T + 4 + Math.floor(ar.next() * 8), y0: r.y * T - 3, y1: (r.y + 1 + ar.next() * (r.h - 2)) * T, per: 2.4 + ar.next() * 2.6, ph: ar.next() * 5, sp: -1 });
         }
         if (!isF(r.x + 2, r.y - 1) && ar.next() < 0.7) for (let i = 0; i < (ar.next() < 0.4 ? 2 : 1); i++) this.shafts.push({ room: r.i, x: (r.x + 1 + ar.next() * (r.w - 4)) * T, y: r.y * T - 6, w: 8 + Math.floor(ar.next() * 10), len: (3.5 + ar.next() * 3) * T, ph: ar.next() * 6 });
-        const m = tk === 'grotto' ? 4 : tk === 'rust' ? 3 : 0;
+        const m = tk === 'jungle' ? 3 : tk === 'volcano' ? 3 : 0;
         for (let i = 0; i < m; i++) {
           const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)), ty = r.y + 1 + Math.floor(ar.next() * (r.h - 2)); if (!isF(tx, ty)) continue;
           const px = tx * T + 3 + Math.floor(ar.next() * 8), py = ty * T + 5 + Math.floor(ar.next() * 8);
-          if (tk === 'grotto') { // drei kleine leuchtende Pilze
+          if (tk === 'jungle') { // drei kleine leuchtende Pilze
             for (let j = 0; j < 3; j++) { const ox = px + j * 3, oy = py + (j === 1 ? -1 : 0); c.fillStyle = '#ead4aa'; c.fillRect(ox, oy, 1, 2); c.fillStyle = j === 1 ? '#2ce8f5' : '#0099db'; c.fillRect(ox - 1, oy - 1, 3, 1); c.fillStyle = '#c0f8ff'; c.fillRect(ox, oy - 1, 1, 1); }
             this.lights.push({ x: (px + 3) * PX, y: py * PX, r: 24, color: '#2ce8f5', a: 0.6, fl: 0.6, room: r.i });
           } else { // Glutriss im Boden
@@ -2947,13 +3708,80 @@ window.A = window.A || {};
       }
       this.level = cv; this.lc = c; this.levelW = W; this.litAt = {}; this.cam = null; this.levelAge = 0; this.opening = null; this._act = null;
     }
+    // Wandstein je Welt: Ziegel, Sandstein (grosse Blöcke mit Zeichen), Fels (ohne Fugen), Ranken und Algen kommen in wallDeco dazu
+    wallPix(gx, gy, y, ty, upper, BR, BL, seed, wst) {
+      const yy = y - 2;
+      if (wst === 'rock') {
+        const n = hash(gx >> 2, gy >> 2, seed + 91), n2 = hash(gx >> 1, gy >> 1, seed + 92);
+        let d = Math.round((n - 0.5) * 18 + (n2 - 0.5) * 8) - (upper ? 8 : 0) - (y > 11 ? 8 : 0);
+        if (hash(gx >> 3, gy >> 2, seed + 93) < 0.12 && n2 < 0.3) return [BL, 4];
+        return [BR[Math.floor(n * BR.length)], d];
+      }
+      const bw = wst === 'sandstone' ? 12 : 8, ch = wst === 'sandstone' ? 5 : 4;
+      const course = Math.floor(yy / ch), off = (course & 1) * (bw / 2), cy = ty * 4 + course;
+      if (yy % ch === ch - 1 || (gx + off) % bw === bw - 1) return [BL, upper ? 2 : 6];
+      const bi = Math.floor((gx + off) / bw); const col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)];
+      let d = Math.round((hash(gx, gy, seed + 22) - 0.5) * 8) + (yy % ch === 0 ? (upper ? 6 : 10) : 0) - (upper ? 6 : y > 11 ? 8 : 0);
+      if (hash(bi, cy, seed + 23) < 0.06) d -= 22;
+      // Zeichen im Sandstein
+      if (wst === 'sandstone' && hash(bi, cy, seed + 24) < 0.18) { const lx = (gx + off) % bw, ly = yy % ch; if ((lx === 4 || lx === 7) && ly > 0 && ly < 4 || (ly === 2 && lx > 3 && lx < 8 && hash(bi, cy, 25) < 0.5)) return [BL, 12]; }
+      return [col, d];
+    }
+    wallDeco(tx, ty, px, py, th, put, seed, front) {
+      const wst = th.wallStyle;
+      // Moos (Grundausstattung), Ranken im Dschungel, Algen und nasser Glanz unter Wasser, Glutadern im Vulkan
+      if (front && hash(tx, ty, seed + 31) < (wst === 'vines' ? 0.45 : wst === 'algae' ? 0.4 : 0.12)) { const mc = th.moss.map(rgb); for (let k = 0; k < 9; k++) { const x = Math.floor(hash(tx, k, 32) * 16), y = 10 + Math.floor(hash(k, ty, 33) * 5); put(px + x, py + y, mc[k % mc.length], 0); if (hash(x, y, 34) < 0.4 && y > 1) put(px + x, py + y - 1, mc[0], -10); } }
+      if (wst === 'vines' && hash(tx, ty, seed + 35) < 0.55) {
+        const vx = 2 + Math.floor(hash(tx, ty, 36) * 12), len = front ? 6 + Math.floor(hash(tx, ty, 37) * 10) : 16, g1 = rgb('#3e8948'), g2 = rgb('#63c74d'), g0 = rgb('#265c42');
+        let x = vx; for (let y = front ? 0 : 0; y < len; y++) { put(px + x, py + y, y % 3 ? g1 : g0, 0); if (y % 4 === 2) { put(px + x + 1, py + y, g2, 0); put(px + x + 2, py + y - 1, g2, -10); } if (y % 4 === 0 && x > 1) put(px + x - 1, py + y, g2, -20); if (hash(tx, y, 38) < 0.25) x = clamp(x + (hash(y, ty, 39) < 0.5 ? 1 : -1), 1, 14); }
+      }
+      if (wst === 'algae' && front) { const a1 = rgb('#2ce8f5'), a2 = rgb('#3e8948'); for (let x = 0; x < T; x++) { const h = Math.floor(hash(px + x, ty, seed + 41) * 4); for (let y = T - 2 - h; y < T - 1; y++) put(px + x, py + y, hash(x, y, 42) < 0.3 ? a1 : a2, -40); } }
+      if (wst === 'rock' && hash(tx, ty, seed + 45) < 0.25) { let x = 3 + Math.floor(hash(tx, ty, 46) * 10), y = front ? 3 : 1; const o1 = rgb('#f77622'), o2 = rgb('#feae34'); for (let k = 0; k < 10 && y < 15; k++) { put(px + x, py + y, k % 3 ? o1 : o2, -10); y++; if (hash(tx + k, ty, 47) < 0.4) x = clamp(x + (hash(k, tx, 48) < 0.5 ? 1 : -1), 0, 15); } this.lights.push({ x: (px + x) * PX, y: (py + y) * PX, r: 22, color: '#f77622', a: 0.35, fl: 1 }); }
+    }
+    // Grube: Wasser (mit Schaumkante), Lava (mit Kruste), Abgrund (mit Sternen)
+    paintPit(tx, ty, px, py, th, put, tile, seed) {
+      const P = th.pit || { base: '#0d0b14', mid: '#120f1a', hi: '#3a4466', rim: '#181425', void: true };
+      const B = rgb(P.base), M = rgb(P.mid), H = rgb(P.hi), R = rgb(P.rim);
+      const up = tile(tx, ty - 1) !== 4, lf = tile(tx - 1, ty) !== 4, rt = tile(tx + 1, ty) !== 4, dn = tile(tx, ty + 1) !== 4;
+      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+        const gx = px + x, gy = py + y;
+        let col = hash(gx >> 2, gy >> 1, seed + 101) < 0.5 ? B : M, d = Math.round((hash(gx, gy, seed + 102) - 0.5) * 8);
+        if (P.lava) { const w = Math.sin(gx * 0.35 + Math.sin(gy * 0.3) * 2 + seed) + Math.sin(gy * 0.5 - gx * 0.1); col = w > 1.2 ? H : w > 0.2 ? M : B; d = 0; if (hash(gx >> 2, gy >> 2, seed + 103) < 0.12) { col = R; d = 10; } }
+        else if (P.void) { col = y < 3 && up ? M : B; d = 0; if (hash(gx, gy, seed + 104) < 0.012) { col = H; d = 0; } else if (hash(gx, gy, seed + 105) < 0.006) { col = [255, 255, 255]; } }
+        else { const w = (gx + Math.round(Math.sin(gy * 0.6) * 2)) % 9; if (w === 0 && hash(gx >> 3, gy, seed + 106) < 0.5) { col = H; d = -60; } }
+        // Kante: oben eine dunkle Lippe (Höhe), seitlich ein heller Saum (Schaum, Glut, Leuchten)
+        if (up && y < 3) { col = y === 0 ? R : y === 1 ? (P.void ? R : M) : col; d = y === 0 ? 10 : d - 20; }
+        else if ((lf && x === 0) || (rt && x === T - 1) || (dn && y === T - 1)) { col = P.void ? M : H; d = P.lava ? 0 : P.void ? 10 : -30; }
+        put(gx, gy, col, d);
+      }
+      this.pits.push({ tx, ty, lava: !!P.lava, void: !!P.void });
+      if (P.lava && hash(tx, ty, seed + 107) < 0.4) this.lights.push({ x: (px + 8) * PX, y: (py + 8) * PX, r: 34, color: '#f77622', a: 0.55, fl: 0.8 });
+      if (P.void && hash(tx, ty, seed + 108) < 0.15) this.lights.push({ x: (px + 8) * PX, y: (py + 8) * PX, r: 20, color: '#68386c', a: 0.4, fl: 0.4 });
+    }
+    // Gefahr-Boden: Schlamm (Blasen), Treibsand (Wirbel), seichtes Wasser (über dem Boden), Glut (glühende Risse), Schatten (violett)
+    paintHaz(tx, ty, px, py, th, put, tintPx, tile, seed) {
+      const Z = th.haz || { base: '#3a3020', mid: '#2a2418', hi: '#5a4a30' }; const B = rgb(Z.base), M = rgb(Z.mid), H = rgb(Z.hi);
+      const edge = (x, y) => (x === 0 && tile(tx - 1, ty) !== 5) || (x === T - 1 && tile(tx + 1, ty) !== 5) || (y === 0 && tile(tx, ty - 1) !== 5) || (y === T - 1 && tile(tx, ty + 1) !== 5);
+      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+        const gx = px + x, gy = py + y;
+        if (Z.shallow) { tintPx(gx, gy, B, edge(x, y) ? 0.35 : 0.55); if ((gx + gy * 3 + Math.floor(hash(gx >> 3, gy >> 2, seed) * 5)) % 11 === 0) tintPx(gx, gy, H, 0.5); continue; }
+        let col = hash(gx >> 1, gy >> 1, seed + 111) < 0.55 ? B : M, d = Math.round((hash(gx, gy, seed + 112) - 0.5) * 8);
+        if (Z.embers) { if (hash(gx >> 1, gy >> 1, seed + 113) < 0.16) { col = H; d = hash(gx, gy, 114) < 0.4 ? 40 : 0; } }
+        else if (this.themeKey === 'desert') { const cx = (gx % 16) - 8, cy = (gy % 16) - 8, r = Math.hypot(cx, cy * 1.4); if (Math.round(r + Math.atan2(cy, cx) * 1.3) % 4 === 0) { col = M; d = -10; } }
+        else if (hash(gx, gy, seed + 115) < 0.03) { col = H; d = 0; }
+        if (edge(x, y)) d -= 18;
+        put(gx, gy, col, d);
+      }
+      this.hazTiles.push({ tx, ty });
+      if (Z.embers && hash(tx, ty, seed + 116) < 0.35) this.lights.push({ x: (px + 8) * PX, y: (py + 8) * PX, r: 26, color: '#f77622', a: 0.4, fl: 1.4 });
+    }
     // Stimmung zeichnen (auf dem Leucht-Bild): Staub/Sporen/Glut/Asche, Tropfen mit Spritzer, Glutrisse
     drawAmbience(cx, cy) {
       const g = this.g, t = this.t, tk = this.themeKey, bw = this.bw, bh = this.bh;
-      const col = { stone: '#c0cbdc', grotto: '#63c74d', rust: '#feae34', throne: '#f6757a' }[tk] || '#c0cbdc';
-      const rise = tk === 'grotto' || tk === 'rust' ? 1 : -1, sp = tk === 'rust' ? 10 : 4;
+      const th = this.theme, col = th.mote || '#c0cbdc';
+      const rise = th.rise != null ? th.rise : -1, sp = tk === 'volcano' ? 10 : tk === 'desert' ? 14 : 4;
       // Lichtstrahlen von oben: schräge, weiche Bahnen, die langsam atmen
-      const sc = { stone: [200, 210, 255], grotto: [120, 255, 230], rust: [255, 170, 90], throne: [255, 140, 200] }[tk] || [255, 255, 255];
+      const sc = th.shaft || [255, 255, 255];
       for (const s of this.shafts || []) {
         if (this.litAt[s.room] == null) continue;
         const x = s.x - cx, y = s.y - cy, sl = s.len * 0.45; if (x + sl + s.w < 0 || x > bw || y > bh || y + s.len < 0) continue;
@@ -2961,17 +3789,34 @@ window.A = window.A || {};
         gr.addColorStop(0, `rgba(${sc},${a})`); gr.addColorStop(1, `rgba(${sc},0)`);
         g.globalAlpha = 1; g.fillStyle = gr; g.beginPath(); g.moveTo(x, y); g.lineTo(x + s.w, y); g.lineTo(x + s.w + sl, y + s.len); g.lineTo(x + sl, y + s.len); g.closePath(); g.fill();
       }
+      // Gruben leben: Wasser glitzert, Lava blubbert und glüht, im Abgrund funkeln Sterne
+      for (const p of this.pits || []) {
+        const x = p.tx * T - cx, y = p.ty * T - cy; if (x < -T || y < -T || x > bw || y > bh) continue;
+        const ph = hash(p.tx, p.ty, 7) * 10;
+        if (p.lava) {
+          g.globalAlpha = 0.14 + 0.1 * Math.sin(t * 1.7 + ph); g.fillStyle = '#f77622'; g.fillRect(x, y, T, T);
+          const k = (t * 0.6 + ph) % 3; if (k < 0.7) { const q = k / 0.7, bx = x + 3 + Math.floor(hash(p.tx, p.ty, 8) * 9), by = y + 5 + Math.floor(hash(p.tx, p.ty, 9) * 7); g.globalAlpha = 0.9 * (1 - q); g.fillStyle = '#fee761'; g.fillRect(bx, by - Math.round(q * 2), q > 0.6 ? 3 : 2, q > 0.6 ? 1 : 2); }
+        } else if (p.void) {
+          for (let i = 0; i < 2; i++) { const sx = x + Math.floor(hash(p.tx, p.ty, 10 + i) * 15), sy = y + 3 + Math.floor(hash(p.tx, p.ty, 12 + i) * 12); g.globalAlpha = Math.max(0, Math.sin(t * (1.5 + i) + ph * 3)) * 0.8; g.fillStyle = i ? '#ffffff' : '#b55088'; g.fillRect(sx, sy, 1, 1); }
+        } else {
+          const o = Math.floor((t * 5 + ph * 3) % (T + 6)) - 3; g.globalAlpha = 0.28; g.fillStyle = '#c0f8ff'; g.fillRect(x + o, y + 5 + ((p.tx + p.ty) % 3) * 3, 3, 1);
+          if (Math.sin(t * 2.3 + ph * 5) > 0.97) { g.globalAlpha = 0.8; g.fillStyle = '#ffffff'; g.fillRect(x + 8, y + 8, 1, 1); }
+        }
+      }
+      g.globalAlpha = 1;
       for (const m of this.motes || []) {
         if (this.litAt[m.room] == null) continue;
         const yy = m.y0 + ((((m.y - m.y0) - rise * t * sp * (0.6 + m.s)) % m.h) + m.h) % m.h;
-        const x = Math.round(m.x + Math.sin(t * 0.5 + m.ph) * 6 - cx), y = Math.round(yy - cy);
+        // Wüste: Sand weht seitlich durch den Raum
+        const xx = rise === 0 ? m.x0 + ((((m.x - m.x0) + t * sp * (0.6 + m.s)) % m.w) + m.w) % m.w : m.x;
+        const x = Math.round(xx + Math.sin(t * 0.5 + m.ph) * 6 - cx), y = Math.round((rise === 0 ? m.y + Math.sin(t * 1.3 + m.ph) * 3 : yy) - cy);
         if (x < 0 || y < 0 || x >= bw || y >= bh) continue;
-        g.globalAlpha = (tk === 'rust' ? 0.45 : 0.22) + 0.3 * (0.5 + 0.5 * Math.sin(t * 2 + m.ph)); g.fillStyle = col; g.fillRect(x, y, 1, 1);
+        g.globalAlpha = (tk === 'volcano' ? 0.45 : 0.22) + 0.3 * (0.5 + 0.5 * Math.sin(t * 2 + m.ph)); g.fillStyle = col; g.fillRect(x, y, 1, 1);
       }
       for (const d of this.drips || []) {
         if (this.litAt[d.room] == null) continue;
         const x = d.x - cx; if (x < -4 || x > bw + 4) continue;
-        const k = (t + d.ph) % d.per, cyc = Math.floor((t + d.ph) / d.per), tf = Math.sqrt(2 * (d.y1 - d.y0) / 320), wc = tk === 'grotto' ? '#7fd8ff' : '#c0cbdc';
+        const k = (t + d.ph) % d.per, cyc = Math.floor((t + d.ph) / d.per), tf = Math.sqrt(2 * (d.y1 - d.y0) / 320), wc = tk === 'stone' ? '#c0cbdc' : '#7fd8ff';
         g.fillStyle = wc;
         if (k < 1) { g.globalAlpha = 0.3 + k * 0.6; g.fillRect(Math.round(x), Math.round(d.y0 - cy), 1, k > 0.6 ? 2 : 1); }
         else if (k < 1 + tf) { const q = k - 1; g.globalAlpha = 0.9; g.fillRect(Math.round(x), Math.round(d.y0 + 160 * q * q - cy), 1, 2); }
@@ -3284,7 +4129,7 @@ window.A = window.A || {};
         else this.drawFallen(spr, x, y, m.fx < 0, m, sc);
         return;
       }
-      const nf = A.Art.monFrames(m.mid), fly = ['fledermaus', 'glutmotte'].includes(m.mid), ghost = m.shape === 'ghost';
+      const nf = A.Art.monFrames(m.mid), fly = m.fly && m.shape !== 'ghost', ghost = m.shape === 'ghost';
       const moving = m.state !== 'windup' && !(m.spawn > 0);
       const frame = nf > 1 ? Math.floor(this.t * (fly ? 10 : 6) + (m.x % 7)) % nf : 0;
       const spr = A.Art.monSprite(m.mid, moving ? frame : 0); const flip = m.fx < 0;
@@ -3350,6 +4195,18 @@ window.A = window.A || {};
             if (R(2.4)) F.part({ add: true, x: wx, y: mid, vx: 0, vy: -10, life: 0.4, color: '#fee761', size: 2 }); break;
           case 'fledermaus':
             if (R(3)) F.part({ x: wx, y: mid, vx: 0, vy: 0, z: 8, vz: 0, g: 80, life: 0.8, color: '#68386c', size: 2 }); break;
+          case 'qualle':
+            if (R(8)) F.part({ add: true, kind: 'spark', x: wx, y: mid, vx: (Math.random() - 0.5) * 60, vy: (Math.random() - 0.5) * 60, life: 0.15, color: Math.random() < 0.5 ? '#ffffff' : '#2ce8f5', drag: 4 }); break;
+          case 'glutwicht':
+            if (R(12)) F.part({ add: true, x: wx, y: top, vx: (Math.random() - 0.5) * 14, vy: -20 - Math.random() * 14, life: 0.5, color: Math.random() < 0.5 ? '#feae34' : '#f77622', drag: 0.8 }); break;
+          case 'leerenauge': case 'waechter':
+            if (R(m.boss ? 14 : 6)) F.part({ kind: 'smoke', x: wx, y: mid + 10, vx: 0, vy: -8, life: 0.7, size: 2, grow: 5, color: Math.random() < 0.5 ? '#262b44' : '#68386c', drag: 1 }); break;
+          case 'mumie': case 'sandpharao':
+            if (mv && R(m.boss ? 6 : 2)) F.part({ x: wx, y: m.y + 6, vx: (Math.random() - 0.5) * 20, vy: 0, z: 4, vz: 30, g: 200, life: 0.6, color: '#ead4aa', size: 1 }); break;
+          case 'ranke': case 'dornenmutter':
+            if (R(m.boss ? 5 : 1.5)) F.part({ x: wx, y: top, vx: (Math.random() - 0.5) * 10, vy: 0, z: 10, vz: 0, g: 60, life: 1.2, color: Math.random() < 0.5 ? '#63c74d' : '#3e8948', size: 2 }); break;
+          case 'kraken':
+            if (R(6)) F.part({ add: true, x: wx + (Math.random() - 0.5) * 30, y: m.y + 10, vx: 0, vy: -25, life: 0.9, color: '#7fd8ff', drag: 0.3, size: 2 }); break;
         }
       }
       if (m.boss && A.FX && Math.random() < (this.dt || 0.016) * (m.hp < m.maxHp * 0.5 ? 1.6 : 0.7)) { const W2 = A.World.W, h2 = W2 && W2.hero; if (h2) A.FX.rocks(h2.x + (Math.random() - 0.5) * 260, h2.y + (Math.random() - 0.5) * 160, 1 + Math.floor(Math.random() * 2), 12); }
@@ -3416,6 +4273,14 @@ window.A = window.A || {};
           top = y - 22; break;
         }
         case 'merchant': spr = S('merchant'); this.shadow(x, y + 4, 7); if (near) this.outlineGlow(spr, x, y + 4, false, '#fee761'); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); top = y + 4 - spr.h; break;
+        case 'shrine': {
+          // Schrein der Wahl: Kugel schwebt und leuchtet, bis sie benutzt ist
+          spr = S('shrine', p.used ? 0 : Math.floor(t * 2) % 2); this.shadow(x, y + 4, 8);
+          if (near && !p.used) this.outlineGlow(spr, x, y + 4, false, '#2ce8f5');
+          b.globalAlpha = p.used ? 0.55 : 1; b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); b.globalAlpha = 1; top = y + 4 - spr.h;
+          if (!p.used && A.FX && Math.random() < 0.25) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 24, y: p.y - 20, vx: 0, vy: -24 - Math.random() * 20, life: 0.9, color: Math.random() < 0.5 ? '#2ce8f5' : '#ffffff', drag: 0.3 });
+          break;
+        }
         case 'statue': spr = S('statue'); this.shadow(x, y + 4, 8); if (near && !p.used) this.outlineGlow(spr, x, y + 4, false, '#fee761'); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); top = y + 4 - spr.h; break;
         case 'stairs': {
           const w = 30, hh = 22, x0 = Math.round(x - w / 2), y0 = Math.round(y - hh / 2);
@@ -3494,6 +4359,7 @@ window.A = window.A || {};
         else if (p.kind === 'stairs') L(p.x, p.y, 62, '#b55088', 0.8 + Math.sin(t * 2) * 0.1);
         else if (p.kind === 'merchant') L(p.x + 14, p.y - 6, 40, '#feae34', 0.75);
         else if (p.kind === 'statue') { L(p.x, p.y - 50, 26, '#b55088', 0.7); }
+        else if (p.kind === 'shrine') { L(p.x, p.y - 26, p.used ? 30 : 64, '#2ce8f5', p.used ? 0.3 : 0.8 + Math.sin(t * 3) * 0.1); }
         else if (p.kind === 'chest' && !p.used) L(p.x, p.y, 22, '#feae34', 0.4);
       }
       for (const p of W.picks) if (p.kind === 'item') L(p.x, p.y - 6, 28, A.RARITY[p.it.rarity].color, 0.7);
@@ -3502,6 +4368,9 @@ window.A = window.A || {};
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
         else if (m.mid === 'spiegelgeist') L(m.x, m.y - 10, 30, '#9fd8ff', 0.45);
+        else if (m.mid === 'glutwicht') L(m.x, m.y - 14, 34, '#f77622', fl(m.x, 2) * 0.7);
+        else if (m.mid === 'qualle') L(m.x, m.y - 16, 30, '#2ce8f5', 0.55);
+        else if (m.mid === 'leerenauge') L(m.x, m.y - 16, 30, '#b55088', 0.5);
         else if (m.boss) L(m.x, m.y - 20, 50, '#e43b44', 0.35);
         if (m.state === 'windup') L(m.x, m.y - 10, 20, '#e43b44', 0.6);
       }
@@ -3519,7 +4388,7 @@ window.A = window.A || {};
       const c = this.ctx, dw = this.dw, dh = this.dh, d = this.dpr, t = this.t;
       // Vignette
       if (!this.vig || this.vigKey !== this.themeKey) { // Rand-Abdunklung mit einem Hauch der Farbwelt
-        const tint = { stone: [20, 18, 44], grotto: [6, 30, 32], rust: [40, 12, 8], throne: [36, 8, 32] }[this.themeKey] || [8, 6, 14];
+        const tint = (this.theme && this.theme.tint) || [8, 6, 14];
         const v = A.Art.mk(dw, dh), x = v.getContext('2d'); const gr = x.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.3, dw / 2, dh / 2, Math.max(dw, dh) * 0.75);
         gr.addColorStop(0, `rgba(${tint},0)`); gr.addColorStop(0.6, `rgba(${tint},0.28)`); gr.addColorStop(1, 'rgba(8,6,14,0.78)'); x.fillStyle = gr; x.fillRect(0, 0, dw, dh); this.vig = v; this.vigKey = this.themeKey; }
       c.drawImage(this.vig, 0, 0);
@@ -3572,7 +4441,7 @@ window.A = window.A || {};
         c.fillStyle = '#a22633'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh);
         c.fillStyle = '#e43b44'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh * 0.5);
         c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, d);
-        const trick = A.t(A.BOSSES[W.floor] && A.BOSSES[W.floor].trick);
+        const bb = A.bossOf(W.floor), trick = A.t(bb && bb.trick);
         if (trick) { c.font = this.font(11 * d, 500); c.lineWidth = 3 * d; c.strokeText(trick, dw / 2, y0 + hh + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(trick, dw / 2, y0 + hh + 14 * d); }
       }
       // Hinweis
@@ -3597,12 +4466,12 @@ window.A = window.A || {};
       if (this.levelAge < 0.7) { c.fillStyle = `rgba(13,11,20,${1 - this.levelAge / 0.7})`; c.fillRect(0, 0, dw, dh); }
     }
     minimap(W) {
-      const m = this.m, c = this.ctx, U = 9, V = 7, G = 3;
-      const w = 3 * U + 2 * G + 6, hh = 3 * V + 2 * G + 6;
+      const m = this.m, c = this.ctx, U = 9, V = 7, G = 3, NX = A.Levels.GX, NY = A.Levels.GY;
+      const w = NX * U + (NX - 1) * G + 6, hh = NY * V + (NY - 1) * G + 6;
       if (this.mm.width !== w) { this.mm.width = w; this.mm.height = hh; }
       m.clearRect(0, 0, w, hh);
       m.fillStyle = 'rgba(24,20,37,0.78)'; m.fillRect(0, 0, w, hh); m.fillStyle = '#5a6988'; m.fillRect(0, 0, w, 1); m.fillRect(0, hh - 1, w, 1); m.fillRect(0, 0, 1, hh); m.fillRect(w - 1, 0, 1, hh);
-      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa' };
+      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5' };
       const pos = (r) => [3 + r.cx * (U + G), 3 + r.cy * (V + G)];
       m.fillStyle = '#3a4466';
       for (const [p, q] of W.edges) { const a = W.rooms.find(r => r.cx === p.x && r.cy === p.y), b = W.rooms.find(r => r.cx === q.x && r.cy === q.y); if (!a || !b || (!a.visited && !b.visited)) continue; const [ax, ay] = pos(a), [bx, by] = pos(b); if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }
@@ -3614,7 +4483,7 @@ window.A = window.A || {};
         if (r.visited && r.type !== 'fight' && r.type !== 'start') { m.fillStyle = '#ffffff'; m.fillRect(x + 4, y + 3, 1, 1); }
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }
-      const sc = Math.max(2, this.s - 1), d = this.dpr;
+      const sc = Math.max(2, this.s - 2), d = this.dpr;
       c.imageSmoothingEnabled = false; c.drawImage(this.mm, this.dw - w * sc - 8 * d, (this.topPad + 6) * d, w * sc, hh * sc);
     }
     joystick() {
@@ -8156,7 +9025,7 @@ window.A = window.A || {};
   // ---------- Symbole ----------
   const WEAPON_ICON = { klinge: 'i_schwert', schuetze: 'i_bogen', weber: 'i_stab', rufer: 'i_zepter', brau: 'potion' };
   const SKILL_ICON = { hieb: 's_strike', rache: 's_strike', wirbel: 's_whirl', schild: 's_shield', gewebe: 's_shield', kampfschrei: 's_buff', rueckzug: 's_buff', hinrichtung: 'u_skull', zielschuss: 's_arrow', pfeilregen: 's_arrow', doppelschuss: 's_arrow', kopfschuss: 's_arrow', giftpfeil: 's_poison', funke: 's_bolt', flaeche: 's_nova', entladung: 's_nova', flicken: 's_heal', fesseln: 's_bind' };
-  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down' };
+  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
   const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
@@ -8344,8 +9213,7 @@ window.A = window.A || {};
     r.rooms = Wd.saveRooms();
     buildControls(); pads(); applyLook(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
-    const th = A.Draw.THEMES[A.Draw.themeOf(r.floor)];
-    A.FX.banner(t(U.floor) + ' ' + r.floor, th ? t(th.name) : '', '#fee761', 2.6);
+    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor), '#fee761', 2.6);
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten', 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
     if (!last) { last = performance.now(); requestAnimationFrame(loop); }
   }
@@ -8410,7 +9278,7 @@ window.A = window.A || {};
   input.onKey = (code, e) => {
     if (!dungeonEl.classList.contains('on')) return;
     if (overlay.classList.contains('on')) { if (code === 'Escape' || code === 'KeyI' || code === 'Tab') { const b = $('#bClose'); if (b) b.click(); e.preventDefault(); } return; }
-    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
+    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3' || code === 'Digit4') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
     if (code === 'KeyQ') { if (Wd.usePotion()) hudUpdate(); }
     if (code === 'KeyE' || code === 'Enter') Wd.interact();
     if (code === 'KeyL') { toggleLook(); A.FX.banner(L('Look', 'Look') + ': ' + (G.meta.look === '3d' ? '3D' : 'Retro'), null, '#fee761', 1.2); }
@@ -8433,8 +9301,8 @@ window.A = window.A || {};
   function useProp(p) {
     const r = G.run;
     if (p.kind === 'stairs') {
-      const nt = A.Draw.THEMES[A.Draw.themeOf(r.floor + 1)];
-      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${r.floor + 1}</h2><div class="sub">${nt ? `<b class="goldc">${esc(t(nt.name))}</b><br>` : ''}${L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor);
+      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
       $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
@@ -8442,6 +9310,7 @@ window.A = window.A || {};
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
     else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
+    else if (p.kind === 'shrine') { Wd.markUsed(p); }
   }
   // ---------- Heldenblatt ----------
   function showSheet(tab) {
@@ -8520,7 +9389,7 @@ window.A = window.A || {};
     show(`<div class="center fade-in" style="padding-top:5vh">
       <div class="bigicon">${won ? ic('crown', 63) : ic('u_skull', 60)}</div>
       <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
-      ${won ? `<div class="msg">${t(U.win)} ${t(U.blocked)}</div>` : `<div class="sub">${t(U.dead)} ${r.floor}.</div>`}
+      ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);

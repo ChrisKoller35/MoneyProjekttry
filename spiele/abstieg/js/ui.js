@@ -32,7 +32,7 @@ window.A = window.A || {};
   // ---------- Symbole ----------
   const WEAPON_ICON = { klinge: 'i_schwert', schuetze: 'i_bogen', weber: 'i_stab', rufer: 'i_zepter', brau: 'potion' };
   const SKILL_ICON = { hieb: 's_strike', rache: 's_strike', wirbel: 's_whirl', schild: 's_shield', gewebe: 's_shield', kampfschrei: 's_buff', rueckzug: 's_buff', hinrichtung: 'u_skull', zielschuss: 's_arrow', pfeilregen: 's_arrow', doppelschuss: 's_arrow', kopfschuss: 's_arrow', giftpfeil: 's_poison', funke: 's_bolt', flaeche: 's_nova', entladung: 's_nova', flicken: 's_heal', fesseln: 's_bind' };
-  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down' };
+  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
   const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
@@ -220,8 +220,7 @@ window.A = window.A || {};
     r.rooms = Wd.saveRooms();
     buildControls(); pads(); applyLook(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
-    const th = A.Draw.THEMES[A.Draw.themeOf(r.floor)];
-    A.FX.banner(t(U.floor) + ' ' + r.floor, th ? t(th.name) : '', '#fee761', 2.6);
+    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor), '#fee761', 2.6);
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-3 Fähigkeiten', 'WASD move · Space attack · 1-3 skills'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
     if (!last) { last = performance.now(); requestAnimationFrame(loop); }
   }
@@ -286,7 +285,7 @@ window.A = window.A || {};
   input.onKey = (code, e) => {
     if (!dungeonEl.classList.contains('on')) return;
     if (overlay.classList.contains('on')) { if (code === 'Escape' || code === 'KeyI' || code === 'Tab') { const b = $('#bClose'); if (b) b.click(); e.preventDefault(); } return; }
-    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
+    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3' || code === 'Digit4') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
     if (code === 'KeyQ') { if (Wd.usePotion()) hudUpdate(); }
     if (code === 'KeyE' || code === 'Enter') Wd.interact();
     if (code === 'KeyL') { toggleLook(); A.FX.banner(L('Look', 'Look') + ': ' + (G.meta.look === '3d' ? '3D' : 'Retro'), null, '#fee761', 1.2); }
@@ -309,8 +308,8 @@ window.A = window.A || {};
   function useProp(p) {
     const r = G.run;
     if (p.kind === 'stairs') {
-      const nt = A.Draw.THEMES[A.Draw.themeOf(r.floor + 1)];
-      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${r.floor + 1}</h2><div class="sub">${nt ? `<b class="goldc">${esc(t(nt.name))}</b><br>` : ''}${L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor);
+      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
       $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
@@ -318,6 +317,7 @@ window.A = window.A || {};
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
     else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
+    else if (p.kind === 'shrine') { Wd.markUsed(p); }
   }
   // ---------- Heldenblatt ----------
   function showSheet(tab) {
@@ -396,7 +396,7 @@ window.A = window.A || {};
     show(`<div class="center fade-in" style="padding-top:5vh">
       <div class="bigicon">${won ? ic('crown', 63) : ic('u_skull', 60)}</div>
       <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
-      ${won ? `<div class="msg">${t(U.win)} ${t(U.blocked)}</div>` : `<div class="sub">${t(U.dead)} ${r.floor}.</div>`}
+      ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);

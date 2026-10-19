@@ -3,7 +3,7 @@
 window.A = window.A || {};
 
 A.World = (function () {
-  const TS = 32, CW = 15, CH = 11, GX = 3, GY = 3;   // Kachelgrösse, Zellen-Grösse in Kacheln, Raster
+  const TS = 32, CW = A.Levels.CW, CH = A.Levels.CH, GX = A.Levels.GX, GY = A.Levels.GY;   // Kachelgrösse, Zellen-Grösse in Kacheln, Raster
   const MW = GX * CW, MH = GY * CH;                     // Karte in Kacheln
   const G = () => A.Game;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -12,75 +12,21 @@ A.World = (function () {
   let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
 
-  // ---------- Ebene bauen ----------
+  // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
   function genFloor(floor, seed, saved) {
-    const rng = new A.RNG(seed);
-    const n = Math.min(GX * GY - 1, 5 + floor);
-    const key = (c) => c.x + ',' + c.y;
-    const start = { x: rng.int(0, GX - 1), y: rng.int(0, GY - 1) };
-    const cells = [start], edges = [];
-    let guard = 0;
-    while (cells.length < n && guard++ < 500) {
-      const from = rng.pick(cells);
-      for (const [dx, dy] of rng.shuffle([[1, 0], [-1, 0], [0, 1], [0, -1]])) {
-        const c = { x: from.x + dx, y: from.y + dy };
-        if (c.x < 0 || c.y < 0 || c.x >= GX || c.y >= GY || cells.some(p => key(p) === key(c))) continue;
-        cells.push(c); edges.push([from, c]); break;
-      }
-    }
-    // Ein paar Extra-Verbindungen für Rundwege
-    for (let i = 0; i < cells.length; i++) for (let j = i + 1; j < cells.length; j++) {
-      const a = cells[i], b = cells[j];
-      if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) !== 1) continue;
-      if (edges.some(([p, q]) => (key(p) === key(a) && key(q) === key(b)) || (key(p) === key(b) && key(q) === key(a)))) continue;
-      if (rng.chance(0.3)) edges.push([a, b]);
-    }
-    // Entfernung vom Start
-    const distMap = { [key(start)]: 0 }; const queue = [start];
-    while (queue.length) { const c = queue.shift(); for (const [p, q] of edges) { const o = key(p) === key(c) ? q : key(q) === key(c) ? p : null; if (o && distMap[key(o)] == null) { distMap[key(o)] = distMap[key(c)] + 1; queue.push(o); } } }
-    const far = cells.slice().sort((a, b) => distMap[key(b)] - distMap[key(a)])[0];
-    // Raumtypen
-    const types = {}; types[key(start)] = 'start'; types[key(far)] = A.BOSSES[floor] ? 'boss' : 'stairs';
-    const rest = cells.filter(c => !types[key(c)]);
-    const pool = ['fight', 'fight'];
-    const extra = rng.shuffle(['shop', 'rest', 'treasure', 'event', floor >= 2 ? 'elite' : 'fight', 'fight']);
-    while (pool.length < rest.length) pool.push(extra.shift() || 'fight');
-    rng.shuffle(rest).forEach((c, i) => types[key(c)] = pool[i]);
-    // Kacheln: 0 Wand, 1 Boden, 2 verschlossene Tür
-    const tiles = []; for (let y = 0; y < MH; y++) { tiles.push(new Array(MW).fill(0)); }
-    const rooms = cells.map((c, i) => {
-      const r = { i, cx: c.x, cy: c.y, type: types[key(c)], x: c.x * CW + 1, y: c.y * CH + 1, w: CW - 2, h: CH - 2, doors: [], cleared: false, used: false, visited: false, props: [] };
-      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) tiles[y][x] = 1;
-      return r;
-    });
-    const roomAt = (c) => rooms.find(r => r.cx === c.x && r.cy === c.y);
-    for (const [p, q] of edges) {
-      const a = roomAt(p), b = roomAt(q); const door = [];
-      if (p.y === q.y) { const l = Math.min(p.x, q.x); const x0 = l * CW + CW - 1; const yy = p.y * CH + 5; door.push([x0, yy], [x0 + 1, yy], [x0, yy + 1], [x0 + 1, yy + 1]); }
-      else { const t = Math.min(p.y, q.y); const y0 = t * CH + CH - 1; const xx = p.x * CW + 7; door.push([xx, y0], [xx, y0 + 1], [xx + 1, y0], [xx + 1, y0 + 1]); }
-      for (const [x, y] of door) tiles[y][x] = 1;
-      a.doors.push(...door); b.doors.push(...door);
-    }
-    // Möbel in den Ecken (Fässer, Kisten, Töpfe): Hindernisse, auch Deckung gegen Geschosse
-    const rngF = new A.RNG((seed ^ 0x7f4a7c15) >>> 0 || 3);
+    const wd = A.worldOf(floor);
+    const lv = A.Levels.gen(floor, seed, wd);
+    const { rooms, tiles, edges } = lv;
+    // Gegenstände im Raum, auf dem Ankerpunkt (freier Boden nahe der Mitte)
     for (const r of rooms) {
-      r.furn = [];
-      for (const [tx, ty] of [[r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1]]) {
-        if (!rngF.chance(0.4) || tiles[ty][tx] !== 1) continue;
-        tiles[ty][tx] = 3; r.furn.push({ tx, ty, kind: rngF.pick(['barrel', 'crate', 'pot', 'barrel']) });
-      }
-    }
-    // Gegenstände im Raum
-    for (const r of rooms) {
-      const cx = (r.x + r.w / 2) * TS, cy = (r.y + r.h / 2) * TS;
-      const kind = { treasure: 'chest', shop: 'merchant', rest: 'fire', event: 'statue', stairs: 'stairs' }[r.type];
+      const cx = (r.anchor.tx + 0.5) * TS, cy = (r.anchor.ty + 0.5) * TS;
+      const kind = { treasure: 'chest', shop: 'merchant', rest: 'fire', event: 'statue', stairs: 'stairs', shrine: 'shrine' }[r.type];
       if (kind) r.props.push({ kind, x: cx, y: cy, room: r.i, used: false });
       if (r.type === 'boss') r.props.push({ kind: 'stairs', x: cx, y: cy, room: r.i, used: false, hidden: true });
       if (r.type === 'start') r.props.push({ kind: 'sign', x: cx, y: cy - TS * 2, room: r.i, used: false, text: A.LANG === 'de' ? 'Ebene ' + floor : 'Floor ' + floor });
     }
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
-    const sr = rooms.find(r => r.type === 'start');
-    return { floor, seed, rooms, tiles, start: sr, edges };
+    return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach: lv.reach };
   }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
 
@@ -91,7 +37,7 @@ A.World = (function () {
     if (A.FX) A.FX.reset();
     W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
     const sr = f.start;
-    W.hero = mkHero((sr.x + sr.w / 2) * TS, (sr.y + sr.h / 2 + 1) * TS);
+    W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
     return W;
   }
@@ -109,44 +55,140 @@ A.World = (function () {
   }
 
   // ---------- Kacheln und Kollision ----------
+  // begehbar: 1 Boden, 5 Gefahr-Boden; Geschosse halten nur Wände (0), Türen (2) und Hindernisse (3) auf
   function tile(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); if (tx < 0 || ty < 0 || tx >= MW || ty >= MH) return 0; return W.tiles[ty][tx]; }
-  function solid(x, y) { return tile(x, y) !== 1; }
+  function solid(x, y) { const v = tile(x, y); return v !== 1 && v !== 5; }
+  function shotSolid(x, y) { const v = tile(x, y); return v === 0 || v === 2 || v === 3; }
   function blocked(x, y, r) { return solid(x - r, y - r) || solid(x + r, y - r) || solid(x - r, y + r) || solid(x + r, y + r); }
   function moveEnt(e, dx, dy) {
-    if (dx && !blocked(e.x + dx, e.y, e.r)) e.x += dx; else if (dx) { const s = Math.sign(dx); while (!blocked(e.x + s, e.y, e.r)) e.x += s; }
-    if (dy && !blocked(e.x, e.y + dy, e.r)) e.y += dy; else if (dy) { const s = Math.sign(dy); while (!blocked(e.x, e.y + s, e.r)) e.y += s; }
+    if (dx && !blocked(e.x + dx, e.y, e.r)) e.x += dx; else if (dx) { const s = Math.sign(dx); let k = 0; while (!blocked(e.x + s, e.y, e.r) && k++ < 40) e.x += s; }
+    if (dy && !blocked(e.x, e.y + dy, e.r)) e.y += dy; else if (dy) { const s = Math.sign(dy); let k = 0; while (!blocked(e.x, e.y + s, e.r) && k++ < 40) e.y += s; }
   }
   function roomOf(x, y) { const cx = Math.floor(x / TS / CW), cy = Math.floor(y / TS / CH); return W.rooms.find(r => r.cx === cx && r.cy === cy) || null; }
   function inside(r, x, y) { const tx = x / TS, ty = y / TS; return tx >= r.x + 0.5 && tx <= r.x + r.w - 0.5 && ty >= r.y + 0.5 && ty <= r.y + r.h - 0.5; }
   function setDoors(r, v) { for (const [x, y] of r.doors) W.tiles[y][x] = v; }
+  // freie Sicht zwischen zwei Punkten (für Gegner: direkt laufen oder dem Wegenetz folgen)
+  function clearLine(a, b) { const d = dist(a, b), n = Math.ceil(d / 14); for (let i = 1; i < n; i++) { const k = i / n; if (solid(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k)) return false; } return true; }
+  // Wegenetz: Schritte von jeder Kachel bis zum Helden (neu berechnet, wenn der Held die Kachel wechselt)
+  function updateFlow() {
+    const h = W.hero, hx = Math.floor(h.x / TS), hy = Math.floor(h.y / TS), k0 = hy * MW + hx;
+    if (W.flowAt === k0) return; W.flowAt = k0;
+    const fl = W.flow || (W.flow = new Int16Array(MW * MH)); fl.fill(-1);
+    const q = [k0]; fl[k0] = 0;
+    for (let qi = 0; qi < q.length; qi++) {
+      const k = q[qi], x = k % MW, y = (k - x) / MW, d = fl[k]; if (d > 60) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue; const nk = ny * MW + nx; if (fl[nk] >= 0) continue; const v = W.tiles[ny][nx]; if (v !== 1 && v !== 5) continue; fl[nk] = d + 1; q.push(nk); }
+    }
+  }
+  // Richtung zum Helden über das Wegenetz (um Säulen, Gruben und Mauern herum)
+  function flowDir(m) {
+    const fl = W.flow; if (!fl) return null; const x = Math.floor(m.x / TS), y = Math.floor(m.y / TS); const here = fl[y * MW + x];
+    let best = null, bd = here >= 0 ? here : 1e9;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+      const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= MW || ny >= MH) continue; const v = fl[ny * MW + nx]; if (v < 0 || v >= bd) continue;
+      if (dx && dy && (fl[y * MW + nx] < 0 || fl[ny * MW + x] < 0)) continue;   // keine Ecken schneiden
+      bd = v; best = [dx, dy];
+    }
+    if (!best) return null;
+    const tx = (x + best[0] + 0.5) * TS - m.x, ty = (y + best[1] + 0.5) * TS - m.y, l = Math.hypot(tx, ty) || 1;
+    return [tx / l, ty / l];
+  }
+  // Gefahr-Boden unter einer Figur: bremst (Treibsand, Schlamm, seichtes Wasser, Schatten) oder brennt (Glut)
+  function hazardAt(e) { return tile(e.x, e.y + (e.r || 0) * 0.5) === 5 ? W.world.hazard : null; }
+  function hazardSlow(e) { const hz = hazardAt(e); if (!hz || e.fly) return 1; const H = A.HAZARDS[hz]; return H && H.slow ? H.slow : 1; }
 
   // ---------- Gegner ----------
+  function reachable(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return !W.reach || !!W.reach[ty * MW + tx]; }
   function spawnRoom(r) {
     const run = G().run, rng = run.rng, f = run.floor;
     const list = [];
-    if (r.type === 'boss') list.push(G().monsterEntity(A.BOSSES[f], f, false, 1));
+    if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
     else {
-      const pool = A.MONSTERS.filter(m => f >= m.floors[0] && f <= m.floors[1]);
-      const n = r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5);
+      const pool = A.monsterPool(f);
+      const n = r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > 130 && f >= 6 ? 1 : 0);
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, r.type === 'elite' && i === 0, i + 1));
     }
     list.forEach((m, i) => {
       let x, y, tries = 0;
-      do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < 130 || blocked(x, y, 26)) && tries++ < 40);
+      do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < 130 || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
     });
     r.monsters = list.length;
   }
   function freeSpot(x, y, r) {
-    if (!blocked(x, y, r)) return [x, y];
-    for (let d = 8; d < 200; d += 8) for (let a = 0; a < 8; a++) { const nx = x + Math.cos(a * Math.PI / 4) * d, ny = y + Math.sin(a * Math.PI / 4) * d; if (!blocked(nx, ny, r)) return [nx, ny]; }
+    if (!blocked(x, y, r) && reachable(x, y)) return [x, y];
+    for (let d = 8; d < 260; d += 8) for (let a = 0; a < 8; a++) { const nx = x + Math.cos(a * Math.PI / 4) * d, ny = y + Math.sin(a * Math.PI / 4) * d; if (!blocked(nx, ny, r) && reachable(nx, ny)) return [nx, ny]; }
     return [x, y];
   }
   function addMon(m, x, y) {
     [x, y] = freeSpot(x, y, m.boss ? 24 : m.elite ? 17 : 14);
-    Object.assign(m, { x, y, r: m.boss ? 24 : m.elite ? 17 : 14, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1 });
+    Object.assign(m, { x, y, r: m.boss ? 24 : m.elite ? 17 : 14, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
     W.mons.push(m); return m;
   }
+  // Besondere Fähigkeiten von Gegnern und Bossen: Ring aus Geschossen, Fächer, Sprung, Beschwören, Verschwinden
+  function ringShot(m, n, col) { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + W.t; shoot(m, m.x + Math.cos(a) * 100, m.y + Math.sin(a) * 100, m.atk * 0.8, { kind: 'magic', speed: 190, r: 6, color: col || '#c77dff', life: 2.4 }); } }
+  function monSpecial(m, dt, d, nx, ny) {
+    const h = W.hero;
+    m.skT -= dt;
+    if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
+    if (m.summon) {
+      m.sumT -= dt;
+      const alive = W.mons.filter(o => o.alive && o.summoned).length;
+      if (m.sumT <= 0 && alive < (m.boss ? 3 : 2)) {
+        m.sumT = m.summonCd || 9; const base = A.MONSTERS.find(x => x.id === m.summon);
+        if (base) for (let i = 0; i < (m.boss ? 2 : 1); i++) { const s = G().monsterEntity(base, W.floor, false, 80 + i); const a = Math.random() * Math.PI * 2; const mm = addMon(s, m.x + Math.cos(a) * 60, m.y + Math.sin(a) * 50); mm.summoned = true; mm.spawn = 0.5; fx('spawn', { m: mm }); }
+        float(m.x, m.y - 60, A.LANG === 'de' ? 'Ruft Hilfe!' : 'Calls for help!', '#fee761', 14);
+      }
+    }
+    if (m.teleport && m.skT <= 0 && !m.ring) { m.skT = 4 + Math.random() * 2; blink(m); }
+    if (m.teleport && m.ring && m.hp < m.maxHp * 0.5 && (m.tpT = (m.tpT || 6) - dt) <= 0) { m.tpT = 6; blink(m); }
+    if (m.leap && m.state !== 'leap' && m.cd <= 0 && d > 70 && d < 260 && clearLine(m, h)) { m.state = 'leap'; m.st = 0.32; m.lx = nx; m.ly = ny; m.cd = 2.2; fx('windup', { m }); return true; }
+    if (m.state === 'leap') { m.st -= dt; moveEnt(m, m.lx * 520 * dt, m.ly * 520 * dt); if (m.st <= 0) { m.state = 'chase'; if (dist(m, h) < m.r + h.r + 14) hit(m, h, m.atk * 1.2, { kind: 'phys' }); fx('strike', { m }); } return true; }
+    return false;
+  }
+  function blink(m) {
+    const h = W.hero; fx('appear', { m });
+    for (let k = 0; k < 20; k++) { const a = Math.random() * Math.PI * 2, rr = 120 + Math.random() * 120; const x = h.x + Math.cos(a) * rr, y = h.y + Math.sin(a) * rr; if (!blocked(x, y, m.r) && reachable(x, y) && roomOf(x, y) === W.active) { m.x = x; m.y = y; break; } }
+    m.spawn = 0.25; fx('spawn', { m });
+  }
+
+  // ---------- Gegner-Verhalten ----------
+  function monStep(m, dt) {
+    const h = W.hero;
+    if (m.flash > 0) m.flash -= dt; if (m.swing > 0) m.swing -= dt;
+    if (m.spawn > 0) { m.spawn -= dt; if (m.spawn <= 0) fx('appear', { m }); return; }
+    m.cd -= dt;
+    if (m.kbT > 0) { m.kbT -= dt; if (!m.rooted) moveEnt(m, m.kbx * dt, m.kby * dt); }
+    if (m.stun > 0) { m.stun -= dt; return; }
+    const d = dist(m, h) || 1, nx = (h.x - m.x) / d, ny = (h.y - m.y) / d;
+    if (d < 420) { m.fx = nx; m.fy = ny; }
+    if (monSpecial(m, dt, d, nx, ny)) return;
+    if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; W.fx.push({ kind: 'claw', x: m.x, y: m.y, fx: m.fx, fy: m.fy, r: m.r + h.r + 22, life: 0.22, big: m.boss || m.elite }); fx('strike', { m }); if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys', slow: m.slowOnHit }); } return; }
+    // Laufrichtung: direkt, wenn frei; sonst über das Wegenetz um Hindernisse herum
+    let mx = nx, my = ny;
+    if (!m.fly && !clearLine(m, h)) { const fd = flowDir(m); if (fd) { mx = fd[0]; my = fd[1]; } }
+    const sp = m.speed * slowMul(m) * hazardSlow(m);
+    if (m.kind === 'melee') {
+      if (d > m.r + h.r + 4) moveEnt(m, mx * sp * dt, my * sp * dt);
+      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
+    } else {
+      const want = 170, see = clearLine(m, h);
+      if (!see) moveEnt(m, mx * sp * dt, my * sp * dt);
+      else if (d < want - 30) moveEnt(m, -nx * sp * 0.8 * dt, -ny * sp * 0.8 * dt);
+      else if (d > want + 40) moveEnt(m, nx * sp * dt, ny * sp * dt);
+      else { const px = -ny, py = nx; const s = Math.sin(W.t * 1.3 + m.x) > 0 ? 1 : -1; moveEnt(m, px * s * sp * 0.4 * dt, py * s * sp * 0.4 * dt); }
+      if (m.cd <= 0 && d < 340 && see) {
+        m.cd = (m.boss ? 1.4 : 2.1) - m.spd * 0.05; m.swing = 0.2;
+        const col = m.kind === 'magic' ? '#c77dff' : '#ffb08a', n = m.spread || 1;
+        for (let i = 0; i < n; i++) { const a = Math.atan2(ny, nx) + (i - (n - 1) / 2) * 0.28; shoot(m, m.x + Math.cos(a) * 100, m.y + Math.sin(a) * 100, m.atk, { kind: m.kind === 'magic' ? 'magic' : 'phys', speed: 230, r: 6, color: m.shotCol || col, life: 1.8, burn: m.burn ? 0.3 : 0 }); }
+      }
+    }
+    // Gefahr-Boden: Glut brennt auch Gegner
+    if (hazardAt(m) && A.HAZARDS[W.world.hazard].burn && !m.fly && (m.hzT = (m.hzT || 0) - dt) <= 0) { m.hzT = 1; addEffect(m, 'burn', Math.max(1, Math.round(m.maxHp * 0.04)), 1.2); }
+    // Gegner nicht übereinander
+    for (const o of W.mons) { if (o === m || !o.alive) continue; const dd = dist(m, o); if (dd < m.r + o.r && dd > 0) { moveEnt(m, (m.x - o.x) / dd * 40 * dt, (m.y - o.y) / dd * 40 * dt); } }
+  }
+  function slowMul(e) { return e.slowUntil && e.slowUntil > W.t ? (e.slowPow || 0.5) : 1; }
 
   // ---------- Treffer-Rechnung ----------
   function statOf(e, k) { const b = e.buffs && e.buffs[k]; let v = e[k] || 0; if (b && b.until > W.t) v = b.mul ? v * (1 + b.mul) : v + b.add; return v; }
@@ -181,12 +223,13 @@ A.World = (function () {
       if (opts.poison) addEffect(to, 'poison', Math.max(1, Math.round(statOf(from, 'atk') * opts.poison / 3)), 3);
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
+      if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
       if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); checkDeath(from); }
       if (to.healOnPhys && opts.kind !== 'magic') heal(to, Math.round(to.maxHp * to.healOnPhys));
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy') { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
-    if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === 'schleimer'); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
+    if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
     checkDeath(to);
     return dmg;
   }
@@ -269,31 +312,6 @@ A.World = (function () {
   }
   function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * 0.4) - (h.hp - G().run.hp > 0 ? 0 : 0)); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); return true; }
 
-  // ---------- Gegner-Verhalten ----------
-  function monStep(m, dt) {
-    const h = W.hero;
-    if (m.flash > 0) m.flash -= dt; if (m.swing > 0) m.swing -= dt;
-    if (m.spawn > 0) { m.spawn -= dt; if (m.spawn <= 0) fx('appear', { m }); return; }
-    m.cd -= dt;
-    if (m.kbT > 0) { m.kbT -= dt; moveEnt(m, m.kbx * dt, m.kby * dt); }
-    if (m.stun > 0) { m.stun -= dt; return; }
-    const d = dist(m, h) || 1, nx = (h.x - m.x) / d, ny = (h.y - m.y) / d;
-    if (d < 420) { m.fx = nx; m.fy = ny; }
-    if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; W.fx.push({ kind: 'claw', x: m.x, y: m.y, fx: m.fx, fy: m.fy, r: m.r + h.r + 22, life: 0.22, big: m.boss || m.elite }); fx('strike', { m }); if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys' }); } return; }
-    if (m.kind === 'melee') {
-      if (d > m.r + h.r + 4) moveEnt(m, nx * m.speed * dt, ny * m.speed * dt);
-      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
-    } else {
-      const want = 170;
-      if (d < want - 30) moveEnt(m, -nx * m.speed * 0.8 * dt, -ny * m.speed * 0.8 * dt);
-      else if (d > want + 40) moveEnt(m, nx * m.speed * dt, ny * m.speed * dt);
-      else { const px = -ny, py = nx; const s = Math.sin(W.t * 1.3 + m.x) > 0 ? 1 : -1; moveEnt(m, px * s * m.speed * 0.4 * dt, py * s * m.speed * 0.4 * dt); }
-      if (m.cd <= 0 && d < 330) { m.cd = (m.boss ? 1.4 : 2.1) - m.spd * 0.05; m.swing = 0.2; shoot(m, h.x, h.y, m.atk, { kind: m.kind === 'magic' ? 'magic' : 'phys', speed: 230, r: 6, color: m.kind === 'magic' ? '#c77dff' : '#ffb08a', life: 1.8 }); }
-    }
-    // Gegner nicht übereinander
-    for (const o of W.mons) { if (o === m || !o.alive) continue; const dd = dist(m, o); if (dd < m.r + o.r && dd > 0) { moveEnt(m, (m.x - o.x) / dd * 40 * dt, (m.y - o.y) / dd * 40 * dt); } }
-  }
-
   // ---------- Hauptschritt ----------
   function step(dt, input) {
     if (!W || W.paused) return;
@@ -305,8 +323,12 @@ A.World = (function () {
     let mx = input.mx, my = input.my; const len = Math.hypot(mx, my);
     if (h.stun > 0) { h.stun -= dt; mx = my = 0; }
     h.moving = len > 0.15;
-    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); moveEnt(h, mx * h.speed * dt, my * h.speed * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
+    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
     if (input.attack) heroAttack();
+    // Gefahr-Boden unter dem Helden
+    const hz = hazardAt(h); h.onHazard = hz;
+    if (hz && A.HAZARDS[hz].burn && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
+    if (W.active) updateFlow();
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -316,7 +338,7 @@ A.World = (function () {
     // Geschosse
     for (const s of W.shots) {
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (solid(s.x, s.y)) { s.life = 0; fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (shotSolid(s.x, s.y)) { s.life = 0; fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
       if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }

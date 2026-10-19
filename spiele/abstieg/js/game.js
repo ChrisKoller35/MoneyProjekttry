@@ -3,7 +3,7 @@
 window.A = window.A || {};
 
 A.Game = (function () {
-  const SAVE = 'abstieg.v1';
+  const SAVE = 'abstieg.v2';   // v2: neue Ebenen (Welten, Raumformen); alte Durchläufe passen nicht mehr
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
@@ -75,13 +75,15 @@ A.Game = (function () {
   }
 
   function monsterEntity(m, floor, elite, idx) {
-    const hpM = 1 + 0.32 * (floor - 1), atkM = 1 + 0.22 * (floor - 1);
+    const hpM = 1 + 0.28 * (floor - 1), atkM = 1 + 0.18 * (floor - 1);
     const e = {
       id: 'e' + idx, mid: m.id, name: (elite ? A.t(A.UI.elitePrefix) + ' ' : '') + A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
       def: Math.round((m.def || 0) * (1 + 0.15 * (floor - 1))), spd: m.spd + (elite ? 2 : 0), crit: m.crit || 5, dodge: m.dodge || 0,
       poisonOnHit: m.poisonOnHit || 0, burn: m.burn || 0, thorns: m.thorns || 0, steal: m.steal || 0, color: m.color, shape: m.shape,
       boss: !!m.boss, elite: !!elite, split: !!m.split, healOnPhys: m.healOnPhys || 0, skills: [],
+      leap: !!m.leap, rooted: !!m.rooted, spread: m.spread || 0, ring: m.ring || 0, ringCd: m.ringCd || 0, summon: m.summon || null, summonCd: m.summonCd || 0,
+      teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
     };
     e.hp = e.maxHp;
     if (elite) { const t = run ? run.rng.pick(['giftig', 'gepanzert', 'schnell']) : 'gepanzert'; e.eliteKind = t; if (t === 'giftig') e.poisonOnHit += 3; if (t === 'gepanzert') e.def += 5; if (t === 'schnell') e.spd += 4; }
@@ -173,7 +175,8 @@ A.Game = (function () {
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
-    if (run.floor >= A.MAX_FLOOR) { run.over = true; run.won = true; finishRun(); return 'won'; }
+    // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
+    if (run.floor === A.MAX_FLOOR) { run.won = true; meta.won = (meta.won || 0) + 1; saveMeta(); }
     run.floor++; newFloor(); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)

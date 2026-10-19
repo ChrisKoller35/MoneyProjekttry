@@ -10,14 +10,23 @@ window.A = window.A || {};
   const hash = (x, y, k) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(k | 0, 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // Farbwelten je Tiefe
+  // Welten: Farben, Boden- und Wandart, Gruben und Gefahr-Boden (Welt-Daten in data.js, A.WORLDS)
   const THEMES = {
-    stone: { floor: ['#4d5878', '#48536f', '#525e80', '#45506c'], mortar: '#2a2f48', brick: ['#5e6a92', '#57638a', '#64719a'], brickHi: '#7d8ab0', brickLo: '#2a2f4c', cap: '#1d1c2e', capHi: '#41445f', ambient: '#4b4870', banner: ['#a22633', '#e43b44', '#f6757a'], moss: ['#3e8948', '#265c42'], name: { de: 'Graue Gewölbe', en: 'Grey Vaults' } },
-    grotto: { floor: ['#2f4d4b', '#2b4744', '#345451', '#29423f'], mortar: '#162a2b', brick: ['#365c56', '#31544f', '#3c645d'], brickHi: '#527f74', brickLo: '#14262a', cap: '#0f1b1d', capHi: '#2a4644', ambient: '#324c4e', banner: ['#265c42', '#3e8948', '#63c74d'], moss: ['#3e8948', '#63c74d', '#265c42'], name: { de: 'Schleimgrotte', en: 'Slime Grotto' } },
-    rust: { floor: ['#5b3d3d', '#543737', '#624343', '#4f3333'], mortar: '#2b1a20', brick: ['#7b4b41', '#71453b', '#84534a'], brickHi: '#a3685b', brickLo: '#2e1a1e', cap: '#1f1216', capHi: '#4a2b2c', ambient: '#4e3838', banner: ['#be4a2f', '#f77622', '#feae34'], moss: ['#733e39', '#3e2731'], name: { de: 'Rostschmiede', en: 'Rust Forge' } },
-    throne: { floor: ['#4c2d3c', '#3c2331'], mortar: '#25141e', brick: ['#5b3149', '#532b42', '#643751'], brickHi: '#804b68', brickLo: '#2b1421', cap: '#1b0f17', capHi: '#432536', ambient: '#47334a', banner: ['#a22633', '#e43b44', '#feae34'], moss: ['#3e2731'], name: { de: 'Thronsaal', en: 'Throne Hall' } },
+    stone: { floor: ['#4d5878', '#48536f', '#525e80', '#45506c'], mortar: '#2a2f48', brick: ['#5e6a92', '#57638a', '#64719a'], brickHi: '#7d8ab0', brickLo: '#2a2f4c', cap: '#1d1c2e', capHi: '#41445f', ambient: '#4b4870', banner: ['#a22633', '#e43b44', '#f6757a'], moss: ['#3e8948', '#265c42'],
+      floorStyle: 'slabs', wallStyle: 'brick', mote: '#c0cbdc', rise: -1, shaft: [200, 210, 255], tint: [20, 18, 44], puddle: 'water' },
+    jungle: { floor: ['#3e5a3a', '#38533a', '#44613f', '#334d35'], mortar: '#1e2e22', brick: ['#55684f', '#4f624a', '#5c7155'], brickHi: '#7a9070', brickLo: '#1f2c22', cap: '#121c15', capHi: '#2c4030', ambient: '#4a6a52', banner: ['#265c42', '#3e8948', '#63c74d'], moss: ['#3e8948', '#63c74d', '#265c42'],
+      floorStyle: 'grass', wallStyle: 'vines', mote: '#a2e05a', rise: -1, shaft: [190, 255, 160], tint: [8, 30, 14], puddle: 'water', pit: { base: '#124e89', mid: '#1a5f8f', hi: '#7fd8ff', rim: '#2b4a30' }, haz: { base: '#4a3a24', mid: '#3a2c1a', hi: '#6a5434' } },
+    desert: { floor: ['#c9a26b', '#c19a63', '#d1ab74', '#b8915c'], mortar: '#8a6440', brick: ['#c8945a', '#bd8a52', '#d39e63'], brickHi: '#ead4aa', brickLo: '#6e4a2a', cap: '#3e2a1c', capHi: '#8a6440', ambient: '#86705c', banner: ['#be4a2f', '#feae34', '#fee761'], moss: ['#b86f50', '#e4a672'],
+      floorStyle: 'sand', wallStyle: 'sandstone', mote: '#ead4aa', rise: 0, shaft: [255, 230, 170], tint: [44, 26, 8], puddle: null, haz: { base: '#a87a46', mid: '#8a6036', hi: '#d8b080' } },
+    water: { floor: ['#2f5a6e', '#2b5366', '#346377', '#284d5f'], mortar: '#15303d', brick: ['#3a6680', '#355e77', '#40708a'], brickHi: '#5f93ad', brickLo: '#132a38', cap: '#0d1d27', capHi: '#24485c', ambient: '#3c5e78', banner: ['#124e89', '#0099db', '#2ce8f5'], moss: ['#3e8948', '#265c42', '#2ce8f5'],
+      floorStyle: 'slabs', wallStyle: 'algae', mote: '#7fd8ff', rise: 1, shaft: [140, 220, 255], tint: [4, 22, 40], puddle: 'water', pit: { base: '#0b2e5a', mid: '#124e89', hi: '#7fd8ff', rim: '#1f4a5e' }, haz: { base: '#2c6a8a', mid: '#25607f', hi: '#9fd8ff', shallow: true } },
+    volcano: { floor: ['#3a2a2e', '#352629', '#413034', '#30222a'], mortar: '#170d10', brick: ['#4a2a28', '#432624', '#542f2c'], brickHi: '#7a3e34', brickLo: '#1a0c0c', cap: '#120808', capHi: '#3a1814', ambient: '#5e3c36', banner: ['#be4a2f', '#f77622', '#feae34'], moss: ['#733e39', '#3e2731'],
+      floorStyle: 'basalt', wallStyle: 'rock', mote: '#feae34', rise: 1, shaft: [255, 150, 80], tint: [44, 10, 6], puddle: 'lava', pit: { base: '#be4a2f', mid: '#f77622', hi: '#fee761', rim: '#2a1418', lava: true }, haz: { base: '#2a1418', mid: '#3a1c1c', hi: '#f77622', embers: true } },
+    abyss: { floor: ['#3a2a4c', '#2e2140'], mortar: '#170f22', brick: ['#4a3366', '#432e5c', '#523a70'], brickHi: '#7a5aa0', brickLo: '#1c1230', cap: '#0e0818', capHi: '#35244c', ambient: '#43355e', banner: ['#68386c', '#b55088', '#f6757a'], moss: ['#68386c'],
+      floorStyle: 'checker', wallStyle: 'brick', mote: '#f6757a', rise: 1, shaft: [255, 140, 220], tint: [36, 8, 40], puddle: null, pit: { base: '#08060e', mid: '#120c1c', hi: '#b55088', rim: '#2a1c3c', void: true }, haz: { base: '#24183a', mid: '#1c1230', hi: '#b55088' } },
   };
-  const themeOf = (f) => f >= 6 ? 'throne' : f >= 4 ? 'rust' : f === 3 ? 'grotto' : 'stone';
+  for (const w of A.WORLDS) if (THEMES[w.id]) THEMES[w.id].name = w.name;
+  const themeOf = (f) => A.worldOf(f).id;
   const RAR_COL = () => A.RARITY;
   const ELITE_COL = { giftig: '#63c74d', gepanzert: '#8b9bb4', schnell: '#fee761' };
 
@@ -57,7 +66,7 @@ window.A = window.A || {};
     // ---------- Ebene vorab malen (Boden, Wände, Deko) ----------
     buildLevel(W) {
       const MW = A.World.MW, MH = A.World.MH;
-      const th = THEMES[themeOf(W.floor)]; this.theme = th; this.themeKey = themeOf(W.floor);
+      const th = THEMES[themeOf(W.floor)] || THEMES.stone; this.theme = th; this.themeKey = themeOf(W.floor);
       const cv = A.Art.mk(MW * T, MH * T), c = cv.getContext('2d');
       const img = c.createImageData(cv.width, cv.height), D = img.data, IW = cv.width;
       const seed = (W.seed >>> 0) % 100000;
@@ -65,63 +74,76 @@ window.A = window.A || {};
       const isF = (x, y) => tile(x, y) !== 0;
       const put = (x, y, col, d) => { const i = (y * IW + x) * 4; D[i] = clamp(col[0] + d, 0, 255); D[i + 1] = clamp(col[1] + d, 0, 255); D[i + 2] = clamp(col[2] + d, 0, 255); D[i + 3] = 255; };
       const dark = (x, y, f) => { const i = (y * IW + x) * 4; D[i] *= f; D[i + 1] *= f; D[i + 2] *= f; };
+      const tintPx = (x, y, col, k) => { const i = (y * IW + x) * 4; D[i] += (col[0] - D[i]) * k; D[i + 1] += (col[1] - D[i + 1]) * k; D[i + 2] += (col[2] - D[i + 2]) * k; };
       const FL = th.floor.map(rgb), MO = rgb(th.mortar), BR = th.brick.map(rgb), BH = rgb(th.brickHi), BL = rgb(th.brickLo), CP = rgb(th.cap), CH = rgb(th.capHi);
+      const style = th.floorStyle, wst = th.wallStyle;
+      // Platten (Grundmuster für Stein, Wasser, Basalt und Gras-Pflaster)
+      const slabs = (tx, ty, px, py, pal, sd) => {
+        const v = hash(tx, ty, seed + 1);
+        const rects = v < 0.3 ? [[0, 0, 16, 16]] : v < 0.55 ? [[0, 0, 8, 16], [8, 0, 8, 16]] : v < 0.8 ? [[0, 0, 16, 8], [0, 8, 16, 8]] : [[0, 0, 8, 8], [8, 0, 8, 8], [0, 8, 8, 8], [8, 8, 8, 8]];
+        rects.forEach(([rx, ry, rw, rh], i) => {
+          const base = pal[Math.floor(hash(tx * 4 + i, ty, seed + 7) * pal.length)]; const sh = Math.round((hash(tx, ty * 4 + i, seed + 9) - 0.5) * 10);
+          for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
+            if (x === rx + rw - 1 || y === ry + rh - 1) { put(px + x, py + y, MO, 0); continue; }
+            let d = sh + Math.round((hash(px + x, py + y, seed) - 0.5) * 7);
+            if (x === rx || y === ry) d += 9; else if (x === rx + rw - 2 || y === ry + rh - 2) d -= 7;
+            put(px + x, py + y, base, d + (sd || 0));
+          }
+        });
+      };
+      this.pits = []; this.hazTiles = []; this.lights = [];
       for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
-        const px = tx * T, py = ty * T;
+        const px = tx * T, py = ty * T, tv = tile(tx, ty);
         if (isF(tx, ty)) {
-          if (this.themeKey === 'throne') {
+          if (style === 'checker') {
             const base = FL[(tx + ty) & 1];
             for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const edge = x === T - 1 || y === T - 1; put(px + x, py + y, edge ? MO : base, edge ? 0 : (x === 0 || y === 0 ? 8 : 0) + Math.round((hash(px + x, py + y, seed) - 0.5) * 6)); }
-            continue;
+            if (hash(tx, ty, seed + 51) < 0.06) { const gc = rgb('#b55088'); for (let k = 0; k < 5; k++) put(px + 5 + k, py + 8 + (k % 2), gc, -40); }   // Runen
+          } else if (style === 'grass') {
+            // Gras mit alten Platten dazwischen, Halme und kleine Blüten
+            if (hash(tx >> 1, ty >> 1, seed + 61) < 0.32) slabs(tx, ty, px, py, [rgb('#5a6a58'), rgb('#55654f'), rgb('#606f5c')], -6);
+            else for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const gx = px + x, gy = py + y; const n = hash(gx >> 1, gy >> 1, seed + 62); put(gx, gy, FL[Math.floor(n * FL.length)], Math.round((hash(gx, gy, seed + 63) - 0.5) * 14) + (n > 0.85 ? 10 : 0)); }
+            for (let k = 0; k < 5; k++) { const x = px + Math.floor(hash(tx, ty * 7 + k, seed + 64) * 15), y = py + 2 + Math.floor(hash(tx * 7 + k, ty, seed + 65) * 13); put(x, y, rgb('#63c74d'), 0); put(x, y - 1, rgb('#3e8948'), 0); }
+            if (hash(tx, ty, seed + 66) < 0.12) { const x = px + 3 + Math.floor(hash(tx, ty, 67) * 10), y = py + 3 + Math.floor(hash(tx, ty, 68) * 10); const fc = rgb(hash(tx, ty, 69) < 0.5 ? '#fee761' : '#f6757a'); put(x, y, fc, 0); put(x + 1, y, fc, -30); put(x, y + 1, fc, -30); }
+          } else if (style === 'sand') {
+            // Sand mit Wellen, ab und zu eine Sandsteinplatte
+            if (hash(tx >> 1, ty, seed + 71) < 0.22) slabs(tx, ty, px, py, [rgb('#b8865a'), rgb('#c08e60'), rgb('#ad7e52')], 0);
+            else for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const gx = px + x, gy = py + y; const w = (gx * 0.35 + gy * 1.1 + Math.sin(gx * 0.12 + seed) * 3) % 7; put(gx, gy, FL[Math.floor(hash(gx >> 2, gy >> 2, seed + 72) * FL.length)], (w < 1 ? -14 : w < 2 ? 8 : 0) + Math.round((hash(gx, gy, seed + 73) - 0.5) * 8)); }
+          } else if (style === 'basalt') {
+            slabs(tx, ty, px, py, FL, 0);
+            if (hash(tx, ty, seed + 81) < 0.18) { let x = 2 + Math.floor(hash(tx, ty, 82) * 10), y = 2 + Math.floor(hash(tx, ty, 83) * 10); const gc = rgb('#f77622'), gy2 = rgb('#feae34'); for (let k = 0; k < 8; k++) { put(px + clamp(x, 0, 15), py + clamp(y, 0, 15), k % 3 ? gc : gy2, -20); x += hash(tx + k, ty, 84) < 0.5 ? 1 : 0; y += hash(tx, ty + k, 85) < 0.6 ? 1 : -1; } }
+          } else {
+            slabs(tx, ty, px, py, FL, 0);
+            // Risse und Steinchen
+            if (hash(tx, ty, seed + 3) < 0.13) { let x = 2 + Math.floor(hash(tx, ty, 4) * 10), y = 2 + Math.floor(hash(tx, ty, 5) * 10); for (let k = 0; k < 7; k++) { put(px + clamp(x, 0, 15), py + clamp(y, 0, 15), MO, 4); x += hash(tx + k, ty, 6) < 0.5 ? 1 : 0; y += hash(tx, ty + k, 7) < 0.6 ? 1 : -1; } }
+            if (hash(tx, ty, seed + 11) < 0.4) { const x = Math.floor(hash(tx, ty, 12) * 14) + 1, y = Math.floor(hash(tx, ty, 13) * 14) + 1; put(px + x, py + y, MO, 10); put(px + x + 1, py + y, FL[0], 18); }
           }
-          const v = hash(tx, ty, seed + 1);
-          const rects = v < 0.3 ? [[0, 0, 16, 16]] : v < 0.55 ? [[0, 0, 8, 16], [8, 0, 8, 16]] : v < 0.8 ? [[0, 0, 16, 8], [0, 8, 16, 8]] : [[0, 0, 8, 8], [8, 0, 8, 8], [0, 8, 8, 8], [8, 8, 8, 8]];
-          rects.forEach(([rx, ry, rw, rh], i) => {
-            const base = FL[Math.floor(hash(tx * 4 + i, ty, seed + 7) * FL.length)]; const sh = Math.round((hash(tx, ty * 4 + i, seed + 9) - 0.5) * 10);
-            for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
-              if (x === rx + rw - 1 || y === ry + rh - 1) { put(px + x, py + y, MO, 0); continue; }
-              let d = sh + Math.round((hash(px + x, py + y, seed) - 0.5) * 7);
-              if (x === rx || y === ry) d += 9; else if (x === rx + rw - 2 || y === ry + rh - 2) d -= 7;
-              put(px + x, py + y, base, d);
-            }
-          });
-          // Risse
-          if (hash(tx, ty, seed + 3) < 0.13) { let x = 2 + Math.floor(hash(tx, ty, 4) * 10), y = 2 + Math.floor(hash(tx, ty, 5) * 10); for (let k = 0; k < 7; k++) { put(px + clamp(x, 0, 15), py + clamp(y, 0, 15), MO, 4); x += hash(tx + k, ty, 6) < 0.5 ? 1 : 0; y += hash(tx, ty + k, 7) < 0.6 ? 1 : -1; } }
-          // Steinchen
-          if (hash(tx, ty, seed + 11) < 0.4) { const x = Math.floor(hash(tx, ty, 12) * 14) + 1, y = Math.floor(hash(tx, ty, 13) * 14) + 1; put(px + x, py + y, MO, 10); put(px + x + 1, py + y, FL[0], 18); }
+          if (tv === 4) this.paintPit(tx, ty, px, py, th, put, tile, seed);
+          else if (tv === 5) this.paintHaz(tx, ty, px, py, th, put, tintPx, tile, seed);
         } else if (isF(tx, ty + 1)) {
-          // Wand-Vorderseite (Ziegel)
+          // Wand-Vorderseite
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
             const gx = px + x; let col, d = 0;
             const tall = !isF(tx, ty - 1);
             if (!tall && y === 0) { col = CH; d = 6; }
             else if (!tall && y === 1) { col = BH; d = -4; }
             else if (y === T - 1) { col = BL; }
-            else {
-              const yy = y - 2, course = Math.floor(yy / 4), off = (course & 1) * 4, cy = ty * 4 + course;
-              if (yy % 4 === 3 || (gx + off) % 8 === 7) { col = BL; d = 6; }
-              else { const bi = Math.floor((gx + off) / 8); col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)]; d = Math.round((hash(gx, py + y, seed + 22) - 0.5) * 8) + (yy % 4 === 0 ? 10 : 0) - (y > 11 ? 8 : 0); if (hash(bi, cy, seed + 23) < 0.06) d -= 22; }
-            }
+            else [col, d] = this.wallPix(gx, py + y, y, ty, false, BR, BL, seed, wst);
             put(gx, py + y, col, d);
           }
-          // Moos an der Wand
-          if (hash(tx, ty, seed + 31) < (this.themeKey === 'grotto' ? 0.5 : 0.12)) { const mc = th.moss.map(rgb); for (let k = 0; k < 9; k++) { const x = Math.floor(hash(tx, k, 32) * 16), y = 10 + Math.floor(hash(k, ty, 33) * 5); put(px + x, py + y, mc[k % mc.length], 0); if (hash(x, y, 34) < 0.4 && y > 1) put(px + x, py + y - 1, mc[0], -10); } }
+          this.wallDeco(tx, ty, px, py, th, put, seed, true);
         } else if (isF(tx, ty + 2) && !isF(tx, ty + 1)) {
-          // Oberes Wandstück: die Wand ist zwei Kacheln hoch, oben der Deckel-Rand, darunter dunklere Ziegel
+          // Oberes Wandstück: die Wand ist zwei Kacheln hoch, oben der Deckel-Rand, darunter dunklere Steine
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
             const gx = px + x; let col, d = 0;
             if (y === 0) { col = CH; d = 6; }
             else if (y === 1) { col = BH; d = -4; }
-            else {
-              const yy = y - 2, course = Math.floor(yy / 4), off = (course & 1) * 4, cy = ty * 4 + course;
-              if (yy % 4 === 3 || (gx + off) % 8 === 7) { col = BL; d = 2; }
-              else { const bi = Math.floor((gx + off) / 8); col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)]; d = Math.round((hash(gx, py + y, seed + 22) - 0.5) * 8) + (yy % 4 === 0 ? 6 : 0) - 6; if (hash(bi, cy, seed + 23) < 0.06) d -= 22; }
-            }
+            else [col, d] = this.wallPix(gx, py + y, y, ty, true, BR, BL, seed, wst);
             put(gx, py + y, col, d);
           }
+          this.wallDeco(tx, ty, px, py, th, put, seed, false);
         } else {
-          // Wand oben (Deckel)
-          // Fels: grobe Flecken und feines Rauschen, damit die Fläche zwischen den Räumen nicht leer wirkt
+          // Wand oben (Deckel): grobe Flecken und feines Rauschen
           for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const gx = px + x, gy = py + y; put(gx, gy, CP, Math.round((hash(gx >> 2, gy >> 2, seed + 43) - 0.5) * 9 + (hash(gx >> 3, (gy + 4) >> 3, seed + 44) - 0.5) * 7 + (hash(gx, gy, seed + 41) - 0.5) * 5)); }
           const rim = (x, y) => put(px + x, py + y, CH, 0);
           if (isF(tx, ty - 1)) for (let x = 0; x < T; x++) { rim(x, 0); put(px + x, py + 1, CH, -14); }
@@ -139,7 +161,7 @@ window.A = window.A || {};
       }
       c.putImageData(img, 0, 0);
       // Deko und Lichter
-      this.lights = []; this.torches = []; this.deco = []; this.glows = [];
+      this.torches = []; this.deco = []; this.glows = [];
       const rng = new A.RNG((W.seed ^ 0x5bd1e995) >>> 0 || 7);
       const S = (n, f, pal, key) => A.Art.sprite(n, f || 0, pal, key);
       const blit = (s, x, y) => { if (s) c.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h)); };
@@ -162,19 +184,19 @@ window.A = window.A || {};
         const nb = r.type === 'start' ? 0 : rng.int(1, 4);
         for (let i = 0; i < nb; i++) { const s = S(rng.chance(0.4) ? 'skull' : 'bones'); const x = rx + 12 + rng.next() * (rw - 24), y = ry + 14 + rng.next() * (rh - 24); c.globalAlpha = 0.85; blit(s, x, y); c.globalAlpha = 1; }
         const mc = th.moss;
-        for (let i = 0; i < (this.themeKey === 'grotto' ? 6 : 2); i++) { const x = rx + rng.next() * rw, y = rng.chance(0.5) ? ry + 2 + rng.next() * 6 : ry + rh - 4 - rng.next() * 6; for (let k = 0; k < 14; k++) { c.fillStyle = mc[k % mc.length]; c.globalAlpha = 0.7; c.fillRect(Math.round(x + (rng.next() - 0.5) * 12), Math.round(y + (rng.next() - 0.5) * 6), 1, 1); } c.globalAlpha = 1; }
+        for (let i = 0; i < (this.themeKey === 'jungle' ? 6 : 2); i++) { const x = rx + rng.next() * rw, y = rng.chance(0.5) ? ry + 2 + rng.next() * 6 : ry + rh - 4 - rng.next() * 6; for (let k = 0; k < 14; k++) { c.fillStyle = mc[k % mc.length]; c.globalAlpha = 0.7; c.fillRect(Math.round(x + (rng.next() - 0.5) * 12), Math.round(y + (rng.next() - 0.5) * 6), 1, 1); } c.globalAlpha = 1; }
         // Pfützen
-        if (rng.chance(this.themeKey === 'grotto' ? 0.8 : 0.35)) {
+        if (th.puddle && rng.chance(th.puddle === 'water' && this.themeKey !== 'stone' ? 0.6 : 0.35)) {
           const x = rx + 24 + rng.next() * (rw - 48), y = ry + 24 + rng.next() * (rh - 48), w = 8 + rng.next() * 10, h = 3 + rng.next() * 3;
-          const slime = this.themeKey === 'grotto', lava = this.themeKey === 'rust';
+          const slime = false, lava = th.puddle === 'lava';
           c.fillStyle = slime ? 'rgba(99,199,77,0.45)' : lava ? 'rgba(247,118,34,0.55)' : 'rgba(40,60,110,0.55)';
           c.beginPath(); c.ellipse(Math.round(x), Math.round(y), w, h, 0, 0, TAU); c.fill();
           c.fillStyle = slime ? 'rgba(200,245,160,0.5)' : lava ? 'rgba(254,231,97,0.7)' : 'rgba(160,190,230,0.45)'; c.fillRect(Math.round(x - w / 3), Math.round(y - h / 3), 3, 1);
           if (slime || lava) this.lights.push({ x: x * PX, y: y * PX, r: 30, color: slime ? '#63c74d' : '#f77622', a: 0.5, fl: lava ? 2 : 0.6 });
         }
         // Leuchtpilze (Grotte) und Glutrisse (Rost)
-        if (this.themeKey === 'grotto') for (let i = 0; i < rng.int(1, 3); i++) { const x = rx + 8 + rng.next() * (rw - 16), y = ry + (rng.chance(0.5) ? 10 : rh - 4); blit(S('mushglow', i % 2), x, y); this.lights.push({ x: x * PX, y: (y - 3) * PX, r: 34, color: '#2ce8f5', a: 0.75, fl: 0.4 }); }
-        if (this.themeKey === 'rust') for (let i = 0; i < rng.int(1, 2); i++) { let x = rx + 10 + rng.next() * (rw - 20), y = ry + 10 + rng.next() * (rh - 20); c.fillStyle = '#f77622'; for (let k = 0; k < 14; k++) { c.fillRect(Math.round(x), Math.round(y), 1, 1); if (k % 3 === 0) { c.fillStyle = '#feae34'; c.fillRect(Math.round(x), Math.round(y), 1, 1); c.fillStyle = '#f77622'; } x += rng.chance(0.5) ? 1 : -1; y += rng.chance(0.7) ? 1 : 0; } this.lights.push({ x: x * PX, y: y * PX, r: 26, color: '#f77622', a: 0.55, fl: 2 }); }
+        if (this.themeKey === 'jungle') for (let i = 0; i < rng.int(1, 3); i++) { const x = rx + 8 + rng.next() * (rw - 16), y = ry + (rng.chance(0.5) ? 10 : rh - 4); blit(S('mushglow', i % 2), x, y); this.lights.push({ x: x * PX, y: (y - 3) * PX, r: 34, color: '#2ce8f5', a: 0.75, fl: 0.4 }); }
+        if (this.themeKey === 'volcano') for (let i = 0; i < rng.int(1, 2); i++) { let x = rx + 10 + rng.next() * (rw - 20), y = ry + 10 + rng.next() * (rh - 20); c.fillStyle = '#f77622'; for (let k = 0; k < 14; k++) { c.fillRect(Math.round(x), Math.round(y), 1, 1); if (k % 3 === 0) { c.fillStyle = '#feae34'; c.fillRect(Math.round(x), Math.round(y), 1, 1); c.fillStyle = '#f77622'; } x += rng.chance(0.5) ? 1 : -1; y += rng.chance(0.7) ? 1 : 0; } this.lights.push({ x: x * PX, y: y * PX, r: 26, color: '#f77622', a: 0.55, fl: 2 }); }
         // Räume mit Sonderausstattung
         const cx = rx + rw / 2, cy = ry + rh / 2;
         if (r.type === 'boss' || r.type === 'event') {
@@ -211,17 +233,17 @@ window.A = window.A || {};
       this.motes = []; this.drips = []; this.cracks = []; this.shafts = [];
       for (const r of W.rooms) {
         const n = Math.round(r.w * r.h / 8);
-        for (let i = 0; i < n; i++) this.motes.push({ room: r.i, x: (r.x + ar.next() * r.w) * T, y: (r.y + ar.next() * r.h) * T, h: r.h * T, y0: r.y * T, ph: ar.next() * 100, s: ar.next() });
-        if (tk === 'grotto' || tk === 'stone') for (let i = 0; i < (tk === 'grotto' ? 3 : 1); i++) {
+        for (let i = 0; i < n; i++) this.motes.push({ room: r.i, x: (r.x + ar.next() * r.w) * T, y: (r.y + ar.next() * r.h) * T, h: r.h * T, y0: r.y * T, w: r.w * T, x0: r.x * T, ph: ar.next() * 100, s: ar.next() });
+        if (tk === 'jungle' || tk === 'stone' || tk === 'water') for (let i = 0; i < (tk === 'water' ? 3 : tk === 'jungle' ? 2 : 1); i++) {
           const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)); if (isF(tx, r.y - 1)) continue;
           this.drips.push({ room: r.i, x: tx * T + 4 + Math.floor(ar.next() * 8), y0: r.y * T - 3, y1: (r.y + 1 + ar.next() * (r.h - 2)) * T, per: 2.4 + ar.next() * 2.6, ph: ar.next() * 5, sp: -1 });
         }
         if (!isF(r.x + 2, r.y - 1) && ar.next() < 0.7) for (let i = 0; i < (ar.next() < 0.4 ? 2 : 1); i++) this.shafts.push({ room: r.i, x: (r.x + 1 + ar.next() * (r.w - 4)) * T, y: r.y * T - 6, w: 8 + Math.floor(ar.next() * 10), len: (3.5 + ar.next() * 3) * T, ph: ar.next() * 6 });
-        const m = tk === 'grotto' ? 4 : tk === 'rust' ? 3 : 0;
+        const m = tk === 'jungle' ? 3 : tk === 'volcano' ? 3 : 0;
         for (let i = 0; i < m; i++) {
           const tx = r.x + 1 + Math.floor(ar.next() * (r.w - 2)), ty = r.y + 1 + Math.floor(ar.next() * (r.h - 2)); if (!isF(tx, ty)) continue;
           const px = tx * T + 3 + Math.floor(ar.next() * 8), py = ty * T + 5 + Math.floor(ar.next() * 8);
-          if (tk === 'grotto') { // drei kleine leuchtende Pilze
+          if (tk === 'jungle') { // drei kleine leuchtende Pilze
             for (let j = 0; j < 3; j++) { const ox = px + j * 3, oy = py + (j === 1 ? -1 : 0); c.fillStyle = '#ead4aa'; c.fillRect(ox, oy, 1, 2); c.fillStyle = j === 1 ? '#2ce8f5' : '#0099db'; c.fillRect(ox - 1, oy - 1, 3, 1); c.fillStyle = '#c0f8ff'; c.fillRect(ox, oy - 1, 1, 1); }
             this.lights.push({ x: (px + 3) * PX, y: py * PX, r: 24, color: '#2ce8f5', a: 0.6, fl: 0.6, room: r.i });
           } else { // Glutriss im Boden
@@ -233,13 +255,80 @@ window.A = window.A || {};
       }
       this.level = cv; this.lc = c; this.levelW = W; this.litAt = {}; this.cam = null; this.levelAge = 0; this.opening = null; this._act = null;
     }
+    // Wandstein je Welt: Ziegel, Sandstein (grosse Blöcke mit Zeichen), Fels (ohne Fugen), Ranken und Algen kommen in wallDeco dazu
+    wallPix(gx, gy, y, ty, upper, BR, BL, seed, wst) {
+      const yy = y - 2;
+      if (wst === 'rock') {
+        const n = hash(gx >> 2, gy >> 2, seed + 91), n2 = hash(gx >> 1, gy >> 1, seed + 92);
+        let d = Math.round((n - 0.5) * 18 + (n2 - 0.5) * 8) - (upper ? 8 : 0) - (y > 11 ? 8 : 0);
+        if (hash(gx >> 3, gy >> 2, seed + 93) < 0.12 && n2 < 0.3) return [BL, 4];
+        return [BR[Math.floor(n * BR.length)], d];
+      }
+      const bw = wst === 'sandstone' ? 12 : 8, ch = wst === 'sandstone' ? 5 : 4;
+      const course = Math.floor(yy / ch), off = (course & 1) * (bw / 2), cy = ty * 4 + course;
+      if (yy % ch === ch - 1 || (gx + off) % bw === bw - 1) return [BL, upper ? 2 : 6];
+      const bi = Math.floor((gx + off) / bw); const col = BR[Math.floor(hash(bi, cy, seed + 21) * BR.length)];
+      let d = Math.round((hash(gx, gy, seed + 22) - 0.5) * 8) + (yy % ch === 0 ? (upper ? 6 : 10) : 0) - (upper ? 6 : y > 11 ? 8 : 0);
+      if (hash(bi, cy, seed + 23) < 0.06) d -= 22;
+      // Zeichen im Sandstein
+      if (wst === 'sandstone' && hash(bi, cy, seed + 24) < 0.18) { const lx = (gx + off) % bw, ly = yy % ch; if ((lx === 4 || lx === 7) && ly > 0 && ly < 4 || (ly === 2 && lx > 3 && lx < 8 && hash(bi, cy, 25) < 0.5)) return [BL, 12]; }
+      return [col, d];
+    }
+    wallDeco(tx, ty, px, py, th, put, seed, front) {
+      const wst = th.wallStyle;
+      // Moos (Grundausstattung), Ranken im Dschungel, Algen und nasser Glanz unter Wasser, Glutadern im Vulkan
+      if (front && hash(tx, ty, seed + 31) < (wst === 'vines' ? 0.45 : wst === 'algae' ? 0.4 : 0.12)) { const mc = th.moss.map(rgb); for (let k = 0; k < 9; k++) { const x = Math.floor(hash(tx, k, 32) * 16), y = 10 + Math.floor(hash(k, ty, 33) * 5); put(px + x, py + y, mc[k % mc.length], 0); if (hash(x, y, 34) < 0.4 && y > 1) put(px + x, py + y - 1, mc[0], -10); } }
+      if (wst === 'vines' && hash(tx, ty, seed + 35) < 0.55) {
+        const vx = 2 + Math.floor(hash(tx, ty, 36) * 12), len = front ? 6 + Math.floor(hash(tx, ty, 37) * 10) : 16, g1 = rgb('#3e8948'), g2 = rgb('#63c74d'), g0 = rgb('#265c42');
+        let x = vx; for (let y = front ? 0 : 0; y < len; y++) { put(px + x, py + y, y % 3 ? g1 : g0, 0); if (y % 4 === 2) { put(px + x + 1, py + y, g2, 0); put(px + x + 2, py + y - 1, g2, -10); } if (y % 4 === 0 && x > 1) put(px + x - 1, py + y, g2, -20); if (hash(tx, y, 38) < 0.25) x = clamp(x + (hash(y, ty, 39) < 0.5 ? 1 : -1), 1, 14); }
+      }
+      if (wst === 'algae' && front) { const a1 = rgb('#2ce8f5'), a2 = rgb('#3e8948'); for (let x = 0; x < T; x++) { const h = Math.floor(hash(px + x, ty, seed + 41) * 4); for (let y = T - 2 - h; y < T - 1; y++) put(px + x, py + y, hash(x, y, 42) < 0.3 ? a1 : a2, -40); } }
+      if (wst === 'rock' && hash(tx, ty, seed + 45) < 0.25) { let x = 3 + Math.floor(hash(tx, ty, 46) * 10), y = front ? 3 : 1; const o1 = rgb('#f77622'), o2 = rgb('#feae34'); for (let k = 0; k < 10 && y < 15; k++) { put(px + x, py + y, k % 3 ? o1 : o2, -10); y++; if (hash(tx + k, ty, 47) < 0.4) x = clamp(x + (hash(k, tx, 48) < 0.5 ? 1 : -1), 0, 15); } this.lights.push({ x: (px + x) * PX, y: (py + y) * PX, r: 22, color: '#f77622', a: 0.35, fl: 1 }); }
+    }
+    // Grube: Wasser (mit Schaumkante), Lava (mit Kruste), Abgrund (mit Sternen)
+    paintPit(tx, ty, px, py, th, put, tile, seed) {
+      const P = th.pit || { base: '#0d0b14', mid: '#120f1a', hi: '#3a4466', rim: '#181425', void: true };
+      const B = rgb(P.base), M = rgb(P.mid), H = rgb(P.hi), R = rgb(P.rim);
+      const up = tile(tx, ty - 1) !== 4, lf = tile(tx - 1, ty) !== 4, rt = tile(tx + 1, ty) !== 4, dn = tile(tx, ty + 1) !== 4;
+      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+        const gx = px + x, gy = py + y;
+        let col = hash(gx >> 2, gy >> 1, seed + 101) < 0.5 ? B : M, d = Math.round((hash(gx, gy, seed + 102) - 0.5) * 8);
+        if (P.lava) { const w = Math.sin(gx * 0.35 + Math.sin(gy * 0.3) * 2 + seed) + Math.sin(gy * 0.5 - gx * 0.1); col = w > 1.2 ? H : w > 0.2 ? M : B; d = 0; if (hash(gx >> 2, gy >> 2, seed + 103) < 0.12) { col = R; d = 10; } }
+        else if (P.void) { col = y < 3 && up ? M : B; d = 0; if (hash(gx, gy, seed + 104) < 0.012) { col = H; d = 0; } else if (hash(gx, gy, seed + 105) < 0.006) { col = [255, 255, 255]; } }
+        else { const w = (gx + Math.round(Math.sin(gy * 0.6) * 2)) % 9; if (w === 0 && hash(gx >> 3, gy, seed + 106) < 0.5) { col = H; d = -60; } }
+        // Kante: oben eine dunkle Lippe (Höhe), seitlich ein heller Saum (Schaum, Glut, Leuchten)
+        if (up && y < 3) { col = y === 0 ? R : y === 1 ? (P.void ? R : M) : col; d = y === 0 ? 10 : d - 20; }
+        else if ((lf && x === 0) || (rt && x === T - 1) || (dn && y === T - 1)) { col = P.void ? M : H; d = P.lava ? 0 : P.void ? 10 : -30; }
+        put(gx, gy, col, d);
+      }
+      this.pits.push({ tx, ty, lava: !!P.lava, void: !!P.void });
+      if (P.lava && hash(tx, ty, seed + 107) < 0.4) this.lights.push({ x: (px + 8) * PX, y: (py + 8) * PX, r: 34, color: '#f77622', a: 0.55, fl: 0.8 });
+      if (P.void && hash(tx, ty, seed + 108) < 0.15) this.lights.push({ x: (px + 8) * PX, y: (py + 8) * PX, r: 20, color: '#68386c', a: 0.4, fl: 0.4 });
+    }
+    // Gefahr-Boden: Schlamm (Blasen), Treibsand (Wirbel), seichtes Wasser (über dem Boden), Glut (glühende Risse), Schatten (violett)
+    paintHaz(tx, ty, px, py, th, put, tintPx, tile, seed) {
+      const Z = th.haz || { base: '#3a3020', mid: '#2a2418', hi: '#5a4a30' }; const B = rgb(Z.base), M = rgb(Z.mid), H = rgb(Z.hi);
+      const edge = (x, y) => (x === 0 && tile(tx - 1, ty) !== 5) || (x === T - 1 && tile(tx + 1, ty) !== 5) || (y === 0 && tile(tx, ty - 1) !== 5) || (y === T - 1 && tile(tx, ty + 1) !== 5);
+      for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+        const gx = px + x, gy = py + y;
+        if (Z.shallow) { tintPx(gx, gy, B, edge(x, y) ? 0.35 : 0.55); if ((gx + gy * 3 + Math.floor(hash(gx >> 3, gy >> 2, seed) * 5)) % 11 === 0) tintPx(gx, gy, H, 0.5); continue; }
+        let col = hash(gx >> 1, gy >> 1, seed + 111) < 0.55 ? B : M, d = Math.round((hash(gx, gy, seed + 112) - 0.5) * 8);
+        if (Z.embers) { if (hash(gx >> 1, gy >> 1, seed + 113) < 0.16) { col = H; d = hash(gx, gy, 114) < 0.4 ? 40 : 0; } }
+        else if (this.themeKey === 'desert') { const cx = (gx % 16) - 8, cy = (gy % 16) - 8, r = Math.hypot(cx, cy * 1.4); if (Math.round(r + Math.atan2(cy, cx) * 1.3) % 4 === 0) { col = M; d = -10; } }
+        else if (hash(gx, gy, seed + 115) < 0.03) { col = H; d = 0; }
+        if (edge(x, y)) d -= 18;
+        put(gx, gy, col, d);
+      }
+      this.hazTiles.push({ tx, ty });
+      if (Z.embers && hash(tx, ty, seed + 116) < 0.35) this.lights.push({ x: (px + 8) * PX, y: (py + 8) * PX, r: 26, color: '#f77622', a: 0.4, fl: 1.4 });
+    }
     // Stimmung zeichnen (auf dem Leucht-Bild): Staub/Sporen/Glut/Asche, Tropfen mit Spritzer, Glutrisse
     drawAmbience(cx, cy) {
       const g = this.g, t = this.t, tk = this.themeKey, bw = this.bw, bh = this.bh;
-      const col = { stone: '#c0cbdc', grotto: '#63c74d', rust: '#feae34', throne: '#f6757a' }[tk] || '#c0cbdc';
-      const rise = tk === 'grotto' || tk === 'rust' ? 1 : -1, sp = tk === 'rust' ? 10 : 4;
+      const th = this.theme, col = th.mote || '#c0cbdc';
+      const rise = th.rise != null ? th.rise : -1, sp = tk === 'volcano' ? 10 : tk === 'desert' ? 14 : 4;
       // Lichtstrahlen von oben: schräge, weiche Bahnen, die langsam atmen
-      const sc = { stone: [200, 210, 255], grotto: [120, 255, 230], rust: [255, 170, 90], throne: [255, 140, 200] }[tk] || [255, 255, 255];
+      const sc = th.shaft || [255, 255, 255];
       for (const s of this.shafts || []) {
         if (this.litAt[s.room] == null) continue;
         const x = s.x - cx, y = s.y - cy, sl = s.len * 0.45; if (x + sl + s.w < 0 || x > bw || y > bh || y + s.len < 0) continue;
@@ -247,17 +336,34 @@ window.A = window.A || {};
         gr.addColorStop(0, `rgba(${sc},${a})`); gr.addColorStop(1, `rgba(${sc},0)`);
         g.globalAlpha = 1; g.fillStyle = gr; g.beginPath(); g.moveTo(x, y); g.lineTo(x + s.w, y); g.lineTo(x + s.w + sl, y + s.len); g.lineTo(x + sl, y + s.len); g.closePath(); g.fill();
       }
+      // Gruben leben: Wasser glitzert, Lava blubbert und glüht, im Abgrund funkeln Sterne
+      for (const p of this.pits || []) {
+        const x = p.tx * T - cx, y = p.ty * T - cy; if (x < -T || y < -T || x > bw || y > bh) continue;
+        const ph = hash(p.tx, p.ty, 7) * 10;
+        if (p.lava) {
+          g.globalAlpha = 0.14 + 0.1 * Math.sin(t * 1.7 + ph); g.fillStyle = '#f77622'; g.fillRect(x, y, T, T);
+          const k = (t * 0.6 + ph) % 3; if (k < 0.7) { const q = k / 0.7, bx = x + 3 + Math.floor(hash(p.tx, p.ty, 8) * 9), by = y + 5 + Math.floor(hash(p.tx, p.ty, 9) * 7); g.globalAlpha = 0.9 * (1 - q); g.fillStyle = '#fee761'; g.fillRect(bx, by - Math.round(q * 2), q > 0.6 ? 3 : 2, q > 0.6 ? 1 : 2); }
+        } else if (p.void) {
+          for (let i = 0; i < 2; i++) { const sx = x + Math.floor(hash(p.tx, p.ty, 10 + i) * 15), sy = y + 3 + Math.floor(hash(p.tx, p.ty, 12 + i) * 12); g.globalAlpha = Math.max(0, Math.sin(t * (1.5 + i) + ph * 3)) * 0.8; g.fillStyle = i ? '#ffffff' : '#b55088'; g.fillRect(sx, sy, 1, 1); }
+        } else {
+          const o = Math.floor((t * 5 + ph * 3) % (T + 6)) - 3; g.globalAlpha = 0.28; g.fillStyle = '#c0f8ff'; g.fillRect(x + o, y + 5 + ((p.tx + p.ty) % 3) * 3, 3, 1);
+          if (Math.sin(t * 2.3 + ph * 5) > 0.97) { g.globalAlpha = 0.8; g.fillStyle = '#ffffff'; g.fillRect(x + 8, y + 8, 1, 1); }
+        }
+      }
+      g.globalAlpha = 1;
       for (const m of this.motes || []) {
         if (this.litAt[m.room] == null) continue;
         const yy = m.y0 + ((((m.y - m.y0) - rise * t * sp * (0.6 + m.s)) % m.h) + m.h) % m.h;
-        const x = Math.round(m.x + Math.sin(t * 0.5 + m.ph) * 6 - cx), y = Math.round(yy - cy);
+        // Wüste: Sand weht seitlich durch den Raum
+        const xx = rise === 0 ? m.x0 + ((((m.x - m.x0) + t * sp * (0.6 + m.s)) % m.w) + m.w) % m.w : m.x;
+        const x = Math.round(xx + Math.sin(t * 0.5 + m.ph) * 6 - cx), y = Math.round((rise === 0 ? m.y + Math.sin(t * 1.3 + m.ph) * 3 : yy) - cy);
         if (x < 0 || y < 0 || x >= bw || y >= bh) continue;
-        g.globalAlpha = (tk === 'rust' ? 0.45 : 0.22) + 0.3 * (0.5 + 0.5 * Math.sin(t * 2 + m.ph)); g.fillStyle = col; g.fillRect(x, y, 1, 1);
+        g.globalAlpha = (tk === 'volcano' ? 0.45 : 0.22) + 0.3 * (0.5 + 0.5 * Math.sin(t * 2 + m.ph)); g.fillStyle = col; g.fillRect(x, y, 1, 1);
       }
       for (const d of this.drips || []) {
         if (this.litAt[d.room] == null) continue;
         const x = d.x - cx; if (x < -4 || x > bw + 4) continue;
-        const k = (t + d.ph) % d.per, cyc = Math.floor((t + d.ph) / d.per), tf = Math.sqrt(2 * (d.y1 - d.y0) / 320), wc = tk === 'grotto' ? '#7fd8ff' : '#c0cbdc';
+        const k = (t + d.ph) % d.per, cyc = Math.floor((t + d.ph) / d.per), tf = Math.sqrt(2 * (d.y1 - d.y0) / 320), wc = tk === 'stone' ? '#c0cbdc' : '#7fd8ff';
         g.fillStyle = wc;
         if (k < 1) { g.globalAlpha = 0.3 + k * 0.6; g.fillRect(Math.round(x), Math.round(d.y0 - cy), 1, k > 0.6 ? 2 : 1); }
         else if (k < 1 + tf) { const q = k - 1; g.globalAlpha = 0.9; g.fillRect(Math.round(x), Math.round(d.y0 + 160 * q * q - cy), 1, 2); }
@@ -570,7 +676,7 @@ window.A = window.A || {};
         else this.drawFallen(spr, x, y, m.fx < 0, m, sc);
         return;
       }
-      const nf = A.Art.monFrames(m.mid), fly = ['fledermaus', 'glutmotte'].includes(m.mid), ghost = m.shape === 'ghost';
+      const nf = A.Art.monFrames(m.mid), fly = m.fly && m.shape !== 'ghost', ghost = m.shape === 'ghost';
       const moving = m.state !== 'windup' && !(m.spawn > 0);
       const frame = nf > 1 ? Math.floor(this.t * (fly ? 10 : 6) + (m.x % 7)) % nf : 0;
       const spr = A.Art.monSprite(m.mid, moving ? frame : 0); const flip = m.fx < 0;
@@ -636,6 +742,18 @@ window.A = window.A || {};
             if (R(2.4)) F.part({ add: true, x: wx, y: mid, vx: 0, vy: -10, life: 0.4, color: '#fee761', size: 2 }); break;
           case 'fledermaus':
             if (R(3)) F.part({ x: wx, y: mid, vx: 0, vy: 0, z: 8, vz: 0, g: 80, life: 0.8, color: '#68386c', size: 2 }); break;
+          case 'qualle':
+            if (R(8)) F.part({ add: true, kind: 'spark', x: wx, y: mid, vx: (Math.random() - 0.5) * 60, vy: (Math.random() - 0.5) * 60, life: 0.15, color: Math.random() < 0.5 ? '#ffffff' : '#2ce8f5', drag: 4 }); break;
+          case 'glutwicht':
+            if (R(12)) F.part({ add: true, x: wx, y: top, vx: (Math.random() - 0.5) * 14, vy: -20 - Math.random() * 14, life: 0.5, color: Math.random() < 0.5 ? '#feae34' : '#f77622', drag: 0.8 }); break;
+          case 'leerenauge': case 'waechter':
+            if (R(m.boss ? 14 : 6)) F.part({ kind: 'smoke', x: wx, y: mid + 10, vx: 0, vy: -8, life: 0.7, size: 2, grow: 5, color: Math.random() < 0.5 ? '#262b44' : '#68386c', drag: 1 }); break;
+          case 'mumie': case 'sandpharao':
+            if (mv && R(m.boss ? 6 : 2)) F.part({ x: wx, y: m.y + 6, vx: (Math.random() - 0.5) * 20, vy: 0, z: 4, vz: 30, g: 200, life: 0.6, color: '#ead4aa', size: 1 }); break;
+          case 'ranke': case 'dornenmutter':
+            if (R(m.boss ? 5 : 1.5)) F.part({ x: wx, y: top, vx: (Math.random() - 0.5) * 10, vy: 0, z: 10, vz: 0, g: 60, life: 1.2, color: Math.random() < 0.5 ? '#63c74d' : '#3e8948', size: 2 }); break;
+          case 'kraken':
+            if (R(6)) F.part({ add: true, x: wx + (Math.random() - 0.5) * 30, y: m.y + 10, vx: 0, vy: -25, life: 0.9, color: '#7fd8ff', drag: 0.3, size: 2 }); break;
         }
       }
       if (m.boss && A.FX && Math.random() < (this.dt || 0.016) * (m.hp < m.maxHp * 0.5 ? 1.6 : 0.7)) { const W2 = A.World.W, h2 = W2 && W2.hero; if (h2) A.FX.rocks(h2.x + (Math.random() - 0.5) * 260, h2.y + (Math.random() - 0.5) * 160, 1 + Math.floor(Math.random() * 2), 12); }
@@ -702,6 +820,14 @@ window.A = window.A || {};
           top = y - 22; break;
         }
         case 'merchant': spr = S('merchant'); this.shadow(x, y + 4, 7); if (near) this.outlineGlow(spr, x, y + 4, false, '#fee761'); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); top = y + 4 - spr.h; break;
+        case 'shrine': {
+          // Schrein der Wahl: Kugel schwebt und leuchtet, bis sie benutzt ist
+          spr = S('shrine', p.used ? 0 : Math.floor(t * 2) % 2); this.shadow(x, y + 4, 8);
+          if (near && !p.used) this.outlineGlow(spr, x, y + 4, false, '#2ce8f5');
+          b.globalAlpha = p.used ? 0.55 : 1; b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); b.globalAlpha = 1; top = y + 4 - spr.h;
+          if (!p.used && A.FX && Math.random() < 0.25) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 24, y: p.y - 20, vx: 0, vy: -24 - Math.random() * 20, life: 0.9, color: Math.random() < 0.5 ? '#2ce8f5' : '#ffffff', drag: 0.3 });
+          break;
+        }
         case 'statue': spr = S('statue'); this.shadow(x, y + 4, 8); if (near && !p.used) this.outlineGlow(spr, x, y + 4, false, '#fee761'); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); top = y + 4 - spr.h; break;
         case 'stairs': {
           const w = 30, hh = 22, x0 = Math.round(x - w / 2), y0 = Math.round(y - hh / 2);
@@ -780,6 +906,7 @@ window.A = window.A || {};
         else if (p.kind === 'stairs') L(p.x, p.y, 62, '#b55088', 0.8 + Math.sin(t * 2) * 0.1);
         else if (p.kind === 'merchant') L(p.x + 14, p.y - 6, 40, '#feae34', 0.75);
         else if (p.kind === 'statue') { L(p.x, p.y - 50, 26, '#b55088', 0.7); }
+        else if (p.kind === 'shrine') { L(p.x, p.y - 26, p.used ? 30 : 64, '#2ce8f5', p.used ? 0.3 : 0.8 + Math.sin(t * 3) * 0.1); }
         else if (p.kind === 'chest' && !p.used) L(p.x, p.y, 22, '#feae34', 0.4);
       }
       for (const p of W.picks) if (p.kind === 'item') L(p.x, p.y - 6, 28, A.RARITY[p.it.rarity].color, 0.7);
@@ -788,6 +915,9 @@ window.A = window.A || {};
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
         else if (m.mid === 'spiegelgeist') L(m.x, m.y - 10, 30, '#9fd8ff', 0.45);
+        else if (m.mid === 'glutwicht') L(m.x, m.y - 14, 34, '#f77622', fl(m.x, 2) * 0.7);
+        else if (m.mid === 'qualle') L(m.x, m.y - 16, 30, '#2ce8f5', 0.55);
+        else if (m.mid === 'leerenauge') L(m.x, m.y - 16, 30, '#b55088', 0.5);
         else if (m.boss) L(m.x, m.y - 20, 50, '#e43b44', 0.35);
         if (m.state === 'windup') L(m.x, m.y - 10, 20, '#e43b44', 0.6);
       }
@@ -805,7 +935,7 @@ window.A = window.A || {};
       const c = this.ctx, dw = this.dw, dh = this.dh, d = this.dpr, t = this.t;
       // Vignette
       if (!this.vig || this.vigKey !== this.themeKey) { // Rand-Abdunklung mit einem Hauch der Farbwelt
-        const tint = { stone: [20, 18, 44], grotto: [6, 30, 32], rust: [40, 12, 8], throne: [36, 8, 32] }[this.themeKey] || [8, 6, 14];
+        const tint = (this.theme && this.theme.tint) || [8, 6, 14];
         const v = A.Art.mk(dw, dh), x = v.getContext('2d'); const gr = x.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.3, dw / 2, dh / 2, Math.max(dw, dh) * 0.75);
         gr.addColorStop(0, `rgba(${tint},0)`); gr.addColorStop(0.6, `rgba(${tint},0.28)`); gr.addColorStop(1, 'rgba(8,6,14,0.78)'); x.fillStyle = gr; x.fillRect(0, 0, dw, dh); this.vig = v; this.vigKey = this.themeKey; }
       c.drawImage(this.vig, 0, 0);
@@ -858,7 +988,7 @@ window.A = window.A || {};
         c.fillStyle = '#a22633'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh);
         c.fillStyle = '#e43b44'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh * 0.5);
         c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, d);
-        const trick = A.t(A.BOSSES[W.floor] && A.BOSSES[W.floor].trick);
+        const bb = A.bossOf(W.floor), trick = A.t(bb && bb.trick);
         if (trick) { c.font = this.font(11 * d, 500); c.lineWidth = 3 * d; c.strokeText(trick, dw / 2, y0 + hh + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(trick, dw / 2, y0 + hh + 14 * d); }
       }
       // Hinweis
@@ -883,12 +1013,12 @@ window.A = window.A || {};
       if (this.levelAge < 0.7) { c.fillStyle = `rgba(13,11,20,${1 - this.levelAge / 0.7})`; c.fillRect(0, 0, dw, dh); }
     }
     minimap(W) {
-      const m = this.m, c = this.ctx, U = 9, V = 7, G = 3;
-      const w = 3 * U + 2 * G + 6, hh = 3 * V + 2 * G + 6;
+      const m = this.m, c = this.ctx, U = 9, V = 7, G = 3, NX = A.Levels.GX, NY = A.Levels.GY;
+      const w = NX * U + (NX - 1) * G + 6, hh = NY * V + (NY - 1) * G + 6;
       if (this.mm.width !== w) { this.mm.width = w; this.mm.height = hh; }
       m.clearRect(0, 0, w, hh);
       m.fillStyle = 'rgba(24,20,37,0.78)'; m.fillRect(0, 0, w, hh); m.fillStyle = '#5a6988'; m.fillRect(0, 0, w, 1); m.fillRect(0, hh - 1, w, 1); m.fillRect(0, 0, 1, hh); m.fillRect(w - 1, 0, 1, hh);
-      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa' };
+      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5' };
       const pos = (r) => [3 + r.cx * (U + G), 3 + r.cy * (V + G)];
       m.fillStyle = '#3a4466';
       for (const [p, q] of W.edges) { const a = W.rooms.find(r => r.cx === p.x && r.cy === p.y), b = W.rooms.find(r => r.cx === q.x && r.cy === q.y); if (!a || !b || (!a.visited && !b.visited)) continue; const [ax, ay] = pos(a), [bx, by] = pos(b); if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }
@@ -900,7 +1030,7 @@ window.A = window.A || {};
         if (r.visited && r.type !== 'fight' && r.type !== 'start') { m.fillStyle = '#ffffff'; m.fillRect(x + 4, y + 3, 1, 1); }
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }
-      const sc = Math.max(2, this.s - 1), d = this.dpr;
+      const sc = Math.max(2, this.s - 2), d = this.dpr;
       c.imageSmoothingEnabled = false; c.drawImage(this.mm, this.dw - w * sc - 8 * d, (this.topPad + 6) * d, w * sc, hh * sc);
     }
     joystick() {
