@@ -7,18 +7,70 @@ A.Game = (function () {
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
-  let meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro' };   // look: 'retro' (Pixel) oder '3d'
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} }
-  function saveMeta() { try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
-  function metaEffects() {
-    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [] };
-    for (const id of meta.unlocked) {
-      const u = A.META_SHOP.find(x => x.id === id); if (!u) continue;
-      for (const k of Object.keys(u.effect)) { if (k === 'race') eff.races.push(u.effect.race); else eff[k] += u.effect[k]; }
+  // look: 'retro' (Pixel) oder '3d'; camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel)
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro', camp: {}, troph: {} });
+  let meta = freshMeta(), fxCache = null;
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; fxCache = null; migrateCamp(); }
+  function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
+  // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
+  function migrateCamp() {
+    if (meta.campVer >= 1) return;
+    const has = (id) => meta.unlocked.includes(id), up = (id, lv) => { meta.camp[id] = Math.max(meta.camp[id] || 0, lv); };
+    const hp = (has('hp1') ? 1 : 0) + (has('hp2') ? 1 : 0);
+    if (hp) up('feuer', hp * 2);
+    if (has('atk1')) up('platz', 2);
+    if (has('gold1')) up('kiste', 2);
+    if (has('potion1')) up('kessel', 1);
+    if (has('skill1')) up('schreib', 1);
+    if (has('luck1')) up('brunnen', 1);
+    let bonus = 0;
+    for (let bf = A.FLOORS_PER_WORLD; bf < (meta.best || 0); bf += A.FLOORS_PER_WORLD) {
+      const id = A.worldOf(bf).boss, st = Math.min(2, A.worldRound(bf) + 1);
+      if (A.BANNERS[id] && (meta.troph[id] || 0) < st) { bonus += bannerSparks(meta.troph[id] || 0, st); meta.troph[id] = st; }
     }
-    return eff;
+    meta.sparks += bonus;
+    const old = A.META_SHOP.some(u => u.old && has(u.id));
+    if (old || bonus) meta.campNote = { old, bonus };   // einmaliger Hinweis im Lager
+    meta.campVer = 1; saveMeta();
+  }
+  // Alle dauerhaften Wirkungen zusammengezählt (Gebäude, Wimpel, Völker); wird erst nach einer Änderung am Lager neu berechnet
+  function metaEffects() {
+    if (fxCache) return fxCache;
+    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [], potionHeal: 0, cdr: 0, talentSlots: 0, gearW: 0, gearA: 0, gearHB: 0, shopOff: 0, startBoon: 0, def: 0, crit: 0, thorns: 0 };
+    const add = (e, n) => { for (const k in e) eff[k] = (eff[k] || 0) + e[k] * (n || 1); };
+    for (const id of meta.unlocked) { const u = A.META_SHOP.find(x => x.id === id); if (u && u.effect.race) eff.races.push(u.effect.race); }
+    for (const b of A.CAMP) for (let i = 0; i < campLevel(b.id); i++) add(b.lv[i]);
+    for (const id in meta.troph) if (A.BANNERS[id]) add(A.BANNERS[id], Math.min(2, meta.troph[id]));
+    return (fxCache = eff);
   }
   function raceUnlocked(r) { return r.unlock === 0 || metaEffects().races.includes(r.id); }
+  // ---------- Lager ausbauen ----------
+  const campB = (id) => A.CAMP.find(b => b.id === id);
+  function campLevel(id) { const b = campB(id); return b ? Math.min(b.lv.length, meta.camp[id] || 0) : 0; }
+  function campRank() { return A.CAMP.reduce((a, b) => a + campLevel(b.id), 0) + metaEffects().races.length; }
+  function campOpen(id) { const b = campB(id); return !!b && (campLevel(id) > 0 || campRank() >= b.rank); }
+  function campCost(id) { const b = campB(id), lv = campLevel(id); return b && lv < b.lv.length ? b.cost[lv] : null; }
+  function campBuy(id) {
+    const c = campCost(id); if (c == null || !campOpen(id) || meta.sparks < c) return false;
+    meta.sparks -= c; meta.camp[id] = campLevel(id) + 1; saveMeta(); return true;
+  }
+  // Wie viele Ausbauten man sich gerade leisten kann (für den Hinweis am Lager-Knopf)
+  function campAffordable() {
+    let n = A.CAMP.filter(b => campOpen(b.id) && campCost(b.id) != null && campCost(b.id) <= meta.sparks).length;
+    n += A.META_SHOP.filter(u => u.effect.race && !meta.unlocked.includes(u.id) && u.cost <= meta.sparks).length;
+    return n;
+  }
+  // Seelenfunken für neue Wimpel: 50 für den ersten, 100 für den goldenen
+  function bannerSparks(had, st) { let n = 0; for (let k = had + 1; k <= st; k++) n += A.BANNER_SPARKS[k]; return n; }
+  // Wimpel eines Weltenbosses: beim ersten Sieg, golden beim ersten Sieg in den Welten II; die Seelenfunken gibt es sofort (auch wenn man den Durchlauf später aufgibt)
+  function bossBanner(id) {
+    if (!A.BANNERS[id] || !run) return null;
+    const st = Math.min(2, A.worldRound(run.floor) + 1), had = meta.troph[id] || 0; if (had >= st) return null;
+    const sparks = bannerSparks(had, st);
+    meta.troph[id] = st; meta.sparks += sparks; saveMeta();
+    run.bannerSparks = (run.bannerSparks || 0) + sparks; run.campNews = { id, st, sparks };
+    return run.campNews;
+  }
   function classUnlocked(c) { return c.unlock === 0 && !c.soon; }
 
   // ---------- Durchlauf ----------
@@ -34,15 +86,16 @@ A.Game = (function () {
       stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
       hp: 0, gold: 10 + me.startGold, potions: me.startPotion + (cls.startPotion || 0),
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
-      bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: 0, boonOffer: null,
+      bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: me.startBoon || 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
       log: [], reviveUsed: false, over: false, won: false,
     };
     run.rng = new A.RNG(run.seed);
-    // Startwaffe
+    // Startausrüstung (die Lagerschmiede macht sie besser)
     const base = A.BASES.find(b => b.id === cls.weapon);
-    run.gear.weapon = makeItem(base, 'common', 1);
-    run.gear.armor = makeItem(A.BASES.find(b => b.id === 'leder'), 'common', 1);
+    run.gear.weapon = makeItem(base, ['common', 'good', 'rare'][Math.min(2, me.gearW)], 1);
+    run.gear.armor = makeItem(A.BASES.find(b => b.id === 'leder'), me.gearA ? 'good' : 'common', 1);
+    if (me.gearHB) for (const slot of ['helm', 'boots']) run.gear[slot] = makeItem(run.rng.pick(A.BASES.filter(b => b.slot === slot)), 'good', 1);
     run.hp = derived().maxHp;
     newFloor();
     save();
@@ -63,16 +116,16 @@ A.Game = (function () {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
       mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
-      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def')),
+      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def') + me.def),
       spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0) + tv('spd')),
-      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit')),
+      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit') + me.crit),
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
-      lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
+      lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
       regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
       xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
-      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     return d;
   }
@@ -220,7 +273,7 @@ A.Game = (function () {
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
-    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5) }));
+    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
@@ -240,7 +293,7 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 2 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++;
     const items = [];
-    if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); }
+    if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); bossBanner(e.mid); }
     else if (e.elite) { items.push(randomItem(rollRarity(1))); questEvent('elite'); }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
     const levels = addXp(xp);
@@ -335,16 +388,21 @@ A.Game = (function () {
   }
   function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
   function buy(idx) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; addToBag(s.it); return true; }
-  function buyPotion() { const p = 25 + run.floor * 5; if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
-  function potionPrice() { return 25 + run.floor * 5; }
-  // Tränke heilen 40 %, beim Braumeister 60 %
-  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (cls && cls.potionPct) || 0.4; }
+  function buyPotion() { const p = potionPrice(); if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
+  // Händler im Lager kennen dich: unten wird es billiger
+  function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
+  function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
+  // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return ((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal; }
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
+  // Seelenfunken: Tiefe, Gegner, Stufe, dazu 5 je Ebene über dem alten Rekord; die Funken für neue Wimpel sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2;
-    run.sparksEarned = sparks; meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0;
+    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record;
+    run.sparksEarned = sparks + banners; run.sparksRecord = record; run.sparksBanners = banners;
+    meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
   function metaBuy(id) { const u = A.META_SHOP.find(x => x.id === id); if (!u || meta.unlocked.includes(id) || meta.sparks < u.cost || (u.needs && !meta.unlocked.includes(u.needs))) return false; meta.sparks -= u.cost; meta.unlocked.push(id); saveMeta(); return true; }
@@ -353,11 +411,11 @@ A.Game = (function () {
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
   function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; return run; } catch (e) { return null; } }
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
-  function resetAll() { clearRun(); meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 }; saveMeta(); }
+  function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { look: meta.look, campVer: 1 }); saveMeta(); }
 
   loadMeta();
   return {
-    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked,
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,

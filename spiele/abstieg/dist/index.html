@@ -249,6 +249,45 @@
   .upg.have .ic { background: radial-gradient(circle, #2f5a3a, #181425 75%); border-color: #3e8948; }
   .sparkbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .sparkbar b { display: flex; align-items: center; gap: 6px; font-size: 24px; color: var(--spark); }
+  /* Lager: Bild, Lager-Stufe, Gebäude mit Stufen, Völker, Wimpel */
+  .stage.campst { height: auto; aspect-ratio: 16 / 9; max-height: 270px; margin-bottom: 8px; }
+  .rankbar { margin: 0 0 10px; }
+  .rankbar > div:first-child { display: flex; align-items: baseline; gap: 6px; font-size: 17px; }
+  .rankbar > div:first-child b { color: var(--gold2); }
+  .rankbar > div:first-child span { color: var(--mist); font-size: 14px; }
+  .rankbar .bar { height: 8px; margin: 5px 0 4px; background: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+  .rankbar .bar i { display: block; height: 100%; background: linear-gradient(var(--gold2), var(--gold)); box-shadow: inset 0 -2px 0 #be4a2f; }
+  .bld { align-items: flex-start; }
+  .bld .ic { margin-top: 2px; }
+  .bld .bd { flex: 1; min-width: 0; }
+  .bld .lvl { font-size: 13px; color: var(--mist); white-space: nowrap; }
+  .bld .txt b { color: var(--pale); font-weight: 700; }
+  .bld .nx { color: var(--pale); font-size: 13.5px; margin-top: 3px; line-height: 1.3; }
+  .bld > .btn.small, .bld > .need { align-self: center; margin: 0; }
+  .need { font-size: 12.5px; color: var(--mist); text-align: right; max-width: 78px; line-height: 1.2; }
+  .need b { color: var(--pale); }
+  .need.done, .mini.done { color: var(--green); }
+  .pips { display: flex; gap: 3px; margin: 6px 0 4px; }
+  .pips i { flex: 1; max-width: 20px; height: 6px; background: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .pips i.on { background: var(--spark); box-shadow: inset 0 -2px 0 #8a4fc0; }
+  .bld.have .pips i.on { background: var(--green); box-shadow: inset 0 -2px 0 #3e8948; }
+  .frow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .folk { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px 4px; background: rgba(24,20,37,0.45); text-align: center; font-size: 14px; }
+  .folk .btn.small { margin: 0; }
+  .folk.have img { filter: drop-shadow(0 0 5px rgba(99,199,77,0.6)); }
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .flag { display: flex; gap: 8px; align-items: center; padding: 6px; background: rgba(24,20,37,0.45); font-size: 14px; line-height: 1.2; }
+  .flag .fi { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
+  .flag:not(.have) .fi img { filter: brightness(0) opacity(0.45); }
+  .flag:not(.have) b { color: var(--mist); }
+  .flag .stars { color: var(--steel); letter-spacing: 1px; }
+  .flag.have .stars { color: var(--spark); }
+  .flag.gold .stars, .flag.gold b { color: var(--gold2); }
+  .flag .mini { font-size: 12.5px; margin-top: 2px; }
+  @media (max-width: 380px) { .fgrid { grid-template-columns: 1fr; } }
+  #bCamp .dot { width: 9px; height: 9px; flex: none; background: var(--spark); box-shadow: 0 0 0 2px var(--ink); animation: ready 1.4s infinite; }
+  .mini.extra { margin-top: 4px; color: var(--pale); }
+  .bld.just { animation: forged 0.7s ease-out; }
   .result { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; text-align: left; }
   .result div { background: rgba(24,20,37,0.6); border: 2px solid var(--line); padding: 8px 10px; font-size: 13px; color: var(--mist); }
   .result b { display: block; font-size: 22px; color: var(--text); margin-top: 2px; }
@@ -331,7 +370,7 @@ A.UI = {
   runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
   sparksEarned: { de: 'Seelenfunken erhalten', en: 'Soul sparks earned' },
   toCamp: { de: 'Zum Lager', en: 'To camp' },
-  camp: { de: 'Das Lager', en: 'The camp' }, campInfo: { de: 'Hier oben wartet man. Und schaltet frei.', en: 'Up here you wait. And unlock things.' },
+  camp: { de: 'Das Lager', en: 'The camp' }, campInfo: { de: 'Hier oben wartet man. Und baut aus.', en: 'Up here you wait. And build.' },
   bought: { de: 'Freigeschaltet', en: 'Unlocked' },
   speed: { de: 'Tempo', en: 'Speed' },
   cooldown: { de: 'Abklingzeit', en: 'Cooldown' }, rounds: { de: 'Runden', en: 'rounds' },
@@ -687,19 +726,54 @@ A.EVENTS = [
     ] },
 ];
 
-// ---------- Lager (Freischaltungen mit Seelenfunken) ----------
+// ---------- Lager ----------
+// Völker (Rassen) schaltet man einzeln frei. Die übrigen Einträge gab es nur im alten Lager: wer sie gekauft hat, bekommt sie beim Laden als Gebäude-Stufen (game.js, migrateCamp)
 A.META_SHOP = [
-  { id: 'hp1', name: { de: 'Zähe Haut I', en: 'Tough Skin I' }, desc: { de: '+10 % Leben in jedem Durchlauf', en: '+10% health every run' }, cost: 30, effect: { hpMul: 0.1 } },
-  { id: 'hp2', name: { de: 'Zähe Haut II', en: 'Tough Skin II' }, desc: { de: '+10 % Leben', en: '+10% health' }, cost: 80, effect: { hpMul: 0.1 }, needs: 'hp1' },
-  { id: 'gold1', name: { de: 'Startkapital', en: 'Seed Money' }, desc: { de: 'Start mit 40 Gold', en: 'Start with 40 gold' }, cost: 25, effect: { startGold: 40 } },
-  { id: 'atk1', name: { de: 'Alte Narben', en: 'Old Scars' }, desc: { de: '+8 % Angriff und Zauberkraft', en: '+8% attack and magic' }, cost: 50, effect: { dmgMul: 0.08 } },
-  { id: 'potion1', name: { de: 'Reiseapotheke', en: 'Travel Kit' }, desc: { de: 'Start mit einem Trank', en: 'Start with a potion' }, cost: 40, effect: { startPotion: 1 } },
+  { id: 'hp1', old: true, name: { de: 'Zähe Haut I', en: 'Tough Skin I' }, desc: { de: '+10 % Leben in jedem Durchlauf', en: '+10% health every run' }, cost: 30, effect: { hpMul: 0.1 } },
+  { id: 'hp2', old: true, name: { de: 'Zähe Haut II', en: 'Tough Skin II' }, desc: { de: '+10 % Leben', en: '+10% health' }, cost: 80, effect: { hpMul: 0.1 }, needs: 'hp1' },
+  { id: 'gold1', old: true, name: { de: 'Startkapital', en: 'Seed Money' }, desc: { de: 'Start mit 40 Gold', en: 'Start with 40 gold' }, cost: 25, effect: { startGold: 40 } },
+  { id: 'atk1', old: true, name: { de: 'Alte Narben', en: 'Old Scars' }, desc: { de: '+8 % Angriff und Zauberkraft', en: '+8% attack and magic' }, cost: 50, effect: { dmgMul: 0.08 } },
+  { id: 'potion1', old: true, name: { de: 'Reiseapotheke', en: 'Travel Kit' }, desc: { de: 'Start mit einem Trank', en: 'Start with a potion' }, cost: 40, effect: { startPotion: 1 } },
   { id: 'race_schatten', name: { de: 'Schattenkind', en: 'Shadowkin' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 60, effect: { race: 'schatten' } },
   { id: 'race_pilz', name: { de: 'Pilzling', en: 'Sporeling' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 120, effect: { race: 'pilz' } },
   { id: 'race_kobold', name: { de: 'Blechkobold', en: 'Tin Kobold' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 200, effect: { race: 'kobold' } },
-  { id: 'skill1', name: { de: 'Alte Schriften', en: 'Old Scrolls' }, desc: { de: 'Start mit drei Fähigkeiten statt zwei', en: 'Start with three skills instead of two' }, cost: 70, effect: { extraStartSkill: 1 } },
-  { id: 'luck1', name: { de: 'Glückspfennig', en: 'Lucky Penny' }, desc: { de: 'Bessere Items fallen öfter', en: 'Better items drop more often' }, cost: 90, effect: { itemLuck: 1 } },
+  { id: 'skill1', old: true, name: { de: 'Alte Schriften', en: 'Old Scrolls' }, desc: { de: 'Start mit drei Fähigkeiten statt zwei', en: 'Start with three skills instead of two' }, cost: 70, effect: { extraStartSkill: 1 } },
+  { id: 'luck1', old: true, name: { de: 'Glückspfennig', en: 'Lucky Penny' }, desc: { de: 'Bessere Items fallen öfter', en: 'Better items drop more often' }, cost: 90, effect: { itemLuck: 1 } },
 ];
+// Gebäude mit Stufen: lv = Wirkung je Stufe (wird zusammengezählt), cost = Preis je Stufe, rank = ab welcher Lager-Stufe man es bauen kann
+// Lager-Stufe = alle gebauten Stufen zusammen plus freigeschaltete Völker
+const lvEach = (n, eff) => Array.from({ length: n }, () => Object.assign({}, eff));
+A.CAMP = [
+  { id: 'feuer', name: { de: 'Lagerfeuer', en: 'Campfire' }, info: { de: 'Wärmt die Knochen. Und den Mut.', en: 'Warms the bones. And the courage.' }, icon: 'c_fire', rank: 0,
+    cost: [25, 40, 60, 85, 115, 150, 190, 235, 285, 340], lv: lvEach(10, { hpMul: 0.05 }) },
+  { id: 'platz', name: { de: 'Übungsplatz', en: 'Training Ground' }, info: { de: 'Die Strohpuppen haben nie eine Chance.', en: 'The straw dummies never stand a chance.' }, icon: 'c_dummy', rank: 0,
+    cost: [35, 55, 80, 110, 145, 185, 230, 280, 335, 400], lv: lvEach(10, { dmgMul: 0.04 }) },
+  { id: 'kiste', name: { de: 'Schatzkiste', en: 'Treasure Chest' }, info: { de: 'Für schlechte Zeiten. Und für gute.', en: 'For bad times. And for good ones.' }, icon: 'chest', rank: 0,
+    cost: [20, 35, 55, 80, 110, 145], lv: lvEach(6, { startGold: 25 }) },
+  { id: 'kessel', name: { de: 'Kräuterkessel', en: 'Herb Cauldron' }, info: { de: 'Blubbert. Riecht nach Wald und ein bisschen nach Socke.', en: 'Bubbles. Smells of forest and a little of sock.' }, icon: 'c_cauldron', rank: 3,
+    cost: [40, 70, 110, 160, 220, 290], lv: [{ startPotion: 1 }, { potionHeal: 0.05 }, { startPotion: 1 }, { potionHeal: 0.05 }, { startPotion: 1 }, { potionHeal: 0.05 }] },
+  { id: 'schreib', name: { de: 'Schreibstube', en: 'Scriptorium' }, info: { de: 'Alte Bücher, neue Tricks.', en: 'Old books, new tricks.' }, icon: 'c_lectern', rank: 6,
+    cost: [70, 140, 250, 450], lv: [{ extraStartSkill: 1 }, { cdr: 0.05 }, { cdr: 0.05 }, { talentSlots: 1 }] },
+  { id: 'schmiede', name: { de: 'Lagerschmiede', en: 'Camp Forge' }, info: { de: 'Hier wird für den Abstieg geschmiedet.', en: 'Forging for the descent.' }, icon: 'anvil', rank: 9,
+    cost: [80, 150, 260, 400], lv: [{ gearW: 1 }, { gearA: 1 }, { gearW: 1 }, { gearHB: 1 }] },
+  { id: 'zelt', name: { de: 'Händlerzelt', en: 'Merchant Tent' }, info: { de: 'Wer oben Kunde ist, zahlt unten weniger.', en: 'Be a customer up here, pay less down there.' }, icon: 'c_stall', rank: 12,
+    cost: [60, 110, 170, 240], lv: lvEach(4, { shopOff: 0.05 }) },
+  { id: 'brunnen', name: { de: 'Glücksbrunnen', en: 'Wishing Well' }, info: { de: 'Münze rein, Wunsch raus.', en: 'Coin in, wish out.' }, icon: 'c_well', rank: 16,
+    cost: [90, 200, 380], lv: lvEach(3, { itemLuck: 1 }) },
+  { id: 'segen', name: { de: 'Segensstein', en: 'Blessing Stone' }, info: { de: 'Ein kleiner Schrein, der schon hier oben flüstert.', en: 'A little shrine that already whispers up here.' }, icon: 'shrine', rank: 20,
+    cost: [150, 350], lv: [{ startBoon: 1 }, { startBoon: 1 }] },
+];
+A.CAMP_MAX = A.CAMP.reduce((a, b) => a + b.lv.length, 0) + A.META_SHOP.filter(u => u.effect.race).length;   // höchste Lager-Stufe
+// Wimpel der Weltenbosse: erster Sieg = Wimpel (Bonus für immer, 50 Seelenfunken), erster Sieg in den Welten II = goldener Wimpel (doppelter Bonus, 100 Seelenfunken)
+A.BANNERS = {
+  schleimkoenig: { hpMul: 0.05 },
+  dornenmutter: { thorns: 10 },
+  sandpharao: { cdr: 0.05 },
+  kraken: { dmgMul: 0.04 },
+  rostkoenig: { def: 2 },
+  waechter: { crit: 4 },
+};
+A.BANNER_SPARKS = [0, 50, 100];
 
 // ---------- Aufgaben je Ebene ----------
 A.QUESTS = [
@@ -771,7 +845,7 @@ A.Boons = (function () {
   const upgOf = (id, r) => { r = r || run(); return (r && r.upg && r.upg[id]) || 0; };
   // Stärke und Abklingzeit (Sekunden) eines Zaubers mit Verstärkungen und Talenten
   function pow(id) { return A.SKILLS[id].pow * (1 + 0.3 * upgOf(id)); }
-  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1) * (hasTrophy('sandpharao') ? 0.8 : 1) * A.Gear.cdMul(); }
+  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1) * (hasTrophy('sandpharao') ? 0.8 : 1) * A.Gear.cdMul() * (1 - Math.min(0.5, A.Game.metaEffects().cdr)); }   // cdr: Schreibstube und Wimpel im Lager
   function hasTrophy(id) { const r = run(); return !!(r && r.gear && Object.values(r.gear).some(it => it && it.trophy === id)); }
   function icon(id) { const s = A.SKILLS[id]; return s && s.icon; }
   // Name mit Stufe (Feuerball II)
@@ -1174,18 +1248,70 @@ A.Game = (function () {
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
-  let meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro' };   // look: 'retro' (Pixel) oder '3d'
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} }
-  function saveMeta() { try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
-  function metaEffects() {
-    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [] };
-    for (const id of meta.unlocked) {
-      const u = A.META_SHOP.find(x => x.id === id); if (!u) continue;
-      for (const k of Object.keys(u.effect)) { if (k === 'race') eff.races.push(u.effect.race); else eff[k] += u.effect[k]; }
+  // look: 'retro' (Pixel) oder '3d'; camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel)
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro', camp: {}, troph: {} });
+  let meta = freshMeta(), fxCache = null;
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; fxCache = null; migrateCamp(); }
+  function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
+  // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
+  function migrateCamp() {
+    if (meta.campVer >= 1) return;
+    const has = (id) => meta.unlocked.includes(id), up = (id, lv) => { meta.camp[id] = Math.max(meta.camp[id] || 0, lv); };
+    const hp = (has('hp1') ? 1 : 0) + (has('hp2') ? 1 : 0);
+    if (hp) up('feuer', hp * 2);
+    if (has('atk1')) up('platz', 2);
+    if (has('gold1')) up('kiste', 2);
+    if (has('potion1')) up('kessel', 1);
+    if (has('skill1')) up('schreib', 1);
+    if (has('luck1')) up('brunnen', 1);
+    let bonus = 0;
+    for (let bf = A.FLOORS_PER_WORLD; bf < (meta.best || 0); bf += A.FLOORS_PER_WORLD) {
+      const id = A.worldOf(bf).boss, st = Math.min(2, A.worldRound(bf) + 1);
+      if (A.BANNERS[id] && (meta.troph[id] || 0) < st) { bonus += bannerSparks(meta.troph[id] || 0, st); meta.troph[id] = st; }
     }
-    return eff;
+    meta.sparks += bonus;
+    const old = A.META_SHOP.some(u => u.old && has(u.id));
+    if (old || bonus) meta.campNote = { old, bonus };   // einmaliger Hinweis im Lager
+    meta.campVer = 1; saveMeta();
+  }
+  // Alle dauerhaften Wirkungen zusammengezählt (Gebäude, Wimpel, Völker); wird erst nach einer Änderung am Lager neu berechnet
+  function metaEffects() {
+    if (fxCache) return fxCache;
+    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [], potionHeal: 0, cdr: 0, talentSlots: 0, gearW: 0, gearA: 0, gearHB: 0, shopOff: 0, startBoon: 0, def: 0, crit: 0, thorns: 0 };
+    const add = (e, n) => { for (const k in e) eff[k] = (eff[k] || 0) + e[k] * (n || 1); };
+    for (const id of meta.unlocked) { const u = A.META_SHOP.find(x => x.id === id); if (u && u.effect.race) eff.races.push(u.effect.race); }
+    for (const b of A.CAMP) for (let i = 0; i < campLevel(b.id); i++) add(b.lv[i]);
+    for (const id in meta.troph) if (A.BANNERS[id]) add(A.BANNERS[id], Math.min(2, meta.troph[id]));
+    return (fxCache = eff);
   }
   function raceUnlocked(r) { return r.unlock === 0 || metaEffects().races.includes(r.id); }
+  // ---------- Lager ausbauen ----------
+  const campB = (id) => A.CAMP.find(b => b.id === id);
+  function campLevel(id) { const b = campB(id); return b ? Math.min(b.lv.length, meta.camp[id] || 0) : 0; }
+  function campRank() { return A.CAMP.reduce((a, b) => a + campLevel(b.id), 0) + metaEffects().races.length; }
+  function campOpen(id) { const b = campB(id); return !!b && (campLevel(id) > 0 || campRank() >= b.rank); }
+  function campCost(id) { const b = campB(id), lv = campLevel(id); return b && lv < b.lv.length ? b.cost[lv] : null; }
+  function campBuy(id) {
+    const c = campCost(id); if (c == null || !campOpen(id) || meta.sparks < c) return false;
+    meta.sparks -= c; meta.camp[id] = campLevel(id) + 1; saveMeta(); return true;
+  }
+  // Wie viele Ausbauten man sich gerade leisten kann (für den Hinweis am Lager-Knopf)
+  function campAffordable() {
+    let n = A.CAMP.filter(b => campOpen(b.id) && campCost(b.id) != null && campCost(b.id) <= meta.sparks).length;
+    n += A.META_SHOP.filter(u => u.effect.race && !meta.unlocked.includes(u.id) && u.cost <= meta.sparks).length;
+    return n;
+  }
+  // Seelenfunken für neue Wimpel: 50 für den ersten, 100 für den goldenen
+  function bannerSparks(had, st) { let n = 0; for (let k = had + 1; k <= st; k++) n += A.BANNER_SPARKS[k]; return n; }
+  // Wimpel eines Weltenbosses: beim ersten Sieg, golden beim ersten Sieg in den Welten II; die Seelenfunken gibt es sofort (auch wenn man den Durchlauf später aufgibt)
+  function bossBanner(id) {
+    if (!A.BANNERS[id] || !run) return null;
+    const st = Math.min(2, A.worldRound(run.floor) + 1), had = meta.troph[id] || 0; if (had >= st) return null;
+    const sparks = bannerSparks(had, st);
+    meta.troph[id] = st; meta.sparks += sparks; saveMeta();
+    run.bannerSparks = (run.bannerSparks || 0) + sparks; run.campNews = { id, st, sparks };
+    return run.campNews;
+  }
   function classUnlocked(c) { return c.unlock === 0 && !c.soon; }
 
   // ---------- Durchlauf ----------
@@ -1201,15 +1327,16 @@ A.Game = (function () {
       stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
       hp: 0, gold: 10 + me.startGold, potions: me.startPotion + (cls.startPotion || 0),
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
-      bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: 0, boonOffer: null,
+      bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: me.startBoon || 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
       log: [], reviveUsed: false, over: false, won: false,
     };
     run.rng = new A.RNG(run.seed);
-    // Startwaffe
+    // Startausrüstung (die Lagerschmiede macht sie besser)
     const base = A.BASES.find(b => b.id === cls.weapon);
-    run.gear.weapon = makeItem(base, 'common', 1);
-    run.gear.armor = makeItem(A.BASES.find(b => b.id === 'leder'), 'common', 1);
+    run.gear.weapon = makeItem(base, ['common', 'good', 'rare'][Math.min(2, me.gearW)], 1);
+    run.gear.armor = makeItem(A.BASES.find(b => b.id === 'leder'), me.gearA ? 'good' : 'common', 1);
+    if (me.gearHB) for (const slot of ['helm', 'boots']) run.gear[slot] = makeItem(run.rng.pick(A.BASES.filter(b => b.slot === slot)), 'good', 1);
     run.hp = derived().maxHp;
     newFloor();
     save();
@@ -1230,16 +1357,16 @@ A.Game = (function () {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
       mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
-      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def')),
+      def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def') + me.def),
       spd: Math.round(5 + s.dex * 0.6 + sum('spd') + (mod.spd || 0) + tv('spd')),
-      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit')),
+      crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit') + me.crit),
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
-      lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
+      lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
       regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
       xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
-      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     return d;
   }
@@ -1387,7 +1514,7 @@ A.Game = (function () {
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
-    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5) }));
+    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
@@ -1407,7 +1534,7 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 2 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++;
     const items = [];
-    if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); }
+    if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); bossBanner(e.mid); }
     else if (e.elite) { items.push(randomItem(rollRarity(1))); questEvent('elite'); }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
     const levels = addXp(xp);
@@ -1502,16 +1629,21 @@ A.Game = (function () {
   }
   function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
   function buy(idx) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; addToBag(s.it); return true; }
-  function buyPotion() { const p = 25 + run.floor * 5; if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
-  function potionPrice() { return 25 + run.floor * 5; }
-  // Tränke heilen 40 %, beim Braumeister 60 %
-  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (cls && cls.potionPct) || 0.4; }
+  function buyPotion() { const p = potionPrice(); if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
+  // Händler im Lager kennen dich: unten wird es billiger
+  function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
+  function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
+  // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return ((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal; }
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
+  // Seelenfunken: Tiefe, Gegner, Stufe, dazu 5 je Ebene über dem alten Rekord; die Funken für neue Wimpel sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2;
-    run.sparksEarned = sparks; meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0;
+    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record;
+    run.sparksEarned = sparks + banners; run.sparksRecord = record; run.sparksBanners = banners;
+    meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
   function metaBuy(id) { const u = A.META_SHOP.find(x => x.id === id); if (!u || meta.unlocked.includes(id) || meta.sparks < u.cost || (u.needs && !meta.unlocked.includes(u.needs))) return false; meta.sparks -= u.cost; meta.unlocked.push(id); saveMeta(); return true; }
@@ -1520,11 +1652,11 @@ A.Game = (function () {
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
   function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; return run; } catch (e) { return null; } }
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
-  function resetAll() { clearRun(); meta = { sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0 }; saveMeta(); }
+  function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { look: meta.look, campVer: 1 }); saveMeta(); }
 
   loadMeta();
   return {
-    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked,
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
@@ -3634,6 +3766,204 @@ A.Art = (function () {
     '.233333332.',
   ]];
 
+  // ---------- Lager (Bühnenbild im Lager, scenes.js) ----------
+  // Lagerfeuer (Symbol)
+  R.c_fire = [[
+    '.....Y.....',
+    '.....YY....',
+    '....fYY....',
+    '....fYYf...',
+    '...ffYYff..',
+    '...fYYYYf..',
+    '..ofYY6Yfo.',
+    '..ofY66Yfo.',
+    '.N.ofYYfo.N',
+    '.mN.offo.Nm',
+    '..mNNnnNNm.',
+    '.NmmNNNNmmN',
+  ]];
+  // Strohpuppe auf dem Übungsplatz
+  R.c_dummy = [[
+    '...MMM...',
+    '..MsMMm..',
+    '..M0M0m..',
+    '..MMMMm..',
+    'Y..mmm..Y',
+    'YmNNNNNmY',
+    '..mRRRm..',
+    '..mR6Rm..',
+    '..mRRRm..',
+    '...mmm...',
+    '....N....',
+    '....N....',
+    '...nNn...',
+    '..nnnnn..',
+  ]];
+  // Zielscheibe
+  R.c_target = [[
+    '...RRRR...',
+    '..R6666R..',
+    '.R6RRRR6R.',
+    '.R6R66R6R.',
+    '.R6R66R6R.',
+    '.R6RRRR6R.',
+    '..R6666R..',
+    '...RRRR...',
+    '..N....N..',
+    '.N......N.',
+    'N........N',
+  ]];
+  // Kräuterkessel
+  R.c_cauldron = [[
+    '.3444444443.',
+    '32lGlYlGll23',
+    '.2222222222.',
+    '.2322222221.',
+    '232222222221',
+    '232222222221',
+    '.2322222221.',
+    '..22222221..',
+    '..1......1..',
+  ]];
+  // Pult mit offenem Buch
+  R.c_lectern = [[
+    '.sss...sss.',
+    'sssssNsssss',
+    's333sNs333s',
+    'sssssNsssss',
+    's33ssNs333s',
+    '.ssssNssss.',
+    '..NNNNNNN..',
+    '.....N.....',
+    '....NmN....',
+    '....NmN....',
+    '....NmN....',
+    '...NNmNN...',
+    '..NNNNNNN..',
+  ]];
+  // Bücherregal
+  R.c_shelf = [[
+    'NNNNNNNNNNNN',
+    'NRrBbYGl5VvN',
+    'NRrBbYGl5VvN',
+    'NRrBbyGl4VvN',
+    'NmmmmmmmmmmN',
+    'N.lGVv4RrbBN',
+    'NylGVv4RrbBN',
+    'NylGVv4RrbBN',
+    'NmmmmmmmmmmN',
+    'NN........NN',
+  ]];
+  // Händlerzelt mit Streifendach
+  R.c_stall = [[
+    '..................',
+    '.R6R6R6R6R6R6R6R6.',
+    'R6R6R6R6R6R6R6R6R6',
+    'r6r6r6r6r6r6r6r6r6',
+    '.w.w.w.w.w.w.w.w..',
+    '.N..............N.',
+    '.N..............N.',
+    '.N..............N.',
+    '.N..............N.',
+    'NmmmmmmmmmmmmmmmmN',
+    'NMMMMMMMMMMMMMMMMN',
+    'NmmmmmmmmmmmmmmmmN',
+    'NmNNNNNNNNNNNNNNmN',
+    'Nm..............mN',
+  ]];
+  // Glücksbrunnen
+  R.c_well = [[
+    '.......NN.......',
+    '.....NNmmNN.....',
+    '...NNmmMMmmNN...',
+    '.NNmmMMMMMMmmNN.',
+    'NNNNNNNNNNNNNNNN',
+    '..N....N.....N..',
+    '..N....N.....N..',
+    '..N...nmn....N..',
+    '..N...mMm....N..',
+    '.44444444444444.',
+    '4555455545554554',
+    '3443344433443343',
+    '2332233322332232',
+    '3443344433443343',
+    '.22222222222222.',
+  ]];
+  // Laterne am Pfahl
+  R.c_lantern = [[
+    '.N.',
+    'NyN',
+    'YYY',
+    'NyN',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    'NNN',
+  ]];
+  // Pfahl der Palisade
+  R.c_stake = [[
+    '.m.',
+    'mMN',
+    'mMN',
+    'mMN',
+    'mMN',
+    'mMN',
+    'NNN',
+    'mMN',
+    'mMN',
+    'mMN',
+  ]];
+  // Wachturm
+  R.c_tower = [[
+    '.....NN.....',
+    '...NNmmNN...',
+    '.NNmmMMmmNN.',
+    'NNNNNNNNNNNN',
+    '.N..N..N..N.',
+    '.N........N.',
+    'NNNNNNNNNNNN',
+    'mMmMmMmMmMmN',
+    '.N.N....N.N.',
+    '.NN......NN.',
+    '.N.N....N.N.',
+    '.N..N..N..N.',
+    '.N...NN...N.',
+    '.N..N..N..N.',
+    '.N.N....N.N.',
+    '.NN......NN.',
+    '.N.N....N.N.',
+    '.N..N..N..N.',
+    '.N...NN...N.',
+    '.N..N..N..N.',
+    '.N.N....N.N.',
+    '.NN......NN.',
+    'nnn......nnn',
+  ]];
+  // Bauplatz (Pfähle und Bretter)
+  R.c_plot = [[
+    'N.......N',
+    'NMMMMMMMN',
+    'N.......N',
+    'N.......N',
+    'N.......N',
+    'N..mmm..N',
+    'N.mMMMm.N',
+  ]];
+  // Wimpel eines Weltenbosses (C/H: Farbe, Y: Zeichen)
+  R.c_pennant = [[
+    'NNNNNNN',
+    '.CCCCC.',
+    '.CHCCC.',
+    '.CCYCC.',
+    '.CCCCC.',
+    '.CC.CC.',
+    '.C...C.',
+  ]];
+
   // ---------- Paletten je Figur ----------
   const RACE_SKIN = { mensch: ['#e8b796', '#c28569'], fels: ['#5a6988', '#3a4466'], schatten: ['#b55088', '#68386c'], pilz: ['#63c74d', '#3e8948'], kobold: ['#feae34', '#be4a2f'] };
   const CLASS_CLOTH = { klinge: ['#a22633', '#e43b44', '#f6757a'], schuetze: ['#265c42', '#3e8948', '#63c74d'], weber: ['#124e89', '#0099db', '#2ce8f5'], rufer: ['#262b44', '#68386c', '#b55088'], brau: ['#be4a2f', '#d77643', '#feae34'] };
@@ -3837,6 +4167,8 @@ A.Sound = (function () {
     forge() { if (!on()) return; noise(0.1, 0.2, 'highpass', 3000, 7000); tone(1760, 1720, 0.4, 'triangle', 0.06); tone(2637, 2600, 0.32, 'sine', 0.035, 0.01); tone(220, 110, 0.12, 'square', 0.05); },
     clink() { if (!on()) return; const f = r(2300, 2600); tone(f, f * 0.98, 0.18, 'triangle', 0.014); noise(0.03, 0.03, 'highpass', 4000, 7000); },
     buy() { if (!on()) return; tone(988, 0, 0.06, 'square', 0.04); tone(1319, 0, 0.12, 'square', 0.04, 0.06); },
+    // Ausbau im Lager: zwei Hammerschläge, dann ein heller Dreiklang
+    build() { if (!on()) return; noise(0.06, 0.16, 'lowpass', 1100, 250); noise(0.06, 0.13, 'lowpass', 1100, 250, 0.13); [523, 784, 1047].forEach((f, i) => tone(f, 0, 0.18, 'triangle', 0.05, 0.24 + i * 0.07)); },
     win() { this.cleared(); },
     glass(big) { if (!on()) return; noise(0.12, big ? 0.16 : 0.1, 'highpass', 3500, 8000); for (let i = 0; i < (big ? 4 : 3); i++) { const f = r(2400, 4200); tone(f, f * 0.9, 0.05, 'triangle', 0.025, i * 0.03); } if (big) noise(0.25, 0.12, 'lowpass', 1200, 200, 0.02); },
     summon() { if (!on()) return; tone(r(110, 130), r(220, 260), 0.45, 'sawtooth', 0.035); tone(r(330, 360), r(170, 190), 0.4, 'sine', 0.05, 0.05); noise(0.4, 0.06, 'bandpass', 300, 900, 0, 4); },
@@ -10491,6 +10823,7 @@ void main(){ vec2 d = gl_PointCoord - 0.5; float r = length(d) * 2.0; if (r > 1.
 // Der Abstieg – Bühnenbilder der Menüs, als Pixel-Grafik aus Code:
 // Titelbild: Mauer mit Tor in die Tiefe, Fackeln, aufsteigende Glut, Fledermäuse, der Held davor.
 // Heldenwahl: kleine Bühne mit Lichtkegel, Sockel, Feuerschalen und dem gewählten Helden.
+// Lager: Nacht vor dem Eingang in die Tiefe, die Gebäude wachsen mit ihren Stufen.
 'use strict';
 window.A = window.A || {};
 
@@ -10855,17 +11188,326 @@ A.Scenes = (function () {
     vignette(St, 0.7);
   }
 
+  // ======================= Lager =======================
+  // Nacht über dem Lager: hinten der Eingang in die Tiefe mit den Wimpeln der besiegten Weltenbosse, davor die Gebäude,
+  // in der Mitte das Feuer mit den Völkern. Jedes Gebäude wächst sichtbar mit seiner Stufe; offene Bauplätze zeigen Pfähle.
+  const C = { cv: null, on: false, s: 4, bw: 0, bh: 0, t: 0, st: null, stat: null, parts: [], smoke: [], embers: [], flies: [], twinkle: [], shoot: null, nextShoot: 5, beat: -1, wob: {}, coin: null, fire: [] };
+  layer(C, 'buf'); layer(C, 'lt'); layer(C, 'gl');
+  // Platz je Gebäude: Abstand zur Mitte, Reihe (b = hinten beim Eingang, f = vorne beim Feuer)
+  const CAMP_POS = { schreib: [-62, 'b'], platz: [-37, 'b'], schmiede: [41, 'b'], zelt: [67, 'b'], brunnen: [-60, 'f'], kiste: [-37, 'f'], feuer: [0, 'f'], kessel: [37, 'f'], segen: [60, 'f'] };
+  // Völker am Feuer: Rasse, Kleidung, Abstand zum Feuer
+  const CAMP_NPC = [['mensch', 'klinge', -13, 1], ['fels', 'brau', 13, 1], ['schatten', 'weber', -22, -4], ['pilz', 'rufer', 22, -4], ['kobold', 'schuetze', 5, -9]];
+  const CAMP_FLAGS = ['schleimkoenig', 'dornenmutter', 'sandpharao', 'kraken', 'rostkoenig', 'waechter'];
+  const spr = (n, f, pal, key) => A.Art.sprite(n, f, pal, key);
+  function blit(b, s, x, y, flip) { if (s) b.drawImage(flip ? A.Art.flipped(s) : s.img, Math.round(x - s.w / 2), Math.round(y - s.h)); }
+  function shade(b, x, y, rx) { b.globalAlpha = 0.4; b.fillStyle = '#0d0a12'; b.fillRect(Math.round(x - rx), Math.round(y) - 1, Math.round(rx * 2), 2); b.fillRect(Math.round(x - rx + 2), Math.round(y) + 1, Math.round(rx * 2 - 4), 1); b.globalAlpha = 1; }
+  const campLv = (id) => (C.st && C.st.lv[id]) || 0;
+  function campXY(id) {
+    const p = CAMP_POS[id]; if (p) return { x: C.cx + p[0], y: p[1] === 'b' ? C.yb : C.yf };
+    const n = CAMP_NPC.find(q => 'race_' + q[0] === id); if (n) return { x: C.cx + n[2], y: C.yf + n[3] - 8 };
+    return { x: C.cx, y: C.yf };
+  }
+
+  function campResize() {
+    fitCanvas(C);
+    C.s = Math.max(2, Math.min(Math.round(C.dh / 92), Math.floor(C.dw / 160)));
+    C.bw = Math.ceil(C.dw / C.s); C.bh = Math.ceil(C.dh / C.s);
+    fitLayers(C, C.bw, C.bh); C.vig = null;
+    C.cx = Math.round(C.bw / 2); C.gy = Math.max(18, C.bh - 60); C.yb = C.gy + 19; C.yf = C.gy + 49;
+    C.flies = []; for (let i = 0; i < 8; i++) C.flies.push({ x: rnd(0, C.bw), y: rnd(C.gy + 6, C.bh - 3), ph: rnd(0, TAU), sp: rnd(0.25, 0.7), r: rnd(6, 16) });
+    C.stat = buildCamp();
+  }
+
+  function buildCamp() {
+    const bw = C.bw, bh = C.bh, gy = C.gy, cx = C.cx, yb = C.yb, yf = C.yf, st = C.st || { rank: 0, troph: {} };
+    const cv = mk(bw, bh), c = cv.getContext('2d'); const img = c.createImageData(bw, bh), D = img.data;
+    const put = (x, y, col, d) => { if (x < 0 || y < 0 || x >= bw || y >= bh) return; const i = (y * bw + x) * 4; D[i] = clamp(col[0] + (d || 0), 0, 255); D[i + 1] = clamp(col[1] + (d || 0), 0, 255); D[i + 2] = clamp(col[2] + (d || 0), 0, 255); D[i + 3] = 255; };
+    const SKY = ['#0f0c1c', '#151330', '#1c1b3e', '#24254c', '#2d305a', '#373b66'].map(rgb);
+    const FAR = rgb('#1c1d38'), FAR2 = rgb('#56609a'), NEAR = rgb('#151b2c'), PINE = rgb('#11201c');
+    const GR = ['#1f3b2d', '#22422f', '#1c3529', '#264833'].map(rgb), PATH = ['#3b2d2b', '#413130', '#362927'].map(rgb);
+    const ROCK = ['#2e2b42', '#34304a', '#29263b'].map(rgb), ST = ['#5a6988', '#66759a', '#4f5c7e'].map(rgb), STD = rgb('#262b44'), DARK = rgb('#0b0910');
+    // Himmel in Stufen mit Schachbrett-Übergang
+    for (let y = 0; y < gy; y++) for (let x = 0; x < bw; x++) {
+      const k = clamp(y / gy * (SKY.length - 1) + (((x + y) & 1) ? 0.25 : -0.25), 0, SKY.length - 1);
+      put(x, y, SKY[Math.round(k)], 0);
+    }
+    // Sterne (einige funkeln später)
+    C.twinkle = [];
+    const nStar = Math.round(bw * gy / 45);
+    for (let i = 0; i < nStar; i++) {
+      const x = Math.floor(hash(i, 1, 71) * bw), y = Math.floor(hash(i, 2, 71) * (gy - 8)), v = hash(i, 3, 71);
+      put(x, y, rgb(v > 0.85 ? '#fff6c8' : v > 0.5 ? '#c0cbdc' : '#6d7aa0'), 0);
+      if (v > 0.9) C.twinkle.push({ x, y, ph: hash(i, 4, 71) * TAU });
+    }
+    // Mond (Sichel) oben rechts
+    const mx = bw - Math.max(16, Math.round(bw * 0.14)), my = Math.max(7, Math.round(gy * 0.3)), mr = 6;
+    for (let y = -mr; y <= mr; y++) for (let x = -mr; x <= mr; x++) {
+      const inA = x * x + y * y <= mr * mr, inB = (x + 3) * (x + 3) + (y - 1) * (y - 1) <= (mr - 0.5) * (mr - 0.5);
+      if (inA && !inB) put(mx + x, my + y, rgb(x > 3 ? '#fff6c8' : '#e4d9b8'), (hash(x, y, 77) < 0.15) ? -22 : 0);
+    }
+    C.moon = { x: mx, y: my };
+    // Berge weit hinten, davor Hügel mit Tannen
+    for (let x = 0; x < bw; x++) {
+      const h1 = Math.round(10 + 5 * Math.sin(x * 0.06 + 1.3) + 3 * Math.sin(x * 0.17 + 0.4) + 2 * Math.sin(x * 0.41));
+      const hp = Math.round(10 + 5 * Math.sin((x - 1) * 0.06 + 1.3) + 3 * Math.sin((x - 1) * 0.17 + 0.4) + 2 * Math.sin((x - 1) * 0.41));
+      for (let y = gy - h1; y < gy; y++) put(x, y, y === gy - h1 || (y < gy - hp && x > 0) ? FAR2 : FAR, (y - (gy - h1)) * -1);
+      // Schnee auf den Gipfeln
+      if (h1 >= 15) { put(x, gy - h1, rgb('#c0cbdc'), 0); put(x, gy - h1 + 1, rgb('#8b9bb4'), 0); }
+      const h2 = Math.round(4 + 2 * Math.sin(x * 0.09 + 2.2) + 1.5 * Math.sin(x * 0.23 + 1));
+      for (let y = gy - h2; y < gy; y++) put(x, y, NEAR, 0);
+    }
+    for (let i = 0, x = -2; x < bw + 4; i++) {
+      const h = 4 + Math.floor(hash(i, 7, 72) * 6), w = Math.ceil(h / 2);
+      for (let yy = 0; yy < h; yy++) { const ww = Math.floor((yy + 1) / h * w); for (let xx = -ww; xx <= ww; xx++) put(x + xx, gy - 2 - h + yy + 1, PINE, 0); }
+      for (let yy = 0; yy < 2; yy++) put(x, gy - 1 + yy, PINE, 0);
+      x += 3 + Math.floor(hash(i, 8, 72) * 6);
+    }
+    // Boden: Gras, Weg vom Eingang zum Feuer und weiter nach vorn, festgetretener Kreis ums Feuer
+    for (let y = gy; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const near = (y - gy) / (bh - gy);
+      const pw = y < yb ? 0 : y < yf ? 3 + (y - yb) / (yf - yb) * 3 : 6 + (y - yf) * 0.8;
+      const ex = (x + 0.5 - cx) / 30, ey = (y + 0.5 - (yf - 2)) / 8;
+      const onPath = pw > 0 && Math.abs(x + 0.5 - cx) < pw + (hash(x, y, 73) < 0.3 ? 1 : 0);
+      if (onPath || ex * ex + ey * ey < 1 - hash(x, y, 74) * 0.12) { put(x, y, PATH[Math.floor(hash(x, y, 75) * 3)], Math.round(near * 6)); continue; }
+      let col = GR[Math.floor(hash(x >> 1, y, 76) * 4)];
+      put(x, y, col, Math.round(near * 8 + (hash(x, y, 78) - 0.5) * 6));
+    }
+    // Grasbüschel
+    for (let i = 0; i < bw * 0.6; i++) {
+      const x = Math.floor(hash(i, 9, 79) * bw), y = gy + 3 + Math.floor(hash(i, 10, 79) * (bh - gy - 3));
+      if (Math.abs(x - cx) < 9 && y > yb) continue;
+      put(x, y, rgb('#3e8948'), -20); put(x, y - 1, rgb('#3e8948'), -10); if (hash(i, 11, 79) < 0.5) put(x + 1, y, rgb('#3e8948'), -25);
+    }
+    // Hügel mit dem Eingang in die Tiefe
+    const rx = 24, ry = 27, ar = 6, top = yb - 12;
+    for (let y = yb - ry; y < yb + 1; y++) for (let x = cx - rx - 1; x <= cx + rx + 1; x++) {
+      const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - yb) / ry; const d = dx * dx + dy * dy; if (d > 1) continue;
+      const ox = x + 0.5 - cx, inOpen = (y >= top && y < yb && Math.abs(ox) < ar) || (y < top && ox * ox + (y + 0.5 - top) * (y + 0.5 - top) < ar * ar);
+      const inFrame = !inOpen && ((y >= top && y < yb && Math.abs(ox) < ar + 2) || (y < top && ox * ox + (y + 0.5 - top) * (y + 0.5 - top) < (ar + 2) * (ar + 2)));
+      if (inOpen) {
+        // Stufen nach unten, tiefer wird es rot
+        const deep = clamp((y - top + ar) / (yb - top + ar), 0, 1), step = (yb - 1 - y) % 3 === 0 && y > top + 1;
+        put(x, y, step ? mix(rgb('#3a3346'), rgb('#7a3a32'), 1 - deep) : mix(DARK, rgb('#2a0f12'), 1 - deep), 0); continue;
+      }
+      if (inFrame) { const blk = Math.floor(Math.atan2(y + 0.5 - top, ox) * 3 + 10) + (y >= top ? Math.floor((yb - y) / 3) : 0); put(x, y, ((x + y) % 7 === 0) ? STD : ST[blk % 3], (hash(x, y, 80) - 0.5) * 8); continue; }
+      if (d > 0.86 && y < yb - 2 && dy < -0.25) { put(x, y, rgb(hash(x, y, 81) < 0.5 ? '#2a5a3a' : '#22462f'), 0); continue; }   // Gras oben auf dem Hügel
+      put(x, y, ROCK[Math.floor(hash(x >> 1, y >> 1, 82) * 3)], Math.round((hash(x, y, 83) - 0.5) * 8 - dy * 6));
+    }
+    c.putImageData(img, 0, 0);
+    // Wimpelkette über dem Eingang: links und rechts je drei Weltenbosse, golden bei zwei Sternen
+    const ly = yb - 22, sagAt = (x) => Math.round(3 * Math.cos((x - cx) / 22 * Math.PI / 2));
+    for (const sx of [-1, 1]) { const px = cx + sx * 22; c.fillStyle = '#181425'; c.fillRect(px - 1, ly - 2, 3, yb - ly - 3); c.fillStyle = '#733e39'; c.fillRect(px, ly - 1, 1, yb - ly - 5); }
+    c.fillStyle = '#8f6a4a';
+    for (let x = cx - 21; x <= cx + 21; x++) c.fillRect(x, ly + sagAt(x), 1, 1);
+    CAMP_FLAGS.forEach((id, i) => {
+      const n = st.troph[id] || 0; if (!n) return;
+      const side = i < 3 ? -1 : 1, k = side < 0 ? 2 - i % 3 : i % 3, x = cx + side * (6 + k * 6);
+      const bc = (A.BOSSES[id] && A.BOSSES[id].color) || '#e43b44';
+      const pal = n >= 2 ? { C: '#feae34', H: '#fee761', Y: bc } : { C: bc, H: '#ffffff', Y: '#fee761' };
+      const s = spr('c_pennant', 0, pal, id + n); c.drawImage(s.img, x - Math.floor(s.w / 2), ly + sagAt(x));
+    });
+    // Palisade ab Lager-Stufe 15
+    if (st.rank >= 15) {
+      const sk = spr('c_stake');
+      for (let x = 3; x < bw; x += 4) { if (Math.abs(x - cx) < rx + 4) continue; c.drawImage(sk.img, x - 2, gy + 8 - sk.h + (hash(x, 1, 84) < 0.4 ? 1 : 0)); }
+    }
+    return cv;
+  }
+
+  // ---------- Gebäude, je nach Stufe ----------
+  const lamp = (L, x, y, r, col, a) => L.push([x, y, r, col, a]);
+  function plot(D, L, x, y, can, t) {
+    D.push({ y, f: (b, g) => { const s = spr('c_plot'); shade(b, x, y, 6); blit(b, s, x, y + 1); if (can) { const sp = spr('u_spark'); g.globalAlpha = 0.75 + Math.sin(t * 4) * 0.25; blit(g, sp, x, y - 9 + Math.round(Math.sin(t * 3) * 1.5)); g.globalAlpha = 1; } } });
+    if (can) L.push([x, y - 9, 14 + Math.sin(t * 4) * 2, '#c77dff', 0.7]);
+  }
+  function campDraw(D, L, t) {
+    const st = C.st, cx = C.cx, yb = C.yb, yf = C.yf;
+    const open = (id) => st.open[id];
+    const each = (id, fn) => { const lv = campLv(id), p = campXY(id); if (lv > 0) fn(p.x, p.y, lv); else if (open(id)) plot(D, L, p.x, p.y, st.can && st.can[id], t); };
+    // Lagerfeuer: ohne Stufe nur Glut, dann ein bis drei Flammen, ab 4 ein Steinkreis, ab 7 ein Spiess mit Wurst
+    { const lv = campLv('feuer'), x = cx, y = yf, n = lv >= 8 ? 3 : lv >= 4 ? 2 : lv >= 1 ? 1 : 0; C.fire = { x, y, n, lv };
+      D.push({ y, f: (b, g) => {
+        if (lv >= 4) for (let i = 0; i < 9; i++) { const a = Math.PI + i / 8 * Math.PI, sx = Math.round(x + Math.cos(a) * 10), sy = Math.round(y - 1 + Math.sin(a) * 3); b.fillStyle = '#181425'; b.fillRect(sx - 1, sy - 1, 4, 3); b.fillStyle = i % 2 ? '#5a6988' : '#8b9bb4'; b.fillRect(sx, sy, 2, 1); }
+        if (lv >= 7) { b.fillStyle = '#181425'; b.fillRect(x - 9, y - 12, 3, 12); b.fillRect(x + 7, y - 12, 3, 12); b.fillStyle = '#733e39'; b.fillRect(x - 8, y - 11, 1, 11); b.fillRect(x + 8, y - 11, 1, 11); b.fillStyle = '#8b9bb4'; b.fillRect(x - 8, y - 12, 17, 1); }
+        blit(b, spr('logs'), x, y + 1);
+        const off = n === 3 ? [-5, 0, 5] : n === 2 ? [-3, 3] : n === 1 ? [0] : [];
+        off.forEach((dx, i) => blit(b, spr('flame', Math.floor(t * 10 + i * 1.3) % 3), x + dx, y - 1 - (n === 3 && dx === 0 ? 2 : 0)));
+        if (!n) { g.fillStyle = '#e43b44'; for (let i = 0; i < 4; i++) if (Math.sin(t * 3 + i * 1.9) > 0.2) g.fillRect(x - 4 + i * 3, y - 2, 1, 1); }
+        if (lv >= 7) { b.fillStyle = '#181425'; b.fillRect(x - 3, y - 14, 7, 4); b.fillStyle = '#b86f50'; b.fillRect(x - 2, y - 13, 5, 2); b.fillStyle = '#e4a672'; b.fillRect(x - 1, y - 13, 2, 1); }
+        if (lv >= 4) for (let i = 0; i < 7; i++) { const a = i / 6 * Math.PI, sx = Math.round(x + Math.cos(a) * 10), sy = Math.round(y - 1 + Math.sin(a) * 3); b.fillStyle = '#181425'; b.fillRect(sx - 1, sy - 1, 4, 3); b.fillStyle = i % 2 ? '#8b9bb4' : '#5a6988'; b.fillRect(sx, sy, 2, 1); }
+      } });
+      const fl = 0.86 + Math.sin(t * 13) * 0.06 + Math.sin(t * 7.3) * 0.05;
+      if (n) { lamp(L, x, y - 6, (30 + lv * 2.5) * fl, '#ff9a3c', 0.95); lamp(L, x, y - 6, 12 + lv, '#fee761', 0.55); }
+      else lamp(L, x, y - 2, 12, '#be4a2f', 0.6);
+    }
+    // Übungsplatz: eine, dann zwei Strohpuppen, ab Stufe 7 eine Zielscheibe, ganz ausgebaut trägt eine Puppe eine Krone; ab und zu wackelt eine
+    each('platz', (x, y, lv) => {
+      const xs = lv >= 4 ? [-6, 5] : [0];
+      if (lv >= 7) D.push({ y: y + 2, f: (b) => { shade(b, x + 18, y + 2, 4); blit(b, spr('c_target'), x + 18, y + 3); } });
+      xs.forEach((dx, i) => { const w = C.wob['p' + i] || 0, wx = w > 0 ? Math.round(Math.sin(w * 40) * Math.min(1, w * 3)) : 0;
+        D.push({ y: y + i, f: (b) => { shade(b, x + dx, y + i, 4); blit(b, spr('c_dummy'), x + dx + wx, y + 1 + i); if (lv >= 10 && i === 1) blit(b, spr('crown'), x + dx + wx, y + i - 14); } }); });
+    });
+    // Schatzkiste: zu, dann offen mit Glanz, dann mit Goldhaufen
+    each('kiste', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 8);
+        if (lv >= 5) { const pile = [[-13, 0, 6], [-12, -1, 4], [-11, -2, 2], [10, 0, 5], [10, -1, 3]]; for (const [dx, dy, w] of pile) { b.fillStyle = '#be4a2f'; b.fillRect(x + dx - 1, y + dy - 1, w + 2, 2); b.fillStyle = '#feae34'; b.fillRect(x + dx, y + dy - 1, w, 1); b.fillStyle = '#fee761'; b.fillRect(x + dx + (w >> 1), y + dy - 1, 1, 1); } }
+        blit(b, spr('chest', lv >= 3 ? 1 : 0), x, y + 1);
+        if (lv >= 3) { const gp = (t * 0.45 + 0.3) % 1; if (gp > 0.9) { const q = Math.round(Math.sin((gp - 0.9) / 0.1 * Math.PI) * 2), gx = x - 3 + Math.round(hash(Math.floor(t * 0.45), 1, 85) * 6), gy2 = y - 8; g.fillStyle = '#ffffff'; g.fillRect(gx - q, gy2, q * 2 + 1, 1); g.fillRect(gx, gy2 - q, 1, q * 2 + 1); } }
+      } });
+      if (lv >= 3) lamp(L, x, y - 7, 10 + lv, '#feae34', 0.45);
+    });
+    // Kräuterkessel: blubbert über kleinem Feuer, daneben Tränke
+    each('kessel', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 7);
+        const pots = [[10, '#e43b44', '#a22633', '#f6757a'], [-10, '#63c74d', '#3e8948', '#c8f5a0'], [14, '#0099db', '#124e89', '#7fd8ff']].slice(0, Math.floor(lv / 2));
+        pots.forEach(([dx, R1, r1, w1], i) => blit(b, spr('potion', 0, { R: R1, r: r1, w: w1 }, 'pot' + i), x + dx, y + 1));
+        g.fillStyle = '#f77622'; for (let i = 0; i < 3; i++) if (Math.sin(t * 17 + i * 2.1) > -0.3) g.fillRect(x - 3 + i * 3, y - 1, 1, 1);
+        g.fillStyle = '#fee761'; if (Math.sin(t * 11) > 0) g.fillRect(x, y - 1, 1, 1);
+        blit(b, spr('c_cauldron'), x, y - 1);
+      } });
+      if (Math.random() < 0.016 * (2 + lv) * 60 * C.dt) C.parts.push({ x: x + rnd(-4, 4), y: y - 10, vx: rnd(-1, 1), vy: rnd(-5, -9), life: rnd(0.4, 0.9), col: Math.random() < 0.6 ? '#63c74d' : '#c8f5a0', sz: Math.random() < 0.3 ? 2 : 1 });
+      lamp(L, x, y - 2, 13, '#f77622', 0.55); lamp(L, x, y - 9, 6 + lv, '#63c74d', 0.3);
+    });
+    // Schreibstube: Pult mit Buch, Kerze, Bücherregal, schwebende Zauberfunken
+    each('schreib', (x, y, lv) => {
+      if (lv >= 3) D.push({ y: y - 2, f: (b) => { shade(b, x - 9, y - 2, 7); blit(b, spr('c_shelf'), x - 9, y - 1); } });
+      D.push({ y, f: (b, g) => {
+        shade(b, x + 5, y, 5); blit(b, spr('c_lectern'), x + 5, y + 1);
+        if (lv >= 2) { blit(b, spr('candle'), x + 13, y + 1); if (Math.sin(t * 14) > -0.5) { g.fillStyle = '#fee761'; g.fillRect(x + 13, y - 8, 1, 1); } }
+        if (lv >= 4) for (let i = 0; i < 4; i++) { const a = t * 1.6 + i * TAU / 4; g.globalAlpha = 0.6 + Math.sin(t * 5 + i) * 0.3; g.fillStyle = i % 2 ? '#2ce8f5' : '#ffffff'; g.fillRect(Math.round(x + 5 + Math.cos(a) * 7), Math.round(y - 17 + Math.sin(a) * 2.5), 1, 1); g.globalAlpha = 1; }
+      } });
+      if (lv >= 2) lamp(L, x + 13, y - 8, 12, '#feae34', 0.6);
+      if (lv >= 4) lamp(L, x + 5, y - 15, 12, '#2ce8f5', 0.45);
+    });
+    // Lagerschmiede: Amboss, Esse, Schmied, glühende Klinge
+    each('schmiede', (x, y, lv) => {
+      if (lv >= 2) D.push({ y: y - 1, f: (b) => { const es = spr('esse', Math.floor(t * 8) % 2); shade(b, x - 15, y - 1, 7); blit(b, es, x - 15, y); blit(b, spr('flame', Math.floor(t * 10) % 3), x - 15, y - es.h + 2); } });
+      D.push({ y: y + 1, f: (b, g) => {
+        shade(b, x + 11, y + 1, 5); blit(b, spr('anvil'), x + 11, y + 2);
+        if (lv >= 4) { g.fillStyle = '#f77622'; g.fillRect(x + 8, y - 5, 6, 1); g.fillStyle = '#fee761'; g.fillRect(x + 9, y - 5, 3, 1); }
+      } });
+      if (lv >= 3) {
+        const cyc = (t * 0.85) % 1, down = cyc > 0.72 && cyc < 0.9, beat = Math.floor(t * 0.85 + 0.28);
+        if (beat !== C.beat && C.beat >= 0) { for (let i = 0; i < 7; i++) C.parts.push({ x: x + 6, y: y - 5, vx: rnd(-22, 22), vy: rnd(-30, -10), g: 70, life: rnd(0.25, 0.5), col: ['#fee761', '#feae34', '#ffffff'][i % 3], sz: 1, add: true }); C.flash = { x: x + 6, y: y - 5, life: 0.15 }; }
+        C.beat = beat;
+        D.push({ y, f: (b) => { shade(b, x - 2, y, 5); blit(b, spr('smith', down ? 1 : 0), x - 2, y + 1); } });
+      }
+      if (lv >= 2) lamp(L, x - 15, y - 7, 26 + Math.sin(t * 9) * 2, '#ff7a2c', 0.85);
+      if (lv >= 4) lamp(L, x + 11, y - 5, 9, '#f77622', 0.6);
+      if (C.flash && C.flash.life > 0) lamp(L, C.flash.x, C.flash.y, 20, '#feae34', C.flash.life * 4);
+    });
+    // Händlerzelt: Stand, dann Händler, Laterne, Waren
+    each('zelt', (x, y, lv) => {
+      if (lv >= 2) D.push({ y: y - 1, f: (b) => { const bob = Math.sin(t * 1.8) > 0.6 ? -1 : 0; b.save(); b.beginPath(); b.rect(x - 12, 0, 24, y - 3); b.clip(); blit(b, spr('merchant'), x + 1, y + 4 + bob); b.restore(); } });
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 10); blit(b, spr('c_stall'), x, y + 1);
+        if (lv >= 4) { b.fillStyle = '#68386c'; b.fillRect(x - 6, y - 5, 12, 4); b.fillStyle = '#b55088'; b.fillRect(x - 6, y - 5, 12, 1); b.fillStyle = '#feae34'; for (let i = 0; i < 6; i++) b.fillRect(x - 6 + i * 2, y - 2, 1, 1); blit(b, spr('barrel'), x + 15, y + 1); }
+        if (lv >= 3) { b.fillStyle = '#181425'; b.fillRect(x + 7, y - 14, 3, 4); g.fillStyle = Math.sin(t * 9) > -0.6 ? '#fee761' : '#feae34'; g.fillRect(x + 8, y - 13, 1, 2); }
+      } });
+      if (lv >= 3) lamp(L, x + 8, y - 12, 18, '#feae34', 0.75);
+    });
+    // Glücksbrunnen: Funkeln steigt auf, ab Stufe 3 fliegt ab und zu eine Münze hinein
+    each('brunnen', (x, y, lv) => {
+      D.push({ y, f: (b) => { shade(b, x, y, 8); blit(b, spr('c_well'), x, y + 1); } });
+      if (Math.random() < 0.02 * lv * 60 * C.dt) C.parts.push({ x: x + rnd(-5, 5), y: y - 6, vx: rnd(-2, 2), vy: rnd(-8, -16), life: rnd(0.8, 1.5), col: ['#c77dff', '#2ce8f5', '#ffffff'][Math.floor(Math.random() * 3)], sz: 1, add: true });
+      if (lv >= 3 && !C.coin && Math.random() < 0.25 * C.dt) C.coin = { x: x - 14, y: y - 4, vx: 14, vy: -30, life: 1.6 };
+      lamp(L, x, y - 8, 8 + lv * 3, '#c77dff', 0.3 + lv * 0.1);
+    });
+    // Segensstein: Kugel schwebt, ab Stufe 2 mit Lichtsäule
+    each('segen', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 6); blit(b, spr('shrine', Math.floor(t * 2) % 2), x, y + 1);
+        if (lv >= 2) { g.globalAlpha = 0.1 + Math.sin(t * 2.4) * 0.04; g.fillStyle = '#2ce8f5'; g.fillRect(x - 2, 0, 5, y - 12); g.globalAlpha = 0.18; g.fillRect(x - 1, 0, 3, y - 12); g.globalAlpha = 1; }
+      } });
+      lamp(L, x, y - 11, 16 + lv * 4, '#2ce8f5', 0.65);
+      if (Math.random() < 0.05 * lv * 60 * C.dt) C.parts.push({ x: x + rnd(-6, 6), y: y - 10, vx: 0, vy: rnd(-10, -20), life: rnd(0.6, 1), col: Math.random() < 0.5 ? '#2ce8f5' : '#ffffff', sz: 1, add: true });
+    });
+    // Laternen am Weg (ab Lager-Stufe 5), Wachturm (ab 30), Krone über dem Eingang (alles ausgebaut)
+    if (st.rank >= 5) for (const sx of [-1, 1]) { const x = cx + sx * 12, y = yb + 9; D.push({ y, f: (b, g) => { blit(b, spr('c_lantern'), x, y + 1); g.fillStyle = '#fee761'; if (Math.sin(t * 8 + sx) > -0.7) g.fillRect(x, y - 10, 1, 1); } }); lamp(L, x, y - 10, 16, '#feae34', 0.7); }
+    if (st.rank >= 30) { const x = cx - 30, y = C.gy + 9; D.push({ y, f: (b, g) => { blit(b, spr('c_tower'), x, y + 1); b.fillStyle = '#181425'; b.fillRect(x + 4, y - 20, 3, 4); b.fillStyle = '#733e39'; b.fillRect(x + 5, y - 19, 1, 3); g.fillStyle = Math.sin(t * 11) > -0.4 ? '#fee761' : '#f77622'; g.fillRect(x + 5, y - 21, 1, 2); } }); lamp(L, x + 5, y - 21, 20, '#ff9a3c', 0.8); }
+    if (st.max) { const x = cx, y = yb - 27; D.push({ y: y - 50, f: (b) => blit(b, spr('crown'), x, y + Math.round(Math.sin(t * 2) * 0.6)) }); lamp(L, x, y - 3, 14, '#fee761', 0.6); }
+    // Völker am Feuer (schauen zum Feuer)
+    for (const [race, cls, dx, dy] of CAMP_NPC) {
+      if (!st.races.includes(race)) continue;
+      const x = cx + dx, y = yf + dy, ph = dx * 0.37, bob = Math.sin(t * 2 + ph) > 0.75 ? -1 : 0;
+      D.push({ y, f: (b) => { shade(b, x, y, 5); blit(b, A.Art.heroSprite(race, cls, 0), x, y + 1 + bob, dx > 0); } });
+    }
+  }
+
+  function campFrame(dt) {
+    const b = C.bufx, l = C.ltx, g = C.glx; C.t += dt; C.dt = dt; const t = C.t;
+    begin(C, '#50507e');
+    b.drawImage(C.stat, 0, 0);
+    // Mondlicht über dem Himmel, rote Glut aus dem Eingang
+    light(l, C.moon.x, C.moon.y, C.bw * 0.9, '#9a96d0', 0.75); light(l, C.moon.x, C.moon.y, 12, '#fff6c8', 0.5); light(g, C.moon.x, C.moon.y, 9, '#fff6c8', 0.18);
+    light(l, C.cx, C.gy - 4, C.bw * 0.7, '#7c78b8', 0.45);   // heller Streifen am Horizont
+    const pulse = 0.85 + Math.sin(t * 1.7) * 0.1;
+    light(l, C.cx, C.yb - 6, 22 * pulse, '#d4402a', 0.8); light(g, C.cx, C.yb - 4, 6 * pulse, '#f77622', 0.35);
+    if (Math.random() < dt * 3) C.embers.push({ x: C.cx + rnd(-4, 4), y: C.yb - 4, vx: rnd(-3, 3), vy: rnd(-8, -14), life: rnd(1.2, 2.4), max: 2.4 });
+    // Sterne funkeln, ab und zu eine Sternschnuppe
+    for (const s of C.twinkle) { const a = 0.5 + Math.sin(t * 2.3 + s.ph) * 0.5; if (a > 0.6) { g.globalAlpha = a * 0.8; g.fillStyle = '#fff6c8'; g.fillRect(s.x - 1, s.y, 3, 1); g.fillRect(s.x, s.y - 1, 1, 3); g.globalAlpha = 1; } }
+    C.nextShoot -= dt;
+    if (C.nextShoot <= 0 && !C.shoot) { C.nextShoot = rnd(7, 14); C.shoot = { x: rnd(C.bw * 0.2, C.bw * 0.9), y: rnd(2, C.gy * 0.4), life: 0.7 }; }
+    if (C.shoot) { const s = C.shoot; s.life -= dt; s.x -= 70 * dt; s.y += 26 * dt; for (let i = 0; i < 6; i++) { g.globalAlpha = clamp(s.life, 0, 1) * (1 - i / 6); g.fillStyle = '#ffffff'; g.fillRect(Math.round(s.x + i * 2.7), Math.round(s.y - i), 1, 1); } g.globalAlpha = 1; if (s.life <= 0) C.shoot = null; }
+    // Gebäude und Figuren von hinten nach vorn
+    const D = [], L = [];
+    if (C.st) campDraw(D, L, t);
+    D.sort((p, q) => p.y - q.y);
+    for (const d of D) d.f(b, g);
+    for (const [x, y, r, col, a] of L) light(l, x, y, r, col, a);
+    // Feuer: Glut und Rauch
+    const F = C.fire;
+    if (F && F.n) { if (Math.random() < dt * (5 + F.n * 4)) C.embers.push({ x: F.x + rnd(-3, 3), y: F.y - 9, vx: rnd(-4, 4), vy: rnd(-14, -26), life: rnd(0.8, 1.8), max: 1.8 }); }
+    if (F && Math.random() < dt * (F.n ? 1.6 : 0.8)) C.smoke.push({ x: F.x + rnd(-2, 2), y: F.y - (F.n ? 14 : 4), vx: rnd(2, 6), vy: rnd(-5, -8), life: rnd(2.5, 4), max: 4, r: rnd(1, 2) });
+    for (const s of C.smoke) { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.r += dt * 0.8; b.globalAlpha = clamp(s.life / s.max, 0, 1) * 0.16; b.fillStyle = '#8b9bb4'; b.beginPath(); b.arc(Math.round(s.x), Math.round(s.y), s.r, 0, TAU); b.fill(); }
+    b.globalAlpha = 1;
+    for (let i = C.smoke.length - 1; i >= 0; i--) if (C.smoke[i].life <= 0) C.smoke.splice(i, 1);
+    for (const e of C.embers) { e.life -= dt; e.x += (e.vx + Math.sin(t * 2 + e.y) * 3) * dt; e.y += e.vy * dt; const age = 1 - e.life / e.max; g.globalAlpha = clamp(e.life / 0.6, 0, 1); g.fillStyle = age < 0.35 ? '#fee761' : age < 0.7 ? '#feae34' : '#f77622'; g.fillRect(Math.round(e.x), Math.round(e.y), 1, 1); }
+    g.globalAlpha = 1;
+    for (let i = C.embers.length - 1; i >= 0; i--) if (C.embers[i].life <= 0) C.embers.splice(i, 1);
+    if (C.embers.length > 90) C.embers.splice(0, C.embers.length - 90);
+    // Münze für den Brunnen
+    if (C.coin) { const k = C.coin; k.life -= dt; k.vy += 60 * dt; k.x += k.vx * dt; k.y += k.vy * dt; g.fillStyle = Math.floor(t * 12) % 2 ? '#fee761' : '#feae34'; g.fillRect(Math.round(k.x), Math.round(k.y), 1, 1); if (k.y > C.yf - 6 && k.vy > 0) { for (let i = 0; i < 5; i++) C.parts.push({ x: k.x, y: C.yf - 7, vx: rnd(-8, 8), vy: rnd(-14, -4), g: 40, life: 0.4, col: '#2ce8f5', sz: 1, add: true }); C.coin = null; } else if (k.life <= 0) C.coin = null; }
+    // Glühwürmchen über dem Gras
+    for (const f of C.flies) {
+      f.ph += dt * f.sp; const x = f.x + Math.sin(f.ph * 1.3) * f.r, y = f.y + Math.sin(f.ph * 2.1) * 3, a = 0.5 + Math.sin(f.ph * 5) * 0.5;
+      if (a > 0.3) { g.globalAlpha = a; g.fillStyle = '#c8f5a0'; g.fillRect(Math.round(x), Math.round(y), 1, 1); g.globalAlpha = 1; light(l, x, y, 5, '#9be37a', a * 0.4); }
+    }
+    // Funken und Teilchen (Blubbern, Glitzern, Ausbau-Wolke)
+    for (const p of C.parts) {
+      p.life -= dt; if (p.g) p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      const L2 = p.add ? g : b; L2.globalAlpha = clamp(p.life / 0.3, 0, 1); L2.fillStyle = p.col; L2.fillRect(Math.round(p.x), Math.round(p.y), p.sz || 1, p.sz || 1);
+    }
+    b.globalAlpha = 1; g.globalAlpha = 1;
+    for (let i = C.parts.length - 1; i >= 0; i--) if (C.parts[i].life <= 0) C.parts.splice(i, 1);
+    if (C.flash) { C.flash.life -= dt; if (C.flash.life <= 0) C.flash = null; }
+    for (const k in C.wob) { C.wob[k] -= dt; if (C.wob[k] <= 0) delete C.wob[k]; }
+    if (Math.random() < dt * 0.3) C.wob['p' + Math.floor(Math.random() * 2)] = 0.5;
+    if (C.glow) { C.glow.life -= dt; light(l, C.glow.x, C.glow.y, 30, '#fff6c8', clamp(C.glow.life * 2, 0, 1)); if (C.glow.life <= 0) C.glow = null; }
+    compose(C);
+    vignette(C, 0.55);
+  }
+  // Ausbau-Wolke: Funken in Gold, Weiss und Violett an der Stelle, die gerade gewachsen ist
+  function campPoof(id) {
+    const p = campXY(id), y = p.y - 8;
+    for (let i = 0; i < 30; i++) { const a = rnd(0, TAU), sp = rnd(10, 40); C.parts.push({ x: p.x + Math.cos(a) * 3, y: y + Math.sin(a) * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 14, g: 30, life: rnd(0.4, 0.9), col: ['#fee761', '#ffffff', '#c77dff'][i % 3], sz: i % 4 ? 1 : 2, add: true }); }
+    C.glow = { x: p.x, y, life: 0.6 };
+  }
+
   // ======================= Ablauf =======================
   let last = 0, running = false;
   function loop(now) {
-    if (!T.on && !St.on) { running = false; return; }
+    if (!T.on && !St.on && !C.on) { running = false; return; }
     requestAnimationFrame(loop);
     const dt = clamp((now - last) / 1000 || 0, 0, 0.05); last = now;
     if (T.on && T.cv && T.cv.isConnected !== false) titleFrame(dt);
     if (St.on && St.cv && St.cv.isConnected) stageFrame(dt);
+    if (C.on && C.cv && C.cv.isConnected) campFrame(dt);
   }
   function kick() { if (!running) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
-  const ro = new ResizeObserver((ents) => { for (const e of ents) { if (e.target === T.cv) titleResize(); else if (e.target === St.cv) stageResize(); } });
+  const ro = new ResizeObserver((ents) => { for (const e of ents) { if (e.target === T.cv) titleResize(); else if (e.target === St.cv) stageResize(); else if (e.target === C.cv) campResize(); } });
 
   return {
     // Titelbild zeigen; anchor = { top, bottom } in CSS-Pixeln: dazwischen steht das Tor
@@ -10882,6 +11524,17 @@ A.Scenes = (function () {
       if (St.cv !== canvas) { if (St.cv) ro.unobserve(St.cv); St.cv = canvas; ro.observe(canvas); stageResize(); }
       St.race = race; St.cls = cls; St.on = true;
       if (changed) { St.poof = 0.2; for (let i = 0; i < 22; i++) { const a = rnd(0, TAU), sp = rnd(10, 34); St.parts.push({ x: St.cx + Math.cos(a) * 4, y: St.fy - 9 + Math.sin(a) * 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 12, life: rnd(0.3, 0.7), col: ['#fee761', '#ffffff', CLASS_GLOW[cls] || '#feae34'][i % 3] }); } }
+      kick();
+    },
+    // Lager zeigen; state = { lv, open, can, races, troph, rank, max }; opts.poof = Gebäude (oder race_…), das gerade gewachsen ist
+    camp(canvas, state, opts) {
+      if (!canvas) { if (C.cv) ro.unobserve(C.cv); C.on = false; C.cv = null; return; }
+      const changed = JSON.stringify(state) !== JSON.stringify(C.st);
+      C.st = state;
+      if (C.cv !== canvas) { if (C.cv) ro.unobserve(C.cv); C.cv = canvas; ro.observe(canvas); campResize(); }
+      else if (changed) C.stat = buildCamp();
+      C.on = true;
+      if (opts && opts.poof) campPoof(opts.poof);
       kick();
     },
   };
@@ -10973,7 +11626,6 @@ window.A = window.A || {};
   const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star', forge: 'anvil' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
-  const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
   const skIcon = (id, size) => ic(SKILL_ICON[id] || A.Boons.icon(id) || 's_strike', size || 26);
   const cdTxt = (id) => (Math.round(A.Boons.cd(id) * 10) / 10) + ' s';
   const talIcon = (id, size) => ic(A.TALENTS[id].icon || 'u_star', size || 26);
@@ -11057,6 +11709,7 @@ window.A = window.A || {};
     screen.style.display = ''; screen.innerHTML = html; screen.scrollTop = 0;
     hudUpdate();
     if (!(opts && opts.stage)) A.Scenes.stage(null);
+    if (!(opts && opts.camp)) A.Scenes.camp(null);
     sceneBg(opts && opts.title);
   }
   // Hintergrundbild der Menüs: beim Titel steht das Tor zwischen Untertitel und Menü
@@ -11097,7 +11750,7 @@ window.A = window.A || {};
       <div class="menu">
         ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} · ${t(U.floor)} ${r.floor}</button>` : ''}
         <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
-        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}</button>
+        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() ? `<i class="dot" title="${L('Ausbau möglich', 'Upgrade available')}"></i>` : ''}</button>
         <div class="stats">${L('Durchläufe', 'Runs')} <b>${m.runs}</b> · ${L('Tiefste Ebene', 'Deepest floor')} <b>${m.best}</b></div>
         <div class="howto pc">${t(U.howto)}</div>
         <button class="link" id="bReset">${t(U.reset)}</button>
@@ -11141,17 +11794,92 @@ window.A = window.A || {};
   }
 
   // ---------- Lager ----------
-  function camp() {
-    const m = G.meta;
-    const list = A.META_SHOP.map(u => {
-      const have = m.unlocked.includes(u.id); const can = !have && m.sparks >= u.cost && (!u.needs || m.unlocked.includes(u.needs));
-      const icon = u.effect.race ? portrait(u.effect.race, 'weber') : ic(UPG_ICON[u.id] || 'u_star', 30);
-      return `<div class="card upg ${have ? 'have' : (can ? '' : 'locked')}"><div class="ic">${icon}</div><div style="flex:1;min-width:0"><div class="ttl">${esc(t(u.name))}</div><div class="txt">${esc(t(u.desc))}</div></div>${have ? `<span class="mini" style="color:var(--green)">${t(U.bought)}</span>` : `<button class="btn small ${can ? 'primary' : ''}" data-buy="${u.id}" ${can ? '' : 'disabled'}>${spark(u.cost)}</button>`}</div>`;
+  // Wirkung als kurzer Text, z. B. «+20 % Leben · +50 Gold zum Start»
+  function fxText(e) {
+    const out = [], p = (v) => Math.round(v * 100);
+    if (e.hpMul) out.push(L(`+${p(e.hpMul)} % Leben`, `+${p(e.hpMul)}% health`));
+    if (e.dmgMul) out.push(L(`+${p(e.dmgMul)} % Angriff und Zauberkraft`, `+${p(e.dmgMul)}% attack and magic`));
+    if (e.startGold) out.push(L(`+${e.startGold} Gold zum Start`, `+${e.startGold} starting gold`));
+    if (e.startPotion) out.push(L(`+${e.startPotion} ${e.startPotion > 1 ? 'Tränke' : 'Trank'} zum Start`, `+${e.startPotion} starting potion${e.startPotion > 1 ? 's' : ''}`));
+    if (e.potionHeal) out.push(L(`Tränke heilen ${p(e.potionHeal)} % mehr`, `Potions heal ${p(e.potionHeal)}% more`));
+    if (e.extraStartSkill) out.push(L('Start mit einem Zauber mehr', 'Start with one more spell'));
+    if (e.cdr) out.push(L(`Zauber laden ${p(e.cdr)} % schneller`, `Spells recharge ${p(e.cdr)}% faster`));
+    if (e.talentSlots) out.push(L('Ein Platz mehr für passive Segen', 'One more slot for passive blessings'));
+    if (e.gearW) out.push(e.gearW >= 2 ? L('Startwaffe selten (blau)', 'Rare starting weapon (blue)') : L('Startwaffe gut (grün)', 'Good starting weapon (green)'));
+    if (e.gearA) out.push(L('Startrüstung gut (grün)', 'Good starting armor (green)'));
+    if (e.gearHB) out.push(L('Guter Helm und gute Stiefel zum Start', 'Good helm and boots at the start'));
+    if (e.shopOff) out.push(L(`Händler ${p(e.shopOff)} % billiger`, `Merchants ${p(e.shopOff)}% cheaper`));
+    if (e.itemLuck) out.push(L(`Bessere Beute (+${e.itemLuck} Glück)`, `Better loot (+${e.itemLuck} luck)`));
+    if (e.startBoon) out.push(e.startBoon > 1 ? L(`Start mit ${e.startBoon} Segen vom Schrein`, `Start with ${e.startBoon} shrine blessings`) : L('Start mit einem Segen vom Schrein', 'Start with a shrine blessing'));
+    if (e.def) out.push(L(`+${e.def} Rüstung`, `+${e.def} armor`));
+    if (e.crit) out.push(L(`+${e.crit} % Volltreffer`, `+${e.crit}% crit`));
+    if (e.thorns) out.push(L(`Angreifer erleiden ${e.thorns} % zurück`, `Attackers take ${e.thorns}% back`));
+    return out.join(' · ');
+  }
+  const sumFx = (list, n, mul) => { const o = {}; for (let i = 0; i < n; i++) for (const k in list[i]) o[k] = (o[k] || 0) + list[i][k] * (mul || 1); return o; };
+  // Was die nächste Stufe bringt, als neuer Gesamtwert (z. B. «+25 % Leben» statt «+5 %»)
+  const nextFx = (b, lv) => { const all = sumFx(b.lv, lv + 1), o = {}; for (const k in b.lv[lv]) o[k] = all[k]; return o; };
+  const FOLK_CLS = { mensch: 'klinge', fels: 'brau', schatten: 'weber', pilz: 'rufer', kobold: 'schuetze' };   // so stehen die Völker im Lager am Feuer
+  const monImg = (id, box) => { const s = A.Art.monSprite(id, 0), k = Math.max(1, Math.floor(box / Math.max(s.w, s.h))); return `<img class="px" src="${s.url || (s.url = s.img.toDataURL())}" width="${s.w * k}" height="${s.h * k}" alt="">`; };
+  function campState() {
+    const lv = {}, open = {}, can = {}, rank = G.campRank();
+    for (const b of A.CAMP) { lv[b.id] = G.campLevel(b.id); open[b.id] = G.campOpen(b.id); const c = G.campCost(b.id); can[b.id] = open[b.id] && c != null && c <= G.meta.sparks; }
+    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX };
+  }
+  // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
+  function camp(poof) {
+    const m = G.meta, rank = G.campRank(), keep = poof ? screen.scrollTop : 0;
+    const next = A.CAMP.filter(b => !G.campOpen(b.id)).sort((a, b) => a.rank - b.rank)[0];
+    const bld = A.CAMP.map(b => {
+      const lv = G.campLevel(b.id), max = b.lv.length, open = G.campOpen(b.id), cost = G.campCost(b.id), can = open && cost != null && m.sparks >= cost;
+      const right = !open ? `<span class="need">${L('ab Lager-Stufe', 'from camp level')} <b>${b.rank}</b></span>`
+        : cost == null ? `<span class="need done">${L('Voll ausgebaut', 'Fully built')}</span>`
+        : `<button class="btn small ${can ? 'primary' : ''}" data-up="${b.id}" ${can ? '' : 'disabled'}>${spark(cost)}</button>`;
+      return `<div class="card upg bld ${!open ? 'locked' : cost == null ? 'have' : ''} ${poof === b.id ? 'just' : ''}">
+        <div class="ic">${ic(b.icon, 30)}</div>
+        <div class="bd"><div class="ttl"><span>${esc(t(b.name))}</span><span class="lvl">${L('Stufe', 'Level')} ${lv}/${max}</span></div>
+          <div class="pips">${b.lv.map((_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</div>
+          <div class="txt">${lv ? `<b>${L('Jetzt', 'Now')}:</b> ${esc(fxText(sumFx(b.lv, lv)))}` : esc(t(b.info))}</div>
+          ${lv < max ? `<div class="nx">${lv ? L('Nächste Stufe', 'Next level') : L('Bringt', 'Gives')}: ${esc(fxText(nextFx(b, lv)))}</div>` : ''}</div>
+        ${right}</div>`;
     }).join('');
+    const folks = A.META_SHOP.filter(u => u.effect.race).map(u => {
+      const r = A.RACES.find(x => x.id === u.effect.race), have = m.unlocked.includes(u.id), can = !have && m.sparks >= u.cost;
+      return `<div class="folk ${have ? 'have' : ''}"><img class="px" src="${Art.heroUrl(r.id, FOLK_CLS[r.id], 2)}" width="36" height="36" alt=""><b>${esc(t(r.name))}</b>
+        ${have ? `<span class="need done">${L('Im Lager', 'In camp')}</span>` : `<button class="btn small ${can ? 'primary' : ''}" data-race="${u.id}" ${can ? '' : 'disabled'}>${spark(u.cost)}</button>`}</div>`;
+    }).join('');
+    const flags = Object.keys(A.BANNERS).map(id => {
+      const n = Math.min(2, m.troph[id] || 0);
+      return `<div class="flag ${n ? 'have' : ''} ${n >= 2 ? 'gold' : ''}"><div class="fi">${monImg(id, 34)}</div><div><b>${esc(t(A.BOSSES[id].name))}</b> <span class="stars">${'★'.repeat(n)}${'☆'.repeat(2 - n)}</span>
+        <div class="mini">${esc(fxText(sumFx([A.BANNERS[id]], 1, Math.max(1, n))))}</div></div></div>`;
+    }).join('');
+    const note = m.campNote;
     show(`<div class="fade-in"><h2>${ic('u_tent', 42)}${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div>
-      <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>${list}<button class="btn" id="bBack">${t(U.back)}</button></div>`);
-    screen.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.metaBuy(b.dataset.buy)) { S.buy(); camp(); } });
+      ${note ? `<div class="msg">${L('Das Lager ist gewachsen!', 'The camp has grown!')}${note.old ? ' ' + L('Was du früher gekauft hast, steckt jetzt in den Gebäuden, mit mindestens gleicher Wirkung.', 'What you bought before now lives in the buildings, at least as strong as before.') : ''}${note.bonus ? ' ' + L(`Für die Weltenbosse, die du schon besiegt hast, hängen Wimpel am Eingang: ${note.bonus} Seelenfunken obendrauf.`, `Pennants for the world bosses you already beat hang at the entrance: ${note.bonus} soul sparks on top.`) : ''}</div>` : ''}
+      <div class="stage campst"><canvas id="campCv"></canvas></div>
+      <div class="rankbar"><div><b>${L('Lager-Stufe', 'Camp level')} ${rank}</b><span>/ ${A.CAMP_MAX}</span></div><div class="bar"><i style="width:${Math.round(rank / A.CAMP_MAX * 100)}%"></i></div>
+        <div class="mini">${next ? L(`Ab Lager-Stufe ${next.rank}: ${t(next.name)}`, `From camp level ${next.rank}: ${t(next.name)}`) : (rank >= A.CAMP_MAX ? L('Alles ausgebaut. Das Lager ist eine Legende.', 'Everything built. The camp is a legend.') : L('Alle Gebäude stehen. Jetzt nur noch höher bauen.', 'All buildings stand. Now build them higher.'))}</div></div>
+      <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>
+      <h3>${L('Gebäude', 'Buildings')}</h3>${bld}
+      <h3>${L('Neue Völker', 'New peoples')}</h3><div class="card folks"><div class="mini">${L('Jedes Volk zieht ins Lager und kann danach mit in die Tiefe.', 'Each people moves into the camp and can then join the descent.')}</div><div class="frow">${folks}</div></div>
+      <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
+      <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
+    if (note) { delete m.campNote; G.saveMeta(); }
+    if (keep) screen.scrollTop = keep;
+    A.Scenes.camp($('#campCv'), campState(), { poof });
+    screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
+    screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
     $('#bBack').onclick = () => { S.click(); title(); };
+  }
+
+  // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
+  function campNews() {
+    const r = G.run, n = r && r.campNews; if (!n) return; r.campNews = null; G.save();
+    const name = t(A.BOSSES[n.id].name), gold = n.st >= 2;
+    // erst zeigen, wenn kein Fenster offen ist (nach dem Bosskampf kommt oft die Segen-Wahl)
+    const say = () => { if (!dungeonEl.classList.contains('on')) return; if (overlay.classList.contains('on')) { setTimeout(say, 700); return; }
+      A.FX.banner(gold ? L('Goldener Wimpel fürs Lager!', 'Golden pennant for the camp!') : L('Neuer Wimpel fürs Lager!', 'New pennant for the camp!'), `${name}: ${fxText(sumFx([A.BANNERS[n.id]], 1, n.st))} · +${n.sparks} ${t(U.meta)}`, '#c77dff', 3.4); S.level(); };
+    setTimeout(say, 2600);
   }
 
   // ---------- Fortsetzen ----------
@@ -11170,7 +11898,7 @@ window.A = window.A || {};
     const hooks = {
       onItem: (it) => foundItem(it),
       onProp: (p) => useProp(p),
-      onCleared: (room) => { if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
+      onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); setTimeout(() => runOver(), 1100); },
       onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
     };
@@ -11478,6 +12206,8 @@ window.A = window.A || {};
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
+      ${r.sparksRecord || r.sparksBanners ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
     $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
   }

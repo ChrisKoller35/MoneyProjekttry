@@ -2098,6 +2098,204 @@ A.Art = (function () {
     '.233333332.',
   ]];
 
+  // ---------- Lager (Bühnenbild im Lager, scenes.js) ----------
+  // Lagerfeuer (Symbol)
+  R.c_fire = [[
+    '.....Y.....',
+    '.....YY....',
+    '....fYY....',
+    '....fYYf...',
+    '...ffYYff..',
+    '...fYYYYf..',
+    '..ofYY6Yfo.',
+    '..ofY66Yfo.',
+    '.N.ofYYfo.N',
+    '.mN.offo.Nm',
+    '..mNNnnNNm.',
+    '.NmmNNNNmmN',
+  ]];
+  // Strohpuppe auf dem Übungsplatz
+  R.c_dummy = [[
+    '...MMM...',
+    '..MsMMm..',
+    '..M0M0m..',
+    '..MMMMm..',
+    'Y..mmm..Y',
+    'YmNNNNNmY',
+    '..mRRRm..',
+    '..mR6Rm..',
+    '..mRRRm..',
+    '...mmm...',
+    '....N....',
+    '....N....',
+    '...nNn...',
+    '..nnnnn..',
+  ]];
+  // Zielscheibe
+  R.c_target = [[
+    '...RRRR...',
+    '..R6666R..',
+    '.R6RRRR6R.',
+    '.R6R66R6R.',
+    '.R6R66R6R.',
+    '.R6RRRR6R.',
+    '..R6666R..',
+    '...RRRR...',
+    '..N....N..',
+    '.N......N.',
+    'N........N',
+  ]];
+  // Kräuterkessel
+  R.c_cauldron = [[
+    '.3444444443.',
+    '32lGlYlGll23',
+    '.2222222222.',
+    '.2322222221.',
+    '232222222221',
+    '232222222221',
+    '.2322222221.',
+    '..22222221..',
+    '..1......1..',
+  ]];
+  // Pult mit offenem Buch
+  R.c_lectern = [[
+    '.sss...sss.',
+    'sssssNsssss',
+    's333sNs333s',
+    'sssssNsssss',
+    's33ssNs333s',
+    '.ssssNssss.',
+    '..NNNNNNN..',
+    '.....N.....',
+    '....NmN....',
+    '....NmN....',
+    '....NmN....',
+    '...NNmNN...',
+    '..NNNNNNN..',
+  ]];
+  // Bücherregal
+  R.c_shelf = [[
+    'NNNNNNNNNNNN',
+    'NRrBbYGl5VvN',
+    'NRrBbYGl5VvN',
+    'NRrBbyGl4VvN',
+    'NmmmmmmmmmmN',
+    'N.lGVv4RrbBN',
+    'NylGVv4RrbBN',
+    'NylGVv4RrbBN',
+    'NmmmmmmmmmmN',
+    'NN........NN',
+  ]];
+  // Händlerzelt mit Streifendach
+  R.c_stall = [[
+    '..................',
+    '.R6R6R6R6R6R6R6R6.',
+    'R6R6R6R6R6R6R6R6R6',
+    'r6r6r6r6r6r6r6r6r6',
+    '.w.w.w.w.w.w.w.w..',
+    '.N..............N.',
+    '.N..............N.',
+    '.N..............N.',
+    '.N..............N.',
+    'NmmmmmmmmmmmmmmmmN',
+    'NMMMMMMMMMMMMMMMMN',
+    'NmmmmmmmmmmmmmmmmN',
+    'NmNNNNNNNNNNNNNNmN',
+    'Nm..............mN',
+  ]];
+  // Glücksbrunnen
+  R.c_well = [[
+    '.......NN.......',
+    '.....NNmmNN.....',
+    '...NNmmMMmmNN...',
+    '.NNmmMMMMMMmmNN.',
+    'NNNNNNNNNNNNNNNN',
+    '..N....N.....N..',
+    '..N....N.....N..',
+    '..N...nmn....N..',
+    '..N...mMm....N..',
+    '.44444444444444.',
+    '4555455545554554',
+    '3443344433443343',
+    '2332233322332232',
+    '3443344433443343',
+    '.22222222222222.',
+  ]];
+  // Laterne am Pfahl
+  R.c_lantern = [[
+    '.N.',
+    'NyN',
+    'YYY',
+    'NyN',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    '.N.',
+    'NNN',
+  ]];
+  // Pfahl der Palisade
+  R.c_stake = [[
+    '.m.',
+    'mMN',
+    'mMN',
+    'mMN',
+    'mMN',
+    'mMN',
+    'NNN',
+    'mMN',
+    'mMN',
+    'mMN',
+  ]];
+  // Wachturm
+  R.c_tower = [[
+    '.....NN.....',
+    '...NNmmNN...',
+    '.NNmmMMmmNN.',
+    'NNNNNNNNNNNN',
+    '.N..N..N..N.',
+    '.N........N.',
+    'NNNNNNNNNNNN',
+    'mMmMmMmMmMmN',
+    '.N.N....N.N.',
+    '.NN......NN.',
+    '.N.N....N.N.',
+    '.N..N..N..N.',
+    '.N...NN...N.',
+    '.N..N..N..N.',
+    '.N.N....N.N.',
+    '.NN......NN.',
+    '.N.N....N.N.',
+    '.N..N..N..N.',
+    '.N...NN...N.',
+    '.N..N..N..N.',
+    '.N.N....N.N.',
+    '.NN......NN.',
+    'nnn......nnn',
+  ]];
+  // Bauplatz (Pfähle und Bretter)
+  R.c_plot = [[
+    'N.......N',
+    'NMMMMMMMN',
+    'N.......N',
+    'N.......N',
+    'N.......N',
+    'N..mmm..N',
+    'N.mMMMm.N',
+  ]];
+  // Wimpel eines Weltenbosses (C/H: Farbe, Y: Zeichen)
+  R.c_pennant = [[
+    'NNNNNNN',
+    '.CCCCC.',
+    '.CHCCC.',
+    '.CCYCC.',
+    '.CCCCC.',
+    '.CC.CC.',
+    '.C...C.',
+  ]];
+
   // ---------- Paletten je Figur ----------
   const RACE_SKIN = { mensch: ['#e8b796', '#c28569'], fels: ['#5a6988', '#3a4466'], schatten: ['#b55088', '#68386c'], pilz: ['#63c74d', '#3e8948'], kobold: ['#feae34', '#be4a2f'] };
   const CLASS_CLOTH = { klinge: ['#a22633', '#e43b44', '#f6757a'], schuetze: ['#265c42', '#3e8948', '#63c74d'], weber: ['#124e89', '#0099db', '#2ce8f5'], rufer: ['#262b44', '#68386c', '#b55088'], brau: ['#be4a2f', '#d77643', '#feae34'] };

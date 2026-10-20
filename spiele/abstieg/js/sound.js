@@ -108,6 +108,8 @@ A.Sound = (function () {
     forge() { if (!on()) return; noise(0.1, 0.2, 'highpass', 3000, 7000); tone(1760, 1720, 0.4, 'triangle', 0.06); tone(2637, 2600, 0.32, 'sine', 0.035, 0.01); tone(220, 110, 0.12, 'square', 0.05); },
     clink() { if (!on()) return; const f = r(2300, 2600); tone(f, f * 0.98, 0.18, 'triangle', 0.014); noise(0.03, 0.03, 'highpass', 4000, 7000); },
     buy() { if (!on()) return; tone(988, 0, 0.06, 'square', 0.04); tone(1319, 0, 0.12, 'square', 0.04, 0.06); },
+    // Ausbau im Lager: zwei Hammerschläge, dann ein heller Dreiklang
+    build() { if (!on()) return; noise(0.06, 0.16, 'lowpass', 1100, 250); noise(0.06, 0.13, 'lowpass', 1100, 250, 0.13); [523, 784, 1047].forEach((f, i) => tone(f, 0, 0.18, 'triangle', 0.05, 0.24 + i * 0.07)); },
     win() { this.cleared(); },
     glass(big) { if (!on()) return; noise(0.12, big ? 0.16 : 0.1, 'highpass', 3500, 8000); for (let i = 0; i < (big ? 4 : 3); i++) { const f = r(2400, 4200); tone(f, f * 0.9, 0.05, 'triangle', 0.025, i * 0.03); } if (big) noise(0.25, 0.12, 'lowpass', 1200, 200, 0.02); },
     summon() { if (!on()) return; tone(r(110, 130), r(220, 260), 0.45, 'sawtooth', 0.035); tone(r(330, 360), r(170, 190), 0.4, 'sine', 0.05, 0.05); noise(0.4, 0.06, 'bandpass', 300, 900, 0, 4); },

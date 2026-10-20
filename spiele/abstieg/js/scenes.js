@@ -1,6 +1,7 @@
 // Der Abstieg – Bühnenbilder der Menüs, als Pixel-Grafik aus Code:
 // Titelbild: Mauer mit Tor in die Tiefe, Fackeln, aufsteigende Glut, Fledermäuse, der Held davor.
 // Heldenwahl: kleine Bühne mit Lichtkegel, Sockel, Feuerschalen und dem gewählten Helden.
+// Lager: Nacht vor dem Eingang in die Tiefe, die Gebäude wachsen mit ihren Stufen.
 'use strict';
 window.A = window.A || {};
 
@@ -365,17 +366,326 @@ A.Scenes = (function () {
     vignette(St, 0.7);
   }
 
+  // ======================= Lager =======================
+  // Nacht über dem Lager: hinten der Eingang in die Tiefe mit den Wimpeln der besiegten Weltenbosse, davor die Gebäude,
+  // in der Mitte das Feuer mit den Völkern. Jedes Gebäude wächst sichtbar mit seiner Stufe; offene Bauplätze zeigen Pfähle.
+  const C = { cv: null, on: false, s: 4, bw: 0, bh: 0, t: 0, st: null, stat: null, parts: [], smoke: [], embers: [], flies: [], twinkle: [], shoot: null, nextShoot: 5, beat: -1, wob: {}, coin: null, fire: [] };
+  layer(C, 'buf'); layer(C, 'lt'); layer(C, 'gl');
+  // Platz je Gebäude: Abstand zur Mitte, Reihe (b = hinten beim Eingang, f = vorne beim Feuer)
+  const CAMP_POS = { schreib: [-62, 'b'], platz: [-37, 'b'], schmiede: [41, 'b'], zelt: [67, 'b'], brunnen: [-60, 'f'], kiste: [-37, 'f'], feuer: [0, 'f'], kessel: [37, 'f'], segen: [60, 'f'] };
+  // Völker am Feuer: Rasse, Kleidung, Abstand zum Feuer
+  const CAMP_NPC = [['mensch', 'klinge', -13, 1], ['fels', 'brau', 13, 1], ['schatten', 'weber', -22, -4], ['pilz', 'rufer', 22, -4], ['kobold', 'schuetze', 5, -9]];
+  const CAMP_FLAGS = ['schleimkoenig', 'dornenmutter', 'sandpharao', 'kraken', 'rostkoenig', 'waechter'];
+  const spr = (n, f, pal, key) => A.Art.sprite(n, f, pal, key);
+  function blit(b, s, x, y, flip) { if (s) b.drawImage(flip ? A.Art.flipped(s) : s.img, Math.round(x - s.w / 2), Math.round(y - s.h)); }
+  function shade(b, x, y, rx) { b.globalAlpha = 0.4; b.fillStyle = '#0d0a12'; b.fillRect(Math.round(x - rx), Math.round(y) - 1, Math.round(rx * 2), 2); b.fillRect(Math.round(x - rx + 2), Math.round(y) + 1, Math.round(rx * 2 - 4), 1); b.globalAlpha = 1; }
+  const campLv = (id) => (C.st && C.st.lv[id]) || 0;
+  function campXY(id) {
+    const p = CAMP_POS[id]; if (p) return { x: C.cx + p[0], y: p[1] === 'b' ? C.yb : C.yf };
+    const n = CAMP_NPC.find(q => 'race_' + q[0] === id); if (n) return { x: C.cx + n[2], y: C.yf + n[3] - 8 };
+    return { x: C.cx, y: C.yf };
+  }
+
+  function campResize() {
+    fitCanvas(C);
+    C.s = Math.max(2, Math.min(Math.round(C.dh / 92), Math.floor(C.dw / 160)));
+    C.bw = Math.ceil(C.dw / C.s); C.bh = Math.ceil(C.dh / C.s);
+    fitLayers(C, C.bw, C.bh); C.vig = null;
+    C.cx = Math.round(C.bw / 2); C.gy = Math.max(18, C.bh - 60); C.yb = C.gy + 19; C.yf = C.gy + 49;
+    C.flies = []; for (let i = 0; i < 8; i++) C.flies.push({ x: rnd(0, C.bw), y: rnd(C.gy + 6, C.bh - 3), ph: rnd(0, TAU), sp: rnd(0.25, 0.7), r: rnd(6, 16) });
+    C.stat = buildCamp();
+  }
+
+  function buildCamp() {
+    const bw = C.bw, bh = C.bh, gy = C.gy, cx = C.cx, yb = C.yb, yf = C.yf, st = C.st || { rank: 0, troph: {} };
+    const cv = mk(bw, bh), c = cv.getContext('2d'); const img = c.createImageData(bw, bh), D = img.data;
+    const put = (x, y, col, d) => { if (x < 0 || y < 0 || x >= bw || y >= bh) return; const i = (y * bw + x) * 4; D[i] = clamp(col[0] + (d || 0), 0, 255); D[i + 1] = clamp(col[1] + (d || 0), 0, 255); D[i + 2] = clamp(col[2] + (d || 0), 0, 255); D[i + 3] = 255; };
+    const SKY = ['#0f0c1c', '#151330', '#1c1b3e', '#24254c', '#2d305a', '#373b66'].map(rgb);
+    const FAR = rgb('#1c1d38'), FAR2 = rgb('#56609a'), NEAR = rgb('#151b2c'), PINE = rgb('#11201c');
+    const GR = ['#1f3b2d', '#22422f', '#1c3529', '#264833'].map(rgb), PATH = ['#3b2d2b', '#413130', '#362927'].map(rgb);
+    const ROCK = ['#2e2b42', '#34304a', '#29263b'].map(rgb), ST = ['#5a6988', '#66759a', '#4f5c7e'].map(rgb), STD = rgb('#262b44'), DARK = rgb('#0b0910');
+    // Himmel in Stufen mit Schachbrett-Übergang
+    for (let y = 0; y < gy; y++) for (let x = 0; x < bw; x++) {
+      const k = clamp(y / gy * (SKY.length - 1) + (((x + y) & 1) ? 0.25 : -0.25), 0, SKY.length - 1);
+      put(x, y, SKY[Math.round(k)], 0);
+    }
+    // Sterne (einige funkeln später)
+    C.twinkle = [];
+    const nStar = Math.round(bw * gy / 45);
+    for (let i = 0; i < nStar; i++) {
+      const x = Math.floor(hash(i, 1, 71) * bw), y = Math.floor(hash(i, 2, 71) * (gy - 8)), v = hash(i, 3, 71);
+      put(x, y, rgb(v > 0.85 ? '#fff6c8' : v > 0.5 ? '#c0cbdc' : '#6d7aa0'), 0);
+      if (v > 0.9) C.twinkle.push({ x, y, ph: hash(i, 4, 71) * TAU });
+    }
+    // Mond (Sichel) oben rechts
+    const mx = bw - Math.max(16, Math.round(bw * 0.14)), my = Math.max(7, Math.round(gy * 0.3)), mr = 6;
+    for (let y = -mr; y <= mr; y++) for (let x = -mr; x <= mr; x++) {
+      const inA = x * x + y * y <= mr * mr, inB = (x + 3) * (x + 3) + (y - 1) * (y - 1) <= (mr - 0.5) * (mr - 0.5);
+      if (inA && !inB) put(mx + x, my + y, rgb(x > 3 ? '#fff6c8' : '#e4d9b8'), (hash(x, y, 77) < 0.15) ? -22 : 0);
+    }
+    C.moon = { x: mx, y: my };
+    // Berge weit hinten, davor Hügel mit Tannen
+    for (let x = 0; x < bw; x++) {
+      const h1 = Math.round(10 + 5 * Math.sin(x * 0.06 + 1.3) + 3 * Math.sin(x * 0.17 + 0.4) + 2 * Math.sin(x * 0.41));
+      const hp = Math.round(10 + 5 * Math.sin((x - 1) * 0.06 + 1.3) + 3 * Math.sin((x - 1) * 0.17 + 0.4) + 2 * Math.sin((x - 1) * 0.41));
+      for (let y = gy - h1; y < gy; y++) put(x, y, y === gy - h1 || (y < gy - hp && x > 0) ? FAR2 : FAR, (y - (gy - h1)) * -1);
+      // Schnee auf den Gipfeln
+      if (h1 >= 15) { put(x, gy - h1, rgb('#c0cbdc'), 0); put(x, gy - h1 + 1, rgb('#8b9bb4'), 0); }
+      const h2 = Math.round(4 + 2 * Math.sin(x * 0.09 + 2.2) + 1.5 * Math.sin(x * 0.23 + 1));
+      for (let y = gy - h2; y < gy; y++) put(x, y, NEAR, 0);
+    }
+    for (let i = 0, x = -2; x < bw + 4; i++) {
+      const h = 4 + Math.floor(hash(i, 7, 72) * 6), w = Math.ceil(h / 2);
+      for (let yy = 0; yy < h; yy++) { const ww = Math.floor((yy + 1) / h * w); for (let xx = -ww; xx <= ww; xx++) put(x + xx, gy - 2 - h + yy + 1, PINE, 0); }
+      for (let yy = 0; yy < 2; yy++) put(x, gy - 1 + yy, PINE, 0);
+      x += 3 + Math.floor(hash(i, 8, 72) * 6);
+    }
+    // Boden: Gras, Weg vom Eingang zum Feuer und weiter nach vorn, festgetretener Kreis ums Feuer
+    for (let y = gy; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const near = (y - gy) / (bh - gy);
+      const pw = y < yb ? 0 : y < yf ? 3 + (y - yb) / (yf - yb) * 3 : 6 + (y - yf) * 0.8;
+      const ex = (x + 0.5 - cx) / 30, ey = (y + 0.5 - (yf - 2)) / 8;
+      const onPath = pw > 0 && Math.abs(x + 0.5 - cx) < pw + (hash(x, y, 73) < 0.3 ? 1 : 0);
+      if (onPath || ex * ex + ey * ey < 1 - hash(x, y, 74) * 0.12) { put(x, y, PATH[Math.floor(hash(x, y, 75) * 3)], Math.round(near * 6)); continue; }
+      let col = GR[Math.floor(hash(x >> 1, y, 76) * 4)];
+      put(x, y, col, Math.round(near * 8 + (hash(x, y, 78) - 0.5) * 6));
+    }
+    // Grasbüschel
+    for (let i = 0; i < bw * 0.6; i++) {
+      const x = Math.floor(hash(i, 9, 79) * bw), y = gy + 3 + Math.floor(hash(i, 10, 79) * (bh - gy - 3));
+      if (Math.abs(x - cx) < 9 && y > yb) continue;
+      put(x, y, rgb('#3e8948'), -20); put(x, y - 1, rgb('#3e8948'), -10); if (hash(i, 11, 79) < 0.5) put(x + 1, y, rgb('#3e8948'), -25);
+    }
+    // Hügel mit dem Eingang in die Tiefe
+    const rx = 24, ry = 27, ar = 6, top = yb - 12;
+    for (let y = yb - ry; y < yb + 1; y++) for (let x = cx - rx - 1; x <= cx + rx + 1; x++) {
+      const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - yb) / ry; const d = dx * dx + dy * dy; if (d > 1) continue;
+      const ox = x + 0.5 - cx, inOpen = (y >= top && y < yb && Math.abs(ox) < ar) || (y < top && ox * ox + (y + 0.5 - top) * (y + 0.5 - top) < ar * ar);
+      const inFrame = !inOpen && ((y >= top && y < yb && Math.abs(ox) < ar + 2) || (y < top && ox * ox + (y + 0.5 - top) * (y + 0.5 - top) < (ar + 2) * (ar + 2)));
+      if (inOpen) {
+        // Stufen nach unten, tiefer wird es rot
+        const deep = clamp((y - top + ar) / (yb - top + ar), 0, 1), step = (yb - 1 - y) % 3 === 0 && y > top + 1;
+        put(x, y, step ? mix(rgb('#3a3346'), rgb('#7a3a32'), 1 - deep) : mix(DARK, rgb('#2a0f12'), 1 - deep), 0); continue;
+      }
+      if (inFrame) { const blk = Math.floor(Math.atan2(y + 0.5 - top, ox) * 3 + 10) + (y >= top ? Math.floor((yb - y) / 3) : 0); put(x, y, ((x + y) % 7 === 0) ? STD : ST[blk % 3], (hash(x, y, 80) - 0.5) * 8); continue; }
+      if (d > 0.86 && y < yb - 2 && dy < -0.25) { put(x, y, rgb(hash(x, y, 81) < 0.5 ? '#2a5a3a' : '#22462f'), 0); continue; }   // Gras oben auf dem Hügel
+      put(x, y, ROCK[Math.floor(hash(x >> 1, y >> 1, 82) * 3)], Math.round((hash(x, y, 83) - 0.5) * 8 - dy * 6));
+    }
+    c.putImageData(img, 0, 0);
+    // Wimpelkette über dem Eingang: links und rechts je drei Weltenbosse, golden bei zwei Sternen
+    const ly = yb - 22, sagAt = (x) => Math.round(3 * Math.cos((x - cx) / 22 * Math.PI / 2));
+    for (const sx of [-1, 1]) { const px = cx + sx * 22; c.fillStyle = '#181425'; c.fillRect(px - 1, ly - 2, 3, yb - ly - 3); c.fillStyle = '#733e39'; c.fillRect(px, ly - 1, 1, yb - ly - 5); }
+    c.fillStyle = '#8f6a4a';
+    for (let x = cx - 21; x <= cx + 21; x++) c.fillRect(x, ly + sagAt(x), 1, 1);
+    CAMP_FLAGS.forEach((id, i) => {
+      const n = st.troph[id] || 0; if (!n) return;
+      const side = i < 3 ? -1 : 1, k = side < 0 ? 2 - i % 3 : i % 3, x = cx + side * (6 + k * 6);
+      const bc = (A.BOSSES[id] && A.BOSSES[id].color) || '#e43b44';
+      const pal = n >= 2 ? { C: '#feae34', H: '#fee761', Y: bc } : { C: bc, H: '#ffffff', Y: '#fee761' };
+      const s = spr('c_pennant', 0, pal, id + n); c.drawImage(s.img, x - Math.floor(s.w / 2), ly + sagAt(x));
+    });
+    // Palisade ab Lager-Stufe 15
+    if (st.rank >= 15) {
+      const sk = spr('c_stake');
+      for (let x = 3; x < bw; x += 4) { if (Math.abs(x - cx) < rx + 4) continue; c.drawImage(sk.img, x - 2, gy + 8 - sk.h + (hash(x, 1, 84) < 0.4 ? 1 : 0)); }
+    }
+    return cv;
+  }
+
+  // ---------- Gebäude, je nach Stufe ----------
+  const lamp = (L, x, y, r, col, a) => L.push([x, y, r, col, a]);
+  function plot(D, L, x, y, can, t) {
+    D.push({ y, f: (b, g) => { const s = spr('c_plot'); shade(b, x, y, 6); blit(b, s, x, y + 1); if (can) { const sp = spr('u_spark'); g.globalAlpha = 0.75 + Math.sin(t * 4) * 0.25; blit(g, sp, x, y - 9 + Math.round(Math.sin(t * 3) * 1.5)); g.globalAlpha = 1; } } });
+    if (can) L.push([x, y - 9, 14 + Math.sin(t * 4) * 2, '#c77dff', 0.7]);
+  }
+  function campDraw(D, L, t) {
+    const st = C.st, cx = C.cx, yb = C.yb, yf = C.yf;
+    const open = (id) => st.open[id];
+    const each = (id, fn) => { const lv = campLv(id), p = campXY(id); if (lv > 0) fn(p.x, p.y, lv); else if (open(id)) plot(D, L, p.x, p.y, st.can && st.can[id], t); };
+    // Lagerfeuer: ohne Stufe nur Glut, dann ein bis drei Flammen, ab 4 ein Steinkreis, ab 7 ein Spiess mit Wurst
+    { const lv = campLv('feuer'), x = cx, y = yf, n = lv >= 8 ? 3 : lv >= 4 ? 2 : lv >= 1 ? 1 : 0; C.fire = { x, y, n, lv };
+      D.push({ y, f: (b, g) => {
+        if (lv >= 4) for (let i = 0; i < 9; i++) { const a = Math.PI + i / 8 * Math.PI, sx = Math.round(x + Math.cos(a) * 10), sy = Math.round(y - 1 + Math.sin(a) * 3); b.fillStyle = '#181425'; b.fillRect(sx - 1, sy - 1, 4, 3); b.fillStyle = i % 2 ? '#5a6988' : '#8b9bb4'; b.fillRect(sx, sy, 2, 1); }
+        if (lv >= 7) { b.fillStyle = '#181425'; b.fillRect(x - 9, y - 12, 3, 12); b.fillRect(x + 7, y - 12, 3, 12); b.fillStyle = '#733e39'; b.fillRect(x - 8, y - 11, 1, 11); b.fillRect(x + 8, y - 11, 1, 11); b.fillStyle = '#8b9bb4'; b.fillRect(x - 8, y - 12, 17, 1); }
+        blit(b, spr('logs'), x, y + 1);
+        const off = n === 3 ? [-5, 0, 5] : n === 2 ? [-3, 3] : n === 1 ? [0] : [];
+        off.forEach((dx, i) => blit(b, spr('flame', Math.floor(t * 10 + i * 1.3) % 3), x + dx, y - 1 - (n === 3 && dx === 0 ? 2 : 0)));
+        if (!n) { g.fillStyle = '#e43b44'; for (let i = 0; i < 4; i++) if (Math.sin(t * 3 + i * 1.9) > 0.2) g.fillRect(x - 4 + i * 3, y - 2, 1, 1); }
+        if (lv >= 7) { b.fillStyle = '#181425'; b.fillRect(x - 3, y - 14, 7, 4); b.fillStyle = '#b86f50'; b.fillRect(x - 2, y - 13, 5, 2); b.fillStyle = '#e4a672'; b.fillRect(x - 1, y - 13, 2, 1); }
+        if (lv >= 4) for (let i = 0; i < 7; i++) { const a = i / 6 * Math.PI, sx = Math.round(x + Math.cos(a) * 10), sy = Math.round(y - 1 + Math.sin(a) * 3); b.fillStyle = '#181425'; b.fillRect(sx - 1, sy - 1, 4, 3); b.fillStyle = i % 2 ? '#8b9bb4' : '#5a6988'; b.fillRect(sx, sy, 2, 1); }
+      } });
+      const fl = 0.86 + Math.sin(t * 13) * 0.06 + Math.sin(t * 7.3) * 0.05;
+      if (n) { lamp(L, x, y - 6, (30 + lv * 2.5) * fl, '#ff9a3c', 0.95); lamp(L, x, y - 6, 12 + lv, '#fee761', 0.55); }
+      else lamp(L, x, y - 2, 12, '#be4a2f', 0.6);
+    }
+    // Übungsplatz: eine, dann zwei Strohpuppen, ab Stufe 7 eine Zielscheibe, ganz ausgebaut trägt eine Puppe eine Krone; ab und zu wackelt eine
+    each('platz', (x, y, lv) => {
+      const xs = lv >= 4 ? [-6, 5] : [0];
+      if (lv >= 7) D.push({ y: y + 2, f: (b) => { shade(b, x + 18, y + 2, 4); blit(b, spr('c_target'), x + 18, y + 3); } });
+      xs.forEach((dx, i) => { const w = C.wob['p' + i] || 0, wx = w > 0 ? Math.round(Math.sin(w * 40) * Math.min(1, w * 3)) : 0;
+        D.push({ y: y + i, f: (b) => { shade(b, x + dx, y + i, 4); blit(b, spr('c_dummy'), x + dx + wx, y + 1 + i); if (lv >= 10 && i === 1) blit(b, spr('crown'), x + dx + wx, y + i - 14); } }); });
+    });
+    // Schatzkiste: zu, dann offen mit Glanz, dann mit Goldhaufen
+    each('kiste', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 8);
+        if (lv >= 5) { const pile = [[-13, 0, 6], [-12, -1, 4], [-11, -2, 2], [10, 0, 5], [10, -1, 3]]; for (const [dx, dy, w] of pile) { b.fillStyle = '#be4a2f'; b.fillRect(x + dx - 1, y + dy - 1, w + 2, 2); b.fillStyle = '#feae34'; b.fillRect(x + dx, y + dy - 1, w, 1); b.fillStyle = '#fee761'; b.fillRect(x + dx + (w >> 1), y + dy - 1, 1, 1); } }
+        blit(b, spr('chest', lv >= 3 ? 1 : 0), x, y + 1);
+        if (lv >= 3) { const gp = (t * 0.45 + 0.3) % 1; if (gp > 0.9) { const q = Math.round(Math.sin((gp - 0.9) / 0.1 * Math.PI) * 2), gx = x - 3 + Math.round(hash(Math.floor(t * 0.45), 1, 85) * 6), gy2 = y - 8; g.fillStyle = '#ffffff'; g.fillRect(gx - q, gy2, q * 2 + 1, 1); g.fillRect(gx, gy2 - q, 1, q * 2 + 1); } }
+      } });
+      if (lv >= 3) lamp(L, x, y - 7, 10 + lv, '#feae34', 0.45);
+    });
+    // Kräuterkessel: blubbert über kleinem Feuer, daneben Tränke
+    each('kessel', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 7);
+        const pots = [[10, '#e43b44', '#a22633', '#f6757a'], [-10, '#63c74d', '#3e8948', '#c8f5a0'], [14, '#0099db', '#124e89', '#7fd8ff']].slice(0, Math.floor(lv / 2));
+        pots.forEach(([dx, R1, r1, w1], i) => blit(b, spr('potion', 0, { R: R1, r: r1, w: w1 }, 'pot' + i), x + dx, y + 1));
+        g.fillStyle = '#f77622'; for (let i = 0; i < 3; i++) if (Math.sin(t * 17 + i * 2.1) > -0.3) g.fillRect(x - 3 + i * 3, y - 1, 1, 1);
+        g.fillStyle = '#fee761'; if (Math.sin(t * 11) > 0) g.fillRect(x, y - 1, 1, 1);
+        blit(b, spr('c_cauldron'), x, y - 1);
+      } });
+      if (Math.random() < 0.016 * (2 + lv) * 60 * C.dt) C.parts.push({ x: x + rnd(-4, 4), y: y - 10, vx: rnd(-1, 1), vy: rnd(-5, -9), life: rnd(0.4, 0.9), col: Math.random() < 0.6 ? '#63c74d' : '#c8f5a0', sz: Math.random() < 0.3 ? 2 : 1 });
+      lamp(L, x, y - 2, 13, '#f77622', 0.55); lamp(L, x, y - 9, 6 + lv, '#63c74d', 0.3);
+    });
+    // Schreibstube: Pult mit Buch, Kerze, Bücherregal, schwebende Zauberfunken
+    each('schreib', (x, y, lv) => {
+      if (lv >= 3) D.push({ y: y - 2, f: (b) => { shade(b, x - 9, y - 2, 7); blit(b, spr('c_shelf'), x - 9, y - 1); } });
+      D.push({ y, f: (b, g) => {
+        shade(b, x + 5, y, 5); blit(b, spr('c_lectern'), x + 5, y + 1);
+        if (lv >= 2) { blit(b, spr('candle'), x + 13, y + 1); if (Math.sin(t * 14) > -0.5) { g.fillStyle = '#fee761'; g.fillRect(x + 13, y - 8, 1, 1); } }
+        if (lv >= 4) for (let i = 0; i < 4; i++) { const a = t * 1.6 + i * TAU / 4; g.globalAlpha = 0.6 + Math.sin(t * 5 + i) * 0.3; g.fillStyle = i % 2 ? '#2ce8f5' : '#ffffff'; g.fillRect(Math.round(x + 5 + Math.cos(a) * 7), Math.round(y - 17 + Math.sin(a) * 2.5), 1, 1); g.globalAlpha = 1; }
+      } });
+      if (lv >= 2) lamp(L, x + 13, y - 8, 12, '#feae34', 0.6);
+      if (lv >= 4) lamp(L, x + 5, y - 15, 12, '#2ce8f5', 0.45);
+    });
+    // Lagerschmiede: Amboss, Esse, Schmied, glühende Klinge
+    each('schmiede', (x, y, lv) => {
+      if (lv >= 2) D.push({ y: y - 1, f: (b) => { const es = spr('esse', Math.floor(t * 8) % 2); shade(b, x - 15, y - 1, 7); blit(b, es, x - 15, y); blit(b, spr('flame', Math.floor(t * 10) % 3), x - 15, y - es.h + 2); } });
+      D.push({ y: y + 1, f: (b, g) => {
+        shade(b, x + 11, y + 1, 5); blit(b, spr('anvil'), x + 11, y + 2);
+        if (lv >= 4) { g.fillStyle = '#f77622'; g.fillRect(x + 8, y - 5, 6, 1); g.fillStyle = '#fee761'; g.fillRect(x + 9, y - 5, 3, 1); }
+      } });
+      if (lv >= 3) {
+        const cyc = (t * 0.85) % 1, down = cyc > 0.72 && cyc < 0.9, beat = Math.floor(t * 0.85 + 0.28);
+        if (beat !== C.beat && C.beat >= 0) { for (let i = 0; i < 7; i++) C.parts.push({ x: x + 6, y: y - 5, vx: rnd(-22, 22), vy: rnd(-30, -10), g: 70, life: rnd(0.25, 0.5), col: ['#fee761', '#feae34', '#ffffff'][i % 3], sz: 1, add: true }); C.flash = { x: x + 6, y: y - 5, life: 0.15 }; }
+        C.beat = beat;
+        D.push({ y, f: (b) => { shade(b, x - 2, y, 5); blit(b, spr('smith', down ? 1 : 0), x - 2, y + 1); } });
+      }
+      if (lv >= 2) lamp(L, x - 15, y - 7, 26 + Math.sin(t * 9) * 2, '#ff7a2c', 0.85);
+      if (lv >= 4) lamp(L, x + 11, y - 5, 9, '#f77622', 0.6);
+      if (C.flash && C.flash.life > 0) lamp(L, C.flash.x, C.flash.y, 20, '#feae34', C.flash.life * 4);
+    });
+    // Händlerzelt: Stand, dann Händler, Laterne, Waren
+    each('zelt', (x, y, lv) => {
+      if (lv >= 2) D.push({ y: y - 1, f: (b) => { const bob = Math.sin(t * 1.8) > 0.6 ? -1 : 0; b.save(); b.beginPath(); b.rect(x - 12, 0, 24, y - 3); b.clip(); blit(b, spr('merchant'), x + 1, y + 4 + bob); b.restore(); } });
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 10); blit(b, spr('c_stall'), x, y + 1);
+        if (lv >= 4) { b.fillStyle = '#68386c'; b.fillRect(x - 6, y - 5, 12, 4); b.fillStyle = '#b55088'; b.fillRect(x - 6, y - 5, 12, 1); b.fillStyle = '#feae34'; for (let i = 0; i < 6; i++) b.fillRect(x - 6 + i * 2, y - 2, 1, 1); blit(b, spr('barrel'), x + 15, y + 1); }
+        if (lv >= 3) { b.fillStyle = '#181425'; b.fillRect(x + 7, y - 14, 3, 4); g.fillStyle = Math.sin(t * 9) > -0.6 ? '#fee761' : '#feae34'; g.fillRect(x + 8, y - 13, 1, 2); }
+      } });
+      if (lv >= 3) lamp(L, x + 8, y - 12, 18, '#feae34', 0.75);
+    });
+    // Glücksbrunnen: Funkeln steigt auf, ab Stufe 3 fliegt ab und zu eine Münze hinein
+    each('brunnen', (x, y, lv) => {
+      D.push({ y, f: (b) => { shade(b, x, y, 8); blit(b, spr('c_well'), x, y + 1); } });
+      if (Math.random() < 0.02 * lv * 60 * C.dt) C.parts.push({ x: x + rnd(-5, 5), y: y - 6, vx: rnd(-2, 2), vy: rnd(-8, -16), life: rnd(0.8, 1.5), col: ['#c77dff', '#2ce8f5', '#ffffff'][Math.floor(Math.random() * 3)], sz: 1, add: true });
+      if (lv >= 3 && !C.coin && Math.random() < 0.25 * C.dt) C.coin = { x: x - 14, y: y - 4, vx: 14, vy: -30, life: 1.6 };
+      lamp(L, x, y - 8, 8 + lv * 3, '#c77dff', 0.3 + lv * 0.1);
+    });
+    // Segensstein: Kugel schwebt, ab Stufe 2 mit Lichtsäule
+    each('segen', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 6); blit(b, spr('shrine', Math.floor(t * 2) % 2), x, y + 1);
+        if (lv >= 2) { g.globalAlpha = 0.1 + Math.sin(t * 2.4) * 0.04; g.fillStyle = '#2ce8f5'; g.fillRect(x - 2, 0, 5, y - 12); g.globalAlpha = 0.18; g.fillRect(x - 1, 0, 3, y - 12); g.globalAlpha = 1; }
+      } });
+      lamp(L, x, y - 11, 16 + lv * 4, '#2ce8f5', 0.65);
+      if (Math.random() < 0.05 * lv * 60 * C.dt) C.parts.push({ x: x + rnd(-6, 6), y: y - 10, vx: 0, vy: rnd(-10, -20), life: rnd(0.6, 1), col: Math.random() < 0.5 ? '#2ce8f5' : '#ffffff', sz: 1, add: true });
+    });
+    // Laternen am Weg (ab Lager-Stufe 5), Wachturm (ab 30), Krone über dem Eingang (alles ausgebaut)
+    if (st.rank >= 5) for (const sx of [-1, 1]) { const x = cx + sx * 12, y = yb + 9; D.push({ y, f: (b, g) => { blit(b, spr('c_lantern'), x, y + 1); g.fillStyle = '#fee761'; if (Math.sin(t * 8 + sx) > -0.7) g.fillRect(x, y - 10, 1, 1); } }); lamp(L, x, y - 10, 16, '#feae34', 0.7); }
+    if (st.rank >= 30) { const x = cx - 30, y = C.gy + 9; D.push({ y, f: (b, g) => { blit(b, spr('c_tower'), x, y + 1); b.fillStyle = '#181425'; b.fillRect(x + 4, y - 20, 3, 4); b.fillStyle = '#733e39'; b.fillRect(x + 5, y - 19, 1, 3); g.fillStyle = Math.sin(t * 11) > -0.4 ? '#fee761' : '#f77622'; g.fillRect(x + 5, y - 21, 1, 2); } }); lamp(L, x + 5, y - 21, 20, '#ff9a3c', 0.8); }
+    if (st.max) { const x = cx, y = yb - 27; D.push({ y: y - 50, f: (b) => blit(b, spr('crown'), x, y + Math.round(Math.sin(t * 2) * 0.6)) }); lamp(L, x, y - 3, 14, '#fee761', 0.6); }
+    // Völker am Feuer (schauen zum Feuer)
+    for (const [race, cls, dx, dy] of CAMP_NPC) {
+      if (!st.races.includes(race)) continue;
+      const x = cx + dx, y = yf + dy, ph = dx * 0.37, bob = Math.sin(t * 2 + ph) > 0.75 ? -1 : 0;
+      D.push({ y, f: (b) => { shade(b, x, y, 5); blit(b, A.Art.heroSprite(race, cls, 0), x, y + 1 + bob, dx > 0); } });
+    }
+  }
+
+  function campFrame(dt) {
+    const b = C.bufx, l = C.ltx, g = C.glx; C.t += dt; C.dt = dt; const t = C.t;
+    begin(C, '#50507e');
+    b.drawImage(C.stat, 0, 0);
+    // Mondlicht über dem Himmel, rote Glut aus dem Eingang
+    light(l, C.moon.x, C.moon.y, C.bw * 0.9, '#9a96d0', 0.75); light(l, C.moon.x, C.moon.y, 12, '#fff6c8', 0.5); light(g, C.moon.x, C.moon.y, 9, '#fff6c8', 0.18);
+    light(l, C.cx, C.gy - 4, C.bw * 0.7, '#7c78b8', 0.45);   // heller Streifen am Horizont
+    const pulse = 0.85 + Math.sin(t * 1.7) * 0.1;
+    light(l, C.cx, C.yb - 6, 22 * pulse, '#d4402a', 0.8); light(g, C.cx, C.yb - 4, 6 * pulse, '#f77622', 0.35);
+    if (Math.random() < dt * 3) C.embers.push({ x: C.cx + rnd(-4, 4), y: C.yb - 4, vx: rnd(-3, 3), vy: rnd(-8, -14), life: rnd(1.2, 2.4), max: 2.4 });
+    // Sterne funkeln, ab und zu eine Sternschnuppe
+    for (const s of C.twinkle) { const a = 0.5 + Math.sin(t * 2.3 + s.ph) * 0.5; if (a > 0.6) { g.globalAlpha = a * 0.8; g.fillStyle = '#fff6c8'; g.fillRect(s.x - 1, s.y, 3, 1); g.fillRect(s.x, s.y - 1, 1, 3); g.globalAlpha = 1; } }
+    C.nextShoot -= dt;
+    if (C.nextShoot <= 0 && !C.shoot) { C.nextShoot = rnd(7, 14); C.shoot = { x: rnd(C.bw * 0.2, C.bw * 0.9), y: rnd(2, C.gy * 0.4), life: 0.7 }; }
+    if (C.shoot) { const s = C.shoot; s.life -= dt; s.x -= 70 * dt; s.y += 26 * dt; for (let i = 0; i < 6; i++) { g.globalAlpha = clamp(s.life, 0, 1) * (1 - i / 6); g.fillStyle = '#ffffff'; g.fillRect(Math.round(s.x + i * 2.7), Math.round(s.y - i), 1, 1); } g.globalAlpha = 1; if (s.life <= 0) C.shoot = null; }
+    // Gebäude und Figuren von hinten nach vorn
+    const D = [], L = [];
+    if (C.st) campDraw(D, L, t);
+    D.sort((p, q) => p.y - q.y);
+    for (const d of D) d.f(b, g);
+    for (const [x, y, r, col, a] of L) light(l, x, y, r, col, a);
+    // Feuer: Glut und Rauch
+    const F = C.fire;
+    if (F && F.n) { if (Math.random() < dt * (5 + F.n * 4)) C.embers.push({ x: F.x + rnd(-3, 3), y: F.y - 9, vx: rnd(-4, 4), vy: rnd(-14, -26), life: rnd(0.8, 1.8), max: 1.8 }); }
+    if (F && Math.random() < dt * (F.n ? 1.6 : 0.8)) C.smoke.push({ x: F.x + rnd(-2, 2), y: F.y - (F.n ? 14 : 4), vx: rnd(2, 6), vy: rnd(-5, -8), life: rnd(2.5, 4), max: 4, r: rnd(1, 2) });
+    for (const s of C.smoke) { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.r += dt * 0.8; b.globalAlpha = clamp(s.life / s.max, 0, 1) * 0.16; b.fillStyle = '#8b9bb4'; b.beginPath(); b.arc(Math.round(s.x), Math.round(s.y), s.r, 0, TAU); b.fill(); }
+    b.globalAlpha = 1;
+    for (let i = C.smoke.length - 1; i >= 0; i--) if (C.smoke[i].life <= 0) C.smoke.splice(i, 1);
+    for (const e of C.embers) { e.life -= dt; e.x += (e.vx + Math.sin(t * 2 + e.y) * 3) * dt; e.y += e.vy * dt; const age = 1 - e.life / e.max; g.globalAlpha = clamp(e.life / 0.6, 0, 1); g.fillStyle = age < 0.35 ? '#fee761' : age < 0.7 ? '#feae34' : '#f77622'; g.fillRect(Math.round(e.x), Math.round(e.y), 1, 1); }
+    g.globalAlpha = 1;
+    for (let i = C.embers.length - 1; i >= 0; i--) if (C.embers[i].life <= 0) C.embers.splice(i, 1);
+    if (C.embers.length > 90) C.embers.splice(0, C.embers.length - 90);
+    // Münze für den Brunnen
+    if (C.coin) { const k = C.coin; k.life -= dt; k.vy += 60 * dt; k.x += k.vx * dt; k.y += k.vy * dt; g.fillStyle = Math.floor(t * 12) % 2 ? '#fee761' : '#feae34'; g.fillRect(Math.round(k.x), Math.round(k.y), 1, 1); if (k.y > C.yf - 6 && k.vy > 0) { for (let i = 0; i < 5; i++) C.parts.push({ x: k.x, y: C.yf - 7, vx: rnd(-8, 8), vy: rnd(-14, -4), g: 40, life: 0.4, col: '#2ce8f5', sz: 1, add: true }); C.coin = null; } else if (k.life <= 0) C.coin = null; }
+    // Glühwürmchen über dem Gras
+    for (const f of C.flies) {
+      f.ph += dt * f.sp; const x = f.x + Math.sin(f.ph * 1.3) * f.r, y = f.y + Math.sin(f.ph * 2.1) * 3, a = 0.5 + Math.sin(f.ph * 5) * 0.5;
+      if (a > 0.3) { g.globalAlpha = a; g.fillStyle = '#c8f5a0'; g.fillRect(Math.round(x), Math.round(y), 1, 1); g.globalAlpha = 1; light(l, x, y, 5, '#9be37a', a * 0.4); }
+    }
+    // Funken und Teilchen (Blubbern, Glitzern, Ausbau-Wolke)
+    for (const p of C.parts) {
+      p.life -= dt; if (p.g) p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      const L2 = p.add ? g : b; L2.globalAlpha = clamp(p.life / 0.3, 0, 1); L2.fillStyle = p.col; L2.fillRect(Math.round(p.x), Math.round(p.y), p.sz || 1, p.sz || 1);
+    }
+    b.globalAlpha = 1; g.globalAlpha = 1;
+    for (let i = C.parts.length - 1; i >= 0; i--) if (C.parts[i].life <= 0) C.parts.splice(i, 1);
+    if (C.flash) { C.flash.life -= dt; if (C.flash.life <= 0) C.flash = null; }
+    for (const k in C.wob) { C.wob[k] -= dt; if (C.wob[k] <= 0) delete C.wob[k]; }
+    if (Math.random() < dt * 0.3) C.wob['p' + Math.floor(Math.random() * 2)] = 0.5;
+    if (C.glow) { C.glow.life -= dt; light(l, C.glow.x, C.glow.y, 30, '#fff6c8', clamp(C.glow.life * 2, 0, 1)); if (C.glow.life <= 0) C.glow = null; }
+    compose(C);
+    vignette(C, 0.55);
+  }
+  // Ausbau-Wolke: Funken in Gold, Weiss und Violett an der Stelle, die gerade gewachsen ist
+  function campPoof(id) {
+    const p = campXY(id), y = p.y - 8;
+    for (let i = 0; i < 30; i++) { const a = rnd(0, TAU), sp = rnd(10, 40); C.parts.push({ x: p.x + Math.cos(a) * 3, y: y + Math.sin(a) * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 14, g: 30, life: rnd(0.4, 0.9), col: ['#fee761', '#ffffff', '#c77dff'][i % 3], sz: i % 4 ? 1 : 2, add: true }); }
+    C.glow = { x: p.x, y, life: 0.6 };
+  }
+
   // ======================= Ablauf =======================
   let last = 0, running = false;
   function loop(now) {
-    if (!T.on && !St.on) { running = false; return; }
+    if (!T.on && !St.on && !C.on) { running = false; return; }
     requestAnimationFrame(loop);
     const dt = clamp((now - last) / 1000 || 0, 0, 0.05); last = now;
     if (T.on && T.cv && T.cv.isConnected !== false) titleFrame(dt);
     if (St.on && St.cv && St.cv.isConnected) stageFrame(dt);
+    if (C.on && C.cv && C.cv.isConnected) campFrame(dt);
   }
   function kick() { if (!running) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
-  const ro = new ResizeObserver((ents) => { for (const e of ents) { if (e.target === T.cv) titleResize(); else if (e.target === St.cv) stageResize(); } });
+  const ro = new ResizeObserver((ents) => { for (const e of ents) { if (e.target === T.cv) titleResize(); else if (e.target === St.cv) stageResize(); else if (e.target === C.cv) campResize(); } });
 
   return {
     // Titelbild zeigen; anchor = { top, bottom } in CSS-Pixeln: dazwischen steht das Tor
@@ -392,6 +702,17 @@ A.Scenes = (function () {
       if (St.cv !== canvas) { if (St.cv) ro.unobserve(St.cv); St.cv = canvas; ro.observe(canvas); stageResize(); }
       St.race = race; St.cls = cls; St.on = true;
       if (changed) { St.poof = 0.2; for (let i = 0; i < 22; i++) { const a = rnd(0, TAU), sp = rnd(10, 34); St.parts.push({ x: St.cx + Math.cos(a) * 4, y: St.fy - 9 + Math.sin(a) * 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 12, life: rnd(0.3, 0.7), col: ['#fee761', '#ffffff', CLASS_GLOW[cls] || '#feae34'][i % 3] }); } }
+      kick();
+    },
+    // Lager zeigen; state = { lv, open, can, races, troph, rank, max }; opts.poof = Gebäude (oder race_…), das gerade gewachsen ist
+    camp(canvas, state, opts) {
+      if (!canvas) { if (C.cv) ro.unobserve(C.cv); C.on = false; C.cv = null; return; }
+      const changed = JSON.stringify(state) !== JSON.stringify(C.st);
+      C.st = state;
+      if (C.cv !== canvas) { if (C.cv) ro.unobserve(C.cv); C.cv = canvas; ro.observe(canvas); campResize(); }
+      else if (changed) C.stat = buildCamp();
+      C.on = true;
+      if (opts && opts.poof) campPoof(opts.poof);
       kick();
     },
   };

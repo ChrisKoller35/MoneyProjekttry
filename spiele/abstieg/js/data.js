@@ -37,7 +37,7 @@ A.UI = {
   runOver: { de: 'Durchlauf vorbei', en: 'Run over' }, reached: { de: 'Erreichte Ebene', en: 'Reached floor' }, kills: { de: 'Besiegte Gegner', en: 'Enemies slain' },
   sparksEarned: { de: 'Seelenfunken erhalten', en: 'Soul sparks earned' },
   toCamp: { de: 'Zum Lager', en: 'To camp' },
-  camp: { de: 'Das Lager', en: 'The camp' }, campInfo: { de: 'Hier oben wartet man. Und schaltet frei.', en: 'Up here you wait. And unlock things.' },
+  camp: { de: 'Das Lager', en: 'The camp' }, campInfo: { de: 'Hier oben wartet man. Und baut aus.', en: 'Up here you wait. And build.' },
   bought: { de: 'Freigeschaltet', en: 'Unlocked' },
   speed: { de: 'Tempo', en: 'Speed' },
   cooldown: { de: 'Abklingzeit', en: 'Cooldown' }, rounds: { de: 'Runden', en: 'rounds' },
@@ -393,19 +393,54 @@ A.EVENTS = [
     ] },
 ];
 
-// ---------- Lager (Freischaltungen mit Seelenfunken) ----------
+// ---------- Lager ----------
+// Völker (Rassen) schaltet man einzeln frei. Die übrigen Einträge gab es nur im alten Lager: wer sie gekauft hat, bekommt sie beim Laden als Gebäude-Stufen (game.js, migrateCamp)
 A.META_SHOP = [
-  { id: 'hp1', name: { de: 'Zähe Haut I', en: 'Tough Skin I' }, desc: { de: '+10 % Leben in jedem Durchlauf', en: '+10% health every run' }, cost: 30, effect: { hpMul: 0.1 } },
-  { id: 'hp2', name: { de: 'Zähe Haut II', en: 'Tough Skin II' }, desc: { de: '+10 % Leben', en: '+10% health' }, cost: 80, effect: { hpMul: 0.1 }, needs: 'hp1' },
-  { id: 'gold1', name: { de: 'Startkapital', en: 'Seed Money' }, desc: { de: 'Start mit 40 Gold', en: 'Start with 40 gold' }, cost: 25, effect: { startGold: 40 } },
-  { id: 'atk1', name: { de: 'Alte Narben', en: 'Old Scars' }, desc: { de: '+8 % Angriff und Zauberkraft', en: '+8% attack and magic' }, cost: 50, effect: { dmgMul: 0.08 } },
-  { id: 'potion1', name: { de: 'Reiseapotheke', en: 'Travel Kit' }, desc: { de: 'Start mit einem Trank', en: 'Start with a potion' }, cost: 40, effect: { startPotion: 1 } },
+  { id: 'hp1', old: true, name: { de: 'Zähe Haut I', en: 'Tough Skin I' }, desc: { de: '+10 % Leben in jedem Durchlauf', en: '+10% health every run' }, cost: 30, effect: { hpMul: 0.1 } },
+  { id: 'hp2', old: true, name: { de: 'Zähe Haut II', en: 'Tough Skin II' }, desc: { de: '+10 % Leben', en: '+10% health' }, cost: 80, effect: { hpMul: 0.1 }, needs: 'hp1' },
+  { id: 'gold1', old: true, name: { de: 'Startkapital', en: 'Seed Money' }, desc: { de: 'Start mit 40 Gold', en: 'Start with 40 gold' }, cost: 25, effect: { startGold: 40 } },
+  { id: 'atk1', old: true, name: { de: 'Alte Narben', en: 'Old Scars' }, desc: { de: '+8 % Angriff und Zauberkraft', en: '+8% attack and magic' }, cost: 50, effect: { dmgMul: 0.08 } },
+  { id: 'potion1', old: true, name: { de: 'Reiseapotheke', en: 'Travel Kit' }, desc: { de: 'Start mit einem Trank', en: 'Start with a potion' }, cost: 40, effect: { startPotion: 1 } },
   { id: 'race_schatten', name: { de: 'Schattenkind', en: 'Shadowkin' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 60, effect: { race: 'schatten' } },
   { id: 'race_pilz', name: { de: 'Pilzling', en: 'Sporeling' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 120, effect: { race: 'pilz' } },
   { id: 'race_kobold', name: { de: 'Blechkobold', en: 'Tin Kobold' }, desc: { de: 'Neue Rasse', en: 'New race' }, cost: 200, effect: { race: 'kobold' } },
-  { id: 'skill1', name: { de: 'Alte Schriften', en: 'Old Scrolls' }, desc: { de: 'Start mit drei Fähigkeiten statt zwei', en: 'Start with three skills instead of two' }, cost: 70, effect: { extraStartSkill: 1 } },
-  { id: 'luck1', name: { de: 'Glückspfennig', en: 'Lucky Penny' }, desc: { de: 'Bessere Items fallen öfter', en: 'Better items drop more often' }, cost: 90, effect: { itemLuck: 1 } },
+  { id: 'skill1', old: true, name: { de: 'Alte Schriften', en: 'Old Scrolls' }, desc: { de: 'Start mit drei Fähigkeiten statt zwei', en: 'Start with three skills instead of two' }, cost: 70, effect: { extraStartSkill: 1 } },
+  { id: 'luck1', old: true, name: { de: 'Glückspfennig', en: 'Lucky Penny' }, desc: { de: 'Bessere Items fallen öfter', en: 'Better items drop more often' }, cost: 90, effect: { itemLuck: 1 } },
 ];
+// Gebäude mit Stufen: lv = Wirkung je Stufe (wird zusammengezählt), cost = Preis je Stufe, rank = ab welcher Lager-Stufe man es bauen kann
+// Lager-Stufe = alle gebauten Stufen zusammen plus freigeschaltete Völker
+const lvEach = (n, eff) => Array.from({ length: n }, () => Object.assign({}, eff));
+A.CAMP = [
+  { id: 'feuer', name: { de: 'Lagerfeuer', en: 'Campfire' }, info: { de: 'Wärmt die Knochen. Und den Mut.', en: 'Warms the bones. And the courage.' }, icon: 'c_fire', rank: 0,
+    cost: [25, 40, 60, 85, 115, 150, 190, 235, 285, 340], lv: lvEach(10, { hpMul: 0.05 }) },
+  { id: 'platz', name: { de: 'Übungsplatz', en: 'Training Ground' }, info: { de: 'Die Strohpuppen haben nie eine Chance.', en: 'The straw dummies never stand a chance.' }, icon: 'c_dummy', rank: 0,
+    cost: [35, 55, 80, 110, 145, 185, 230, 280, 335, 400], lv: lvEach(10, { dmgMul: 0.04 }) },
+  { id: 'kiste', name: { de: 'Schatzkiste', en: 'Treasure Chest' }, info: { de: 'Für schlechte Zeiten. Und für gute.', en: 'For bad times. And for good ones.' }, icon: 'chest', rank: 0,
+    cost: [20, 35, 55, 80, 110, 145], lv: lvEach(6, { startGold: 25 }) },
+  { id: 'kessel', name: { de: 'Kräuterkessel', en: 'Herb Cauldron' }, info: { de: 'Blubbert. Riecht nach Wald und ein bisschen nach Socke.', en: 'Bubbles. Smells of forest and a little of sock.' }, icon: 'c_cauldron', rank: 3,
+    cost: [40, 70, 110, 160, 220, 290], lv: [{ startPotion: 1 }, { potionHeal: 0.05 }, { startPotion: 1 }, { potionHeal: 0.05 }, { startPotion: 1 }, { potionHeal: 0.05 }] },
+  { id: 'schreib', name: { de: 'Schreibstube', en: 'Scriptorium' }, info: { de: 'Alte Bücher, neue Tricks.', en: 'Old books, new tricks.' }, icon: 'c_lectern', rank: 6,
+    cost: [70, 140, 250, 450], lv: [{ extraStartSkill: 1 }, { cdr: 0.05 }, { cdr: 0.05 }, { talentSlots: 1 }] },
+  { id: 'schmiede', name: { de: 'Lagerschmiede', en: 'Camp Forge' }, info: { de: 'Hier wird für den Abstieg geschmiedet.', en: 'Forging for the descent.' }, icon: 'anvil', rank: 9,
+    cost: [80, 150, 260, 400], lv: [{ gearW: 1 }, { gearA: 1 }, { gearW: 1 }, { gearHB: 1 }] },
+  { id: 'zelt', name: { de: 'Händlerzelt', en: 'Merchant Tent' }, info: { de: 'Wer oben Kunde ist, zahlt unten weniger.', en: 'Be a customer up here, pay less down there.' }, icon: 'c_stall', rank: 12,
+    cost: [60, 110, 170, 240], lv: lvEach(4, { shopOff: 0.05 }) },
+  { id: 'brunnen', name: { de: 'Glücksbrunnen', en: 'Wishing Well' }, info: { de: 'Münze rein, Wunsch raus.', en: 'Coin in, wish out.' }, icon: 'c_well', rank: 16,
+    cost: [90, 200, 380], lv: lvEach(3, { itemLuck: 1 }) },
+  { id: 'segen', name: { de: 'Segensstein', en: 'Blessing Stone' }, info: { de: 'Ein kleiner Schrein, der schon hier oben flüstert.', en: 'A little shrine that already whispers up here.' }, icon: 'shrine', rank: 20,
+    cost: [150, 350], lv: [{ startBoon: 1 }, { startBoon: 1 }] },
+];
+A.CAMP_MAX = A.CAMP.reduce((a, b) => a + b.lv.length, 0) + A.META_SHOP.filter(u => u.effect.race).length;   // höchste Lager-Stufe
+// Wimpel der Weltenbosse: erster Sieg = Wimpel (Bonus für immer, 50 Seelenfunken), erster Sieg in den Welten II = goldener Wimpel (doppelter Bonus, 100 Seelenfunken)
+A.BANNERS = {
+  schleimkoenig: { hpMul: 0.05 },
+  dornenmutter: { thorns: 10 },
+  sandpharao: { cdr: 0.05 },
+  kraken: { dmgMul: 0.04 },
+  rostkoenig: { def: 2 },
+  waechter: { crit: 4 },
+};
+A.BANNER_SPARKS = [0, 50, 100];
 
 // ---------- Aufgaben je Ebene ----------
 A.QUESTS = [

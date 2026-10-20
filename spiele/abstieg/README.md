@@ -10,7 +10,7 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 - 22 Gegenstands-Grundformen, 14 Zusätze, 6 Einzelstücke, verfluchte Items; Beutel mit 8 Plätzen.
 - 12 Monster, 2 Bosse, 6 Ereignisse, Händler, Rast, Schatz. 4 Aufgaben.
 - Stufenaufstieg mit Statpunkten, alle 3 Stufen eine neue Fähigkeit.
-- Seelenfunken nach jedem Durchlauf, Lager mit 10 Freischaltungen.
+- Seelenfunken nach jedem Durchlauf, Lager mit 10 Freischaltungen (seit 20.10. ein ausbaubares Lager, siehe unten).
 - Speichert im Browser (laufender Durchlauf und Lager). Deutsch/Englisch nach Browser-Sprache.
 
 ## Welten und Segen (19.10.2026)
@@ -46,6 +46,15 @@ Zwei neue Klassen, gleich von Anfang an spielbar, je mit eigener Figur, eigener 
 - Beide sehen auch im 3D-Look eigen aus (Kapuze mit Schädel, Hut mit Bart und Schürze, Diener, Fass, fliegende Flaschen).
 - Spielstand bleibt: laufende Durchläufe und Lager sind unverändert, die zwei Klassen sind in der Heldenwahl einfach frei.
 
+## Das Lager (20.10.2026)
+Aus der Liste mit 10 einmaligen Käufen wird ein Lager, das man über viele Durchgänge mit Seelenfunken ausbaut (Zahlen in `A.CAMP`, `A.BANNERS` in `js/data.js`, Regeln in `js/game.js`, Bild in `js/scenes.js`):
+- **9 Gebäude mit Stufen** (zusammen 49 Stufen, 8265 Funken): Lagerfeuer (10× +5 % Leben), Übungsplatz (10× +4 % Schaden), Schatzkiste (6× +25 Startgold), Kräuterkessel (3 Starttränke, Tränke heilen bis +15 %), Schreibstube (dritte Startfähigkeit, Zauber 10 % schneller, ein Segen-Platz mehr), Lagerschmiede (Start mit seltener Waffe, guter Rüstung, gutem Helm und Stiefeln), Händlerzelt (bis −20 % beim Händler), Glücksbrunnen (bessere Beute), Segensstein (1-2 Segen schon vor Ebene 1).
+- **Lager-Stufe** = alle gebauten Stufen plus freigeschaltete Völker (höchstens 52). Kräuterkessel, Schreibstube, Schmiede, Händlerzelt, Brunnen und Segensstein öffnen sich erst ab Lager-Stufe 3, 6, 9, 12, 16 und 20. Die 3 Völker kauft man weiter im Lager (60/120/200).
+- **Wimpel der Weltenbosse:** jeder der 6 Welt-Bosse hängt beim ersten Sieg einen Wimpel ins Lager (+50 Funken und ein kleiner Dauer-Bonus), ab Welten II wird er golden (+100 Funken, doppelter Bonus).
+- **Rekord-Funken:** am Ende gibt es für jede Ebene über dem alten Rekord 5 Funken extra. Der Endbildschirm zeigt die Aufteilung und ob man jetzt etwas ausbauen kann; im Titel leuchtet dann ein Punkt am Lager-Knopf.
+- **Das Lager-Bild wächst mit:** jedes Gebäude zeigt seine Stufe (Glut wird zu grossem Feuer mit Spiess, Strohpuppen und Zielscheibe, offene Truhe mit Gold, Schmied mit Hammer und Funken, Händler mit Laterne, Lichtsäule am Segensstein), freie Plätze leuchten, wenn man genug Funken hat. Freigeschaltete Völker sitzen ums Feuer, ab Stufe 15 kommt ein Palisadenzaun, ab 30 ein Wachturm, ganz ausgebaut eine Krone.
+- Spielstand bleibt: alte Käufe werden einmal in gleich gute oder bessere Gebäude-Stufen umgewandelt (es geht nichts verloren), Wimpel für schon besiegte Bosse werden nachgeliefert, ein laufender Durchlauf geht normal weiter.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -65,7 +74,7 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
   - `draw3` – 3D-Look (gebündelt aus `src3d/draw3.js` plus three.js; nicht von Hand ändern, sondern `src3d/draw3.js` ändern und `node build3d.js` laufen lassen).
   - `fx` – Effekte (Funken, Wackeln, Treffer-Pause, Zeitlupe, Banner, Flecken am Boden).
   - `sound` – Töne aus Code (Web Audio), keine Tondateien.
-  - `scenes` – Titelbild (Tor in die Tiefe) und Bühne der Heldenwahl.
+  - `scenes` – Titelbild (Tor in die Tiefe), Bühne der Heldenwahl und das Lager-Bild, das mit den Gebäuden wächst.
   - `input` – Tasten, Joystick, Knöpfe; `ui` – Menüs, Anzeige oben, Knöpfe.
 - `fonts/` – Pixelify Sans und Jacquard 24 (beide SIL Open Font License, Lizenztext in `fonts/OFL-*.txt`), werden beim Bauen in die Datei eingebettet.
 - `npm install` (einmal) und `node build3d.js` – bündelt den 3D-Look nach `js/draw3.js` (esbuild + three.js aus `package.json`).
