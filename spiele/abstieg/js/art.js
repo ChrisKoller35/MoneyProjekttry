@@ -2058,6 +2058,21 @@ A.Art = (function () {
   R.el_gift = [['...l...', '...l...', '..lGl..', '.lGGGl.', '.lG6Gl.', '.lGGGl.', '..lll..']];
   R.el_schatten = [['..VVV..', '.VVv...', 'VVv....', 'VVv....', 'VVv..w.', '.VVv...', '..VVV..']];
   R.el_stein = [['..444..', '.45554.', '4556544', '4555443', '4544433', '.43333.', '..333..']];
+  // Eigenschaften der Elite-Gegner (elites.js); Gift, Feuer, Frost und Gewitter nehmen die Element-Bilder oben
+  R.ef_flink = [['y..Y...', '.y..Y..', '..y..Y.', '...y..Y', '..y..Y.', '.y..Y..', 'y..Y...']];
+  R.ef_panzer = [['5555555', '5444445', '5446445', '5466645', '.54645.', '..545..', '...5...']];
+  R.ef_bombe = [['.....Y.', '....Ny.', '..333..', '.35333.', '.33333.', '.33332.', '..322..']];
+  R.ef_ruf = [['.sssss.', 'sssssss', 'sVVsVVs', 'sss0sss', '.sssss.', '.s.s.s.']];
+  R.ef_blink = [['..vvv..', '.v666v.', 'v6V0V6v', '.v666v.', '..vvv..']];
+  R.ef_schild = [['..ccc..', '.c...c.', 'c.6...c', 'c.....c', 'c.....c', '.c...c.', '..ccc..']];
+  R.ef_vampir = [['...R...', '...R...', '..RRR..', '.RRwRR.', '.RRRRR.', '.rRRRr.', '..rrr..']];
+  R.ef_riese = [['...M...', '..MMM..', '.MMMMM.', 'MMMMMMM', '..mMm..', '..mMm..', '..mMm..']];
+  R.ef_wut = [['.RRRRR.', 'R0RRR0R', 'RR0R0RR', 'RRRRRRR', 'RR000RR', 'R0RRR0R', '.RRRRR.']];
+  R.ef_spiegel = [['..555..', '.56645.', '.56545.', '.54445.', '..555..', '...N...', '...N...']];
+  R.ef_klingen = [['...5...', '...5...', '..545..', '5554555', '..545..', '...5...', '...5...']];
+  R.ef_heil = [['..lll..', '..l6l..', 'lll6lll', 'l66666l', 'lll6lll', '..l6l..', '..lll..']];
+  // kreisende Klinge (Klingenwirbel), zwei Bilder: dreht sich
+  R.ef_blade = [['..5..', '..5..', '55655', '..5..', '..5..'], ['5...5', '.5.5.', '..6..', '.5.5.', '5...5']];
   R.crystal = [[
     '...w....',
     '..wVw...',

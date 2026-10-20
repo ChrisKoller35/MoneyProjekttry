@@ -284,6 +284,12 @@
   .flag.have .stars { color: var(--spark); }
   .flag.gold .stars, .flag.gold b { color: var(--gold2); }
   .flag .mini { font-size: 12.5px; margin-top: 2px; }
+  .page { display: flex; gap: 8px; align-items: center; padding: 6px; background: rgba(24,20,37,0.45); font-size: 14px; line-height: 1.2; }
+  .page .pi { width: 34px; height: 34px; flex: none; display: grid; place-items: center; }
+  .page:not(.have) .pi img { filter: brightness(0) opacity(0.45); }
+  .page:not(.have) b { color: var(--mist); }
+  .page .cnt { color: var(--steel); font-size: 12.5px; margin-left: 6px; }
+  .page .mini { font-size: 12.5px; margin-top: 2px; }
   @media (max-width: 380px) { .fgrid { grid-template-columns: 1fr; } }
   #bCamp .dot { width: 9px; height: 9px; flex: none; background: var(--spark); box-shadow: 0 0 0 2px var(--ink); animation: ready 1.4s infinite; }
   .mini.extra { margin-top: 4px; color: var(--pale); }
@@ -325,6 +331,7 @@
 <script src="js/fx.js"></script>
 <script src="js/levels.js"></script>
 <script src="js/bosses.js"></script>
+<script src="js/elites.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/draw3.js"></script>

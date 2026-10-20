@@ -7,10 +7,11 @@ A.Game = (function () {
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
-  // look: 'retro' (Pixel) oder '3d'; camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel)
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro', camp: {}, troph: {} });
+  // look: 'retro' (Pixel) oder '3d'; camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
+  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro', camp: {}, troph: {}, efBook: {}, efSeen: [] });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -36,11 +37,12 @@ A.Game = (function () {
   // Alle dauerhaften Wirkungen zusammengezählt (Gebäude, Wimpel, Völker); wird erst nach einer Änderung am Lager neu berechnet
   function metaEffects() {
     if (fxCache) return fxCache;
-    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [], potionHeal: 0, cdr: 0, talentSlots: 0, gearW: 0, gearA: 0, gearHB: 0, shopOff: 0, startBoon: 0, def: 0, crit: 0, thorns: 0 };
+    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [], potionHeal: 0, cdr: 0, talentSlots: 0, gearW: 0, gearA: 0, gearHB: 0, shopOff: 0, startBoon: 0, def: 0, crit: 0, thorns: 0, eliteDmg: 0 };
     const add = (e, n) => { for (const k in e) eff[k] = (eff[k] || 0) + e[k] * (n || 1); };
     for (const id of meta.unlocked) { const u = A.META_SHOP.find(x => x.id === id); if (u && u.effect.race) eff.races.push(u.effect.race); }
     for (const b of A.CAMP) for (let i = 0; i < campLevel(b.id); i++) add(b.lv[i]);
     for (const id in meta.troph) if (A.BANNERS[id]) add(A.BANNERS[id], Math.min(2, meta.troph[id]));
+    eff.eliteDmg = bookPages() * A.ELITE_BOOK_DMG;   // jede Seite im Elite-Buch: mehr Schaden gegen Elite-Gegner
     return (fxCache = eff);
   }
   function raceUnlocked(r) { return r.unlock === 0 || metaEffects().races.includes(r.id); }
@@ -72,6 +74,23 @@ A.Game = (function () {
     return run.campNews;
   }
   function classUnlocked(c) { return c.unlock === 0 && !c.soon; }
+  // ---------- Elite-Buch ----------
+  function bookPages() { return Object.keys(A.ELITE_TRAITS).filter(id => (meta.efBook[id] || 0) > 0).length; }
+  // Elite besiegt: jede Eigenschaft zählt im Buch; eine neue Seite bringt sofort Seelenfunken
+  function bookKill(e) {
+    const news = [];
+    for (const id of e.traits || []) { if (!A.ELITE_TRAITS[id]) continue; if (!meta.efBook[id]) news.push(id); meta.efBook[id] = (meta.efBook[id] || 0) + 1; }
+    if (news.length) { const n = news.length * A.ELITE_BOOK_SPARKS; meta.sparks += n; run.bookSparks = (run.bookSparks || 0) + n; }
+    saveMeta();
+    return news;
+  }
+  // Neue Eigenschaften (noch nie gesehen) merken und zurückgeben, damit die Oberfläche sie vorstellen kann
+  function eliteSeen(list) {
+    const out = [];
+    for (const m of list) for (const id of m.traits || []) if (!meta.efSeen.includes(id) && !out.includes(id)) out.push(id);
+    if (out.length) { meta.efSeen.push(...out); saveMeta(); }
+    return out;
+  }
 
   // ---------- Durchlauf ----------
   let run = null;
@@ -130,10 +149,11 @@ A.Game = (function () {
     return d;
   }
 
+  // elite: true = Elite mit voller Anzahl Eigenschaften, Zahl = so viele Eigenschaften (Champion), Liste = genau diese Eigenschaften, false = normal
   function monsterEntity(m, floor, elite, idx) {
     const hpM = 1 + 0.28 * (floor - 1), atkM = 1 + 0.18 * (floor - 1);
     const e = {
-      id: 'e' + idx, mid: m.id, name: (elite ? A.t(A.UI.elitePrefix) + ' ' : '') + A.t(m.name), side: 'enemy', kind: m.kind,
+      id: 'e' + idx, mid: m.id, name: A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
       def: Math.round((m.def || 0) * (1 + 0.15 * (floor - 1))), spd: m.spd + (elite ? 2 : 0), crit: m.crit || 5, dodge: m.dodge || 0,
       poisonOnHit: m.poisonOnHit || 0, burn: m.burn || 0, thorns: m.thorns || 0, steal: m.steal || 0, color: m.color, shape: m.shape,
@@ -142,7 +162,7 @@ A.Game = (function () {
       teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
     };
     e.hp = e.maxHp;
-    if (elite) { const t = run ? run.rng.pick(['giftig', 'gepanzert', 'schnell']) : 'gepanzert'; e.eliteKind = t; if (t === 'giftig') e.poisonOnHit += 3; if (t === 'gepanzert') e.def += 5; if (t === 'schnell') e.spd += 4; }
+    if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
     return e;
   }
 
@@ -286,20 +306,27 @@ A.Game = (function () {
     if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
   }
   // Belohnung für einen getöteten Gegner
+  // Elite-Gegner: je mehr Eigenschaften, desto mehr Gold, Erfahrung, bessere Beute und Seelenfunken (die gibt es am Ende des Durchlaufs)
   function killReward(e) {
-    const f = run.floor, d = derived();
-    const mult = e.boss ? 10 : e.elite ? 2.5 : 1;
+    const f = run.floor, d = derived(), nt = e.traits ? e.traits.length : e.elite ? 1 : 0;
+    const mult = e.boss ? 10 : e.elite ? 2 + nt * 0.6 : 1;
     const gold = Math.round(run.rng.int(3, 6) * (1 + 0.25 * (f - 1)) * mult * (1 + d.goldPct / 100));
-    const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 2 : 1) * (1 + d.xpPct / 100));
+    const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++;
-    const items = [];
+    const items = []; let esparks = 0, book = null;
     if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); bossBanner(e.mid); }
-    else if (e.elite) { items.push(randomItem(rollRarity(1))); questEvent('elite'); }
+    else if (e.elite) {
+      items.push(randomItem(rollRarity(nt)));
+      if (nt >= 3 && run.rng.chance(0.25 + (nt - 3) * 0.25)) items.push(randomItem(rollRarity(1)));   // tiefe Elite: oft ein zweites Item
+      esparks = nt; run.eliteSparks = (run.eliteSparks || 0) + nt; run.eliteKills = (run.eliteKills || 0) + 1;
+      book = bookKill(e);
+      questEvent('elite');
+    }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
     const levels = addXp(xp);
     questEvent('kill');
     save();
-    return { gold, coins: e.boss ? 8 : e.elite ? 4 : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(0.04) };
+    return { gold, coins: e.boss ? 8 : e.elite ? 3 + nt : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(e.elite ? 0.25 : 0.04), esparks, book };
   }
   // Raum gesäubert: ein Item als Belohnung, Aufgabe prüfen
   function roomCleared(room, stats) {
@@ -397,11 +424,12 @@ A.Game = (function () {
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
-  // Seelenfunken: Tiefe, Gegner, Stufe, dazu 5 je Ebene über dem alten Rekord; die Funken für neue Wimpel sind schon gutgeschrieben und werden nur mit angezeigt
+  // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
+  // die Funken für neue Wimpel und neue Seiten im Elite-Buch sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0;
-    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record;
-    run.sparksEarned = sparks + banners; run.sparksRecord = record; run.sparksBanners = banners;
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0;
+    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
+    run.sparksEarned = sparks + banners + book; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
@@ -415,7 +443,7 @@ A.Game = (function () {
 
   loadMeta();
   return {
-    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable,
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
