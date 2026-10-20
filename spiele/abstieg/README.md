@@ -21,6 +21,16 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 - **Grenzen:** 4 Zauber-Knöpfe (weitere liegen im Zauberbuch und lassen sich tauschen), 6 passive Segen (Mensch 7). Ist alles voll, wählt man, was ersetzt wird (eigene Fenster im Spiel, keine Browser-Rückfragen).
 - Spielstand-Schlüssel `abstieg.v2`: ein alter laufender Durchlauf beginnt neu, Seelenfunken und Freischaltungen bleiben.
 
+## Welt-Bosse (20.10.2026)
+Jeder der 6 Bosse hat eine eigene Mechanik mit Anzeige am Boden (`js/bosses.js`) und wird ab halbem Leben wütend (schneller, mehr Angriffe):
+- **Schleimkönig:** springt auf den Helden (grüner Kreis), hinterlässt bremsenden Schleim; in der Wut Schleimring bei jeder Landung. Teilt sich weiterhin.
+- **Dornenmutter:** Ranken brechen unter dem Helden aus dem Boden und halten ihn kurz fest; in der Wut zusätzlich eine Rankenpeitsche in einer Reihe.
+- **Sandpharao:** Sandsäulen in einer Reihe auf den Helden zu (in der Wut drei Reihen), Sandsog zieht den Helden zu ihm, in der Wut mit Treibsand.
+- **Tiefenkraken:** Tentakel unter dem Helden; die Flut füllt den ganzen Raum, nur in den hellen Kreisen ist man sicher.
+- **Rostkönig:** Hammerschläge hinterlassen Lava-Pfützen; in der Wut regnet Glut in den Raum. Waffentreffer heilen ihn nur noch um 2 %.
+- **Wächter der Tiefe:** steht still und dreht einen Leerenstrahl durch den Raum (in der Wut zwei).
+**Boss-Trophäen:** jeder Boss lässt einmal pro Durchgang ein eigenes legendäres Stück mit besonderer Kraft fallen (`A.TROPHIES` in `js/data.js`): Krone des Schleimkönigs (Schleimhülle), Dornenherz (Dornen beim Getroffenwerden), Sanduhr des Pharao (Zauber 20 % schneller), Tintenfass des Kraken (Tintenring jeder 4. Angriff), Glutstiefel (Glut-Spur), Auge der Tiefe (Volltreffer explodieren).
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 

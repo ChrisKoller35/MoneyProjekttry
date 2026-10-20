@@ -35,7 +35,7 @@ A.World = (function () {
     hooks = hooksIn || hooks;
     const f = genFloor(floor, seed, saved);
     if (A.FX) A.FX.reset();
-    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], zones: [], orbs: [], allies: [], marks: [], bolts: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
+    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], zones: [], orbs: [], allies: [], marks: [], bolts: [], bfx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
     const sr = f.start;
     W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
@@ -149,6 +149,7 @@ A.World = (function () {
   function ringShot(m, n, col) { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + W.t; shoot(m, m.x + Math.cos(a) * 100, m.y + Math.sin(a) * 100, m.atk * 0.8, { kind: 'magic', speed: 190, r: 6, color: col || '#c77dff', life: 2.4 }); } }
   function monSpecial(m, dt, d, nx, ny) {
     const h = W.hero;
+    if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
     m.skT -= dt;
     if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
     if (m.summon) {
@@ -253,6 +254,12 @@ A.World = (function () {
       if (to.side === 'hero' && from.side === 'enemy') { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
     if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
+    // Boss-Trophäen (data.js A.TROPHIES)
+    if (to.side === 'hero' && to.tro && to.alive && to.hp > 0) {
+      if (to.tro.schleim && to.hp < to.maxHp * 0.3 && W.active && to.slimeRoom !== W.active) { to.slimeRoom = W.active; to.shield = Math.max(to.shield, Math.round(to.maxHp * 0.35)); float(to.x, to.y - 44, A.LANG === 'de' ? 'Schleimhülle!' : 'Slime shell!', '#9be37a', 15); fx('shield', { e: to }); }
+      if (to.tro.dorn && dmg > 0 && from.side === 'enemy' && !(to.dornT > W.t)) { to.dornT = W.t + 2; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; shoot(to, to.x + Math.cos(a) * 100, to.y + Math.sin(a) * 100, heroPower(to) * 0.6, { kind: 'phys', color: '#a2e05a', speed: 380, life: 0.7, r: 4 }); } }
+    }
+    if (crit && to.side === 'enemy' && from.tro && from.tro.auge && !(from.augeT > W.t)) { from.augeT = W.t + 0.6; W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 64, at: W.t + 0.35, dmg: dmg * 0.6, col: '#b55088' }); fx('zap', { x: to.x, y: to.y, color: '#b55088' }); }
     checkDeath(to);
     return dmg;
   }
@@ -318,6 +325,7 @@ A.World = (function () {
     h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1); h.swing = 0.2;
     h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = big ? 2 : 1;   // Doppelte Wucht: jeder dritte Schlag
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
+    if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
     if (h.melee) arc(h, h.tal.spalt ? 82 : 58, mul, { kind: 'phys', basic: true });
     else {
       const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100;
@@ -442,7 +450,7 @@ A.World = (function () {
     if (W.t < z.tick) return; z.tick = W.t + 0.5;
     const h = W.hero;
     if (z.kind === 'heal') { if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) heal(h, Math.max(1, Math.round(h.maxHp * z.heal))); return; }
-    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r * 0.5) hit(h, m, z.dmg, { kind: 'poison', noDodge: true });
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r * 0.5) hit(h, m, z.dmg, { kind: z.ember ? 'burn' : 'poison', noDodge: true });
   }
   // Verzögerte Treffer: Meteor (mit roter Markierung) und Explosionen (Kettenreaktion, Schwarzpulver)
   function markStep(k) {
@@ -461,6 +469,7 @@ A.World = (function () {
     // Frostaura: Gegner in der Nähe werden langsam
     if (h.tal.frost) for (const m of W.mons) if (m.alive && dist(h, m) < 110 + m.r) { m.slowUntil = Math.max(m.slowUntil || 0, W.t + 0.25); m.slowPow = Math.min(m.slowPow || 1, 0.6); }
     // Giftspur beim Laufen
+    if (h.tro && h.tro.glut && h.moving && (h.emberT = (h.emberT || 0) - dt) <= 0) { h.emberT = 0.3; W.zones.push({ kind: 'poison', trail: true, ember: true, x: h.x, y: h.y + 10, r: 26, t0: W.t, until: W.t + 2.5, tick: W.t + 0.3, dmg: heroPower(h) * 0.15, col: '#f77622' }); }   // Glutstiefel
     if (h.tal.giftspur && h.moving && (h.trailT = (h.trailT || 0) - dt) <= 0) { h.trailT = 0.3; W.zones.push({ kind: 'poison', trail: true, x: h.x, y: h.y + 10, r: 26, t0: W.t, until: W.t + 2.5, tick: W.t + 0.3, dmg: heroPower(h) * 0.15, col: '#63c74d' }); }
   }
   function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * 0.4) - (h.hp - G().run.hp > 0 ? 0 : 0)); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); return true; }
@@ -475,6 +484,7 @@ A.World = (function () {
     // Bewegung
     let mx = input.mx, my = input.my; const len = Math.hypot(mx, my);
     if (h.stun > 0) { h.stun -= dt; mx = my = 0; }
+    if (h.rootUntil > W.t) mx = my = 0;   // von Ranken festgehalten
     h.moving = len > 0.15;
     if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
     if (input.attack) heroAttack();
@@ -483,6 +493,7 @@ A.World = (function () {
     if (hz && A.HAZARDS[hz].burn && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
     if (W.active || W.allies.length) updateFlow();
     boonStep(dt);
+    A.Bosses.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -533,6 +544,8 @@ A.World = (function () {
   }
   function interact() { if (!W.near) return false; const p = W.near; if (hooks.onProp) hooks.onProp(p); return true; }
   function markUsed(p) { p.used = true; const r = W.rooms[p.room]; r.used = true; G().save(); }
+
+  A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
 
   return {
     get W() { return W; }, TS, CW, CH, MW, MH, enter, step, interact, markUsed, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon,

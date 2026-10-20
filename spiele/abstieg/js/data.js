@@ -231,17 +231,33 @@ for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist'])
 // Bosse, je einer am Ende jeder Welt (jede 4. Ebene)
 A.BOSSES = {
   schleimkoenig: { id: 'schleimkoenig', name: { de: 'Schleimkönig', en: 'Slime King' }, hp: 170, atk: 11, def: 2, spd: 3, kind: 'melee', color: '#3fbf5a', shape: 'blob', boss: true,
-       trick: { de: 'Teilt sich bei 50 % Leben in zwei Schleimer.', en: 'Splits into two slimers at 50% health.' }, split: true },
+       trick: { de: 'Springt auf dich: weg aus dem grünen Kreis! Teilt sich bei halbem Leben.', en: 'Leaps at you: leave the green circle! Splits at half health.' }, split: true },
   dornenmutter: { id: 'dornenmutter', name: { de: 'Dornenmutter', en: 'Thorn Mother' }, hp: 200, atk: 11, def: 3, spd: 1, kind: 'ranged', color: '#63c74d', shape: 'vine', boss: true, spread: 5, shotCol: '#a2e05a', summon: 'frosch', summonCd: 9,
-       trick: { de: 'Schiesst Dornenfächer und ruft Giftfrösche.', en: 'Fires thorn fans and calls poison frogs.' } },
+       trick: { de: 'Ranken brechen aus dem Boden und halten dich fest. Ruft Giftfrösche.', en: 'Vines burst from the ground and hold you. Calls poison frogs.' } },
   sandpharao: { id: 'sandpharao', name: { de: 'Sandpharao', en: 'Sand Pharaoh' }, hp: 230, atk: 13, def: 6, spd: 3, kind: 'melee', color: '#feae34', shape: 'mummy', boss: true, ring: 8, ringCd: 6, summon: 'mumie', summonCd: 12, slowOnHit: true,
-       trick: { de: 'Sandsturm-Ring alle paar Sekunden. Weckt Mumien.', en: 'Sandstorm ring every few seconds. Wakes mummies.' } },
-  kraken: { id: 'kraken', name: { de: 'Tiefenkraken', en: 'Deep Kraken' }, hp: 250, atk: 12, def: 5, spd: 2, kind: 'magic', color: '#b55088', shape: 'octopus', boss: true, ring: 10, ringCd: 4, spread: 3, shotCol: '#68386c',
-       trick: { de: 'Tintenringe! Zwischen den Kugeln durchschlüpfen.', en: 'Ink rings! Slip between the orbs.' } },
+       trick: { de: 'Sandsäulen in einer Reihe, Sandsog zieht dich zu ihm. Weckt Mumien.', en: 'Rows of sand pillars, a sand pull drags you in. Wakes mummies.' } },
+  kraken: { id: 'kraken', name: { de: 'Tiefenkraken', en: 'Deep Kraken' }, hp: 250, atk: 12, def: 5, spd: 2, kind: 'magic', color: '#b55088', shape: 'octopus', boss: true, ring: 10, ringCd: 6, spread: 3, shotCol: '#68386c',
+       trick: { de: 'Die Flut kommt: rein in einen hellen Kreis! Tentakel aus dem Boden.', en: 'The tide comes: get into a bright circle! Tentacles from below.' } },
   rostkoenig: { id: 'rostkoenig', name: { de: 'Rostkönig', en: 'Rust King' }, hp: 280, atk: 15, def: 9, spd: 2, kind: 'melee', color: '#8a3a1a', shape: 'golem', boss: true, ring: 6, ringCd: 7,
-       trick: { de: 'Jeder Waffentreffer heilt ihn um 5 %. Zauber und Gift nicht.', en: 'Every weapon hit heals him 5%. Spells and poison do not.' }, healOnPhys: 0.05 },
+       trick: { de: 'Hammerschläge hinterlassen Lava. Waffentreffer heilen ihn um 2 %.', en: 'Hammer slams leave lava. Weapon hits heal him 2%.' }, healOnPhys: 0.02 },
   waechter: { id: 'waechter', name: { de: 'Wächter der Tiefe', en: 'Warden of the Deep' }, hp: 320, atk: 16, def: 8, spd: 4, kind: 'magic', color: '#e43b44', shape: 'eye', boss: true, ring: 12, ringCd: 5, teleport: true, summon: 'leerenauge', summonCd: 10, fly: true,
-       trick: { de: 'Verschwindet, taucht neben dir auf, Ringe aus Leere.', en: 'Vanishes, reappears beside you, rings of void.' } },
+       trick: { de: 'Ein Leerenstrahl dreht durch den Raum. Taucht neben dir auf.', en: 'A void beam sweeps the room. Appears beside you.' } },
+};
+
+// Boss-Trophäen: gibt es nur einmal pro Durchgang vom jeweiligen Boss, mit einer besonderen Kraft (wirkt in world.js)
+A.TROPHIES = {
+  schleimkoenig: { base: 'kappe', power: 'schleim', name: { de: 'Krone des Schleimkönigs', en: 'Crown of the Slime King' }, stats: { hp: 40, regen: 1 },
+    text: { de: 'Fällst du unter 30 % Leben, umhüllt dich Schleim (Schild 35 %), einmal pro Raum.', en: 'Below 30% health, slime wraps you (35% shield), once per room.' }, flavor: { de: 'Klebt. Für immer.', en: 'Sticky. Forever.' } },
+  dornenmutter: { base: 'amulett', power: 'dorn', name: { de: 'Dornenherz', en: 'Thorn Heart' }, stats: { thorns: 25 },
+    text: { de: 'Wirst du getroffen, schiessen 8 Dornen rundum (alle 2 Sekunden).', en: 'When hit, 8 thorns burst out around you (every 2 seconds).' }, flavor: { de: 'Schlägt noch. Sticht auch.', en: 'Still beating. Also stinging.' } },
+  sandpharao: { base: 'ring', power: 'sand', name: { de: 'Sanduhr des Pharao', en: 'Pharaoh\'s Hourglass' }, stats: { spd: 2 },
+    text: { de: 'Alle Zauber laden 20 % schneller.', en: 'All spells recharge 20% faster.' }, flavor: { de: 'Der Sand läuft nach oben. Niemand weiss, warum.', en: 'The sand runs upward. Nobody knows why.' } },
+  kraken: { base: 'zahn', power: 'tinte', name: { de: 'Tintenfass des Kraken', en: 'Kraken\'s Inkwell' }, stats: { magPct: 20, atkPct: 10 },
+    text: { de: 'Jeder 4. Angriff schiesst einen Tintenring (8 Kugeln).', en: 'Every 4th attack fires an ink ring (8 orbs).' }, flavor: { de: 'Schreibt nur Drohbriefe.', en: 'Only writes threatening letters.' } },
+  rostkoenig: { base: 'stahlstiefel', power: 'glut', name: { de: 'Glutstiefel des Rostkönigs', en: 'Rust King\'s Ember Boots' }, stats: { def: 6, spd: 1 },
+    text: { de: 'Beim Laufen hinterlässt du Glut, die Gegner verbrennt.', en: 'You leave embers while walking that burn enemies.' }, flavor: { de: 'Warme Füsse, heisse Spur.', en: 'Warm feet, hot trail.' } },
+  waechter: { base: 'socke', power: 'auge', name: { de: 'Auge der Tiefe', en: 'Eye of the Deep' }, stats: { crit: 12 },
+    text: { de: 'Volltreffer reissen ein Leerenloch auf, das explodiert.', en: 'Critical hits tear open a void rift that explodes.' }, flavor: { de: 'Es blinzelt, wenn du nicht hinschaust.', en: 'It blinks when you are not looking.' } },
 };
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------

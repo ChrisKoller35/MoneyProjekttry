@@ -430,6 +430,7 @@ window.A = window.A || {};
       // Alles nach Tiefe sortiert
       for (const m of W.mons) this.drawWarn(m, cx, cy);
       this.drawBoonsGround(W, cx, cy);
+      A.Bosses.drawGround(this, W, cx, cy);
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -471,6 +472,7 @@ window.A = window.A || {};
       }
       g.globalAlpha = 1;
       this.drawBoonsTop(W, cx, cy);
+      A.Bosses.drawTop(this, W, cx, cy);
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -686,6 +688,7 @@ window.A = window.A || {};
       let sx = sc, sy = sc, alpha = 1, lift = 0;
       if (m.shape === 'blob') { const q = Math.sin(this.t * 7 + m.x * 0.1); sx = sc * (1 + q * 0.07); sy = sc * (1 - q * 0.09); }
       if (fly) lift = 7 + Math.sin(this.t * 5 + m.x) * 2;
+      if (m.hop) lift += m.hop / PX;   // Schleimkönig im Sprung
       if (ghost) { lift = 3 + Math.sin(this.t * 3 + m.x) * 2; alpha = 0.85; }
       if (m.spawn > 0) { const p = clamp(1 - m.spawn / 0.5, 0, 1); alpha = p; lift -= (1 - p) * 6; }
       let ox = 0, oy = 0;
@@ -920,6 +923,7 @@ window.A = window.A || {};
       for (const k of W.marks || []) if (k.kind === 'meteor') L(k.x, k.y, k.r / PX * 1.2, '#e43b44', 0.3 + 0.3 * Math.sin(t * 20));
       for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
       if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
+      A.Bosses.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -943,7 +947,7 @@ window.A = window.A || {};
       const b = this.b, g = this.g, t = this.t, h = W.hero;
       for (const z of W.zones || []) {
         const x = z.x / PX - cx, y = z.y / PX - cy, R = z.r / PX, life = clamp((z.until - W.t) / 0.5, 0, 1) * clamp((W.t - z.t0) / 0.25, 0, 1);
-        if (z.trail) { b.globalAlpha = 0.35 * life; b.fillStyle = '#3e8948'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); b.fill(); continue; }
+        if (z.trail) { b.globalAlpha = 0.35 * life; b.fillStyle = z.ember ? '#f77622' : '#3e8948'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); b.fill(); continue; }
         const heal = z.kind === 'heal';
         b.globalAlpha = 0.22 * life; b.fillStyle = heal ? '#63c74d' : '#265c42'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
         g.globalAlpha = 0.5 * life; g.strokeStyle = z.col; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
