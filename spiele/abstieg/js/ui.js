@@ -35,7 +35,6 @@ window.A = window.A || {};
   const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star', forge: 'anvil' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
-  const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
   const skIcon = (id, size) => ic(SKILL_ICON[id] || A.Boons.icon(id) || 's_strike', size || 26);
   const cdTxt = (id) => (Math.round(A.Boons.cd(id) * 10) / 10) + ' s';
   const talIcon = (id, size) => ic(A.TALENTS[id].icon || 'u_star', size || 26);
@@ -119,6 +118,7 @@ window.A = window.A || {};
     screen.style.display = ''; screen.innerHTML = html; screen.scrollTop = 0;
     hudUpdate();
     if (!(opts && opts.stage)) A.Scenes.stage(null);
+    if (!(opts && opts.camp)) A.Scenes.camp(null);
     sceneBg(opts && opts.title);
   }
   // Hintergrundbild der Menüs: beim Titel steht das Tor zwischen Untertitel und Menü
@@ -159,7 +159,7 @@ window.A = window.A || {};
       <div class="menu">
         ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} · ${t(U.floor)} ${r.floor}</button>` : ''}
         <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
-        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}</button>
+        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() ? `<i class="dot" title="${L('Ausbau möglich', 'Upgrade available')}"></i>` : ''}</button>
         <div class="stats">${L('Durchläufe', 'Runs')} <b>${m.runs}</b> · ${L('Tiefste Ebene', 'Deepest floor')} <b>${m.best}</b></div>
         <div class="howto pc">${t(U.howto)}</div>
         <button class="link" id="bReset">${t(U.reset)}</button>
@@ -203,17 +203,92 @@ window.A = window.A || {};
   }
 
   // ---------- Lager ----------
-  function camp() {
-    const m = G.meta;
-    const list = A.META_SHOP.map(u => {
-      const have = m.unlocked.includes(u.id); const can = !have && m.sparks >= u.cost && (!u.needs || m.unlocked.includes(u.needs));
-      const icon = u.effect.race ? portrait(u.effect.race, 'weber') : ic(UPG_ICON[u.id] || 'u_star', 30);
-      return `<div class="card upg ${have ? 'have' : (can ? '' : 'locked')}"><div class="ic">${icon}</div><div style="flex:1;min-width:0"><div class="ttl">${esc(t(u.name))}</div><div class="txt">${esc(t(u.desc))}</div></div>${have ? `<span class="mini" style="color:var(--green)">${t(U.bought)}</span>` : `<button class="btn small ${can ? 'primary' : ''}" data-buy="${u.id}" ${can ? '' : 'disabled'}>${spark(u.cost)}</button>`}</div>`;
+  // Wirkung als kurzer Text, z. B. «+20 % Leben · +50 Gold zum Start»
+  function fxText(e) {
+    const out = [], p = (v) => Math.round(v * 100);
+    if (e.hpMul) out.push(L(`+${p(e.hpMul)} % Leben`, `+${p(e.hpMul)}% health`));
+    if (e.dmgMul) out.push(L(`+${p(e.dmgMul)} % Angriff und Zauberkraft`, `+${p(e.dmgMul)}% attack and magic`));
+    if (e.startGold) out.push(L(`+${e.startGold} Gold zum Start`, `+${e.startGold} starting gold`));
+    if (e.startPotion) out.push(L(`+${e.startPotion} ${e.startPotion > 1 ? 'Tränke' : 'Trank'} zum Start`, `+${e.startPotion} starting potion${e.startPotion > 1 ? 's' : ''}`));
+    if (e.potionHeal) out.push(L(`Tränke heilen ${p(e.potionHeal)} % mehr`, `Potions heal ${p(e.potionHeal)}% more`));
+    if (e.extraStartSkill) out.push(L('Start mit einem Zauber mehr', 'Start with one more spell'));
+    if (e.cdr) out.push(L(`Zauber laden ${p(e.cdr)} % schneller`, `Spells recharge ${p(e.cdr)}% faster`));
+    if (e.talentSlots) out.push(L('Ein Platz mehr für passive Segen', 'One more slot for passive blessings'));
+    if (e.gearW) out.push(e.gearW >= 2 ? L('Startwaffe selten (blau)', 'Rare starting weapon (blue)') : L('Startwaffe gut (grün)', 'Good starting weapon (green)'));
+    if (e.gearA) out.push(L('Startrüstung gut (grün)', 'Good starting armor (green)'));
+    if (e.gearHB) out.push(L('Guter Helm und gute Stiefel zum Start', 'Good helm and boots at the start'));
+    if (e.shopOff) out.push(L(`Händler ${p(e.shopOff)} % billiger`, `Merchants ${p(e.shopOff)}% cheaper`));
+    if (e.itemLuck) out.push(L(`Bessere Beute (+${e.itemLuck} Glück)`, `Better loot (+${e.itemLuck} luck)`));
+    if (e.startBoon) out.push(e.startBoon > 1 ? L(`Start mit ${e.startBoon} Segen vom Schrein`, `Start with ${e.startBoon} shrine blessings`) : L('Start mit einem Segen vom Schrein', 'Start with a shrine blessing'));
+    if (e.def) out.push(L(`+${e.def} Rüstung`, `+${e.def} armor`));
+    if (e.crit) out.push(L(`+${e.crit} % Volltreffer`, `+${e.crit}% crit`));
+    if (e.thorns) out.push(L(`Angreifer erleiden ${e.thorns} % zurück`, `Attackers take ${e.thorns}% back`));
+    return out.join(' · ');
+  }
+  const sumFx = (list, n, mul) => { const o = {}; for (let i = 0; i < n; i++) for (const k in list[i]) o[k] = (o[k] || 0) + list[i][k] * (mul || 1); return o; };
+  // Was die nächste Stufe bringt, als neuer Gesamtwert (z. B. «+25 % Leben» statt «+5 %»)
+  const nextFx = (b, lv) => { const all = sumFx(b.lv, lv + 1), o = {}; for (const k in b.lv[lv]) o[k] = all[k]; return o; };
+  const FOLK_CLS = { mensch: 'klinge', fels: 'brau', schatten: 'weber', pilz: 'rufer', kobold: 'schuetze' };   // so stehen die Völker im Lager am Feuer
+  const monImg = (id, box) => { const s = A.Art.monSprite(id, 0), k = Math.max(1, Math.floor(box / Math.max(s.w, s.h))); return `<img class="px" src="${s.url || (s.url = s.img.toDataURL())}" width="${s.w * k}" height="${s.h * k}" alt="">`; };
+  function campState() {
+    const lv = {}, open = {}, can = {}, rank = G.campRank();
+    for (const b of A.CAMP) { lv[b.id] = G.campLevel(b.id); open[b.id] = G.campOpen(b.id); const c = G.campCost(b.id); can[b.id] = open[b.id] && c != null && c <= G.meta.sparks; }
+    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX };
+  }
+  // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
+  function camp(poof) {
+    const m = G.meta, rank = G.campRank(), keep = poof ? screen.scrollTop : 0;
+    const next = A.CAMP.filter(b => !G.campOpen(b.id)).sort((a, b) => a.rank - b.rank)[0];
+    const bld = A.CAMP.map(b => {
+      const lv = G.campLevel(b.id), max = b.lv.length, open = G.campOpen(b.id), cost = G.campCost(b.id), can = open && cost != null && m.sparks >= cost;
+      const right = !open ? `<span class="need">${L('ab Lager-Stufe', 'from camp level')} <b>${b.rank}</b></span>`
+        : cost == null ? `<span class="need done">${L('Voll ausgebaut', 'Fully built')}</span>`
+        : `<button class="btn small ${can ? 'primary' : ''}" data-up="${b.id}" ${can ? '' : 'disabled'}>${spark(cost)}</button>`;
+      return `<div class="card upg bld ${!open ? 'locked' : cost == null ? 'have' : ''} ${poof === b.id ? 'just' : ''}">
+        <div class="ic">${ic(b.icon, 30)}</div>
+        <div class="bd"><div class="ttl"><span>${esc(t(b.name))}</span><span class="lvl">${L('Stufe', 'Level')} ${lv}/${max}</span></div>
+          <div class="pips">${b.lv.map((_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</div>
+          <div class="txt">${lv ? `<b>${L('Jetzt', 'Now')}:</b> ${esc(fxText(sumFx(b.lv, lv)))}` : esc(t(b.info))}</div>
+          ${lv < max ? `<div class="nx">${lv ? L('Nächste Stufe', 'Next level') : L('Bringt', 'Gives')}: ${esc(fxText(nextFx(b, lv)))}</div>` : ''}</div>
+        ${right}</div>`;
     }).join('');
+    const folks = A.META_SHOP.filter(u => u.effect.race).map(u => {
+      const r = A.RACES.find(x => x.id === u.effect.race), have = m.unlocked.includes(u.id), can = !have && m.sparks >= u.cost;
+      return `<div class="folk ${have ? 'have' : ''}"><img class="px" src="${Art.heroUrl(r.id, FOLK_CLS[r.id], 2)}" width="36" height="36" alt=""><b>${esc(t(r.name))}</b>
+        ${have ? `<span class="need done">${L('Im Lager', 'In camp')}</span>` : `<button class="btn small ${can ? 'primary' : ''}" data-race="${u.id}" ${can ? '' : 'disabled'}>${spark(u.cost)}</button>`}</div>`;
+    }).join('');
+    const flags = Object.keys(A.BANNERS).map(id => {
+      const n = Math.min(2, m.troph[id] || 0);
+      return `<div class="flag ${n ? 'have' : ''} ${n >= 2 ? 'gold' : ''}"><div class="fi">${monImg(id, 34)}</div><div><b>${esc(t(A.BOSSES[id].name))}</b> <span class="stars">${'★'.repeat(n)}${'☆'.repeat(2 - n)}</span>
+        <div class="mini">${esc(fxText(sumFx([A.BANNERS[id]], 1, Math.max(1, n))))}</div></div></div>`;
+    }).join('');
+    const note = m.campNote;
     show(`<div class="fade-in"><h2>${ic('u_tent', 42)}${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div>
-      <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>${list}<button class="btn" id="bBack">${t(U.back)}</button></div>`);
-    screen.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.metaBuy(b.dataset.buy)) { S.buy(); camp(); } });
+      ${note ? `<div class="msg">${L('Das Lager ist gewachsen!', 'The camp has grown!')}${note.old ? ' ' + L('Was du früher gekauft hast, steckt jetzt in den Gebäuden, mit mindestens gleicher Wirkung.', 'What you bought before now lives in the buildings, at least as strong as before.') : ''}${note.bonus ? ' ' + L(`Für die Weltenbosse, die du schon besiegt hast, hängen Wimpel am Eingang: ${note.bonus} Seelenfunken obendrauf.`, `Pennants for the world bosses you already beat hang at the entrance: ${note.bonus} soul sparks on top.`) : ''}</div>` : ''}
+      <div class="stage campst"><canvas id="campCv"></canvas></div>
+      <div class="rankbar"><div><b>${L('Lager-Stufe', 'Camp level')} ${rank}</b><span>/ ${A.CAMP_MAX}</span></div><div class="bar"><i style="width:${Math.round(rank / A.CAMP_MAX * 100)}%"></i></div>
+        <div class="mini">${next ? L(`Ab Lager-Stufe ${next.rank}: ${t(next.name)}`, `From camp level ${next.rank}: ${t(next.name)}`) : (rank >= A.CAMP_MAX ? L('Alles ausgebaut. Das Lager ist eine Legende.', 'Everything built. The camp is a legend.') : L('Alle Gebäude stehen. Jetzt nur noch höher bauen.', 'All buildings stand. Now build them higher.'))}</div></div>
+      <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>
+      <h3>${L('Gebäude', 'Buildings')}</h3>${bld}
+      <h3>${L('Neue Völker', 'New peoples')}</h3><div class="card folks"><div class="mini">${L('Jedes Volk zieht ins Lager und kann danach mit in die Tiefe.', 'Each people moves into the camp and can then join the descent.')}</div><div class="frow">${folks}</div></div>
+      <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
+      <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
+    if (note) { delete m.campNote; G.saveMeta(); }
+    if (keep) screen.scrollTop = keep;
+    A.Scenes.camp($('#campCv'), campState(), { poof });
+    screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
+    screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
     $('#bBack').onclick = () => { S.click(); title(); };
+  }
+
+  // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
+  function campNews() {
+    const r = G.run, n = r && r.campNews; if (!n) return; r.campNews = null; G.save();
+    const name = t(A.BOSSES[n.id].name), gold = n.st >= 2;
+    // erst zeigen, wenn kein Fenster offen ist (nach dem Bosskampf kommt oft die Segen-Wahl)
+    const say = () => { if (!dungeonEl.classList.contains('on')) return; if (overlay.classList.contains('on')) { setTimeout(say, 700); return; }
+      A.FX.banner(gold ? L('Goldener Wimpel fürs Lager!', 'Golden pennant for the camp!') : L('Neuer Wimpel fürs Lager!', 'New pennant for the camp!'), `${name}: ${fxText(sumFx([A.BANNERS[n.id]], 1, n.st))} · +${n.sparks} ${t(U.meta)}`, '#c77dff', 3.4); S.level(); };
+    setTimeout(say, 2600);
   }
 
   // ---------- Fortsetzen ----------
@@ -232,7 +307,7 @@ window.A = window.A || {};
     const hooks = {
       onItem: (it) => foundItem(it),
       onProp: (p) => useProp(p),
-      onCleared: (room) => { if (room.type === 'boss') Portal.happytime(); if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
+      onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); setTimeout(() => runOver(), 1100); },
       onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
     };
@@ -540,6 +615,8 @@ window.A = window.A || {};
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
+      ${r.sparksRecord || r.sparksBanners ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
     $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
   }
