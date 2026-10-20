@@ -239,6 +239,25 @@ import {
         for (let i = 0; i < 5; i++) part(g, 'box', ['#5a6988', '#4a5578', '#3a4466', '#262b44', '#181425'][i], [1.8 - i * 0.1, 0.1, 0.26], [0, -0.05 - i * 0.14, -0.6 + i * 0.3], { shadow: false });
         g.userData.h = 0.1; break;
       }
+      case 'shrine': {
+        part(g, 'box', '#3a4466', [0.8, 0.16, 0.8], [0, 0.08, 0]); part(g, 'box', '#5a6988', [0.36, 0.7, 0.36], [0, 0.5, 0]); part(g, 'box', '#8b9bb4', [0.6, 0.12, 0.6], [0, 0.9, 0]);
+        P.orb = part(g, 'sph', '#2ce8f5', [0.34, 0.34, 0.34], [0, 1.25, 0], { shadow: false, m: { emissive: col('#2ce8f5'), emissiveIntensity: 1.4 } });
+        g.userData.h = 1.45; break;
+      }
+      case 'forge': {
+        // Schmiede: Esse mit Glut und Feuer, Amboss, Schmied mit rotem Bart und Hammer
+        part(g, 'box', '#3a4466', [0.8, 0.62, 0.7], [-1.05, 0.31, 0]); part(g, 'box', '#5a6988', [0.86, 0.08, 0.76], [-1.05, 0.64, 0]);
+        P.coal = part(g, 'box', '#f77622', [0.6, 0.05, 0.5], [-1.05, 0.69, 0], { shadow: false, m: { emissive: col('#f77622'), emissiveIntensity: 1.3 } });
+        part(g, 'box', '#fee761', [0.36, 0.2, 0.04], [-1.05, 0.3, 0.36], { shadow: false, m: { emissive: col('#feae34'), emissiveIntensity: 1.5 } });
+        P.fl = flame(g, 0.55, [-1.05, 0.95, 0]);
+        part(g, 'box', '#3a4466', [0.2, 0.32, 0.2], [0.75, 0.16, 0.1]); part(g, 'box', '#5a6988', [0.56, 0.14, 0.26], [0.75, 0.38, 0.1]); part(g, 'cone', '#5a6988', [0.12, 0.2, 0.12], [1.1, 0.38, 0.1], { rot: [0, 0, -Math.PI / 2] });
+        limb(g, '#262b44', [0.14, 0.3, 0.16], [-0.12, 0.3, 0], 'legL'); limb(g, '#262b44', [0.14, 0.3, 0.16], [0.08, 0.3, 0], 'legR');
+        part(g, 'box', '#3a4466', [0.42, 0.38, 0.28], [-0.02, 0.52, 0]); part(g, 'box', '#733e39', [0.36, 0.42, 0.04], [0.0, 0.48, 0.15]);
+        part(g, 'box', '#e8b796', [0.3, 0.28, 0.28], [-0.02, 0.86, 0]); part(g, 'box', '#be4a2f', [0.3, 0.2, 0.08], [-0.02, 0.72, 0.15]); eyes(g, '#181425', 0.07, 0.9, 0.145, 0.04);
+        P.arm = limb(g, '#e8b796', [0.11, 0.34, 0.11], [0.24, 0.66, 0.02], 'arm');
+        part(P.arm, 'box', '#733e39', [0.05, 0.36, 0.05], [0, -0.36, 0.12], { rot: [Math.PI / 2, 0, 0] }); part(P.arm, 'box', '#8b9bb4', [0.2, 0.14, 0.14], [0, -0.36, 0.3]);
+        g.userData.h = 1.1; break;
+      }
       case 'sign': {
         part(g, 'box', '#733e39', [0.08, 0.9, 0.08], [0, 0.45, 0]); part(g, 'box', '#b86f50', [0.9, 0.42, 0.08], [0, 0.95, 0.02], { m: { map: tex('wood') } });
         g.userData.h = 1.25; break;
@@ -479,6 +498,8 @@ import {
         else if (p.kind === 'merchant') push(x + 0.7, 1.1, z + 0.45, '#feae34', 7, 5, 5);
         else if (p.kind === 'statue') push(x + 0.3, 1.2, z + 0.6, '#b55088', 2.5, 3.5, 2);
         else if (p.kind === 'chest' && !p.used) push(x, 0.6, z + 0.3, '#feae34', 1.5, 3, 2);
+        else if (p.kind === 'shrine') push(x, 1.3, z, '#2ce8f5', p.used ? 1.5 : 5, 4, 4);
+        else if (p.kind === 'forge') push(x - 1.05, 0.9, z + 0.2, '#ff8a30', 9 * fl(p.x, 1.3), 6, 12);
       }
       for (const p of W.picks) if (p.kind === 'item') push(p.x * U, 0.5, p.y * U, A.RARITY[p.it.rarity].color, 2.5, 3, 3);
       for (const s of W.shots) if (s.opts.kind === 'magic' || s.side !== 'hero') push(s.x * U, 0.4, s.y * U, s.side === 'hero' ? s.color : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), 2.5, 3, 4);
@@ -505,10 +526,16 @@ import {
         else if (p.kind === 'fire') { const s = p.used ? 0.5 : 1; P.flame.scale.set(s * (0.95 + Math.sin(t * 13) * 0.08), s * 1.35 * (0.95 + Math.sin(t * 9) * 0.1), 1); P.flame2.scale.set(s * 0.5, s * 0.7, 1); if (Math.random() < 0.25 && A.FX) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 16, y: p.y, z: 12, vx: (Math.random() - 0.5) * 20, vy: 0, vz: 40 + Math.random() * 40, life: 0.8, color: Math.random() < 0.5 ? '#feae34' : '#f77622', drag: 0.5 }); }
         else if (p.kind === 'stairs') { if (Math.random() < 0.2 && A.FX) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 40, y: p.y + (Math.random() - 0.5) * 30, z: 0, vz: 25 + Math.random() * 25, life: 1, color: '#b55088', drag: 0.3 }); }
         else if (p.kind === 'merchant') { P.lamp.scale.set(0.45 * (0.95 + Math.sin(t * 11) * 0.07), 0.6, 1); }
+        else if (p.kind === 'shrine') { P.orb.position.y = 1.25 + Math.sin(t * 2) * 0.06; P.orb.visible = !p.used; }
+        else if (p.kind === 'forge') {
+          const cyc = (t * 0.85 + p.x * 0.001) % 1, down = cyc > 0.72 && cyc < 0.9; P.arm.rotation.x = down ? 0.5 : -2.4 + cyc * 0.4;
+          P.fl.scale.set(0.55 * (0.95 + Math.sin(t * 13) * 0.08), 0.75 * (0.95 + Math.sin(t * 9) * 0.1), 1);
+          const beat = Math.floor(t * 0.85 + p.x * 0.001 + 0.28); if (P.beat !== beat) { P.beat = beat; if (A.FX) A.FX.burst(p.x + 26, p.y + 4, 6, { color: ['#fee761', '#feae34', '#ffffff'], smin: 40, smax: 120, life: 0.35, add: true, kind: 'spark', drag: 3, z: 14, vz: 90, g: 300 }); }
+        }
         else if (p.kind === 'sign' && W.room && W.room.type === 'start') { const s = this.project(p.x * U, 1.05, p.y * U); this.flat.signAt = { sx: s[0], sy: s[1], text: p.text }; }
-        const hl = near && (!p.used || p.kind === 'merchant' || p.kind === 'stairs');
+        const hl = near && (!p.used || p.kind === 'merchant' || p.kind === 'forge' || p.kind === 'stairs');
         P.arrow.visible = hl; if (hl) P.arrow.position.y = g.userData.h + 0.4 + Math.sin(t * 6) * 0.08;
-        if (p.kind !== 'stairs' && p.kind !== 'fire') setTint(g, '#fee761', hl ? 0.3 + Math.sin(t * 6) * 0.1 : 0);
+        if (p.kind !== 'stairs' && p.kind !== 'fire' && p.kind !== 'forge') setTint(g, '#fee761', hl ? 0.3 + Math.sin(t * 6) * 0.1 : 0);
       }
       // Held
       const key = run ? run.race + run.cls : '';
@@ -526,6 +553,7 @@ import {
         setOpacity(g, m.spawn > 0 ? clamp(1 - m.spawn / 0.5, 0, 1) : 1);
         if (m.flash > 0) setFlash(g, true);
         else if (m.state === 'windup' && Math.floor(t * 16) % 2 === 0) setFlash(g, true, '#ff9090');
+        else if (m.frozenUntil > W.t) setTint(g, '#9be8ff', 0.65);
         else if (m.boss) setTint(g, Math.sin(t * 4) > 0 ? '#e43b44' : '#a22633', 0.35);
         else if (m.elite && !(m.spawn > 0)) setTint(g, ELITE_COL[m.eliteKind] || '#fee761', 0.3);
         else setFlash(g, false);

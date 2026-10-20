@@ -708,8 +708,16 @@ window.A = window.A || {};
       const dx = Math.round(x + ox), dy = Math.round(y - lift + oy);
       if (m.elite && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, ELITE_COL[m.eliteKind] || '#fee761', sc);
       if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
+      const frozen = m.frozenUntil > W.t;
+      if (frozen) this.outlineGlow(spr, dx, dy, flip, '#9be8ff', sc);
       this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
       if (m.state === 'windup' && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
+      if (frozen) {   // eingefroren (Eis-Ausrüstung): blaues Eis über der Figur, ein paar helle Punkte
+        const k = flip ? 'iceF' : 'ice'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#9be8ff');
+        const w2 = Math.round(spr.w * sx), h2 = Math.round(spr.h * sy), x2 = Math.round(dx - w2 / 2), y2 = Math.round(dy - h2);
+        b.globalAlpha = 0.6; b.drawImage(spr[k], x2, y2, w2, h2); b.globalAlpha = 1;
+        this.g.fillStyle = '#ffffff'; for (let i = 0; i < 4; i++) if ((Math.floor(this.t * 5) + i) % 2) this.g.fillRect(x2 + Math.floor((i * 37 + Math.abs(m.x)) % w2), y2 + Math.floor((i * 23 + 3) % h2), 1, 1);
+      } else if (m.slowUntil > W.t && A.FX && !A.FX.low && Math.random() < (this.dt || 0.016) * 5) A.FX.part({ add: true, x: m.x + (Math.random() - 0.5) * m.r * 2, y: m.y - 20 - Math.random() * 14, vx: 0, vy: 0, z: 18, vz: -6, g: 0, life: 0.8, color: Math.random() < 0.5 ? '#9be8ff' : '#ffffff', drag: 0.5 });
       // Fernkämpfer laden sichtbar auf: Kugel wächst vor dem Körper, Funken werden angesaugt
       if (m.kind !== 'melee' && m.cd < 0.45 && !(m.stun > 0) && !(m.spawn > 0)) {
         const p = clamp(1 - m.cd / 0.45, 0, 1), col = m.kind === 'magic' ? '#c77dff' : '#ffb08a', g = this.g;
@@ -766,7 +774,7 @@ window.A = window.A || {};
       if (m.boss) { const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(dx - cr.w / 2 + (flip ? -2 : 2)), Math.round(dy - spr.h * sy - cr.h + 5)); }
       const top = dy - spr.h * sy - 2;
       if (m.state === 'windup') { const al = A.Art.sprite('u_alert'); b.drawImage(al.img, Math.round(dx - al.w / 2), Math.round(top - al.h - 2 + Math.sin(this.t * 20))); }
-      if (m.stun > 0) this.stars(dx, top);
+      if (m.stun > 0 && !frozen) this.stars(dx, top);
       // Lebensbalken
       if (!m.boss && (m.hp < m.maxHp || m.elite) && !(m.spawn > 0)) {
         const w = m.elite ? 18 : 14, bx = Math.round(dx - w / 2), by = Math.round(top - 3);
@@ -834,6 +842,20 @@ window.A = window.A || {};
           if (!p.used && A.FX && Math.random() < 0.25) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 24, y: p.y - 20, vx: 0, vy: -24 - Math.random() * 20, life: 0.9, color: Math.random() < 0.5 ? '#2ce8f5' : '#ffffff', drag: 0.3 });
           break;
         }
+        case 'forge': {
+          // Schmiede: Esse mit Glut, Schmied hebt den Hammer und schlägt auf den Amboss, dabei fliegen Funken
+          const es = S('esse', Math.floor(t * 8) % 2), ex = x - 17, ey = y + 4;
+          this.shadow(ex, ey, 8); b.drawImage(es.img, Math.round(ex - es.w / 2), Math.round(ey - es.h));
+          const fl = S('flame', Math.floor(t * 10) % 3); b.drawImage(fl.img, Math.round(ex - fl.w / 2), Math.round(ey - es.h + 1 - fl.h));
+          const cyc = (t * 0.85 + p.x * 0.001) % 1, down = cyc > 0.72 && cyc < 0.9, beat = Math.floor(t * 0.85 + p.x * 0.001 + 0.28);
+          if (p._beat !== beat) { p._beat = beat; if (A.FX) { A.FX.burst(p.x + 18, p.y - 6, 7, { color: ['#fee761', '#feae34', '#ffffff'], smin: 40, smax: 130, life: 0.35, add: true, kind: 'spark', drag: 3, z: 6, vz: 90, g: 300 }); A.FX.flash(p.x + 18, p.y - 6, 40, '#feae34', 0.15); } const hh = W.hero; if (hh && Math.hypot(hh.x - p.x, hh.y - p.y) < 260 && A.Sound.clink) A.Sound.clink(); }
+          const sm = S('smith', down ? 1 : 0); this.shadow(x - 2, y + 5, 7);
+          if (near) this.outlineGlow(sm, x - 2, y + 5, false, '#fee761');
+          b.drawImage(sm.img, Math.round(x - 2 - sm.w / 2), Math.round(y + 5 - sm.h));
+          const an = S('anvil'); this.shadow(x + 11, y + 6, 6); b.drawImage(an.img, Math.round(x + 11 - an.w / 2), Math.round(y + 6 - an.h));
+          if (A.FX && Math.random() < 0.2) A.FX.part({ kind: 'px', add: true, x: p.x - 34 + (Math.random() - 0.5) * 14, y: p.y - 20, vx: (Math.random() - 0.5) * 14, vy: -30 - Math.random() * 30, life: 0.8, color: Math.random() < 0.5 ? '#feae34' : '#f77622', drag: 0.5 });
+          top = y + 5 - sm.h; break;
+        }
         case 'statue': spr = S('statue'); this.shadow(x, y + 4, 8); if (near && !p.used) this.outlineGlow(spr, x, y + 4, false, '#fee761'); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); top = y + 4 - spr.h; break;
         case 'stairs': {
           const w = 30, hh = 22, x0 = Math.round(x - w / 2), y0 = Math.round(y - hh / 2);
@@ -853,7 +875,7 @@ window.A = window.A || {};
         }
         case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
-      if (near && !p.used || (near && p.kind === 'merchant') || (near && p.kind === 'stairs')) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
+      if (near && !p.used || (near && (p.kind === 'merchant' || p.kind === 'forge' || p.kind === 'stairs'))) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
     }
 
     drawShot(s, cx, cy) {
@@ -913,13 +935,14 @@ window.A = window.A || {};
         else if (p.kind === 'merchant') L(p.x + 14, p.y - 6, 40, '#feae34', 0.75);
         else if (p.kind === 'statue') { L(p.x, p.y - 50, 26, '#b55088', 0.7); }
         else if (p.kind === 'shrine') { L(p.x, p.y - 26, p.used ? 30 : 64, '#2ce8f5', p.used ? 0.3 : 0.8 + Math.sin(t * 3) * 0.1); }
+        else if (p.kind === 'forge') { L(p.x - 34, p.y - 8, 90, '#ff8a30', fl(p.x, 1.3)); L(p.x - 34, p.y - 2, 26, '#fee761', 0.55); const k = (t * 0.85 + p.x * 0.001) % 1; if (k > 0.72 && k < 0.9) L(p.x + 18, p.y - 6, 34, '#feae34', 0.7); }
         else if (p.kind === 'chest' && !p.used) L(p.x, p.y, 22, '#feae34', 0.4);
       }
       for (const p of W.picks) if (p.kind === 'item') L(p.x, p.y - 6, 28, A.RARITY[p.it.rarity].color, 0.7);
       for (const s of W.shots) L(s.x, s.y - 10, s.side === 'hero' ? 26 : 22, s.side === 'hero' ? (s.opts.kind === 'magic' ? s.color : '#ffe2b8') : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), s.side === 'hero' && s.opts.kind !== 'magic' ? 0.25 : 0.8);
       for (const z of W.zones || []) if (!z.trail) L(z.x, z.y, z.r / PX * 1.3, z.col, 0.35);
       for (const o of W.orbs || []) if (o.x != null) L(o.x, o.y - 14, 22, o.col, 0.6);
-      for (const a of W.allies || []) L(a.x, a.y - 10, 34, '#2ce8f5', 0.55);
+      for (const a of W.allies || []) L(a.x, a.y - 10, 34, a.shadow ? '#b55088' : '#2ce8f5', 0.55);
       for (const k of W.marks || []) if (k.kind === 'meteor') L(k.x, k.y, k.r / PX * 1.2, '#e43b44', 0.3 + 0.3 * Math.sin(t * 20));
       for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
       if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
@@ -981,10 +1004,12 @@ window.A = window.A || {};
       const spr = A.Art.monSprite('geisterwolf', frame), flip = a.fx < 0;
       let alpha = 0.85; if (a.spawn > 0) alpha *= clamp(1 - a.spawn / 0.35, 0, 1); if (a.until && a.until - (A.World.W ? A.World.W.t : 0) < 1.5) alpha *= 0.5 + Math.sin(this.t * 20) * 0.3;
       let ox = 0; if (a.swing > 0) ox = a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 4;
+      const glow = a.shadow ? '#b55088' : '#2ce8f5';
       this.shadow(x, y, 6);
-      this.outlineGlow(spr, x + ox, y, flip, '#2ce8f5');
-      this.blit(spr, x + ox, y, flip, { alpha });
-      if (A.FX && !A.FX.low && Math.random() < 0.15) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 20, y: a.y, vx: 0, vy: -20, life: 0.5, color: '#7fe8ff', drag: 1 });
+      this.outlineGlow(spr, x + ox, y, flip, glow);
+      this.blit(spr, x + ox, y, flip, { alpha: a.shadow ? alpha * 0.8 : alpha });
+      if (a.shadow) { const k = flip ? 'shadeF' : 'shade'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#68386c'); this.b.globalAlpha = 0.55 * alpha; this.b.drawImage(spr[k], Math.round(x + ox - spr.w / 2), Math.round(y - spr.h)); this.b.globalAlpha = 1; }
+      if (A.FX && !A.FX.low && Math.random() < 0.15) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 20, y: a.y, vx: 0, vy: -20, life: 0.5, color: a.shadow ? '#e0a4ff' : '#7fe8ff', drag: 1 });
     }
     // über den Figuren: kreisende Geister/Klingen, Blitze, Blitzschritt-Spur
     drawBoonsTop(W, cx, cy) {
@@ -1117,7 +1142,7 @@ window.A = window.A || {};
       if (this.mm.width !== w) { this.mm.width = w; this.mm.height = hh; }
       m.clearRect(0, 0, w, hh);
       m.fillStyle = 'rgba(24,20,37,0.78)'; m.fillRect(0, 0, w, hh); m.fillStyle = '#5a6988'; m.fillRect(0, 0, w, 1); m.fillRect(0, hh - 1, w, 1); m.fillRect(0, 0, 1, hh); m.fillRect(w - 1, 0, 1, hh);
-      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5' };
+      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5', forge: '#c0cbdc' };
       const pos = (r) => [3 + r.cx * (U + G), 3 + r.cy * (V + G)];
       m.fillStyle = '#3a4466';
       for (const [p, q] of W.edges) { const a = W.rooms.find(r => r.cx === p.x && r.cy === p.y), b = W.rooms.find(r => r.cx === q.x && r.cy === q.y); if (!a || !b || (!a.visited && !b.visited)) continue; const [ax, ay] = pos(a), [bx, by] = pos(b); if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }
@@ -1125,7 +1150,7 @@ window.A = window.A || {};
         const [x, y] = pos(r); const known = r.visited || W.edges.some(([p, q]) => { const o = (p.x === r.cx && p.y === r.cy) ? q : (q.x === r.cx && q.y === r.cy) ? p : null; return o && W.rooms.some(z => z.cx === o.x && z.cy === o.y && z.visited); });
         if (!known) continue;
         m.fillStyle = r.visited ? '#262b44' : '#1a1a2a'; m.fillRect(x, y, U, V);
-        m.fillStyle = r.visited ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.cleared || r.used) && r.type !== 'stairs' && r.type !== 'shop' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
+        m.fillStyle = r.visited ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.cleared || r.used) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
         if (r.visited && r.type !== 'fight' && r.type !== 'start') { m.fillStyle = '#ffffff'; m.fillRect(x + 4, y + 3, 1, 1); }
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }

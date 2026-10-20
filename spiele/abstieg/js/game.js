@@ -57,7 +57,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), tv = (k) => tm[k] || 0;   // passive Talente vom Schrein
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0);   // passive Talente vom Schrein und Element-Boni der Ausrüstung
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
@@ -69,8 +69,9 @@ A.Game = (function () {
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
       regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
-      xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'),
+      xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
+      gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     return d;
@@ -106,32 +107,54 @@ A.Game = (function () {
     });
   }
   let itemSeq = 0;
+  const STAT_KEYS = ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'];
   function makeItem(base, rarity, floor, forceUnique) {
     const rng = run ? run.rng : A.rng;
     const R = A.RARITY[rarity];
     const scale = (1 + 0.18 * (floor - 1)) * R.mult;
     const it = { uid: 'i' + (++itemSeq) + '_' + Math.floor(rng.next() * 1e6), base: base.id, slot: base.slot, rarity, floor, stats: {}, affixes: [], name: null, flavor: null };
-    for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
     // Einzelstück?
     const uniq = forceUnique || ((rarity === 'legendary' || rarity === 'cursed') ? A.UNIQUES.filter(u => u.rarity === rarity && (!run || !run.seenUniques || !run.seenUniques.includes(u.id))) : []);
     if (Array.isArray(uniq) ? uniq.length && rng.chance(0.7) : uniq) {
       const u = Array.isArray(uniq) ? rng.pick(uniq) : uniq;
       const ub = A.BASES.find(b => b.id === u.base);
-      it.base = ub.id; it.slot = ub.slot; it.unique = u.id; it.name = u.name; it.flavor = u.flavor;
+      it.base = ub.id; it.slot = ub.slot; it.unique = u.id; it.name = u.name; it.flavor = u.flavor; it.el = u.el;
       it.stats = {};
-      for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (ub[k]) it.stats[k] = Math.round(ub[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+      for (const k of STAT_KEYS) if (ub[k]) it.stats[k] = Math.round(ub[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
       for (const k of Object.keys(u.stats)) it.stats[k] = (it.stats[k] || 0) + u.stats[k];
       if (run) { run.seenUniques = run.seenUniques || []; run.seenUniques.push(u.id); }
       return it;
     }
-    const pool = rng.shuffle(A.AFFIXES).slice(0, R.affixes);
-    for (const a of pool) {
-      const v = Math.round(a.val * (['hp', 'def'].includes(a.key) ? (1 + 0.15 * (floor - 1)) : 1) * (rarity === 'epic' || rarity === 'legendary' || rarity === 'cursed' ? 1.3 : 1));
+    rollStats(it, rng);
+    if (rng.chance(rarity === 'common' ? 0.15 : 0.5)) it.flavor = rng.pick(A.QUIRKS);
+    const el = rollElement(rarity, rng); if (el) it.el = el;
+    const pw = rollPower(rarity, rng); if (pw) it.power = pw;
+    return it;
+  }
+  // Grundwerte nach Ebene und Seltenheit, dazu zufällige Zusatzwerte und bei verfluchten Items der Fluch
+  function rollStats(it, rng) {
+    const R = A.RARITY[it.rarity], base = A.BASES.find(b => b.id === it.base), scale = (1 + 0.18 * (it.floor - 1)) * R.mult, strong = ['epic', 'legendary', 'cursed'].includes(it.rarity);
+    it.stats = {}; it.affixes = []; delete it.curse;
+    for (const k of STAT_KEYS) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+    for (const a of rng.shuffle(A.AFFIXES).slice(0, R.affixes)) {
+      const v = Math.round(a.val * (['hp', 'def'].includes(a.key) ? (1 + 0.15 * (it.floor - 1)) : 1) * (strong ? 1.3 : 1));
       it.stats[a.key] = (it.stats[a.key] || 0) + v; it.affixes.push(a.key);
     }
-    if (rarity === 'cursed') { const bad = rng.pick(['def', 'dodge', 'spd', 'regen']); it.stats[bad] = (it.stats[bad] || 0) - (bad === 'spd' ? 3 : bad === 'regen' ? 2 : 8); it.curse = bad; }
-    if (rng.chance(rarity === 'common' ? 0.15 : 0.5)) it.flavor = rng.pick(A.QUIRKS);
-    return it;
+    if (it.rarity === 'cursed') { const bad = rng.pick(['def', 'dodge', 'spd', 'regen']); it.stats[bad] = (it.stats[bad] || 0) - (bad === 'spd' ? 3 : bad === 'regen' ? 2 : 8); it.curse = bad; }
+  }
+  // Element: gute Items oft, seltene und bessere immer; bevorzugt Elemente, die der Held schon trägt (damit Sets zusammenkommen)
+  function rollElement(rarity, rng) {
+    if (rarity === 'common' || (rarity === 'good' && !rng.chance(0.7))) return null;
+    const c = run ? A.Gear.counts(run) : {};
+    return rng.weighted(Object.keys(A.ELEMENTS), k => 1 + 1.5 * (c[k] || 0));
+  }
+  // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht
+  const POWER_CHANCE = { rare: 0.3, epic: 1, legendary: 1, cursed: 0.6 };
+  function rollPower(rarity, rng, force, not) {
+    if (!POWER_CHANCE[rarity] || (!force && !rng.chance(POWER_CHANCE[rarity]))) return null;
+    const ids = Object.keys(A.POWERS).filter(id => id !== not && (!A.POWERS[id].legendary || rarity === 'legendary' || rarity === 'cursed'));
+    const id = rng.pick(ids), P = A.POWERS[id];
+    return { id, v: rng.int(P.min, P.max) };
   }
   // Boss-Trophäe: einmal pro Durchgang und Boss, Werte wachsen mit der Ebene
   function makeTrophy(bossId) {
@@ -139,8 +162,8 @@ A.Game = (function () {
     run.seenTrophies = run.seenTrophies || []; if (run.seenTrophies.includes(bossId)) return null;
     run.seenTrophies.push(bossId);
     const base = A.BASES.find(b => b.id === T.base), scale = (1 + 0.18 * (run.floor - 1)) * A.RARITY.legendary.mult;
-    const it = { uid: 'i' + (++itemSeq) + '_' + Math.floor(run.rng.next() * 1e6), base: base.id, slot: base.slot, rarity: 'legendary', floor: run.floor, stats: {}, affixes: [], name: T.name, flavor: T.flavor, trophy: bossId };
-    for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+    const it = { uid: 'i' + (++itemSeq) + '_' + Math.floor(run.rng.next() * 1e6), base: base.id, slot: base.slot, rarity: 'legendary', floor: run.floor, stats: {}, affixes: [], name: T.name, flavor: T.flavor, trophy: bossId, el: T.el };
+    for (const k of STAT_KEYS) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
     for (const k of Object.keys(T.stats)) it.stats[k] = (it.stats[k] || 0) + Math.round(T.stats[k] * (['hp', 'def'].includes(k) ? 1 + 0.15 * (run.floor - 1) : 1));
     return it;
   }
@@ -168,9 +191,10 @@ A.Game = (function () {
     if (slotPref) bases = bases.filter(b => b.slot === slotPref);
     return makeItem(rng.pick(bases), rarity || rollRarity(), run.floor);
   }
-  function equip(it) {
-    let slot = it.slot;
-    if (slot === 'trinket' && run.gear.trinket && !run.gear.trinket2) slot = 'trinket2';
+  // slotIn: bei zwei vollen Schmuck-Plätzen wählt die Oberfläche, welcher ersetzt wird
+  function equip(it, slotIn) {
+    let slot = slotIn || it.slot;
+    if (!slotIn && slot === 'trinket' && run.gear.trinket && !run.gear.trinket2) slot = 'trinket2';
     const old = run.gear[slot];
     run.gear[slot] = it;
     run.bag = run.bag.filter(x => x.uid !== it.uid);
@@ -185,6 +209,7 @@ A.Game = (function () {
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
+    run.lvVer = 2;   // Ebenen-Bau mit Schmiede (ältere Spielstände bauen ihre laufende Ebene wie bisher)
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
@@ -217,7 +242,7 @@ A.Game = (function () {
     const items = [];
     if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); }
     else if (e.elite) { items.push(randomItem(rollRarity(1))); questEvent('elite'); }
-    else if (run.rng.chance(0.08 + d.itemLuck * 0.03)) items.push(randomItem());
+    else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
     const levels = addXp(xp);
     questEvent('kill');
     save();
@@ -290,6 +315,24 @@ A.Game = (function () {
     for (const it of res.items) addToBag(it);
     save(); return res;
   }
+  // ---------- Schmiede: Werte neu würfeln, Kraft neu würfeln, Element wählen (Einzelstücke und Trophäen bleiben, wie sie sind) ----------
+  function forgeCost(it, kind) { const v = sellValue(it); return Math.round(kind === 'stats' ? v + 10 : v * 1.5 + 15); }
+  function canForge(it, kind) {
+    if (!it || it.unique || it.trophy) return false;
+    if (kind === 'stats') return A.RARITY[it.rarity].affixes > 0;
+    if (kind === 'power') return !!POWER_CHANCE[it.rarity];
+    return true;
+  }
+  function forge(it, kind, el) {
+    const cost = forgeCost(it, kind);
+    if (!canForge(it, kind) || run.gold < cost || (kind === 'el' && (!A.ELEMENTS[el] || it.el === el))) return false;
+    run.gold -= cost;
+    if (kind === 'stats') rollStats(it, run.rng);
+    else if (kind === 'power') it.power = rollPower(it.rarity, run.rng, true, it.power && it.power.id);
+    else it.el = el;
+    const d = derived(); if (run.hp > d.maxHp) run.hp = d.maxHp;
+    save(); return true;
+  }
   function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
   function buy(idx) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; addToBag(s.it); return true; }
   function buyPotion() { const p = 25 + run.floor * 5; if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
@@ -316,6 +359,6 @@ A.Game = (function () {
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy,
+    doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

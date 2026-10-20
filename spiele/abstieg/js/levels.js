@@ -110,7 +110,8 @@ A.Levels = (function () {
   }
 
   // ---------- Ganze Ebene ----------
-  function gen(floor, seed, wd) {
+  // opts.forge: auf geraden Ebenen ab 2 gibt es eine Schmiede (ältere Spielstände bauen ihre laufende Ebene ohne)
+  function gen(floor, seed, wd, opts) {
     const rng = new A.RNG(seed);
     const n = Math.max(7, Math.min(12, 7 + Math.floor((floor - 1) / 3)));
     const key = (c) => c.x + ',' + c.y;
@@ -140,6 +141,7 @@ A.Levels = (function () {
     const rest = cells.filter(c => !types[key(c)]);
     const pool = ['shrine', 'fight', 'fight'];
     if (floor >= 2) pool.push('elite');
+    if (opts && opts.forge && floor >= 2 && floor % 2 === 0) pool.push('forge');
     const extra = rng.shuffle(['shop', 'treasure', 'rest', 'event', 'fight', floor >= 6 ? 'elite' : 'fight', 'fight', 'treasure', 'fight', 'event', 'fight']);
     while (pool.length < rest.length) pool.push(extra.shift() || 'fight');
     rng.shuffle(rest).forEach((c, i) => types[key(c)] = pool[i]);

@@ -31,6 +31,14 @@ Jeder der 6 Bosse hat eine eigene Mechanik mit Anzeige am Boden (`js/bosses.js`)
 - **Wächter der Tiefe:** steht still und dreht einen Leerenstrahl durch den Raum (in der Wut zwei).
 **Boss-Trophäen:** jeder Boss lässt einmal pro Durchgang ein eigenes legendäres Stück mit besonderer Kraft fallen (`A.TROPHIES` in `js/data.js`): Krone des Schleimkönigs (Schleimhülle), Dornenherz (Dornen beim Getroffenwerden), Sanduhr des Pharao (Zauber 20 % schneller), Tintenfass des Kraken (Tintenring jeder 4. Angriff), Glutstiefel (Glut-Spur), Auge der Tiefe (Volltreffer explodieren).
 
+## Ausrüstung für eigene Builds (20.10.2026)
+Waffe, Rüstung, Helm, Stiefel und zwei Schmuckstücke bekommen Zufalls-Eigenschaften, aus denen man einen eigenen Build baut (`js/gear.js`, Inhalte `A.ELEMENTS` und `A.POWERS` in `js/data.js`):
+- **6 Elemente:** Feuer, Eis, Blitz, Gift, Schatten, Stein. Gute Stücke haben oft eins, seltene und bessere immer. 2, 4 und 6 Teile desselben Elements schalten je einen stärkeren Bonus frei (Feuer: Brand, dann Explosion beim Tod, dann Meteor alle 5 Sekunden; Eis: bremsen, einfrieren, Eisnova; Blitz: Tempo, Kettenblitz, schnellere Zauber; Gift: Gift, Giftwolke, doppeltes Gift das überspringt; Schatten: Volltreffer nach Ausweichen; Stein: Schild bei Kampfbeginn, weniger Schaden, Erdbeben). Elemente, die man schon trägt, fallen öfter.
+- **15 besondere Kräfte** (selten 30 %, episch und legendär immer, verflucht 60 %): Zauberklinge, Riesentöter, Vampirkuss, Zweiter Wind, Seelensammler, Nachbeben, Schattenwolf, Raserei, Funkenflug, Goldmagnet, Panzerbrecher, Wirbelklingen, Sturmlauf, Glückspilz und Phönix (nur legendär oder verflucht, einmal pro Ebene wieder aufstehen). Gleiche Kräfte zählen nicht doppelt, es gilt der beste Wert.
+- **Anzeige:** Fund-Fenster zeigt, welcher Element-Bonus dazukommt oder wegfällt; Heldenblatt «Ausrüstung» zeigt «Dein Build» (Teile je Element, laufende Boni, nächster Bonus, alle Kräfte). Bei zwei vollen Schmuckplätzen fragt das Spiel, welcher weichen soll.
+- **Schmiede** auf jeder geraden Ebene ab 2 (Schmied mit Hammer, Esse, Amboss): Werte neu würfeln, eine neue Kraft schmieden (ab selten) oder das Element frei wählen, gegen Gold. Einzelstücke und Boss-Trophäen haben ein festes Element und bleiben, wie sie sind.
+- Spielstand bleibt: ein laufender Durchlauf behält seine aktuelle Ebene genau so, wie sie war; die Schmiede kommt erst auf den nächsten Ebenen dazu.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -41,6 +49,7 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
 - `index.html` + `js/*.js` – Quelltext:
   - `rng`, `data`, `game` – Zufall, Inhalte (Rassen, Klassen, Gegenstände, Monster), Spielstand.
   - `boons` – Schrein: Zauber für alle, passive Talente, Verstärkungen.
+  - `gear` – Ausrüstung: Element-Boni (2/4/6 Teile) und besondere Kräfte im Kampf, Build-Übersicht.
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.

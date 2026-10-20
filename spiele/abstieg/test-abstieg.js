@@ -110,7 +110,8 @@ fs.mkdirSync(out, { recursive: true });
     const stairsOk = s.rooms.every(r => !['fight', 'elite', 'boss'].includes(r.type) || r.cleared);
     if (prop && (prop.kind !== 'stairs' || stairsOk || todo.length === 0)) {
       await walkTo(prop.x, prop.y + 30, 5000);
-      s = await state(); if (s && s.near) { if (prop.kind === 'merchant' && !shots.shop) { shots.shop = 1; } await page.keyboard.press('KeyE'); await page.waitForTimeout(200); if (prop.kind === 'merchant') { await shot('11-haendler'); const buy = page.locator('#overlay [data-buy]:not([disabled])'); if (await buy.count()) { await buy.first().click(); await page.waitForTimeout(100); } await page.click('#bClose'); await page.waitForTimeout(150); cur.props[0].used = true; await page.evaluate(() => { const W = window.__abstieg.Wd.W; W.near && (W.near.used = true); }); } }
+      s = await state(); if (s && s.near) { if (prop.kind === 'merchant' && !shots.shop) { shots.shop = 1; } await page.keyboard.press('KeyE'); await page.waitForTimeout(200); if (prop.kind === 'merchant') { await shot('11-haendler'); const buy = page.locator('#overlay [data-buy]:not([disabled])'); if (await buy.count()) { await buy.first().click(); await page.waitForTimeout(100); } await page.click('#bClose'); await page.waitForTimeout(150); cur.props[0].used = true; await page.evaluate(() => { const W = window.__abstieg.Wd.W; W.near && (W.near.used = true); }); }
+        if (prop.kind === 'forge') { await shot('14-schmiede'); const f = page.locator('#overlay [data-f="stats"]:not([disabled]), #overlay [data-f="power"]:not([disabled])'); if (await f.count()) { await f.first().click(); await page.waitForTimeout(150); await shot('14-schmiede-danach'); } await page.click('#bClose'); await page.waitForTimeout(150); await page.evaluate(() => { const W = window.__abstieg.Wd.W; W.near && (W.near.used = true); }); } }
       continue;
     }
     // Nächsten Raum ansteuern (Nachbar bevorzugt, sonst über Kanten laufen)

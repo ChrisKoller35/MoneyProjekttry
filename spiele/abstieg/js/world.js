@@ -15,12 +15,12 @@ A.World = (function () {
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
   function genFloor(floor, seed, saved) {
     const wd = A.worldOf(floor);
-    const lv = A.Levels.gen(floor, seed, wd);
+    const lv = A.Levels.gen(floor, seed, wd, { forge: (G().run.lvVer || 0) >= 2 });
     const { rooms, tiles, edges } = lv;
     // Gegenstände im Raum, auf dem Ankerpunkt (freier Boden nahe der Mitte)
     for (const r of rooms) {
       const cx = (r.anchor.tx + 0.5) * TS, cy = (r.anchor.ty + 0.5) * TS;
-      const kind = { treasure: 'chest', shop: 'merchant', rest: 'fire', event: 'statue', stairs: 'stairs', shrine: 'shrine' }[r.type];
+      const kind = { treasure: 'chest', shop: 'merchant', rest: 'fire', event: 'statue', stairs: 'stairs', shrine: 'shrine', forge: 'forge' }[r.type];
       if (kind) r.props.push({ kind, x: cx, y: cy, room: r.i, used: false });
       if (r.type === 'boss') r.props.push({ kind: 'stairs', x: cx, y: cy, room: r.i, used: false, hidden: true });
       if (r.type === 'start') r.props.push({ kind: 'sign', x: cx, y: cy - TS * 2, room: r.i, used: false, text: A.LANG === 'de' ? 'Ebene ' + floor : 'Floor ' + floor });
@@ -218,22 +218,23 @@ A.World = (function () {
     opts = opts || {};
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
-    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); return -1; }
+    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) A.Gear.onDodge(to); return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
-    dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def')) * 4);
+    const gp = A.Gear.pre(from, to, opts); if (gp) dmg *= gp.mul;   // Element-Stufen und Kräfte der Ausrüstung (gear.js)
+    dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
-    if (Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75; crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
+    if ((gp && gp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
     if (opts.execute && to.hp / to.maxHp < opts.execute && !to.boss) dmg = to.hp + 1;
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
-    if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; }
+    if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; if (to.shield <= 0 && to === W.hero) A.Gear.onShieldBreak(to); }
     to.hp -= dmg; to.flash = 0.12;
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) A.Gear.onHurt(to, from); }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn') {
@@ -253,6 +254,7 @@ A.World = (function () {
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy') { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
+    if (from === W.hero && to.side === 'enemy') A.Gear.onHit(from, to, dmg, crit, opts);
     if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
     // Boss-Trophäen (data.js A.TROPHIES)
     if (to.side === 'hero' && to.tro && to.alive && to.hp > 0) {
@@ -268,6 +270,7 @@ A.World = (function () {
   function checkDeath(e) {
     if (e.hp > 0 || !e.alive) return;
     if (e.side === 'hero') {
+      if (e === W.hero && A.Gear.phoenix(e)) return;
       if (e.revive > 0 && !G().run.reviveUsed) { G().run.reviveUsed = true; e.hp = Math.round(e.maxHp * 0.3); e.revive = 0; e.inv = 1.5; float(e.x, e.y - 40, A.LANG === 'de' ? 'Zweite Chance!' : 'Second chance!', '#f5c542', 18); return; }
       e.alive = false; e.hp = 0; W.paused = true; if (hooks.onDeath) hooks.onDeath(); return;
     }
@@ -278,6 +281,7 @@ A.World = (function () {
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
     fx('death', { e });
+    A.Gear.onKill(e);
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
@@ -322,7 +326,7 @@ A.World = (function () {
   function heroAttack() {
     const h = W.hero; if (!h.alive || h.atkCd > 0 || h.stun > 0) return false;
     if (!h.moving) faceTarget(h);
-    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1); h.swing = 0.2;
+    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h); h.swing = 0.2;
     h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = big ? 2 : 1;   // Doppelte Wucht: jeder dritte Schlag
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
     if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
@@ -376,6 +380,7 @@ A.World = (function () {
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
       else { const m = nearestMon(h.x, h.y, 360); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; for (let i = 0; i < hits; i++) shoot(h, tx + (i ? (Math.random() - 0.5) * 30 : 0), ty + (i ? (Math.random() - 0.5) * 30 : 0), P * pow, Object.assign({ r: sk.blast ? 9 : 7, speed: sk.blast ? 380 : 460, color: sk.col || (magic ? '#c77dff' : '#ffe08a') }, opts)); }
     }
+    A.Gear.onSkill(h);
     return true;
   }
   // ---------- Neue Zauber und Talente in der Welt ----------
@@ -456,8 +461,8 @@ A.World = (function () {
   function markStep(k) {
     if (W.t < k.at) return;
     k.done = true;
-    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, { burn: k.burn }, k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
-    else boom(k.x, k.y, k.r, k.dmg, {}, k.col);
+    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, Object.assign({ burn: k.burn }, k.opts), k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
+    else boom(k.x, k.y, k.r, k.dmg, Object.assign({}, k.opts), k.col);
   }
   function boonStep(dt) {
     const h = W.hero;
@@ -486,7 +491,7 @@ A.World = (function () {
     if (h.stun > 0) { h.stun -= dt; mx = my = 0; }
     if (h.rootUntil > W.t) mx = my = 0;   // von Ranken festgehalten
     h.moving = len > 0.15;
-    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
+    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h) * A.Gear.moveMul(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
     if (input.attack) heroAttack();
     // Gefahr-Boden unter dem Helden
     const hz = hazardAt(h); h.onHazard = hz;
@@ -494,6 +499,7 @@ A.World = (function () {
     if (W.active || W.allies.length) updateFlow();
     boonStep(dt);
     A.Bosses.tick(dt);
+    A.Gear.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -517,7 +523,7 @@ A.World = (function () {
         p.vz -= 700 * dt; p.z += p.vz * dt; if (p.z <= 0) { p.z = 0; p.vz = Math.abs(p.vz) > 60 ? -p.vz * 0.42 : 0; p.vx *= 0.6; p.vy *= 0.6; if (p.vz === 0) { p.vx = p.vy = 0; [p.x, p.y] = freeSpot(p.x, p.y, 13); } }   // liegen geblieben: an eine Stelle rücken, die der Held erreicht
       }
       const d = dist(p, h);
-      if (p.kind === 'gold' && d < (h.tal.gold ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
+      if (p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
         if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); }
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
@@ -531,7 +537,8 @@ A.World = (function () {
     const r = roomOf(h.x, h.y);
     if (r && r !== W.room) { W.room = r; }
     if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
-      if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); } } G().save(); }
+      if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
+      A.Gear.onRoomStart(h); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -546,6 +553,7 @@ A.World = (function () {
   function markUsed(p) { p.used = true; const r = W.rooms[p.room]; r.used = true; G().save(); }
 
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
+  A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
 
   return {
     get W() { return W; }, TS, CW, CH, MW, MH, enter, step, interact, markUsed, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon,
