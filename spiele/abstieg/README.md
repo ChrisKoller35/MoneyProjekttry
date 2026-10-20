@@ -62,7 +62,7 @@ Elite-Gegner sind keine stärkeren Zahlen mehr, sondern haben Eigenschaften, die
 - **Anzeige:** farbige Aura und Name mit Symbolen über dem Gegner, oben ein eigener Balken mit allen Eigenschaften und einem kurzen Tipp, Warnkreise am Boden (auch im 3D-Look). Taucht eine Eigenschaft zum ersten Mal auf, erklärt ein Banner sie.
 - **Belohnung je Eigenschaft:** mehr Gold und Erfahrung, bessere Beute (ab 3 Eigenschaften manchmal ein zweites Stück), am Ende 1 Seelenfunke pro besiegter Eigenschaft.
 - **Elite-Buch im Lager:** eine Seite pro Eigenschaft. Die erste besiegte Elite mit einer neuen Eigenschaft gibt sofort 10 Seelenfunken, jede Seite macht für immer 2 % mehr Schaden gegen Elite-Gegner (alle 16: +32 %). Das Buch zählt auch, wie oft man jede Eigenschaft besiegt hat.
-- Nebenbei: Boss-Warnkreise (Sprung, Ranken, Flut, Strahl) sind jetzt auch im 3D-Look zu sehen, die Balken oben weichen am Handy der Minikarte aus, und lange Banner passen auf schmale Bildschirme.
+- Nebenbei: Boss-Warnkreise (Sprung, Ranken, Flut, Strahl) sind jetzt auch im 3D-Look zu sehen, Balken und Hinweise oben weichen am Handy der Minikarte aus, lange Einblendungen passen auf schmale Bildschirme. Behoben: wer während des Abstiegs noch einmal die Treppe benutzte, konnte zweimal «Tiefer» wählen und übersprang eine ganze Ebene (auch einen Boss).
 - Spielstand bleibt: altes Lager und laufende Durchläufe laden normal, das Elite-Buch beginnt leer.
 
 ## Look (18.10.2026)

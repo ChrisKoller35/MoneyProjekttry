@@ -1209,10 +1209,12 @@ window.A = window.A || {};
       c.textAlign = 'center'; c.textBaseline = 'middle';
       // Hinweis
       if (W.hint && !boss) {
-        c.font = this.font(13 * d, 600); const tw = c.measureText(W.hint).width; const y = (this.topPad + 22) * d;
-        c.fillStyle = 'rgba(24,20,37,0.82)'; c.fillRect(dw / 2 - tw / 2 - 12 * d, y - 13 * d, tw + 24 * d, 26 * d);
-        c.fillStyle = '#feae34'; c.fillRect(dw / 2 - tw / 2 - 12 * d, y + 12 * d, tw + 24 * d, 1 * d);
-        c.fillStyle = '#fee761'; c.fillText(W.hint, dw / 2, y + d);
+        c.font = this.font(13 * d, 600); let tw = c.measureText(W.hint).width; const y = (this.topPad + 22) * d;
+        const [, , HL, HR] = this.topBox(dw); if (tw + 24 * d > HR - HL) { c.font = this.font(13 * d * (HR - HL - 24 * d) / tw, 600); tw = c.measureText(W.hint).width; }   // am Handy neben der Minikarte
+        const hx = clamp(dw / 2, HL + tw / 2 + 12 * d, HR - tw / 2 - 12 * d);
+        c.fillStyle = 'rgba(24,20,37,0.82)'; c.fillRect(hx - tw / 2 - 12 * d, y - 13 * d, tw + 24 * d, 26 * d);
+        c.fillStyle = '#feae34'; c.fillRect(hx - tw / 2 - 12 * d, y + 12 * d, tw + 24 * d, 1 * d);
+        c.fillStyle = '#fee761'; c.fillText(W.hint, hx, y + d);
       }
       // Einblendungen
       if (A.FX) for (const bn of A.FX.banners) {
