@@ -19,7 +19,7 @@ A.UI = {
   start: { de: 'Los', en: 'Go' }, back: { de: 'Zurück', en: 'Back' },
   floor: { de: 'Ebene', en: 'Floor' }, gold: { de: 'Gold', en: 'Gold' }, hp: { de: 'Leben', en: 'Health' },
   level: { de: 'Stufe', en: 'Level' }, xp: { de: 'EP', en: 'XP' },
-  node: { shrine: { de: 'Schrein', en: 'Shrine' }, fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' } },
+  node: { shrine: { de: 'Schrein', en: 'Shrine' }, fight: { de: 'Kampf', en: 'Fight' }, elite: { de: 'Elite', en: 'Elite' }, treasure: { de: 'Schatz', en: 'Treasure' }, shop: { de: 'Händler', en: 'Merchant' }, event: { de: 'Ereignis', en: 'Event' }, rest: { de: 'Rast', en: 'Rest' }, boss: { de: 'Boss', en: 'Boss' }, forge: { de: 'Schmiede', en: 'Forge' } },
   chooseRoom: { de: 'Wähle deinen Weg', en: 'Choose your path' },
   prep: { de: 'Aufstellung', en: 'Loadout' }, fightBtn: { de: 'Kämpfen!', en: 'Fight!' },
   front: { de: 'Vorne', en: 'Front' }, backRow: { de: 'Hinten', en: 'Back' },
@@ -189,14 +189,62 @@ A.QUIRKS = [
   { de: 'Zählt deine Schritte. Laut.', en: 'Counts your steps. Out loud.' },
 ];
 
+// ---------- Elemente auf Ausrüstung: 2, 4 und 6 Teile desselben Elements schalten Boni frei (wirkt in gear.js) ----------
+A.ELEMENTS = {
+  feuer: { name: { de: 'Feuer', en: 'Fire' }, col: '#f77622', icon: 'el_feuer', tiers: [
+    { de: 'Treffer setzen Gegner in Brand (15 % deiner Stärke pro Sekunde).', en: 'Hits set enemies on fire (15% of your power per second).' },
+    { de: 'Brennende Gegner explodieren beim Tod (60 % Stärke im Umkreis).', en: 'Burning enemies explode on death (60% power around them).' },
+    { de: 'Alle 5 Sekunden schlägt ein Meteor beim nächsten Gegner ein (150 % Stärke).', en: 'Every 5 seconds a meteor strikes the nearest enemy (150% power).' }] },
+  eis: { name: { de: 'Eis', en: 'Ice' }, col: '#9be8ff', icon: 'el_eis', tiers: [
+    { de: 'Treffer verlangsamen Gegner.', en: 'Hits slow enemies.' },
+    { de: 'Jeder 4. Treffer friert das Ziel 1 Sekunde ein (Bosse kürzer).', en: 'Every 4th hit freezes the target for 1 second (bosses shorter).' },
+    { de: '+40 % Schaden gegen langsame und gefrorene Gegner. Wirst du getroffen: Eisnova (alle 4 Sekunden).', en: '+40% damage to slowed and frozen enemies. When hit: ice nova (every 4 seconds).' }] },
+  blitz: { name: { de: 'Blitz', en: 'Lightning' }, col: '#fee761', icon: 'el_blitz', tiers: [
+    { de: '+2 Tempo, Angriffe 10 % schneller.', en: '+2 speed, attacks 10% faster.' },
+    { de: 'Alle 3 Sekunden springt ein Blitz auf bis zu 3 Gegner (60 % Stärke).', en: 'Every 3 seconds lightning jumps to up to 3 enemies (60% power).' },
+    { de: 'Zauber laden 25 % schneller, jeder Zauber löst einen Kettenblitz aus.', en: 'Spells recharge 25% faster, every spell triggers chain lightning.' }] },
+  gift: { name: { de: 'Gift', en: 'Poison' }, col: '#63c74d', icon: 'el_gift', tiers: [
+    { de: 'Treffer vergiften (20 % Stärke pro Sekunde, 3 Sekunden).', en: 'Hits poison (20% power per second, 3 seconds).' },
+    { de: 'Vergiftete Gegner hinterlassen beim Tod eine Giftwolke.', en: 'Poisoned enemies leave a poison cloud on death.' },
+    { de: 'Gift wirkt doppelt so stark und springt beim Tod auf 2 Gegner in der Nähe.', en: 'Poison is twice as strong and jumps to 2 nearby enemies on death.' }] },
+  schatten: { name: { de: 'Schatten', en: 'Shadow' }, col: '#b55088', icon: 'el_schatten', tiers: [
+    { de: '+8 % Volltreffer, +5 % Ausweichen.', en: '+8% crit, +5% dodge.' },
+    { de: 'Nach dem Ausweichen ist dein nächster Treffer ein Volltreffer.', en: 'After you dodge, your next hit is a critical hit.' },
+    { de: 'Volltreffer machen +60 % mehr Schaden und verkürzen deine Abklingzeiten um 0,4 Sekunden.', en: 'Crits deal +60% more damage and cut your cooldowns by 0.4 seconds.' }] },
+  stein: { name: { de: 'Stein', en: 'Stone' }, col: '#c0cbdc', icon: 'el_stein', tiers: [
+    { de: '+15 % Leben, +3 Rüstung.', en: '+15% health, +3 armor.' },
+    { de: 'Bei jedem Kampfbeginn: Schild mit 30 % deines Lebens.', en: 'At the start of every fight: shield worth 30% of your health.' },
+    { de: 'Du nimmst 20 % weniger Schaden. Bricht dein Schild, bebt die Erde (150 % Stärke).', en: 'You take 20% less damage. When your shield breaks, the earth quakes (150% power).' }] },
+};
+A.EL_TIERS = [2, 4, 6];
+
+// ---------- Besondere Kräfte auf seltenen, epischen und legendären Items ({v} = zufällige Stärke; low: kleiner ist besser) ----------
+A.POWERS = {
+  zauberklinge: { name: { de: 'Zauberklinge', en: 'Spellblade' }, min: 60, max: 120, text: { de: 'Nach einem Zauber macht dein nächster Angriff +{v} % Schaden.', en: 'After a spell, your next attack deals +{v}% damage.' } },
+  riesentoeter: { name: { de: 'Riesentöter', en: 'Giantslayer' }, min: 20, max: 40, text: { de: '+{v} % Schaden gegen Elite-Gegner und Bosse.', en: '+{v}% damage to elites and bosses.' } },
+  vampirkuss: { name: { de: 'Vampirkuss', en: 'Vampire Kiss' }, min: 2, max: 4, text: { de: 'Volltreffer heilen {v} % deines Lebens.', en: 'Crits heal {v}% of your health.' } },
+  zweiterwind: { name: { de: 'Zweiter Wind', en: 'Second Wind' }, min: 20, max: 35, text: { de: 'Einmal pro Raum: Fällst du unter 30 % Leben, heilst du {v} %.', en: 'Once per room: dropping below 30% health heals you {v}%.' } },
+  seelensammler: { name: { de: 'Seelensammler', en: 'Soul Collector' }, min: 15, max: 30, text: { de: 'Jeder Sieg: +1 % Schaden bis zum Ende der Ebene (höchstens +{v} %).', en: 'Every kill: +1% damage until the end of the floor (up to +{v}%).' } },
+  nachbeben: { name: { de: 'Nachbeben', en: 'Aftershock' }, min: 4, max: 6, low: true, text: { de: 'Jeder {v}. Treffer löst einen Erdstoss um das Ziel aus.', en: 'Every {v}th hit triggers a quake around the target.' } },
+  schattenwolf: { name: { de: 'Schattenwolf', en: 'Shadow Wolf' }, min: 9, max: 14, low: true, text: { de: 'Alle {v} Sekunden kämpft ein Schattenwolf 6 Sekunden mit.', en: 'Every {v} seconds a shadow wolf fights along for 6 seconds.' } },
+  raserei: { name: { de: 'Raserei', en: 'Frenzy' }, min: 4, max: 8, text: { de: 'Jeder Treffer: +{v} % Angriffstempo für 2 Sekunden (bis 5-mal).', en: 'Every hit: +{v}% attack speed for 2 seconds (up to 5 times).' } },
+  funkenflug: { name: { de: 'Funkenflug', en: 'Sparkflight' }, min: 3, max: 5, text: { de: 'Jeder Zauber schickt {v} Funken zu Gegnern in der Nähe.', en: 'Every spell sends {v} sparks at nearby enemies.' } },
+  goldmagnet: { name: { de: 'Goldmagnet', en: 'Gold Magnet' }, min: 20, max: 40, text: { de: '+{v} % Gold, und Gold fliegt von weit her zu dir.', en: '+{v}% gold, and gold flies to you from afar.' } },
+  panzerbrecher: { name: { de: 'Panzerbrecher', en: 'Armor Breaker' }, min: 2, max: 4, text: { de: 'Treffer senken die Rüstung des Ziels um {v} (bis 5-mal).', en: 'Hits lower the target\'s armor by {v} (up to 5 times).' } },
+  wirbelklingen: { name: { de: 'Wirbelklingen', en: 'Whirling Blades' }, min: 6, max: 9, low: true, text: { de: 'Alle {v} Sekunden kreisen 4 Sekunden lang 3 Klingen um dich.', en: 'Every {v} seconds 3 blades circle you for 4 seconds.' } },
+  sturmlauf: { name: { de: 'Sturmlauf', en: 'Stormrun' }, min: 20, max: 40, text: { de: 'Nach jedem Sieg: 3 Sekunden lang +{v} % Lauftempo.', en: 'After every kill: +{v}% move speed for 3 seconds.' } },
+  glueckspilz: { name: { de: 'Glückspilz', en: 'Lucky Charm' }, min: 3, max: 6, text: { de: '+{v} % Chance, dass Gegner ein Item fallen lassen.', en: '+{v}% chance that enemies drop an item.' } },
+  phoenix: { name: { de: 'Phönix', en: 'Phoenix' }, min: 30, max: 50, legendary: true, text: { de: 'Einmal pro Ebene: Stirbst du, stehst du mit {v} % Leben wieder auf.', en: 'Once per floor: if you die, you rise again with {v}% health.' } },
+};
+
 // Legendäre und verfluchte Einzelstücke
 A.UNIQUES = [
-  { id: 'u_loeffel', base: 'loeffel', rarity: 'legendary', name: { de: 'Löffel der Verzweiflung', en: 'Spoon of Despair' }, stats: { atkPct: 40, magPct: 40, dodge: -10 }, flavor: { de: 'Gegner lachen dich aus. Dann sterben sie.', en: 'Enemies laugh at you. Then they die.' } },
-  { id: 'u_socke', base: 'socke', rarity: 'legendary', name: { de: 'Socke der zweiten Chance', en: 'Sock of Second Chances' }, stats: { revive: 1, dodge: 5 }, flavor: { de: 'Einmal pro Durchlauf überlebst du mit 1 Leben.', en: 'Once per run you survive with 1 health.' } },
-  { id: 'u_kessel', base: 'teekessel', rarity: 'legendary', name: { de: 'Helm aus Teekesseln', en: 'Helm of Tea Kettles' }, stats: { def: 10, magPct: 25 }, flavor: { de: 'Pfeift bei jedem Treffer. Gegner hassen das.', en: 'Whistles on every hit. Enemies hate it.' } },
-  { id: 'u_zahn', base: 'zahn', rarity: 'cursed', name: { de: 'Verfluchter Goldzahn', en: 'Cursed Gold Tooth' }, stats: { goldPct: 200, regen: -2 }, flavor: { de: 'Dreifaches Gold. Du verlierst laufend Leben.', en: 'Triple gold. You keep losing health.' } },
-  { id: 'u_axt', base: 'axt', rarity: 'cursed', name: { de: 'Axt des Wahnsinns', en: 'Axe of Madness' }, stats: { atkPct: 70, def: -8 }, flavor: { de: 'Schlägt doppelt so hart. Vergisst, sich zu ducken.', en: 'Hits twice as hard. Forgets to duck.' } },
-  { id: 'u_ring', base: 'ring', rarity: 'legendary', name: { de: 'Ring des Gönners', en: 'Patron\'s Ring' }, stats: { goldPct: 50, xpPct: 30, luck: 3 }, flavor: { de: 'Jemand da oben mag dich. Vorerst.', en: 'Someone up there likes you. For now.' } },
+  { id: 'u_loeffel', base: 'loeffel', rarity: 'legendary', el: 'blitz', name: { de: 'Löffel der Verzweiflung', en: 'Spoon of Despair' }, stats: { atkPct: 40, magPct: 40, dodge: -10 }, flavor: { de: 'Gegner lachen dich aus. Dann sterben sie.', en: 'Enemies laugh at you. Then they die.' } },
+  { id: 'u_socke', base: 'socke', rarity: 'legendary', el: 'schatten', name: { de: 'Socke der zweiten Chance', en: 'Sock of Second Chances' }, stats: { revive: 1, dodge: 5 }, flavor: { de: 'Einmal pro Durchlauf überlebst du mit 1 Leben.', en: 'Once per run you survive with 1 health.' } },
+  { id: 'u_kessel', base: 'teekessel', rarity: 'legendary', el: 'feuer', name: { de: 'Helm aus Teekesseln', en: 'Helm of Tea Kettles' }, stats: { def: 10, magPct: 25 }, flavor: { de: 'Pfeift bei jedem Treffer. Gegner hassen das.', en: 'Whistles on every hit. Enemies hate it.' } },
+  { id: 'u_zahn', base: 'zahn', rarity: 'cursed', el: 'gift', name: { de: 'Verfluchter Goldzahn', en: 'Cursed Gold Tooth' }, stats: { goldPct: 200, regen: -2 }, flavor: { de: 'Dreifaches Gold. Du verlierst laufend Leben.', en: 'Triple gold. You keep losing health.' } },
+  { id: 'u_axt', base: 'axt', rarity: 'cursed', el: 'feuer', name: { de: 'Axt des Wahnsinns', en: 'Axe of Madness' }, stats: { atkPct: 70, def: -8 }, flavor: { de: 'Schlägt doppelt so hart. Vergisst, sich zu ducken.', en: 'Hits twice as hard. Forgets to duck.' } },
+  { id: 'u_ring', base: 'ring', rarity: 'legendary', el: 'blitz', name: { de: 'Ring des Gönners', en: 'Patron\'s Ring' }, stats: { goldPct: 50, xpPct: 30, luck: 3 }, flavor: { de: 'Jemand da oben mag dich. Vorerst.', en: 'Someone up there likes you. For now.' } },
 ];
 
 // ---------- Monster ----------
@@ -246,17 +294,17 @@ A.BOSSES = {
 
 // Boss-Trophäen: gibt es nur einmal pro Durchgang vom jeweiligen Boss, mit einer besonderen Kraft (wirkt in world.js)
 A.TROPHIES = {
-  schleimkoenig: { base: 'kappe', power: 'schleim', name: { de: 'Krone des Schleimkönigs', en: 'Crown of the Slime King' }, stats: { hp: 40, regen: 1 },
+  schleimkoenig: { base: 'kappe', power: 'schleim', el: 'stein', name: { de: 'Krone des Schleimkönigs', en: 'Crown of the Slime King' }, stats: { hp: 40, regen: 1 },
     text: { de: 'Fällst du unter 30 % Leben, umhüllt dich Schleim (Schild 35 %), einmal pro Raum.', en: 'Below 30% health, slime wraps you (35% shield), once per room.' }, flavor: { de: 'Klebt. Für immer.', en: 'Sticky. Forever.' } },
-  dornenmutter: { base: 'amulett', power: 'dorn', name: { de: 'Dornenherz', en: 'Thorn Heart' }, stats: { thorns: 25 },
+  dornenmutter: { base: 'amulett', power: 'dorn', el: 'gift', name: { de: 'Dornenherz', en: 'Thorn Heart' }, stats: { thorns: 25 },
     text: { de: 'Wirst du getroffen, schiessen 8 Dornen rundum (alle 2 Sekunden).', en: 'When hit, 8 thorns burst out around you (every 2 seconds).' }, flavor: { de: 'Schlägt noch. Sticht auch.', en: 'Still beating. Also stinging.' } },
-  sandpharao: { base: 'ring', power: 'sand', name: { de: 'Sanduhr des Pharao', en: 'Pharaoh\'s Hourglass' }, stats: { spd: 2 },
+  sandpharao: { base: 'ring', power: 'sand', el: 'blitz', name: { de: 'Sanduhr des Pharao', en: 'Pharaoh\'s Hourglass' }, stats: { spd: 2 },
     text: { de: 'Alle Zauber laden 20 % schneller.', en: 'All spells recharge 20% faster.' }, flavor: { de: 'Der Sand läuft nach oben. Niemand weiss, warum.', en: 'The sand runs upward. Nobody knows why.' } },
-  kraken: { base: 'zahn', power: 'tinte', name: { de: 'Tintenfass des Kraken', en: 'Kraken\'s Inkwell' }, stats: { magPct: 20, atkPct: 10 },
+  kraken: { base: 'zahn', power: 'tinte', el: 'eis', name: { de: 'Tintenfass des Kraken', en: 'Kraken\'s Inkwell' }, stats: { magPct: 20, atkPct: 10 },
     text: { de: 'Jeder 4. Angriff schiesst einen Tintenring (8 Kugeln).', en: 'Every 4th attack fires an ink ring (8 orbs).' }, flavor: { de: 'Schreibt nur Drohbriefe.', en: 'Only writes threatening letters.' } },
-  rostkoenig: { base: 'stahlstiefel', power: 'glut', name: { de: 'Glutstiefel des Rostkönigs', en: 'Rust King\'s Ember Boots' }, stats: { def: 6, spd: 1 },
+  rostkoenig: { base: 'stahlstiefel', power: 'glut', el: 'feuer', name: { de: 'Glutstiefel des Rostkönigs', en: 'Rust King\'s Ember Boots' }, stats: { def: 6, spd: 1 },
     text: { de: 'Beim Laufen hinterlässt du Glut, die Gegner verbrennt.', en: 'You leave embers while walking that burn enemies.' }, flavor: { de: 'Warme Füsse, heisse Spur.', en: 'Warm feet, hot trail.' } },
-  waechter: { base: 'socke', power: 'auge', name: { de: 'Auge der Tiefe', en: 'Eye of the Deep' }, stats: { crit: 12 },
+  waechter: { base: 'socke', power: 'auge', el: 'schatten', name: { de: 'Auge der Tiefe', en: 'Eye of the Deep' }, stats: { crit: 12 },
     text: { de: 'Volltreffer reissen ein Leerenloch auf, das explodiert.', en: 'Critical hits tear open a void rift that explodes.' }, flavor: { de: 'Es blinzelt, wenn du nicht hinschaust.', en: 'It blinks when you are not looking.' } },
 };
 

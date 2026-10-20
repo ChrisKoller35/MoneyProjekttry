@@ -105,6 +105,8 @@ A.Sound = (function () {
     step() { if (!on()) return; noise(0.04, 0.025, 'lowpass', r(500, 800), 200); },
     descend() { if (!on()) return; tone(400, 60, 0.9, 'sine', 0.1); noise(0.9, 0.12, 'lowpass', 1500, 100); },
     lose() { if (!on()) return; [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.98, 0.3, 'triangle', 0.07, i * 0.18)); tone(98, 49, 1.2, 'sawtooth', 0.06, 0.6); },
+    forge() { if (!on()) return; noise(0.1, 0.2, 'highpass', 3000, 7000); tone(1760, 1720, 0.4, 'triangle', 0.06); tone(2637, 2600, 0.32, 'sine', 0.035, 0.01); tone(220, 110, 0.12, 'square', 0.05); },
+    clink() { if (!on()) return; const f = r(2300, 2600); tone(f, f * 0.98, 0.18, 'triangle', 0.014); noise(0.03, 0.03, 'highpass', 4000, 7000); },
     buy() { if (!on()) return; tone(988, 0, 0.06, 'square', 0.04); tone(1319, 0, 0.12, 'square', 0.04, 0.06); },
     win() { this.cleared(); },
     drip() { if (!on()) return; const now = performance.now(); if (now - (S._dr || 0) < 400) return; S._dr = now; const f = r(1500, 2100); tone(f, f * 0.55, 0.07, 'sine', 0.018); tone(f * 1.4, f * 0.8, 0.05, 'sine', 0.008, 0.035); },

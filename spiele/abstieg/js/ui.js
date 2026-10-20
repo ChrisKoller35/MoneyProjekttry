@@ -32,7 +32,7 @@ window.A = window.A || {};
   // ---------- Symbole ----------
   const WEAPON_ICON = { klinge: 'i_schwert', schuetze: 'i_bogen', weber: 'i_stab', rufer: 'i_zepter', brau: 'potion' };
   const SKILL_ICON = { hieb: 's_strike', rache: 's_strike', wirbel: 's_whirl', schild: 's_shield', gewebe: 's_shield', kampfschrei: 's_buff', rueckzug: 's_buff', hinrichtung: 'u_skull', zielschuss: 's_arrow', pfeilregen: 's_arrow', doppelschuss: 's_arrow', kopfschuss: 's_arrow', giftpfeil: 's_poison', funke: 's_bolt', flaeche: 's_nova', entladung: 's_nova', flicken: 's_heal', fesseln: 's_bind' };
-  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star' };
+  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star', forge: 'anvil' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
   const UPG_ICON = { hp1: 'u_heart', hp2: 'u_heart', gold1: 'coin', atk1: 'i_schwert', potion1: 'potion', skill1: 'u_scroll', luck1: 'u_star' };
@@ -74,7 +74,7 @@ window.A = window.A || {};
   H.btn.addEventListener('click', () => { S.click(); showSheet(); });
 
   // ---------- Hilfen ----------
-  function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30; }
+  function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30 + (it.power ? 12 : 0) + (it.el ? 3 : 0); }
   function slotCurrent(it) { const r = G.run; if (it.slot === 'trinket') { if (!r.gear.trinket) return null; if (!r.gear.trinket2) return null; return scoreItem(r.gear.trinket) < scoreItem(r.gear.trinket2) ? r.gear.trinket : r.gear.trinket2; } return r.gear[it.slot] || null; }
   function cmpHtml(it, cmpWith) {
     if (cmpWith === undefined) return '';
@@ -82,14 +82,32 @@ window.A = window.A || {};
     const diff = Math.round(scoreItem(it) - scoreItem(cmpWith));
     return diff >= 0 ? `<span class="up">${diff}</span>` : `<span class="down">${-diff}</span>`;
   }
-  function itemHtml(it, actions, cmpWith) {
+  // Element-Abzeichen und besondere Kraft (gear.js)
+  function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
+  function powerHtml(p) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }
+  // Was ändert sich an den Element-Boni, wenn it angelegt wird und old wegfällt?
+  function elDelta(it, old) {
+    const c = A.Gear.counts(G.run), n = Object.assign({}, c), out = [];
+    if (old && old.el) n[old.el] = (n[old.el] || 0) - 1;
+    if (it.el) n[it.el] = (n[it.el] || 0) + 1;
+    for (const el of Object.keys(A.ELEMENTS)) {
+      const E = A.ELEMENTS[el], a = A.Gear.tierOf(c[el] || 0), b = A.Gear.tierOf(n[el] || 0);
+      const nm = `${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${n[el] || 0}/6</b> `;
+      if (b > a) out.push(`<div class="eld up">${nm}${L('Neuer Bonus', 'New bonus')}: ${esc(t(E.tiers[b - 1]))}</span></div>`);
+      else if (b < a) out.push(`<div class="eld down">${nm}${L('Bonus weg', 'Bonus lost')}: ${esc(t(E.tiers[a - 1]))}</span></div>`);
+      else if (el === it.el && b < 3) out.push(`<div class="eld">${nm}${L(`Bei ${A.EL_TIERS[b]} Teilen`, `At ${A.EL_TIERS[b]} pieces`)}: ${esc(t(E.tiers[b]))}</span></div>`);
+    }
+    return out.join('');
+  }
+  function itemHtml(it, actions, cmpWith, cls) {
     const lines = G.itemLines(it);
-    return `<div class="item" style="--rc:${rarCol(it.rarity)}">
+    return `<div class="item ${cls || ''}" style="--rc:${rarCol(it.rarity)}">
       <div class="ic">${itIcon(it, 36)}</div>
       <div class="bd">
-        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${cmpHtml(it, cmpWith)}</div>
+        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${cmpHtml(it, cmpWith)}</div>
         <div class="nm">${esc(G.itemName(it))}</div>
         <div class="ln">${lines.map(esc).join(' · ')}</div>
+        ${powerHtml(it.power)}
         ${it.flavor ? `<div class="fl">${esc(t(it.flavor))}</div>` : ''}
       </div>
       ${actions ? `<div class="act">${actions}</div>` : ''}
@@ -296,14 +314,29 @@ window.A = window.A || {};
     if (code === 'Space') e.preventDefault();
   };
   // Gefundenes Item
+  // Welche Plätze kann das Item belegen? Schmuck hat zwei; sind beide voll, gibt es zwei Knöpfe
+  function equipChoices(it) {
+    const r = G.run;
+    if (it.slot === 'trinket' && r.gear.trinket && r.gear.trinket2) return [{ slot: 'trinket', old: r.gear.trinket }, { slot: 'trinket2', old: r.gear.trinket2 }];
+    return [{ slot: null, old: it.slot === 'trinket' ? null : r.gear[it.slot] || null }];
+  }
+  // Beide Schmuck-Plätze voll: fragen, welcher Schmuck weichen muss
+  function pickTrinket(it, back) {
+    const ch = equipChoices(it);
+    ov(`<div class="center"><div class="bigicon">${itIcon(it, 54)}</div><h2 class="mid">${L('Welchen Schmuck ersetzen?', 'Replace which trinket?')}</h2><div class="sub">${esc(G.itemName(it))} ${elBadge(it.el)}</div></div>
+      ${ch.map((c, i) => `${itemHtml(c.old, `<button class="primary" data-eqs="${i}">${L('Ersetzen', 'Replace')}</button>`)}${elDelta(it, c.old)}`).join('')}
+      <button class="btn" id="bClose">${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-eqs]').forEach(b => b.onclick = () => { G.equip(it, ch[+b.dataset.eqs].slot); S.buy(); back(); });
+    $('#bClose').onclick = () => { S.click(); back(); };
+  }
   function foundItem(it) {
-    const cur = slotCurrent(it);
+    const cur = slotCurrent(it), ch = equipChoices(it);
     ov(`<div class="bigicon" style="filter:drop-shadow(0 0 16px ${rarCol(it.rarity)})">${itIcon(it, 72)}</div>
       <h2 class="mid">${L('Gefunden', 'Found')}</h2>${itemHtml(it, null, cur)}
-      <button class="btn primary" id="bEq">${t(U.equip)}${cur ? `<span class="mini" style="color:inherit;opacity:0.8">(${L('ersetzt', 'replaces')} ${esc(G.itemName(cur))})</span>` : ''}</button>
+      ${ch.map((c, i) => `${elDelta(it, c.old)}<button class="btn primary" ${i ? '' : 'id="bEq"'} data-eqs="${i}">${t(U.equip)}${c.old ? `<span class="mini" style="color:inherit;opacity:0.8">(${L('ersetzt', 'replaces')} ${esc(G.itemName(c.old))})</span>` : ''}</button>`).join('')}
       <button class="btn" id="bBag">${ic('u_bag', 22)}${t(U.bag)}</button>
       <button class="btn" id="bClose">${t(U.sell)} ${coin(G.sellValue(it))}</button>`);
-    $('#bEq').onclick = () => { G.addToBag(it); G.equip(it); S.buy(); ovClose(); };
+    overlay.querySelectorAll('[data-eqs]').forEach(b => b.onclick = () => { G.addToBag(it); G.equip(it, ch[+b.dataset.eqs].slot); S.buy(); ovClose(); });
     $('#bBag').onclick = () => { G.addToBag(it); S.click(); ovClose(); };
     $('#bClose').onclick = () => { G.run.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
   }
@@ -321,6 +354,7 @@ window.A = window.A || {};
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
     else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
     else if (p.kind === 'shrine') { r.pendingBoon = (r.pendingBoon || 0) + 1; Wd.markUsed(p); boonPick(); }
+    else if (p.kind === 'forge') { S.forge(); forge(); }
   }
   // ---------- Heldenblatt ----------
   function showSheet(tab) {
@@ -331,7 +365,7 @@ window.A = window.A || {};
     const statsHtml = ['str', 'tou', 'dex', 'mind', 'luck'].map(k => `<div class="stat"><span>${ic(STAT_ICON[k], 22)}${t(U.stat[k])}</span><span><b>${r.stats[k]}</b>${r.points > 0 ? `<button data-sp="${k}" aria-label="+">+</button>` : ''}</span></div>`).join('');
     const kv = `<div class="kv" style="margin-top:12px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
-    const gear = A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : emptySlot(s); }).join('');
+    const gear = buildHtml(r) + A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : emptySlot(s); }).join('');
     const bag = r.bag.length ? r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, slotCurrent(it))).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
     const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${esc(A.Boons.skName(id))}</div><div class="ds">${t(sk.desc)}${A.Boons.upgOf(id) ? ` <b class="goldc">+${A.Boons.upgOf(id) * 30} %</b>` : ''}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${cdTxt(id)}</div></div>`; }).join('');
     const tals = (r.talents || []).map(id => { const T = A.TALENTS[id]; return `<div class="skill on" style="cursor:default"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(T.name))}</div><div class="ds">${esc(t(T.desc))}</div></div></div>`; }).join('');
@@ -342,11 +376,26 @@ window.A = window.A || {};
     ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.click(); showSheet(b.dataset.tab); });
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); S.click(); showSheet('stats'); });
-    overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { G.equip(r.bag.find(x => x.uid === b.dataset.eq)); S.buy(); showSheet('gear'); });
+    overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { const it = r.bag.find(x => x.uid === b.dataset.eq); if (equipChoices(it).length > 1) { S.click(); pickTrinket(it, () => showSheet('gear')); return; } G.equip(it); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
+  }
+  // Build-Übersicht: wie viele Teile je Element, welche Boni laufen, welche Kräfte wirken
+  function buildHtml(r) {
+    const sum = A.Gear.summary(r);
+    const chips = Object.keys(A.ELEMENTS).map(el => { const E = A.ELEMENTS[el], n = sum.count[el] || 0, tr = sum.tier[el] || 0; return `<div class="elc ${n ? 'on' : ''}" style="--ec:${E.col}" title="${esc(t(E.name))}">${ic(E.icon, 18)}<b>${n}</b><span class="pips">${A.EL_TIERS.map((k, i) => `<i class="${tr > i ? 'on' : ''}"></i>`).join('')}</span></div>`; }).join('');
+    const bon = [];
+    for (const el of Object.keys(A.ELEMENTS)) {
+      const E = A.ELEMENTS[el], n = sum.count[el] || 0, tr = sum.tier[el] || 0;
+      for (let i = 0; i < tr; i++) bon.push(`<div class="eld on">${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${A.EL_TIERS[i]}:</b> ${esc(t(E.tiers[i]))}</span></div>`);
+      if (n && tr < 3) bon.push(`<div class="eld next">${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${n}/${A.EL_TIERS[tr]}:</b> ${esc(t(E.tiers[tr]))}</span></div>`);
+    }
+    const pws = Object.keys(sum.pw).map(id => powerHtml({ id, v: sum.pw[id] })).join('');
+    return `<h3>${L('Dein Build', 'Your build')}</h3><div class="elgrid">${chips}</div>
+      ${bon.join('') || `<div class="mini" style="margin-bottom:8px">${L('Trage 2 Teile mit demselben Element für einen Bonus. 4 und 6 Teile schalten stärkere Boni frei. Die Schmiede ändert Elemente.', 'Wear 2 pieces of the same element for a bonus. 4 and 6 pieces unlock stronger ones. The forge changes elements.')}</div>`}
+      ${pws ? `<div class="pwbox">${pws}</div>` : ''}<h3>${L('Angelegt', 'Equipped')}</h3>`;
   }
   function skillPick() {
     const r = G.run; const offer = G.skillOffer();
@@ -436,6 +485,40 @@ window.A = window.A || {};
     $('#bPot').onclick = () => { if (G.buyPotion()) { S.buy(); shop(); } };
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
+  // ---------- Schmiede: Werte, Kraft oder Element neu schmieden ----------
+  function forge(hl) {
+    const r = G.run;
+    const row = (it) => {
+      const b = (kind, label) => { if (!G.canForge(it, kind)) return ''; const c = G.forgeCost(it, kind), ok = r.gold >= c; return `<button class="${ok ? 'primary' : ''}" data-f="${kind}" data-uid="${it.uid}" ${ok ? '' : 'disabled'}><span>${label}</span><span class="fc">${coin(c)}</span></button>`; };
+      const acts = b('stats', L('Werte', 'Stats')) + b('power', it.power ? L('Kraft', 'Power') : L('Kraft +', 'Power +')) + b('el', L('Element', 'Element'));
+      return itemHtml(it, acts || `<span class="mini">${L('Einzelstück', 'One of a kind')}</span>`, undefined, 'fitem' + (it.uid === hl ? ' forged' : ''));
+    };
+    const worn = A.SLOTS.map(s => r.gear[s]).filter(Boolean);
+    ov(`<div class="bigicon">${A.Art.img('smith', 56)}</div><h2 class="mid">${t(U.node.forge)}</h2>
+      <div class="sub center">${L('«Ich schmiede alles. Ausser Ausreden.»', '"I forge anything. Except excuses."')}<br>${L('Dein Gold', 'Your gold')}: <b class="goldc">${coin(r.gold)}</b></div>
+      <div class="mini fhelp">${L('<b>Werte</b>: neue Zufallswerte. <b>Kraft</b>: eine neue besondere Kraft (ab selten). <b>Element</b>: du wählst eins von sechs. Einzelstücke und Trophäen bleiben, wie sie sind.', '<b>Stats</b>: new random stats. <b>Power</b>: a new special power (rare and up). <b>Element</b>: pick one of six. Uniques and trophies stay as they are.')}</div>
+      <h3>${L('Angelegt', 'Equipped')}</h3>${worn.map(row).join('')}
+      ${r.bag.length ? `<h3>${t(U.bag)}</h3>${r.bag.map(row).join('')}` : ''}
+      <button class="btn primary" id="bClose">${t(U.leave)}</button>`, hl ? 'nopop' : '');
+    const find = (uid) => worn.concat(r.bag).find(x => x.uid === uid);
+    overlay.querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
+      const it = find(b.dataset.uid), kind = b.dataset.f; if (!it) return;
+      if (kind === 'el') { S.click(); forgeElement(it); return; }
+      if (G.forge(it, kind)) { S.forge(); forge(it.uid); }
+    });
+    if (hl) { const el = overlay.querySelector('.item.forged'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' }); }
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
+  }
+  function forgeElement(it) {
+    const r = G.run, cost = G.forgeCost(it, 'el'), worn = A.SLOTS.some(s => r.gear[s] === it), c = A.Gear.counts(r);
+    ov(`<div class="center"><div class="bigicon">${itIcon(it, 54)}</div><h2 class="mid">${L('Element wählen', 'Choose element')}</h2><div class="sub">${esc(G.itemName(it))} · ${coin(cost)}</div></div>
+      ${Object.keys(A.ELEMENTS).map(el => { const E = A.ELEMENTS[el], cur = it.el === el, n = (c[el] || 0) - (worn && cur ? 1 : 0);
+        const info = worn ? (cur ? `<div class="mini">${L('Hat dieses Element schon.', 'Already has this element.')}</div>` : elDelta({ el }, it) || `<div class="mini">${L(`Du trägst dann ${n + 1} Teile`, `You will wear ${n + 1} pieces`)}</div>`) : `<div class="mini">${L(`Du trägst ${c[el] || 0} Teile. Ab 2 Teilen`, `You wear ${c[el] || 0} pieces. At 2 pieces`)}: ${esc(t(E.tiers[0]))}</div>`;
+        return `<div class="skill elpick ${cur ? 'on' : ''}" data-el="${el}" style="--ec:${E.col}"><div class="si">${ic(E.icon, 28)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${E.col}">${esc(t(E.name))}</div>${info}</div></div>`; }).join('')}
+      <button class="btn" id="bClose">${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-el]').forEach(b => b.onclick = () => { if (G.forge(it, 'el', b.dataset.el)) { S.forge(); forge(it.uid); } });
+    $('#bClose').onclick = () => { S.click(); forge(); };
+  }
   function treasure() {
     const res = G.treasure();
     for (const it of res.items) G.addToBag(it);
@@ -463,6 +546,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, runOver, useProp } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, runOver, useProp, foundItem, forge, forgeElement } };
   title();
 })();
