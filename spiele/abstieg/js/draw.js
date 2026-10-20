@@ -437,6 +437,7 @@ window.A = window.A || {};
       for (const p of W.picks) list.push({ y: p.y / PX, f: () => this.drawPick(p, cx, cy) });
       for (const m of W.mons) list.push({ y: m.y / PX + 6, f: () => this.drawMon(m, W, cx, cy) });
       for (const a of W.allies || []) list.push({ y: a.y / PX + 6, f: () => this.drawAlly(a, cx, cy) });
+      for (const k of W.marks || []) if (k.kind === 'barrel') list.push({ y: k.y / PX + 4, f: () => this.drawBarrel(k, W, cx, cy) });
       list.push({ y: h.y / PX + 7, f: () => this.drawHero(h, W, cx, cy) });
       list.sort((a, b2) => a.y - b2.y);
       for (const it of list) it.f();
@@ -466,7 +467,7 @@ window.A = window.A || {};
           const a = Math.atan2(f.fy, f.fx), p = 1 - f.life / 0.22, R = f.r / PX * 0.75, n = f.big ? 4 : 3;
           g.save(); g.translate(x + Math.cos(a) * R, y - 6 + Math.sin(a) * R * 0.6); g.rotate(a + Math.PI / 2);
           const len = (f.big ? 16 : 10) * Math.min(1, p * 3);
-          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : f.ally ? '#2ce8f5' : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
+          for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 4; g.globalAlpha = (1 - p) * 0.95; g.strokeStyle = i % 2 ? '#ffffff' : f.ally ? (f.col || '#2ce8f5') : '#ff0044'; g.lineWidth = 2; g.beginPath(); g.moveTo(o - len / 2, -len / 2 + o * 0.3); g.lineTo(o + len / 2, len / 2 + o * 0.3); g.stroke(); }
           g.restore();
         } else if (f.kind === 'ring') { g.globalAlpha = clamp(f.life / 0.4, 0, 1); g.strokeStyle = f.color; g.lineWidth = 2; g.beginPath(); g.arc(x, y, f.r * (1.2 - f.life) / PX, 0, TAU); g.stroke(); }
       }
@@ -571,29 +572,36 @@ window.A = window.A || {};
         return;
       }
       const aim = Math.atan2(h.fy, h.fx);
-      const cls = run.cls, melee = cls !== 'schuetze' && cls !== 'weber' && cls !== 'rufer';
-      // Ausfallschritt und Stauchen beim Schlag, Zusammenzucken beim Treffer
+      const cls = run.cls, melee = h.melee, staff = cls === 'weber' || cls === 'rufer';
+      // Ausfallschritt und Stauchen beim Schlag, Zusammenzucken beim Treffer; Riesenwuchs (Wundertrank) macht gross
       let sx = 1, sy = 1;
+      const gT = h.giantUntil - W.t; let gk = gT > 0 ? 1 + 0.35 * clamp(Math.min(8 - gT, gT) / 0.3, 0, 1) : 1;
+      if (gk > 1 && gT < 1.5 && Math.floor(this.t * 12) % 2) gk = 1 + (gk - 1) * 0.5;   // läuft ab: flackert
+      sx = sy = gk;
       if (h.swing > 0 && melee) { const p = 1 - h.swing / 0.2; const lunge = Math.sin(Math.min(1, p * 1.6) * Math.PI) * 3; x += h.fx * lunge; y += h.fy * lunge * 0.5; sx = 1 + 0.12 * Math.sin(p * Math.PI); sy = 1 - 0.1 * Math.sin(p * Math.PI); }
       if (h.flash > 0) { sx *= 1.15; sy *= 0.85; }
       this.tip = null;
       const drawWeapon = (ghost) => {
-        const wpn = A.Art.sprite(cls === 'schuetze' ? 'w_bow' : (cls === 'weber' || cls === 'rufer') ? 'w_staff' : 'w_sword');
-        const hx = x + (flip ? -4 : 4), hy = y - 7 + bob;
-        b.save(); b.translate(Math.round(hx), Math.round(hy));
+        const wpn = A.Art.sprite(cls === 'schuetze' ? 'w_bow' : cls === 'weber' ? 'w_staff' : cls === 'rufer' ? 'w_skullstaff' : cls === 'brau' ? 'flask' : 'w_sword', 0, cls === 'brau' ? { C: '#feae34', H: '#fee761' } : null, cls === 'brau' ? 'held' : '');
+        const hx = x + (flip ? -4 : 4) * gk, hy = y - 7 * gk + bob;
+        b.save(); b.translate(Math.round(hx), Math.round(hy)); if (gk > 1) b.scale(gk, gk);
         if (cls === 'schuetze') { // Bogen: beim Schuss kurzer Rückstoss
           const rec = h.swing > 0 ? Math.sin(h.swing / 0.2 * Math.PI) * 2.5 : 0;
           b.rotate(aim); b.drawImage(wpn.img, -2 - Math.round(rec), -Math.round(wpn.h / 2));
         }
-        else if (cls === 'weber' || cls === 'rufer') { // Stab: beim Zaubern nach vorn stossen, Spitze glüht
+        else if (cls === 'brau') { // Flasche in der Hand; nach dem Wurf kurz leer, dann holt er die nächste heraus
+          const since = W.t - (h.thrownT == null ? -9 : h.thrownT);
+          if (since > 0.22) { const k = clamp((since - 0.22) / 0.12, 0, 1); b.rotate((flip ? -1 : 1) * (0.3 + Math.sin(this.t * 3) * 0.08)); b.globalAlpha = k; b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 2 + Math.round((1 - k) * 3)); b.globalAlpha = 1; }
+        }
+        else if (staff) { // Stab: beim Zaubern nach vorn stossen, Spitze glüht (Rufer: Schädel mit lila Augen)
           const cast = h.swing > 0 ? Math.sin(Math.min(1, h.swing / 0.2) * Math.PI) : 0;
           const rot = (flip ? -1 : 1) * (0.15 + cast * 0.55) + Math.sin(this.t * 2.5) * 0.03;
           b.rotate(rot); b.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4);
-          const L = wpn.h - 5, tx = hx + Math.sin(rot) * L, ty = hy - Math.cos(rot) * L, gl = this.g, col = '#7fd8ff';
+          const L = (wpn.h - 5) * gk, tx = hx + Math.sin(rot) * L, ty = hy - Math.cos(rot) * L, gl = this.g, col = cls === 'rufer' ? '#e0a4ff' : '#7fd8ff';
           const pulse = 0.5 + Math.sin(this.t * 5) * 0.2 + cast * 0.5, rr = 1.5 + cast * 2.5;
           gl.globalAlpha = Math.min(1, pulse); gl.fillStyle = col; gl.beginPath(); gl.arc(Math.round(tx), Math.round(ty), rr + 1, 0, TAU); gl.fill();
           gl.fillStyle = '#ffffff'; gl.fillRect(Math.round(tx) - 1, Math.round(ty) - 1, 2, 2); gl.globalAlpha = 1;
-          this.tip = { x: (tx + cx) * PX, y: (ty + cy) * PX, a: 0.35 + cast * 0.6 };
+          this.tip = { x: (tx + cx) * PX, y: (ty + cy) * PX, a: 0.35 + cast * 0.6, col };
           if (A.FX && Math.random() < 0.15 + cast) A.FX.part({ kind: 'px', add: true, x: (tx + cx) * PX + (Math.random() - 0.5) * 6, y: (ty + cy) * PX + 6, vx: (Math.random() - 0.5) * 20, vy: -20 - Math.random() * 30, life: 0.4, color: Math.random() < 0.5 ? col : '#ffffff' });
         }
         else {
@@ -637,13 +645,16 @@ window.A = window.A || {};
         }
         b.restore();
       };
-      const behind = cls !== 'schuetze' && h.swing <= 0 && h.fy < -0.3;
+      const behind = cls !== 'schuetze' && cls !== 'brau' && h.swing <= 0 && h.fy < -0.3;
       if (behind) drawWeapon();
       if (blink) this.blit(spr, x, y + bob, flip, { alpha: 0.45, sx, sy });
       else this.blit(spr, x, y + bob, flip, { white: h.flash > 0, sx, sy });
       if (!behind) drawWeapon();
       // Schild-Blase
-      if (h.shield > 0) { b.globalAlpha = 0.35 + Math.sin(this.t * 6) * 0.1; b.strokeStyle = '#2ce8f5'; b.lineWidth = 1; b.beginPath(); b.ellipse(Math.round(x), Math.round(y - 9), 11, 12, 0, 0, TAU); b.stroke(); b.globalAlpha = 1; }
+      if (h.shield > 0) { b.globalAlpha = 0.35 + Math.sin(this.t * 6) * 0.1; b.strokeStyle = '#2ce8f5'; b.lineWidth = 1; b.beginPath(); b.ellipse(Math.round(x), Math.round(y - 9 * gk), 11 * gk, 12 * gk, 0, 0, TAU); b.stroke(); b.globalAlpha = 1; }
+      // Rausch (Braumeister): Dampf und Funken an den Füssen; Glückssträhne: Kleeblatt-Funkeln über dem Kopf
+      if (A.FX && !A.FX.low && h.brewUntil > W.t && Math.random() < 0.35) A.FX.part({ kind: 'px', add: true, x: h.x + (Math.random() - 0.5) * 18, y: h.y + 10, vx: -h.fx * 30, vy: -10, vz: 20, life: 0.35, color: Math.random() < 0.5 ? '#feae34' : '#fee761', drag: 3 });
+      if (h.luckyN > 0) { const g = this.g; for (let i = 0; i < Math.min(5, h.luckyN); i++) { const a = this.t * 3 + i / 5 * TAU; g.globalAlpha = 0.8; g.fillStyle = i % 2 ? '#63c74d' : '#fee761'; g.fillRect(Math.round(x + Math.cos(a) * 8), Math.round(y - 24 * gk + Math.sin(a) * 2), 1, 1); } g.globalAlpha = 1; }
       if (h.stun > 0) this.stars(x, y - 20);
     }
     // Umkippen beim Sterben: Figur dreht sich um die Füsse und liegt dann am Boden
@@ -879,6 +890,7 @@ window.A = window.A || {};
     }
 
     drawShot(s, cx, cy) {
+      if (s.opts.lob) { this.drawFlask(s, cx, cy); return; }
       const b = this.b, g = this.g, x = s.x / PX - cx, y = s.y / PX - cy - 5;
       if (s.side === 'hero' && s.opts.kind !== 'magic') {
         const a = A.Art.sprite('arrow'); b.save(); b.translate(Math.round(x), Math.round(y)); b.rotate(Math.atan2(s.vy, s.vx)); b.drawImage(a.img, -a.w + 2, -Math.round(a.h / 2)); b.restore();
@@ -904,6 +916,17 @@ window.A = window.A || {};
       if (A.FX && Math.random() < 0.5) A.FX.part({ kind: 'px', add: true, x: s.x, y: s.y - 10, vx: -s.vx * 0.1, vy: -s.vy * 0.1, life: 0.25, color: ring });
     }
 
+    // Flasche des Braumeisters: fliegt im Bogen (Höhe aus der Restzeit), dreht sich, Schatten am Boden
+    drawFlask(s, cx, cy) {
+      const b = this.b, g = this.g, p = clamp(1 - s.life / s.life0, 0, 1), up = 4 * s.peak * p * (1 - p) / PX;
+      const x = s.x / PX - cx, y = s.y / PX - cy, col = s.color || '#feae34';
+      b.globalAlpha = 0.35; b.fillStyle = '#08060e'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y + 2), 3, 1.5, 0, 0, TAU); b.fill(); b.globalAlpha = 1;
+      const spr = A.Art.sprite('flask', 0, { C: col, H: '#ffffff' }, 'fl' + col);
+      b.save(); b.translate(Math.round(x), Math.round(y - 4 - up)); b.rotate(s.spin * (s.life0 - s.life)); b.drawImage(spr.img, -Math.round(spr.w / 2), -Math.round(spr.h / 2)); b.restore();
+      g.globalAlpha = 0.45; g.fillStyle = col; g.beginPath(); g.arc(Math.round(x), Math.round(y - 4 - up), 3, 0, TAU); g.fill(); g.globalAlpha = 1;
+      if (A.FX && !A.FX.low && Math.random() < 0.35) A.FX.part({ kind: 'px', add: true, x: s.x, y: s.y, z: 8 + up * PX, vx: -s.vx * 0.05, vy: -s.vy * 0.05, life: 0.3, color: col, drag: 2 });
+    }
+
     drawLights(W, cx, cy) {
       const l = this.l, bw = this.bw, bh = this.bh, t = this.t;
       l.globalCompositeOperation = 'source-over'; l.globalAlpha = 1; l.fillStyle = this.theme.ambient; l.fillRect(0, 0, bw, bh);
@@ -912,7 +935,7 @@ window.A = window.A || {};
       const fl = (ph, k) => 0.86 + Math.sin(t * 9 * (k || 1) + ph) * 0.07 + Math.sin(t * 23 + ph * 2) * 0.05;
       const h = W.hero;
       L(h.x, h.y - 8, 82, '#ffcf94', 0.8); L(h.x, h.y - 8, 30, '#ffffff', 0.28);
-      if (this.tip) L(this.tip.x, this.tip.y, 24 + this.tip.a * 40, '#7fd8ff', this.tip.a);
+      if (this.tip) L(this.tip.x, this.tip.y, 24 + this.tip.a * 40, this.tip.col || '#7fd8ff', this.tip.a);
       for (const tc of this.torches) {
         const lit = this.litAt[tc.room]; if (lit == null) continue;
         const age = t - lit, grow = clamp(age / 0.6, 0, 1);
@@ -942,8 +965,9 @@ window.A = window.A || {};
       for (const s of W.shots) L(s.x, s.y - 10, s.side === 'hero' ? 26 : 22, s.side === 'hero' ? (s.opts.kind === 'magic' ? s.color : '#ffe2b8') : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), s.side === 'hero' && s.opts.kind !== 'magic' ? 0.25 : 0.8);
       for (const z of W.zones || []) if (!z.trail) L(z.x, z.y, z.r / PX * 1.3, z.col, 0.35);
       for (const o of W.orbs || []) if (o.x != null) L(o.x, o.y - 14, 22, o.col, 0.6);
-      for (const a of W.allies || []) L(a.x, a.y - 10, 34, a.shadow ? '#b55088' : '#2ce8f5', 0.55);
+      for (const a of W.allies || []) L(a.x, a.y - 10, a.minion ? 26 : 34, a.col || (a.shadow ? '#b55088' : '#2ce8f5'), a.minion ? 0.4 : 0.55);
       for (const k of W.marks || []) if (k.kind === 'meteor') L(k.x, k.y, k.r / PX * 1.2, '#e43b44', 0.3 + 0.3 * Math.sin(t * 20));
+      else if (k.kind === 'barrel') { L(k.x, k.y - 22, 22, '#feae34', 0.6 + 0.4 * Math.sin(t * 30)); L(k.x, k.y, k.r / PX * 1.1, '#f77622', 0.15 + 0.2 * clamp((W.t - k.t0) / (k.at - k.t0), 0, 1)); }
       for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
       if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
       A.Bosses.lights(W, L);
@@ -958,7 +982,8 @@ window.A = window.A || {};
         if (m.state === 'windup') L(m.x, m.y - 10, 20, '#e43b44', 0.6);
       }
       const run = A.Game.run;
-      if (run && (run.cls === 'weber' || run.cls === 'rufer') && h.alive) L(h.x + (h.fx < 0 ? -8 : 8), h.y - 34, 22, '#2ce8f5', 0.7 + (h.swing > 0 ? 0.3 : 0));
+      if (run && (run.cls === 'weber' || run.cls === 'rufer') && h.alive) L(h.x + (h.fx < 0 ? -8 : 8), h.y - 34, 22, run.cls === 'rufer' ? '#e0a4ff' : '#2ce8f5', 0.7 + (h.swing > 0 ? 0.3 : 0));
+      if (h.brewUntil > W.t && h.alive) L(h.x, h.y - 6, 40, '#feae34', 0.35);
       if (A.FX) for (const f of A.FX.flashes) L(f.x, f.y, f.r / PX * 1.2, f.color, f.life / f.max);
       l.globalAlpha = 1; l.globalCompositeOperation = 'source-over';
     }
@@ -971,19 +996,29 @@ window.A = window.A || {};
       for (const z of W.zones || []) {
         const x = z.x / PX - cx, y = z.y / PX - cy, R = z.r / PX, life = clamp((z.until - W.t) / 0.5, 0, 1) * clamp((W.t - z.t0) / 0.25, 0, 1);
         if (z.trail) { b.globalAlpha = 0.35 * life; b.fillStyle = z.ember ? '#f77622' : '#3e8948'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.5, 0, 0, TAU); b.fill(); continue; }
-        const heal = z.kind === 'heal';
-        b.globalAlpha = 0.22 * life; b.fillStyle = heal ? '#63c74d' : '#265c42'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+        const heal = z.kind === 'heal', fire = z.kind === 'fire';
+        if (z.kind === 'grab') { this.drawGrab(z, x, y, R, life); continue; }
+        b.globalAlpha = (fire ? 0.3 : 0.22) * life; b.fillStyle = heal ? '#63c74d' : fire ? '#be4a2f' : '#265c42'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
         g.globalAlpha = 0.5 * life; g.strokeStyle = z.col; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
-        // Blasen (Gift) oder aufsteigende Pluszeichen (Quelle)
-        g.fillStyle = heal ? '#c8f5a0' : '#63c74d';
-        for (let i = 0; i < 9; i++) {
-          const a = i * 2.39 + z.x, rr = R * (0.2 + (i * 0.37 % 0.8)), q = (t * (heal ? 0.7 : 0.5) + i * 0.13) % 1;
-          const px = Math.round(x + Math.cos(a) * rr), py = Math.round(y + Math.sin(a) * rr * 0.55 - q * (heal ? 14 : 8));
+        // Blasen (Gift), aufsteigende Pluszeichen (Quelle) oder Flämmchen (Feuerlache)
+        g.fillStyle = heal ? '#c8f5a0' : fire ? '#feae34' : '#63c74d';
+        for (let i = 0; i < (fire ? 12 : 9); i++) {
+          const a = i * 2.39 + z.x, rr = R * (0.2 + (i * 0.37 % 0.8)), q = (t * (heal ? 0.7 : fire ? 1.4 : 0.5) + i * 0.13) % 1;
+          const px = Math.round(x + Math.cos(a) * rr), py = Math.round(y + Math.sin(a) * rr * 0.55 - q * (heal ? 14 : fire ? 10 : 8));
           g.globalAlpha = (1 - q) * 0.8 * life;
-          if (heal) { g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); } else g.fillRect(px, py, q > 0.6 ? 2 : 1, q > 0.6 ? 2 : 1);
+          if (heal) { g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); }
+          else if (fire) { g.fillStyle = q < 0.4 ? '#fee761' : '#f77622'; g.fillRect(px, py, 1, q < 0.3 ? 3 : 2); }
+          else g.fillRect(px, py, q > 0.6 ? 2 : 1, q > 0.6 ? 2 : 1);
         }
       }
       for (const k of W.marks || []) {
+        if (k.kind === 'barrel') { // Warnkreis des Sprengfasses füllt sich, bis es knallt
+          const x = k.x / PX - cx, y = k.y / PX - cy, R = k.r / PX, p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1);
+          b.globalAlpha = 0.14; b.fillStyle = '#f77622'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+          b.globalAlpha = 0.28; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R * p, R * 0.55 * p, 0, 0, TAU); b.fill();
+          g.globalAlpha = 0.6 + 0.3 * Math.sin(t * 20); g.strokeStyle = '#feae34'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
+          continue;
+        }
         if (k.kind !== 'meteor') continue;
         const x = k.x / PX - cx, y = k.y / PX - cy, R = k.r / PX, p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1);
         b.globalAlpha = 0.18; b.fillStyle = '#e43b44'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
@@ -999,6 +1034,7 @@ window.A = window.A || {};
     }
     // Geisterwolf: halb durchsichtig, leuchtender Umriss, kleine Funken
     drawAlly(a, cx, cy) {
+      if (a.minion) { this.drawMinion(a, cx, cy); return; }
       const x = a.x / PX - cx, y = a.y / PX - cy + 7;
       const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
       const spr = A.Art.monSprite('geisterwolf', frame), flip = a.fx < 0;
@@ -1010,6 +1046,52 @@ window.A = window.A || {};
       this.blit(spr, x + ox, y, flip, { alpha: a.shadow ? alpha * 0.8 : alpha });
       if (a.shadow) { const k = flip ? 'shadeF' : 'shade'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#68386c'); this.b.globalAlpha = 0.55 * alpha; this.b.drawImage(spr[k], Math.round(x + ox - spr.w / 2), Math.round(y - spr.h)); this.b.globalAlpha = 1; }
       if (A.FX && !A.FX.low && Math.random() < 0.15) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 20, y: a.y, vx: 0, vy: -20, life: 0.5, color: a.shadow ? '#e0a4ff' : '#7fe8ff', drag: 1 });
+    }
+    // Grabeshände: lila Kreis, Knochenhände wachsen aus dem Boden, greifen zu und versinken wieder
+    drawGrab(z, x, y, R, life) {
+      const b = this.b, g = this.g, W = A.World.W, age = W.t - z.t0, out = clamp(Math.min(age / 0.25, (z.until - W.t) / 0.4), 0, 1);
+      b.globalAlpha = 0.3 * life; b.fillStyle = '#3e2731'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+      g.globalAlpha = 0.55 * life; g.strokeStyle = z.col; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
+      const hand = A.Art.sprite('grabhand', 0, { '5': '#cdbfe0', '4': '#7d6a96' }, 'grab');
+      for (let i = 0; i < 9; i++) {
+        const a = i * 2.39 + z.x * 0.01, rr = R * (0.15 + (i * 0.41 % 0.8)), px = Math.round(x + Math.cos(a) * rr), py = Math.round(y + Math.sin(a) * rr * 0.55);
+        const hh = Math.round(hand.h * out * (0.8 + 0.2 * Math.sin(this.t * 9 + i))); if (hh < 1) continue;
+        b.globalAlpha = 1; b.drawImage(hand.img, 0, 0, hand.w, hh, px - Math.floor(hand.w / 2), py - hh, hand.w, hh);
+        b.fillStyle = '#181425'; b.fillRect(px - 3, py, 6, 1);
+      }
+      b.globalAlpha = 1; g.globalAlpha = 1;
+    }
+    // Sprengfass: fliegt im Bogen hin, dann brennt die Lunte (Funken), es wackelt immer schneller
+    drawBarrel(k, W, cx, cy) {
+      const b = this.b, fly = clamp((W.t - k.t0) / 0.3, 0, 1), wx = k.sx + (k.x - k.sx) * fly, wy = k.sy + (k.y - k.sy) * fly;
+      const x = wx / PX - cx, y = wy / PX - cy + 4, up = Math.sin(fly * Math.PI) * 14, p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1);
+      const spr = A.Art.sprite('fass', Math.floor(this.t * 14) % 2);
+      if (fly >= 1) this.shadow(x, y, 6);
+      const shake = fly >= 1 ? Math.round(Math.sin(this.t * (20 + p * 40)) * p * 1.5) : 0;
+      this.blit(spr, x + shake, y - up, false, { white: p > 0.85 && Math.floor(this.t * 20) % 2 });
+      if (A.FX && fly >= 1 && Math.random() < 0.6) A.FX.part({ kind: 'spark', add: true, x: (x + cx) * PX + 2, y: (y + cy) * PX - spr.h * PX + 4, vx: (Math.random() - 0.5) * 60, vy: -40 - Math.random() * 50, life: 0.25, color: Math.random() < 0.5 ? '#fee761' : '#feae34', drag: 2 });
+    }
+    // Diener des Rufers: Skelett steigt aus dem Boden, Geist schwebt halb durchsichtig; lila Umriss, rosa bei Seelenband; zerfällt am Ende
+    drawMinion(a, cx, cy) {
+      const b = this.b, W = A.World.W, ghost = a.look === 'geist', x = a.x / PX - cx, y0 = a.y / PX - cy + 7;
+      const spr = A.Art.monSprite(ghost ? 'diener_geist' : 'diener_skel', 0), flip = a.fx < 0, sc = 1;
+      const left = a.until - (W ? W.t : 0), rally = W && a.rallyUntil > W.t;
+      let alpha = ghost ? 0.72 : 1, rise = 1;
+      if (a.spawn > 0) { const q = clamp(1 - a.spawn / 0.4, 0, 1); if (ghost) alpha *= q; else rise = q; }
+      if (left < 1.5) alpha *= 0.55 + Math.sin(this.t * 20) * 0.3;
+      const bob = ghost ? Math.round(Math.sin(this.t * 4 + a.x * 0.1) * 1.5) - 3 : (a.moving && Math.floor(this.t * 10) % 2 ? -1 : 0);
+      let ox = 0; if (a.swing > 0) ox = a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 3;
+      this.shadow(x, y0, ghost ? 4 : 5);
+      const glow = rally ? '#f6757a' : '#b55088', y = y0 + bob;
+      if (rise < 1) { // aus dem Boden: nur der obere Teil ist schon zu sehen
+        const hh = Math.max(1, Math.round(spr.h * sc * rise)), w = Math.round(spr.w * sc), img = flip ? A.Art.flipped(spr) : spr.img;
+        b.drawImage(img, 0, 0, spr.w, Math.max(1, Math.round(spr.h * rise)), Math.round(x - w / 2), Math.round(y0 - hh), w, hh);
+        b.fillStyle = '#3e2731'; b.fillRect(Math.round(x - 5), Math.round(y0 - 1), 10, 2);
+        return;
+      }
+      this.outlineGlow(spr, x + ox, y, flip, glow, sc);
+      this.blit(spr, x + ox, y, flip, { alpha, sx: sc, sy: sc });
+      if (A.FX && !A.FX.low && Math.random() < (ghost ? 0.2 : 0.06)) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 16, y: a.y, vx: 0, vy: -20, life: 0.5, color: rally ? '#f6757a' : '#e0a4ff', drag: 1 });
     }
     // über den Figuren: kreisende Geister/Klingen, Blitze, Blitzschritt-Spur
     drawBoonsTop(W, cx, cy) {

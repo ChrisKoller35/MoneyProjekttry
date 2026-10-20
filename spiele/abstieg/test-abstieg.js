@@ -1,11 +1,12 @@
 // Browser-Test: steuert den Helden automatisch durch die Ebenen (läuft zu Gegnern, schlägt, nutzt Fähigkeiten,
 // benutzt Truhen/Feuer/Treppe), macht Bildschirmfotos, meldet Fehler.
-// Aufruf: node test-abstieg.js <bilder-ordner> [playwright-pfad] [chromium-pfad] [retro|3d]
+// Aufruf: node test-abstieg.js <bilder-ordner> [playwright-pfad] [chromium-pfad] [retro|3d] [klasse, z. B. rufer]
 const path = require('path'), fs = require('fs');
 const out = process.argv[2] || '.';
 const pw = require(process.argv[3] || '/opt/node-tools/node_modules/playwright');
 const exe = process.argv[4] || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const look = process.argv[5] || 'retro';
+const cls = process.argv[6] || 'klinge';
 const file = 'file://' + path.join(__dirname, 'dist', 'index.html') + '?look=' + look;
 fs.mkdirSync(out, { recursive: true });
 
@@ -21,7 +22,7 @@ fs.mkdirSync(out, { recursive: true });
   await shot('01-titel');
   await page.click('#bNew'); await page.waitForTimeout(200);
   await shot('02-held');
-  await page.click('[data-cls="klinge"]'); await page.waitForTimeout(100);
+  await page.click(`[data-cls="${cls}"]`); await page.waitForTimeout(100);
   await page.click('#bStart'); await page.waitForTimeout(600);
   await shot('03-ebene');
 

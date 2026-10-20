@@ -156,6 +156,26 @@ A.FX = (function () {
         return;
       }
       case 'zap': flash(d.x, d.y, 60, d.color || '#fee761', 0.25); if (once('zap', 80)) S().cast(); return;
+      case 'flask': { // Flasche des Braumeisters zerplatzt: Glassplitter, farbige Spritzer (bleiben als Flecken), Ring
+        const c = d.color || '#feae34', R = d.r || 46;
+        burst(d.x, d.y - 6, d.big ? 14 : 8, { color: ['#ffffff', '#c0cbdc', '#9be8ff'], smin: 60, smax: 200, life: 0.35, add: true, kind: 'spark', drag: 5 });
+        burst(d.x, d.y - 4, d.big ? 18 : 10, { color: [c, c, '#ffffff'], smin: 30, smax: 30 + R * 1.6, life: 0.6, z: 4, vz: 120, g: 420, stick: true });
+        part({ kind: 'ring', x: d.x, y: d.y, life: 0.3, size: R, color: c, add: true });
+        flash(d.x, d.y, R * 1.2, c, 0.22);
+        if (d.big) { shake(0.2); smoke(d.x, d.y, 3, c, 4); }
+        if (once('glass', 60)) S().glass(d.big);
+        return;
+      }
+      case 'raise': { // Diener des Rufers steigt aus dem Boden: Rune, Erdbrocken, Seelenfunken
+        const m = d.m, c = d.color || '#e0a4ff';
+        part({ kind: 'rune', x: m.x, y: m.y + 8, life: 0.6, size: 12, color: c, add: true });
+        burst(m.x, m.y + 6, 7, { color: ['#3e2731', '#733e39', '#8b9bb4'], smin: 30, smax: 90, life: 0.5, z: 2, vz: 110, g: 420 });
+        burst(m.x, m.y, 10, { color: [c, '#ffffff'], smin: 5, smax: 40, vz: 70, g: -40, life: 0.8, add: true });
+        flash(m.x, m.y, 50, c, 0.25);
+        if (once('raise', 150)) S().summon();
+        return;
+      }
+      case 'keg': S().fuse(); return;
     }
   }
 

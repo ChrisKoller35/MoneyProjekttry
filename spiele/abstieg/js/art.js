@@ -114,6 +114,39 @@ A.Art = (function () {
   R.hero_klinge = ['idle', 'a', 'p', 'b'].map(k => knightTop.concat(LEG[k]));
   R.hero_schuetze = ['idle', 'a', 'p', 'b'].map(k => archerTop.concat(LEG[k]));
   R.hero_weber = ['idle', 'a', 'p', 'b'].map(k => weaverTop.concat(weaverLegs[k]));
+  // Rufer: Kapuzenrobe mit Schädel-Anhänger; Braumeister: Hut mit breiter Krempe, Bart, Schürze, Gürtel mit Fläschchen
+  const callerTop = [
+    '.......D........',
+    '......DCD.......',
+    '.....DCCCD......',
+    '....DCCCCCD.....',
+    '...DCCCCHCCD....',
+    '...DCC1SSSSD....',
+    '...DC11SS0SD....',
+    '...DCC1SSSTD....',
+    '...DCCC1TTD.....',
+    '..SDCCC5CCCDS...',
+    '..DDCCCHCCCDD...',
+    '...DCnnnnnCD....',
+    '...DCCCCCCCD....',
+  ];
+  const brewerTop = [
+    '................',
+    '.....DDDDD......',
+    '....DCCHCCD.....',
+    '..DDDDDDDDDDD...',
+    '....SSSSSSS.....',
+    '....SSSSS0S.....',
+    '....SSSSSST.....',
+    '....NNNNNNN.....',
+    '...DCNNNNNCD....',
+    '..SDCsssssCDS...',
+    '..SDCsssssCDS...',
+    '...DnlnBnynD....',
+    '....DsssssD.....',
+  ];
+  R.hero_rufer = ['idle', 'a', 'p', 'b'].map(k => callerTop.concat(weaverLegs[k]));
+  R.hero_brau = ['idle', 'a', 'p', 'b'].map(k => brewerTop.concat(LEG[k]));
 
   R.slime = [[
     '......CCCC......',
@@ -441,6 +474,63 @@ A.Art = (function () {
     '..N...',
   ]];
   R.arrow = [['N.......', 'NmmmmmM5', 'N.......']];
+  // Schädelstab des Rufers, Flasche des Braumeisters (C/H = Farbe der Füllung), Sprengfass mit Lunte (2 Bilder), Knochenhand der Grabeshände
+  R.w_skullstaff = [[
+    '.555..',
+    '55555.',
+    '5V5V5.',
+    '55555.',
+    '.5.5..',
+    '..N...',
+    '..m...',
+    '..N...',
+    '..m...',
+    '..N...',
+    '..m...',
+    '..N...',
+    '..m...',
+  ]];
+  R.flask = [[
+    '.N..',
+    '.5..',
+    '5CC5',
+    '5CH5',
+    '5CC5',
+    '.55.',
+  ]];
+  R.fass = [[
+    '.....Y....',
+    '....n.....',
+    '..NNNNNN..',
+    '.NmMmmMmN.',
+    '.22222222.',
+    '.NmMRRMmN.',
+    '.NmRMMRmN.',
+    '.22222222.',
+    '.NmMmmMmN.',
+    '..NNNNNN..',
+  ], [
+    '....6.Y...',
+    '....n.....',
+    '..NNNNNN..',
+    '.NmMmmMmN.',
+    '.22222222.',
+    '.NmMRRMmN.',
+    '.NmRMMRmN.',
+    '.22222222.',
+    '.NmMmmMmN.',
+    '..NNNNNN..',
+  ]];
+  R.grabhand = [[
+    '.5.5.5..',
+    '.5.5.5.5',
+    '.5.5.5.5',
+    '55555555',
+    '.555555.',
+    '..4554..',
+    '..4444..',
+    '..4444..',
+  ]];
 
   // ---------- Dinge im Raum ----------
   R.chest = [[
@@ -918,6 +1008,22 @@ A.Art = (function () {
     '...ss..ss.......',
     '...s....s.......',
   ];
+  I.kelle = [
+    '..............N.',
+    '.............Nm.',
+    '............Nm..',
+    '...........Nm...',
+    '..........Nm....',
+    '.........Nm.....',
+    '........Nm......',
+    '.......Nm.......',
+    '..5555Nm........',
+    '.544445.........',
+    '54llll45........',
+    '54lllY45........',
+    '.544445.........',
+    '..5555..........',
+  ];
   for (const k of Object.keys(I)) R['i_' + k] = [I[k]];
 
   // ---------- Oberflächen-Symbole ----------
@@ -1258,6 +1364,111 @@ A.Art = (function () {
     '...343...',
     '....3....',
     '....3....',
+  ]];
+  // ---------- Symbole für Rufer und Braumeister ----------
+  R.s_skel = [[
+    '..55555..',
+    '.5555555.',
+    '.5005005.',
+    '.5005005.',
+    '.5555555.',
+    '..55055..',
+    '..5.5.5..',
+    '..55555..',
+    '.........',
+  ]];
+  R.s_army = [[
+    '.55...55.',
+    '5005.5005',
+    '5555.5555',
+    '.5.5.5.5.',
+    '..55555..',
+    '.5555555.',
+    '.5005005.',
+    '.5555555.',
+    '..5.5.5..',
+  ]];
+  R.s_soul = [[
+    '.....VVV.',
+    '......wV.',
+    '.....w.V.',
+    '....w....',
+    '...w.....',
+    '.6w......',
+    '.66......',
+    '6.6......',
+    '.........',
+  ]];
+  R.s_hand = [[
+    '.5.5.5...',
+    '.5.5.5.5.',
+    '.5555555.',
+    '.555555..',
+    '..5555...',
+    '...55....',
+    '...55....',
+    'NNNNNNNNN',
+    'nNnNnNnNn',
+  ]];
+  R.s_offer = [[
+    'V...w...V',
+    '.V..w..V.',
+    '...555...',
+    'ww50505ww',
+    '...555...',
+    '...5.5...',
+    '.V..w..V.',
+    'V...w...V',
+    '.........',
+  ]];
+  R.s_band = [[
+    '.VV...VV.',
+    'VwwV.VwwV',
+    'VwwwVwwwV',
+    'VwwwwwwwV',
+    '.VwwwwwV.',
+    '..VwwwV..',
+    '...VwV...',
+    '....V....',
+    '.........',
+  ]];
+  const flaskIcon = [
+    '...NN....',
+    '...55....',
+    '..5CC5...',
+    '.5CCCC5..',
+    '5CCHCCC5.',
+    '5CCCCCC5.',
+    '5CCCCCC5.',
+    '.5CCCC5..',
+    '..5555...',
+  ];
+  const tint = (rows, c, h) => rows.map(r => r.replace(/C/g, c).replace(/H/g, h));
+  R.s_fflask = [tint(flaskIcon, 'f', 'Y')];
+  R.s_pflask = [tint(flaskIcon, 'l', 'Y')];
+  R.s_iflask = [tint(flaskIcon, 'c', '6')];
+  R.s_brew = [tint(flaskIcon, 'R', 'w')];
+  R.s_wonder = [[
+    '...NN....',
+    '...55....',
+    '..5VV5...',
+    '.5BBBB5..',
+    '5lllll65.',
+    '5yyyyyy5.',
+    '5ffffff5.',
+    '.5RRRR5..',
+    '..5555...',
+  ]];
+  R.s_barrel = [[
+    '....Y....',
+    '...n.....',
+    '.NNNNNN..',
+    'NmMmmMmN.',
+    '22222222.',
+    'NmMRRMmN.',
+    '22222222.',
+    'NmMmmMmN.',
+    '.NNNNNN..',
   ]];
   R.t_fang = [[
     '.........',
@@ -1889,7 +2100,7 @@ A.Art = (function () {
 
   // ---------- Paletten je Figur ----------
   const RACE_SKIN = { mensch: ['#e8b796', '#c28569'], fels: ['#5a6988', '#3a4466'], schatten: ['#b55088', '#68386c'], pilz: ['#63c74d', '#3e8948'], kobold: ['#feae34', '#be4a2f'] };
-  const CLASS_CLOTH = { klinge: ['#a22633', '#e43b44', '#f6757a'], schuetze: ['#265c42', '#3e8948', '#63c74d'], weber: ['#124e89', '#0099db', '#2ce8f5'], rufer: ['#68386c', '#b55088', '#f6757a'], brau: ['#be4a2f', '#d77643', '#feae34'] };
+  const CLASS_CLOTH = { klinge: ['#a22633', '#e43b44', '#f6757a'], schuetze: ['#265c42', '#3e8948', '#63c74d'], weber: ['#124e89', '#0099db', '#2ce8f5'], rufer: ['#262b44', '#68386c', '#b55088'], brau: ['#be4a2f', '#d77643', '#feae34'] };
   const MON = {
     schleimer: { spr: 'slime', C: '#63c74d', D: '#3e8948', H: '#c8f5a0' },
     schleimkoenig: { spr: 'slime', C: '#3e8948', D: '#265c42', H: '#63c74d' },
@@ -1913,6 +2124,8 @@ A.Art = (function () {
     leerenauge: { spr: 'eye', C: '#b55088', D: '#68386c' },
     waechter: { spr: 'eye', C: '#e43b44', D: '#a22633', R: '#feae34' },
     kraken: { spr: 'octopus', C: '#b55088', D: '#68386c', H: '#f6757a' },
+    diener_skel: { spr: 'skeleton', s: '#e6dcf2', '0': '#2a1836', '5': '#c0cbdc' },
+    diener_geist: { spr: 'ghost', C: '#e0a4ff', D: '#b55088', H: '#ffffff', '0': '#68386c' },
   };
 
   // ---------- Zwischenspeicher ----------
@@ -1934,7 +2147,7 @@ A.Art = (function () {
     return { S: sk[0], T: sk[1], D: cl[0], C: cl[1], H: cl[2] };
   }
   function heroSprite(race, cls, frame) {
-    const look = cls === 'schuetze' ? 'hero_schuetze' : (cls === 'weber' || cls === 'rufer') ? 'hero_weber' : 'hero_klinge';
+    const look = { schuetze: 'hero_schuetze', weber: 'hero_weber', rufer: 'hero_rufer', brau: 'hero_brau' }[cls] || 'hero_klinge';
     return sprite(look, frame, heroPal(race, cls), race + cls);
   }
   function monSprite(id, frame) {
