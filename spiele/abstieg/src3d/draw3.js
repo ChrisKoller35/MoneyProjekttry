@@ -189,7 +189,7 @@ import {
   function buildMon(m) {
     const g = figGroup(), shape = BUILD[m.shape] ? m.shape : 'blob';
     BUILD[shape](g, m.color || '#8b9bb4');
-    const sc = (m.boss ? 2 : m.elite ? 1.25 : 1) * 1.15; g.scale.setScalar(sc); g.userData.sc = sc; g.userData.shape = shape;
+    const sc = (m.boss ? 2 : m.giant ? 1.6 : m.elite ? 1.25 : 1) * 1.15; g.scale.setScalar(sc); g.userData.sc = sc; g.userData.shape = shape;
     selfLight(g, 0.16);
     if (m.boss) { const hh = g.userData.h; for (let i = 0; i < 4; i++) part(g, 'box', '#feae34', [0.07, 0.14, 0.07], [Math.cos(i / 4 * TAU) * 0.14, hh + 0.08, Math.sin(i / 4 * TAU) * 0.14], { shadow: false, m: { emissive: col('#feae34'), emissiveIntensity: 0.5 } }); }
     return g;
@@ -352,7 +352,7 @@ import {
       this.lvl = null; this.dyn = new Group(); this.scene.add(this.dyn);
       this.figs = new Map();   // Spielobjekt -> Gruppe
       this.ptsN = makePoints(false); this.ptsA = makePoints(true); this.scene.add(this.ptsN); this.scene.add(this.ptsA);
-      this.rings = []; for (let i = 0; i < 24; i++) { const m = new Mesh(GEO.ring, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; this.scene.add(m); this.rings.push(m); }
+      this.rings = []; for (let i = 0; i < 64; i++) { const m = new Mesh(GEO.ring, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; this.scene.add(m); this.rings.push(m); }
       this.arcs = []; for (let i = 0; i < 4; i++) { const m = new Mesh(GEO.arc, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; this.scene.add(m); this.arcs.push(m); }
       this.decMax = 400; this.decN = 0;
       this.dec = new InstancedMesh(GEO.plane, new MeshLambertMaterial({ color: 0xffffff, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), this.decMax);
@@ -595,12 +595,12 @@ import {
         g.position.set(m.x * U, 0, m.y * U);
         if (!m.alive) { g.visible = m.alpha > 0.82; if (g.visible) setFlash(g, true); continue; }
         g.visible = true; animMon(g, m, t);
-        setOpacity(g, m.spawn > 0 ? clamp(1 - m.spawn / 0.5, 0, 1) : 1);
+        setOpacity(g, m.spawn > 0 ? clamp(1 - m.spawn / 0.5, 0, 1) : m.mirror ? 0.55 + Math.sin(t * 6 + m.x) * 0.1 : 1);
         if (m.flash > 0) setFlash(g, true);
         else if (m.state === 'windup' && Math.floor(t * 16) % 2 === 0) setFlash(g, true, '#ff9090');
         else if (m.frozenUntil > W.t) setTint(g, '#9be8ff', 0.65);
         else if (m.boss) setTint(g, Math.sin(t * 4) > 0 ? '#e43b44' : '#a22633', 0.35);
-        else if (m.elite && !(m.spawn > 0)) setTint(g, ELITE_COL[m.eliteKind] || '#fee761', 0.3);
+        else if ((m.elite || m.mirror) && !(m.spawn > 0)) setTint(g, A.Elites.col(m, t), m.raged ? 0.5 : 0.3);
         else setFlash(g, false);
       }
       for (const a of W.allies || []) {
@@ -660,11 +660,14 @@ import {
         for (const G of [PN, PA]) for (const kk of ['position', 'aColor', 'aSize', 'aAlpha']) G.attributes[kk].needsUpdate = true;
       }
       let ri = 0;
-      const ring = (x, z, R, color, a, y) => { if (ri >= this.rings.length || R <= 0) return; const m = this.rings[ri++]; m.visible = true; m.position.set(x, y || 0.05, z); m.scale.set(R, R, 1); m.material.color.set(color); m.material.opacity = clamp(a, 0, 1); };
+      // ey: flacher Kreis (Bodenkreise der Bosse und Elite-Gegner treffen in einer Ellipse)
+      const ring = (x, z, R, color, a, y, ey) => { if (ri >= this.rings.length || R <= 0) return; const m = this.rings[ri++]; m.visible = true; m.position.set(x, y || 0.05, z); m.scale.set(R, R * (ey || 1), 1); m.material.color.set(color); m.material.opacity = clamp(a, 0, 1); };
       if (A.FX) for (const p of A.FX.P) { const q = 1 - p.life / p.max; if (p.kind === 'ring') ring(p.x * U, p.y * U, p.size * U * (0.2 + q), p.color, p.life / p.max); else if (p.kind === 'rune') ring(p.x * U, p.y * U, p.size * U * (0.6 + q * 0.4) * 0.6, p.color, p.life / p.max); }
       for (const f of W.fx) if (f.kind === 'ring') ring(f.x * U, f.y * U, f.r * (1.2 - f.life) * U, f.color, clamp(f.life / 0.4, 0, 1));
       for (const z of W.zones || []) if (!z.trail) ring(z.x * U, z.y * U, z.r * U, z.col, 0.55 * clamp((z.until - W.t) / 0.5, 0, 1) * clamp((W.t - z.t0) / 0.25, 0, 1));   // Wolken, Lachen, Grabeshände
       for (const k of W.marks || []) if (k.kind === 'meteor' || k.kind === 'barrel') { const p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1), c = k.kind === 'barrel' ? '#feae34' : '#ff0044'; ring(k.x * U, k.y * U, k.r * U, c, 0.7); ring(k.x * U, k.y * U, k.r * U * p, c, 0.35); }
+      A.Bosses.rings(W, ring, U);   // Warnkreise, Pfützen und Strahlen der Weltenbosse
+      A.Elites.rings(W, ring, U);   // Warnkreise, Pfützen, Schild und Klingen der Elite-Gegner
       for (let i = ri; i < this.rings.length; i++) this.rings[i].visible = false;
       let ai = 0;
       for (const f of W.fx) {
@@ -690,10 +693,11 @@ import {
       for (const m of W.mons) {
         if (!m.alive || m.spawn > 0) continue; const g = this.figs.get(m); const hh = g ? g.userData.h * g.userData.sc : 1;
         const [x, y] = toS(m.x, m.y, hh * TS + 6);
+        m._lblUp = hh * TS + 6; m._lblDy = 16 * d;   // Name und Eigenschaften der Elite über dem Balken (overlayCore)
         if (m.state === 'windup') { const al = A.Art.sprite('u_alert'); const s = 2.2 * d; c.imageSmoothingEnabled = false; c.drawImage(al.img, Math.round(x - al.w * s / 2), Math.round(y - al.h * s - 10 * d + Math.sin(t * 20) * 2 * d), al.w * s, al.h * s); }
         if (m.stun > 0) { c.fillStyle = '#fee761'; for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; c.fillRect(Math.round(x + Math.cos(a) * 12 * d), Math.round(y - 6 * d + Math.sin(a) * 4 * d), 3 * d, 3 * d); } }
         if (!m.boss && (m.hp < m.maxHp || m.elite)) {
-          const w = (m.elite ? 40 : 32) * d, bx = Math.round(x - w / 2), by = Math.round(y - 2 * d), hg = 5 * d;
+          const w = (m.giant ? 54 : m.elite ? 40 : 32) * d, bx = Math.round(x - w / 2), by = Math.round(y - 2 * d), hg = 5 * d;
           c.fillStyle = '#181425'; c.fillRect(bx - 2 * d, by - 2 * d, w + 4 * d, hg + 4 * d); c.fillStyle = '#3e2731'; c.fillRect(bx, by, w, hg);
           c.fillStyle = m.elite ? '#feae34' : '#e43b44'; c.fillRect(bx, by, Math.max(1, Math.round(w * m.hp / m.maxHp)), hg);
           if (m.shield > 0) { c.fillStyle = '#2ce8f5'; c.fillRect(bx, by + hg, Math.round(w * Math.min(1, m.shield / m.maxHp)), 2 * d); }
@@ -704,5 +708,4 @@ import {
       if (h.stun > 0) { const [x, y] = toS(h.x, h.y, 1.35 * TS); c.fillStyle = '#fee761'; for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; c.fillRect(Math.round(x + Math.cos(a) * 12 * d), Math.round(y + Math.sin(a) * 4 * d), 3 * d, 3 * d); } }
     }
   };
-  const ELITE_COL = { giftig: '#63c74d', gepanzert: '#8b9bb4', schnell: '#fee761' };
 })();

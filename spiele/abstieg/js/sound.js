@@ -114,6 +114,10 @@ A.Sound = (function () {
     glass(big) { if (!on()) return; noise(0.12, big ? 0.16 : 0.1, 'highpass', 3500, 8000); for (let i = 0; i < (big ? 4 : 3); i++) { const f = r(2400, 4200); tone(f, f * 0.9, 0.05, 'triangle', 0.025, i * 0.03); } if (big) noise(0.25, 0.12, 'lowpass', 1200, 200, 0.02); },
     summon() { if (!on()) return; tone(r(110, 130), r(220, 260), 0.45, 'sawtooth', 0.035); tone(r(330, 360), r(170, 190), 0.4, 'sine', 0.05, 0.05); noise(0.4, 0.06, 'bandpass', 300, 900, 0, 4); },
     fuse() { if (!on()) return; tone(160, 90, 0.12, 'square', 0.05); noise(0.9, 0.05, 'highpass', 4000, 6000, 0.1); },
+    // Elite-Gegner: Donnerschlag (Gewitter), Stampfer (Riesig), Wutschrei (Wütend)
+    thunder() { if (!on()) return; noise(0.08, 0.22, 'highpass', 2500, 6000); noise(0.9, 0.2, 'lowpass', 900, 80, 0.04); tone(70, 38, 0.8, 'sine', 0.14, 0.03); },
+    stomp() { if (!on()) return; tone(90, 32, 0.35, 'sine', 0.24); noise(0.3, 0.22, 'lowpass', 700, 90); tone(140, 60, 0.12, 'square', 0.04, 0.02); },
+    roar() { if (!on()) return; tone(170, 85, 0.55, 'sawtooth', 0.07); tone(120, 70, 0.6, 'square', 0.03, 0.03); noise(0.5, 0.1, 'bandpass', 500, 220, 0, 2); },
     drip() { if (!on()) return; const now = performance.now(); if (now - (S._dr || 0) < 400) return; S._dr = now; const f = r(1500, 2100); tone(f, f * 0.55, 0.07, 'sine', 0.018); tone(f * 1.4, f * 0.8, 0.05, 'sine', 0.008, 0.035); },
     // Musik starten (theme = Farbwelt) oder mit null anhalten; läuft nur, wenn der Ton an ist
     music(theme) {

@@ -55,6 +55,16 @@ Aus der Liste mit 10 einmaligen Käufen wird ein Lager, das man über viele Durc
 - **Das Lager-Bild wächst mit:** jedes Gebäude zeigt seine Stufe (Glut wird zu grossem Feuer mit Spiess, Strohpuppen und Zielscheibe, offene Truhe mit Gold, Schmied mit Hammer und Funken, Händler mit Laterne, Lichtsäule am Segensstein), freie Plätze leuchten, wenn man genug Funken hat. Freigeschaltete Völker sitzen ums Feuer, ab Stufe 15 kommt ein Palisadenzaun, ab 30 ein Wachturm, ganz ausgebaut eine Krone.
 - Spielstand bleibt: alte Käufe werden einmal in gleich gute oder bessere Gebäude-Stufen umgewandelt (es geht nichts verloren), Wimpel für schon besiegte Bosse werden nachgeliefert, ein laufender Durchlauf geht normal weiter.
 
+## Elite-Gegner (20.10.2026)
+Elite-Gegner sind keine stärkeren Zahlen mehr, sondern haben Eigenschaften, die man sieht und auf die man reagieren muss (Regeln und Bild in `js/elites.js`, Texte in `A.ELITE_TRAITS` in `js/data.js`):
+- **16 Eigenschaften:** Flink (Nachbilder), Gepanzert (Funken, kein Rückstoss), Giftig (Giftpfützen), Feurig (Feuerring mit Warnkreis), Frostig (Eiskreis unter dem Helden, friert fest), Explosiv (platzt kurz nach dem Tod, trifft auch Gegner), Beschwörer (ruft Helfer), Blinzelnd (springt durch den Raum), Schildträger (Lichtschild, lädt nach), Vampir (heilt sich mit Treffern), Riesig (doppelt so gross, Stampfer), Gewitter (drei markierte Blitze), Wütend (ab halbem Leben rasend), Spiegelnd (zwei Spiegelbilder bei halbem Leben), Klingenwirbel (drei kreisende Klingen), Heiler (heilt die anderen Gegner).
+- **Mehr Eigenschaften in der Tiefe:** 1 bis Ebene 4, 2 ab Ebene 5, 3 ab Ebene 15, 4 ab Welten II. Ab Ebene 3 hat ein Kampfraum manchmal einen «Champion» mit einer Eigenschaft weniger (13 % bis höchstens 30 %). Was nicht zusammenpasst, kommt nicht zusammen: höchstens eine Eigenschaft, die ihn am Leben hält (Schild, Vampir, Heiler), nie Flink und Riesig zugleich, kein Beschwörer bei Gegnern, die schon rufen.
+- **Anzeige:** farbige Aura und Name mit Symbolen über dem Gegner, oben ein eigener Balken mit allen Eigenschaften und einem kurzen Tipp, Warnkreise am Boden (auch im 3D-Look). Taucht eine Eigenschaft zum ersten Mal auf, erklärt ein Banner sie.
+- **Belohnung je Eigenschaft:** mehr Gold und Erfahrung, bessere Beute (ab 3 Eigenschaften manchmal ein zweites Stück), am Ende 1 Seelenfunke pro besiegter Eigenschaft.
+- **Elite-Buch im Lager:** eine Seite pro Eigenschaft. Die erste besiegte Elite mit einer neuen Eigenschaft gibt sofort 10 Seelenfunken, jede Seite macht für immer 2 % mehr Schaden gegen Elite-Gegner (alle 16: +32 %). Das Buch zählt auch, wie oft man jede Eigenschaft besiegt hat.
+- Nebenbei: Boss-Warnkreise (Sprung, Ranken, Flut, Strahl) sind jetzt auch im 3D-Look zu sehen, die Balken oben weichen am Handy der Minikarte aus, und lange Banner passen auf schmale Bildschirme.
+- Spielstand bleibt: altes Lager und laufende Durchläufe laden normal, das Elite-Buch beginnt leer.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -67,6 +77,7 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
   - `boons` – Schrein: Zauber für alle, passive Talente, Verstärkungen.
   - `gear` – Ausrüstung: Element-Boni (2/4/6 Teile) und besondere Kräfte im Kampf, Build-Übersicht.
   - `classes` – eigene Spielweise von Rufer (Diener) und Braumeister (Flaschen im Bogen, Sprengfass, Tränke).
+  - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise in Retro und 3D).
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.

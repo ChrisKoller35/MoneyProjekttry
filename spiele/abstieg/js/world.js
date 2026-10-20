@@ -9,7 +9,7 @@ A.World = (function () {
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   let W = null;      // aktueller Zustand der Ebene
-  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend
+  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
 
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
@@ -35,7 +35,7 @@ A.World = (function () {
     hooks = hooksIn || hooks;
     const f = genFloor(floor, seed, saved);
     if (A.FX) A.FX.reset();
-    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], zones: [], orbs: [], allies: [], marks: [], bolts: [], bfx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
+    W = Object.assign(f, { t: 0, hero: null, mons: [], shots: [], picks: [], floats: [], fx: [], zones: [], orbs: [], allies: [], marks: [], bolts: [], bfx: [], efx: [], shake: 0, paused: false, near: null, stats: { crits: 0, dmgRoom: 0 }, room: null, active: null, hint: '' });
     const sr = f.start;
     W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
@@ -126,7 +126,9 @@ A.World = (function () {
     else {
       const pool = A.monsterPool(f);
       const n = r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > 130 && f >= 6 ? 1 : 0);
-      for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, r.type === 'elite' && i === 0, i + 1));
+      // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
+      const champ = r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
+      for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
     }
     list.forEach((m, i) => {
       let x, y, tries = 0;
@@ -134,6 +136,7 @@ A.World = (function () {
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
     });
     r.monsters = list.length;
+    const el = list.filter(m => m.traits); if (el.length && hooks.onElite) hooks.onElite(el);   // neue Eigenschaften kurz vorstellen
   }
   function freeSpot(x, y, r) {
     if (!blocked(x, y, r) && reachable(x, y)) return [x, y];
@@ -141,8 +144,10 @@ A.World = (function () {
     return [x, y];
   }
   function addMon(m, x, y) {
-    [x, y] = freeSpot(x, y, m.boss ? 24 : m.elite ? 17 : 14);
-    Object.assign(m, { x, y, r: m.boss ? 24 : m.elite ? 17 : 14, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
+    const rr = m.boss ? 24 : m.giant ? 22 : m.elite ? 17 : 14;
+    [x, y] = freeSpot(x, y, rr);
+    Object.assign(m, { x, y, r: rr, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
+    A.Elites.onAdd(m);   // Zeitgeber und Schild der Elite-Eigenschaften
     W.mons.push(m); return m;
   }
   // Besondere Fähigkeiten von Gegnern und Bossen: Ring aus Geschossen, Fächer, Sprung, Beschwören, Verschwinden
@@ -150,6 +155,7 @@ A.World = (function () {
   function monSpecial(m, dt, d, nx, ny) {
     const h = W.hero;
     if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
+    if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     m.skT -= dt;
     if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
     if (m.summon) {
@@ -224,6 +230,7 @@ A.World = (function () {
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     const gp = A.Gear.pre(from, to, opts); if (gp) dmg *= gp.mul;   // Element-Stufen und Kräfte der Ausrüstung (gear.js)
     const cp = A.Classes.pre(from, to, opts); if (cp) dmg *= cp.mul;   // Riesenwuchs, Glückssträhne (classes.js)
+    if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
     if ((gp && gp.force) || (cp && cp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
@@ -239,11 +246,12 @@ A.World = (function () {
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
-      const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1);
+      const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.kbImmune ? 0 : to.giant ? 0.25 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1);
       to.kbx = (to.x - from.x) / k * pow; to.kby = (to.y - from.y) / k * pow; to.kbT = 0.12;
     }
     if (dmg > 0 && opts.kind !== 'poison' && opts.kind !== 'burn' && opts.kind !== 'thorns') {
       if (from.lifesteal && from.alive) heal(from, Math.max(1, Math.round(dmg * from.lifesteal / 100)));
+      if (from.traits && to.side === 'hero') A.Elites.onDeal(from, to, dmg);
       if (from.poisonOnHit) addEffect(to, 'poison', Math.max(1, Math.round(from.poisonOnHit * (1 + W.floor * 0.3))), 3);
       if (from.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * from.burn)), 2);
       if (opts.poison) addEffect(to, 'poison', Math.max(1, Math.round(statOf(from, 'atk') * opts.poison / 3)), 3);
@@ -264,6 +272,7 @@ A.World = (function () {
     }
     if (opts.raise && to.side === 'enemy' && to.hp <= 0) to.raiseMe = true;   // Seelenpfeil: steht als Geist auf
     if (crit && to.side === 'enemy' && from.tro && from.tro.auge && !(from.augeT > W.t)) { from.augeT = W.t + 0.6; W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 64, at: W.t + 0.35, dmg: dmg * 0.6, col: '#b55088' }); fx('zap', { x: to.x, y: to.y, color: '#b55088' }); }
+    if (to.traits) A.Elites.onHurt(to, dmg + absorbed);   // Schild-Pause, Wut, Spiegelbilder
     checkDeath(to);
     return dmg;
   }
@@ -282,6 +291,8 @@ A.World = (function () {
     for (const it of rw.items) drop({ kind: 'item', it }, e.x, e.y, 50);
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
+    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (e.traits) A.Elites.onDeath(e);
     fx('death', { e });
     A.Gear.onKill(e);
     A.Classes.onKill(e);
@@ -293,6 +304,7 @@ A.World = (function () {
       if (h.tal.strom) for (const k in h.cds) h.cds[k] -= 1;
     }
     if (rw.levels && hooks.onLevel) hooks.onLevel(rw.levels);
+    if (rw.book && rw.book.length && hooks.onBook) hooks.onBook(rw.book);   // neue Seite im Elite-Buch
   }
 
   // Beute fliegt im Bogen heraus und hüpft
@@ -523,6 +535,7 @@ A.World = (function () {
     if (W.active || W.allies.length) updateFlow();
     boonStep(dt);
     A.Bosses.tick(dt);
+    A.Elites.tick(dt);
     A.Gear.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
@@ -578,11 +591,12 @@ A.World = (function () {
   function markUsed(p) { p.used = true; const r = W.rooms[p.room]; r.used = true; G().save(); }
 
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
+  A.Elites.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon });
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
 
   return {
-    get W() { return W; }, TS, CW, CH, MW, MH, enter, step, interact, markUsed, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon,
+    get W() { return W; }, TS, CW, CH, MW, MH, enter, step, interact, markUsed, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon,
     pause(v) { if (W) W.paused = v; },
   };
 })();

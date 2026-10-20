@@ -28,7 +28,6 @@ window.A = window.A || {};
   for (const w of A.WORLDS) if (THEMES[w.id]) THEMES[w.id].name = w.name;
   const themeOf = (f) => A.worldOf(f).id;
   const RAR_COL = () => A.RARITY;
-  const ELITE_COL = { giftig: '#63c74d', gepanzert: '#8b9bb4', schnell: '#fee761' };
 
   A.Draw = class {
     constructor(canvas) {
@@ -431,6 +430,7 @@ window.A = window.A || {};
       for (const m of W.mons) this.drawWarn(m, cx, cy);
       this.drawBoonsGround(W, cx, cy);
       A.Bosses.drawGround(this, W, cx, cy);
+      A.Elites.drawGround(this, W, cx, cy);
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -474,6 +474,7 @@ window.A = window.A || {};
       g.globalAlpha = 1;
       this.drawBoonsTop(W, cx, cy);
       A.Bosses.drawTop(this, W, cx, cy);
+      A.Elites.drawTop(this, W, cx, cy);
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -672,7 +673,7 @@ window.A = window.A || {};
 
     // Warnzone unter allen Figuren (Boden-Ebene)
     drawWarn(m, cx, cy) {
-      const b = this.b, x = m.x / PX - cx, y = m.y / PX - cy + (m.boss ? 12 : m.elite ? 8 : 7);
+      const b = this.b, x = m.x / PX - cx, y = m.y / PX - cy + (m.boss || m.giant ? 12 : m.elite ? 8 : 7);
       // Warnzone: roter Fächer am Boden, der sich während des Ausholens füllt
       if (m.alive && m.state === 'windup' && m.kind === 'melee') {
         const p = clamp(1 - m.st / (m.stMax || 0.42), 0, 1), R = (m.r + 12 + 22) / PX * 1.05, a = Math.atan2(m.fy, m.fx);
@@ -684,8 +685,8 @@ window.A = window.A || {};
       }
     }
     drawMon(m, W, cx, cy) {
-      const b = this.b, x = m.x / PX - cx; let y = m.y / PX - cy + (m.boss ? 12 : m.elite ? 8 : 7);
-      const sc = m.boss ? 2 : 1;
+      const b = this.b, x = m.x / PX - cx; let y = m.y / PX - cy + (m.boss || m.giant ? 12 : m.elite ? 8 : 7);
+      const sc = m.boss || m.giant ? 2 : 1;   // Boss und riesige Elite: doppelt so gross
       if (!m.alive) {
         const spr = A.Art.monSprite(m.mid, 0);
         if (m.shape === 'blob') { const q = clamp(m.alpha, 0, 1); this.blit(spr, x, y, m.fx < 0, { alpha: q, sx: sc * (1 + (1 - q) * 0.9), sy: sc * Math.max(0.15, q), white: q > 0.85 }); }
@@ -702,14 +703,15 @@ window.A = window.A || {};
       if (m.hop) lift += m.hop / PX;   // Schleimkönig im Sprung
       if (ghost) { lift = 3 + Math.sin(this.t * 3 + m.x) * 2; alpha = 0.85; }
       if (m.spawn > 0) { const p = clamp(1 - m.spawn / 0.5, 0, 1); alpha = p; lift -= (1 - p) * 6; }
+      if (m.mirror) alpha *= 0.62 + Math.sin(this.t * 6 + m.x) * 0.12;   // Spiegelbild: durchscheinend
       let ox = 0, oy = 0;
       if (m.state === 'windup') { ox = Math.sin(this.t * 60) * 1 - m.fx * 2; oy = -m.fy * 2; }
       if (m.swing > 0 && m.kind === 'melee') { const l = Math.sin((1 - m.swing / 0.2) * Math.PI) * 5; ox += m.fx * l; oy += m.fy * l * 0.5; }
       if (m.flash > 0) { sx *= 1.15; sy *= 0.85; }
-      this.shadow(x, y, (m.boss ? 13 : m.elite ? 8 : 6) * (fly ? 0.7 : 1));
+      this.shadow(x, y, (m.boss ? 13 : m.giant ? 12 : m.elite ? 8 : 6) * (fly ? 0.7 : 1));
       // Aura am Boden für Elite-Gegner und Boss: drehender Runenkreis, aufsteigende Funken
       if ((m.elite || m.boss) && !(m.spawn > 0)) {
-        const g = this.g, ac = m.boss ? '#e43b44' : (ELITE_COL[m.eliteKind] || '#fee761'), R = m.boss ? 20 : 12, rot = this.t * (m.boss ? 0.9 : 1.6), pu = 0.55 + Math.sin(this.t * 3) * 0.15;
+        const g = this.g, ac = m.boss ? '#e43b44' : A.Elites.col(m, this.t), R = m.boss ? 20 : m.giant ? 17 : 12, rot = this.t * (m.boss ? 0.9 : 1.6), pu = 0.55 + Math.sin(this.t * 3) * 0.15;
         g.globalAlpha = pu * 0.6; g.strokeStyle = ac; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.42, 0, 0, TAU); g.stroke();
         g.globalAlpha = pu; g.fillStyle = ac;
         const n = m.boss ? 10 : 6; for (let i = 0; i < n; i++) { const a = rot + i / n * TAU; g.fillRect(Math.round(x + Math.cos(a) * R) - 1, Math.round(y + Math.sin(a) * R * 0.42), 2, 1); }
@@ -717,12 +719,14 @@ window.A = window.A || {};
         if (A.FX && !A.FX.low && Math.random() < (this.dt || 0.016) * (m.boss ? 10 : 5)) { const a = Math.random() * TAU; A.FX.part({ add: true, x: m.x + Math.cos(a) * R * PX * 0.9, y: m.y + 14 + Math.sin(a) * R * PX * 0.38, vx: 0, vy: -18 - Math.random() * 12, life: 0.8, color: Math.random() < 0.3 ? '#ffffff' : ac, drag: 0.5, size: Math.random() < 0.4 ? 2 : 1 }); }
       }
       const dx = Math.round(x + ox), dy = Math.round(y - lift + oy);
-      if (m.elite && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, ELITE_COL[m.eliteKind] || '#fee761', sc);
+      if (m.ef && !(m.spawn > 0)) A.Elites.drawUnder(this, m, spr, cx, cy, sc, lift);   // Nachbilder (Flink)
+      if ((m.elite || m.mirror) && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, A.Elites.col(m, this.t), sc);
       if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
       const frozen = m.frozenUntil > W.t;
       if (frozen) this.outlineGlow(spr, dx, dy, flip, '#9be8ff', sc);
       this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
       if (m.state === 'windup' && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
+      if (m.ef && !(m.spawn > 0)) A.Elites.drawOver(this, m, spr, dx, dy, sx, sy, cx, cy);   // Schildblase, kreisende Klingen
       if (frozen) {   // eingefroren (Eis-Ausrüstung): blaues Eis über der Figur, ein paar helle Punkte
         const k = flip ? 'iceF' : 'ice'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#9be8ff');
         const w2 = Math.round(spr.w * sx), h2 = Math.round(spr.h * sy), x2 = Math.round(dx - w2 / 2), y2 = Math.round(dy - h2);
@@ -784,11 +788,12 @@ window.A = window.A || {};
       if (m.boss && A.FX && Math.random() < (this.dt || 0.016) * (m.hp < m.maxHp * 0.5 ? 1.6 : 0.7)) { const W2 = A.World.W, h2 = W2 && W2.hero; if (h2) A.FX.rocks(h2.x + (Math.random() - 0.5) * 260, h2.y + (Math.random() - 0.5) * 160, 1 + Math.floor(Math.random() * 2), 12); }
       if (m.boss) { const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(dx - cr.w / 2 + (flip ? -2 : 2)), Math.round(dy - spr.h * sy - cr.h + 5)); }
       const top = dy - spr.h * sy - 2;
+      m._lblUp = (m.y / PX - cy - top) * PX + 30; m._lblDy = 0;   // Name und Eigenschaften der Elite: knapp über dem Lebensbalken
       if (m.state === 'windup') { const al = A.Art.sprite('u_alert'); b.drawImage(al.img, Math.round(dx - al.w / 2), Math.round(top - al.h - 2 + Math.sin(this.t * 20))); }
       if (m.stun > 0 && !frozen) this.stars(dx, top);
       // Lebensbalken
       if (!m.boss && (m.hp < m.maxHp || m.elite) && !(m.spawn > 0)) {
-        const w = m.elite ? 18 : 14, bx = Math.round(dx - w / 2), by = Math.round(top - 3);
+        const w = m.giant ? 26 : m.elite ? 18 : 14, bx = Math.round(dx - w / 2), by = Math.round(top - 3);
         b.fillStyle = '#181425'; b.fillRect(bx - 1, by - 1, w + 2, 4);
         b.fillStyle = '#3e2731'; b.fillRect(bx, by, w, 2);
         // heller Rest, der langsam nachläuft, zeigt den gerade verlorenen Teil
@@ -971,6 +976,7 @@ window.A = window.A || {};
       for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
       if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
       A.Bosses.lights(W, L);
+      A.Elites.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -1152,8 +1158,9 @@ window.A = window.A || {};
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
       // Schild am Start
       if (this.signAt && W.room && W.room.type === 'start') { c.font = this.font(this.signAt.px || 6.5 * this.s); c.fillStyle = this.signAt.color || '#3e2731'; c.fillText(this.signAt.text, this.signAt.sx, this.signAt.sy); this.signAt = null; }
-      // Namen von Elite-Gegnern
-      for (const m of W.mons) if (m.alive && m.elite && !(m.spawn > 0)) { const [x, y] = toS(m.x, m.y, 46); c.font = this.font(11 * d); c.lineWidth = 3 * d; c.strokeStyle = '#181425'; c.strokeText(m.name, x, y); c.fillStyle = ELITE_COL[m.eliteKind] || '#fee761'; c.fillText(m.name, x, y); }
+      // Namen und Eigenschaften von Elite-Gegnern
+      for (const m of W.mons) if (m.alive && m.elite && !(m.spawn > 0)) A.Elites.label(this, m, toS);
+      c.textAlign = 'center'; c.textBaseline = 'middle';
       // Aufgesammeltes fliegt im Bogen zur Anzeige oben
       if (A.FX && A.FX.flyers.length) {
         const rc = this.cv.getBoundingClientRect(), k = this.dw / (rc.width || 1);
@@ -1185,8 +1192,8 @@ window.A = window.A || {};
       // Boss-Balken
       const boss = W.mons.find(m => m.boss && m.alive);
       if (boss && !(boss.spawn > 0)) {
-        const bwid = Math.min(dw * 0.8, 440 * d), x0 = (dw - bwid) / 2, y0 = (this.topPad + 34) * d, hh = 10 * d;
-        c.font = `${Math.round(26 * d)}px "Jacquard 24", serif`; c.lineWidth = 4 * d; c.strokeStyle = '#181425'; c.strokeText(boss.name, dw / 2, y0 - 16 * d); c.fillStyle = '#feae34'; c.fillText(boss.name, dw / 2, y0 - 16 * d);
+        const [bx, bwid] = this.topBox(Math.min(dw * 0.8, 440 * d)), x0 = bx - bwid / 2, y0 = (this.topPad + 34) * d, hh = 10 * d;
+        c.font = `${Math.round(26 * d)}px "Jacquard 24", serif`; c.lineWidth = 4 * d; c.strokeStyle = '#181425'; c.strokeText(boss.name, bx, y0 - 16 * d); c.fillStyle = '#feae34'; c.fillText(boss.name, bx, y0 - 16 * d);
         c.fillStyle = '#181425'; c.fillRect(x0 - 3 * d, y0 - 3 * d, bwid + 6 * d, hh + 6 * d);
         c.fillStyle = '#3e2731'; c.fillRect(x0, y0, bwid, hh);
         const bfr = boss.hp / boss.maxHp; if (boss._hpT == null || boss._hpT < bfr) boss._hpT = bfr; else boss._hpT = Math.max(bfr, boss._hpT - (this.dt || 0.016) * 0.35);
@@ -1195,8 +1202,11 @@ window.A = window.A || {};
         c.fillStyle = '#e43b44'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh * 0.5);
         c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, d);
         const bb = A.bossOf(W.floor), trick = A.t(bb && bb.trick);
-        if (trick) { c.font = this.font(11 * d, 500); c.lineWidth = 3 * d; c.strokeText(trick, dw / 2, y0 + hh + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(trick, dw / 2, y0 + hh + 14 * d); }
+        if (trick) { c.font = this.font(11 * d, 500); c.lineWidth = 3 * d; c.strokeText(trick, bx, y0 + hh + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(trick, bx, y0 + hh + 14 * d); }
       }
+      // Elite-Balken (wie beim Boss, kleiner): Name, Leben, Eigenschaften
+      if (!boss && !W.hint) A.Elites.bar(this, W);
+      c.textAlign = 'center'; c.textBaseline = 'middle';
       // Hinweis
       if (W.hint && !boss) {
         c.font = this.font(13 * d, 600); const tw = c.measureText(W.hint).width; const y = (this.topPad + 22) * d;
@@ -1209,9 +1219,14 @@ window.A = window.A || {};
         const age = bn.max - bn.life, inT = clamp(age / 0.2, 0, 1), out = clamp(bn.life / 0.35, 0, 1), a = Math.min(inT, out);
         const y = dh * 0.36, sc = 0.7 + 0.3 * (1 - Math.pow(1 - inT, 3));
         c.globalAlpha = a;
-        const size = Math.min(54 * d, dw / 9) * sc;
-        c.font = `${Math.round(size)}px "Jacquard 24", serif`; c.lineWidth = size * 0.16; c.strokeStyle = '#181425'; c.strokeText(bn.text, dw / 2, y); c.fillStyle = bn.color; c.fillText(bn.text, dw / 2, y);
-        if (bn.sub) { c.font = this.font(13 * d, 600); c.lineWidth = 3 * d; c.strokeText(bn.sub, dw / 2, y + size * 0.7); c.fillStyle = '#ead4aa'; c.fillText(bn.sub, dw / 2, y + size * 0.7); }
+        let size = Math.min(54 * d, dw / 9) * sc;
+        c.font = `${Math.round(size)}px "Jacquard 24", serif`;
+        const tw = c.measureText(bn.text).width; if (tw > dw * 0.94) { size *= dw * 0.94 / tw; c.font = `${Math.round(size)}px "Jacquard 24", serif`; }   // lange Einblendungen passen aufs Handy
+        c.lineWidth = size * 0.16; c.strokeStyle = '#181425'; c.strokeText(bn.text, dw / 2, y); c.fillStyle = bn.color; c.fillText(bn.text, dw / 2, y);
+        if (bn.sub) {
+          c.font = this.font(13 * d, 600); const sw = c.measureText(bn.sub).width; if (sw > dw * 0.94) c.font = this.font(13 * d * dw * 0.94 / sw, 600);
+          c.lineWidth = 3 * d; c.strokeText(bn.sub, dw / 2, y + size * 0.7); c.fillStyle = '#ead4aa'; c.fillText(bn.sub, dw / 2, y + size * 0.7);
+        }
         c.globalAlpha = 1;
       }
       this.minimap(W);
@@ -1237,7 +1252,15 @@ window.A = window.A || {};
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }
       const sc = Math.max(2, this.s - 2), d = this.dpr;
-      c.imageSmoothingEnabled = false; c.drawImage(this.mm, this.dw - w * sc - 8 * d, (this.topPad + 6) * d, w * sc, hh * sc);
+      this.mapL = this.dw - w * sc - 8 * d;
+      c.imageSmoothingEnabled = false; c.drawImage(this.mm, this.mapL, (this.topPad + 6) * d, w * sc, hh * sc);
+    }
+    // Platz oben für Boss- und Elite-Balken: neben der Minikarte rechts oben (Handy), sonst in der Mitte; [Mitte, Breite, links, rechts]
+    topBox(maxW) {
+      const d = this.dpr, dw = this.dw, L = 10 * d, R = Math.min(dw - 10 * d, (this.mapL != null ? this.mapL : dw) - 8 * d);
+      const w = Math.max(60 * d, Math.min(maxW, R - L)); let cx = dw / 2;
+      if (cx + w / 2 > R) cx = Math.max(L + w / 2, R - w / 2);
+      return [cx, w, L, R];
     }
     joystick() {
       const j = A.Input && A.Input.joy; if (!j || !j.on) return;
