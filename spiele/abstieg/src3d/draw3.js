@@ -117,14 +117,21 @@ import {
     part(g, 'box', cloth[2], [0.12, 0.3, 0.02], [0, 0.52, 0.135], { shadow: false });            // Stoffstreifen vorn
     P.head = part(g, 'box', skin[0], [0.34, 0.3, 0.3], [0, 0.86, 0]);
     eyes(g, '#181425', 0.07, 0.87, 0.155, 0.05);
-    if (race === 'pilz') part(g, 'sph', '#e43b44', [0.5, 0.2, 0.5], [0, 1.02, 0]);
+    if (cls === 'rufer') { // Kapuze mit Zipfel, Schädel-Anhänger
+      part(g, 'box', cloth[1], [0.42, 0.38, 0.3], [0, 0.9, -0.06]); part(g, 'cone', cloth[1], [0.3, 0.32, 0.3], [0, 1.22, -0.08]);
+      part(g, 'box', '#c0cbdc', [0.09, 0.09, 0.03], [0, 0.6, 0.14], { shadow: false });
+    } else if (cls === 'brau') { // Hut mit breiter Krempe, Bart, Schürze
+      part(g, 'cyl', cloth[0], [0.62, 0.04, 0.62], [0, 1.03, 0]); part(g, 'cyl', cloth[1], [0.34, 0.2, 0.34], [0, 1.14, 0]); part(g, 'cyl', cloth[2], [0.35, 0.04, 0.35], [0, 1.07, 0]);
+      part(g, 'box', '#733e39', [0.3, 0.12, 0.06], [0, 0.74, 0.15]); part(g, 'box', '#ead4aa', [0.3, 0.3, 0.03], [0, 0.46, 0.145]);
+    }
+    else if (race === 'pilz') part(g, 'sph', '#e43b44', [0.5, 0.2, 0.5], [0, 1.02, 0]);
     else if (race === 'kobold') part(g, 'cyl', '#8b9bb4', [0.36, 0.14, 0.36], [0, 1.05, 0]);
     else part(g, 'box', hair, [0.37, 0.1, 0.33], [0, 1.04, -0.01]);
     if (race === 'fels') { part(g, 'box', skin[1], [0.1, 0.1, 0.1], [-0.15, 0.95, 0.12]); }     // Fels: kantige Stirn
     P.armL = limb(g, cloth[0], [0.13, 0.32, 0.13], [-0.28, 0.68, 0], 'armL'); P.armR = limb(g, cloth[0], [0.13, 0.32, 0.13], [0.28, 0.68, 0], 'armR');
     part(P.armL, 'box', skin[0], [0.12, 0.1, 0.12], [0, -0.33, 0]); part(P.armR, 'box', skin[0], [0.12, 0.1, 0.12], [0, -0.33, 0]);
     // Waffe und Schild
-    const w = cls === 'schuetze' ? 'bow' : (cls === 'weber' || cls === 'rufer') ? 'staff' : 'sword';
+    const w = cls === 'schuetze' ? 'bow' : cls === 'brau' ? 'flask' : (cls === 'weber' || cls === 'rufer') ? 'staff' : 'sword';
     if (w === 'sword') {
       part(P.armR, 'box', '#c0cbdc', [0.05, 0.03, 0.55], [0, -0.34, 0.32]); part(P.armR, 'box', '#8b9bb4', [0.16, 0.035, 0.04], [0, -0.34, 0.07]); part(P.armR, 'box', '#733e39', [0.04, 0.045, 0.12], [0, -0.34, -0.03]);
       const sh = part(P.armL, 'cyl', '#733e39', [0.42, 0.05, 0.42], [-0.07, -0.2, 0.12], { rot: [Math.PI / 2, 0, 0] }); part(sh, 'cyl', '#8b9bb4', [1.04, 0.3, 1.04], [0, 0, 0]);
@@ -133,9 +140,15 @@ import {
       P.bow = part(P.armL, 'tor', '#733e39', [0.7, 0.7, 0.7], [0, -0.34, 0.15], { rot: [0, Math.PI / 2, 0] });
       part(P.armL, 'box', '#ead4aa', [0.012, 0.68, 0.012], [0, -0.34, 0.15]);
       part(P.armR, 'box', '#ead4aa', [0.02, 0.02, 0.4], [0, -0.34, 0.15]); part(P.armR, 'box', '#e43b44', [0.05, 0.05, 0.08], [0, -0.34, -0.03]);
+    } else if (w === 'flask') { // Flasche in der Hand (verschwindet kurz nach dem Wurf)
+      P.flask = part(P.armR, 'sph', '#feae34', [0.17, 0.2, 0.17], [0, -0.42, 0.06], { m: { emissive: col('#feae34'), emissiveIntensity: 0.6 } });
+      part(P.flask, 'cyl', '#c0cbdc', [0.35, 0.5, 0.35], [0, 0.65, 0], { shadow: false });
     } else {
       part(P.armR, 'cyl', '#733e39', [0.06, 1.05, 0.06], [0.02, -0.1, 0.06]);
-      P.orb = part(P.armR, 'sph', cloth[2], [0.17, 0.17, 0.17], [0.02, 0.46, 0.06], { m: { emissive: col(cloth[2]), emissiveIntensity: 0.9 } });
+      if (cls === 'rufer') { // Schädel mit lila leuchtenden Augen
+        P.orb = part(P.armR, 'box', '#c0cbdc', [0.17, 0.16, 0.16], [0.02, 0.48, 0.06], { m: { emissive: col('#b55088'), emissiveIntensity: 0.5 } });
+        for (const sx of [-1, 1]) part(P.orb, 'box', '#e0a4ff', [0.25, 0.25, 0.1], [sx * 0.22, 0.05, 0.5], { shadow: false, m: { emissive: col('#e0a4ff'), emissiveIntensity: 1.3 } });
+      } else P.orb = part(P.armR, 'sph', cloth[2], [0.17, 0.17, 0.17], [0.02, 0.46, 0.06], { m: { emissive: col(cloth[2]), emissiveIntensity: 0.9 } });
     }
     P.shield = part(g, 'sph', '#2ce8f5', [1.25, 1.35, 1.25], [0, 0.6, 0], { shadow: false, m: { transparent: true, opacity: 0.18, emissive: col('#2ce8f5'), emissiveIntensity: 0.6, depthWrite: false } });
     P.shield.visible = false;
@@ -143,13 +156,15 @@ import {
     return g;
   }
   function animHero(g, h, t, run) {
-    const P = g.userData.parts, moving = h.moving, w = g.userData.w;
+    const P = g.userData.parts, moving = h.moving, w = g.userData.w, wt = A.World.W ? A.World.W.t : 0;
     const sw = Math.sin(t * 11), swing = h.swing > 0 ? 1 - h.swing / 0.2 : 0, e = 1 - Math.pow(1 - swing, 3);
+    const gT = h.giantUntil - wt; g.scale.setScalar(1.15 * (gT > 0 ? 1 + 0.35 * clamp(Math.min(8 - gT, gT) / 0.3, 0, 1) : 1));   // Riesenwuchs
     g.rotation.y = Math.atan2(h.fx, h.fy);
     P.legL.rotation.x = moving ? sw * 0.75 : 0; P.legR.rotation.x = moving ? -sw * 0.75 : 0;
     g.position.y = moving ? Math.abs(sw) * 0.04 : 0;
     P.body.scale.y = 0.38 * (1 + Math.sin(t * 2.5) * 0.02);
     if (w === 'sword') { P.armL.rotation.x = moving ? sw * 0.4 : -0.2; P.armR.rotation.x = h.swing > 0 ? -2.3 + e * 3.4 : (moving ? -sw * 0.4 : 0.15); P.armR.rotation.z = h.swing > 0 ? -0.3 : 0; }
+    else if (w === 'flask') { P.flask.visible = wt - (h.thrownT == null ? -9 : h.thrownT) > 0.22; P.armR.rotation.x = h.swing > 0 ? -2.4 + e * 2.9 : (moving ? -sw * 0.4 : -0.35); P.armL.rotation.x = moving ? sw * 0.4 : -0.1; }
     else if (w === 'bow') { P.armL.rotation.x = -1.35; P.armR.rotation.x = h.swing > 0 ? -1.2 + e * 0.5 : -1.1; P.armR.position.z = h.swing > 0 ? -0.08 : 0; }
     else { P.armR.rotation.x = h.swing > 0 ? -1.9 + e * 1.2 : -0.1; P.armL.rotation.x = moving ? sw * 0.4 : -0.1; P.orb.material.emissiveIntensity = 0.7 + (h.swing > 0 ? 1.2 * (1 - e) : 0) + Math.sin(t * 5) * 0.15; }
     if (!h.alive) { g.rotation.x = -1.45; g.position.y = 0.12; }
@@ -196,6 +211,31 @@ import {
     if (m.state === 'windup') { lift += Math.sin(t * 60) * 0.015; g.rotation.x = -0.12; } else g.rotation.x = 0;
     if (m.spawn > 0) lift -= (1 - clamp(1 - m.spawn / 0.5, 0, 1)) * 0.5;
     g.position.y = lift;
+  }
+
+  // ---------- Begleiter: Geisterwolf (als kleines Tier), Diener des Rufers (Skelett, Geist) ----------
+  function buildAlly(a) {
+    const shape = a.look === 'geist' ? 'ghost' : a.look === 'skel' ? 'skeleton' : 'rat';
+    const g = figGroup(); BUILD[shape](g, a.look === 'geist' ? '#e0a4ff' : a.look === 'skel' ? '#d9c8f0' : a.shadow ? '#b55088' : '#7fe8ff');
+    const sc = a.minion ? 0.95 : 1.1; g.scale.setScalar(sc); g.userData.sc = sc; g.userData.shape = shape;
+    selfLight(g, 0.3);
+    return g;
+  }
+  function animAlly(g, a, t, W) {
+    animMon(g, { x: a.x, fx: a.fx, fy: a.fy, alive: true, spawn: a.spawn > 0 ? a.spawn * 1.25 : 0, state: 'chase' }, t);
+    const left = a.until ? a.until - W.t : 9;
+    setOpacity(g, a.spawn > 0 ? clamp(1 - a.spawn / 0.4, 0, 1) : left < 1.5 ? 0.5 + Math.sin(t * 20) * 0.3 : 1);
+    setTint(g, a.rallyUntil > W.t ? '#f6757a' : a.minion ? '#b55088' : a.shadow ? '#b55088' : '#2ce8f5', 0.35);
+  }
+  // Sprengfass des Braumeisters
+  function buildKeg() {
+    const g = figGroup(), P = g.userData.parts;
+    part(g, 'cyl', '#b86f50', [0.36, 0.44, 0.36], [0, 0.22, 0]);
+    for (const y of [0.1, 0.34]) part(g, 'cyl', '#3a4466', [0.38, 0.04, 0.38], [0, y, 0]);
+    part(g, 'box', '#3e2731', [0.03, 0.12, 0.03], [0.05, 0.5, 0], { rot: [0, 0, -0.4] });
+    P.spark = part(g, 'sph', '#fee761', [0.08, 0.08, 0.08], [0.09, 0.57, 0], { shadow: false, m: { emissive: col('#feae34'), emissiveIntensity: 1.5 } });
+    selfLight(g, 0.15);
+    return g;
   }
 
   // ---------- Gegenstände im Raum (Truhe, Feuer, Händler, Statue, Treppe, Schild) ----------
@@ -312,7 +352,7 @@ import {
       this.lvl = null; this.dyn = new Group(); this.scene.add(this.dyn);
       this.figs = new Map();   // Spielobjekt -> Gruppe
       this.ptsN = makePoints(false); this.ptsA = makePoints(true); this.scene.add(this.ptsN); this.scene.add(this.ptsA);
-      this.rings = []; for (let i = 0; i < 14; i++) { const m = new Mesh(GEO.ring, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; this.scene.add(m); this.rings.push(m); }
+      this.rings = []; for (let i = 0; i < 24; i++) { const m = new Mesh(GEO.ring, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; this.scene.add(m); this.rings.push(m); }
       this.arcs = []; for (let i = 0; i < 4; i++) { const m = new Mesh(GEO.arc, new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; this.scene.add(m); this.arcs.push(m); }
       this.decMax = 400; this.decN = 0;
       this.dec = new InstancedMesh(GEO.plane, new MeshLambertMaterial({ color: 0xffffff, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), this.decMax);
@@ -450,7 +490,12 @@ import {
     }
     buildShot(s) {
       const g = figGroup();
-      if (s.side === 'hero' && s.opts.kind !== 'magic') { part(g, 'box', '#8b7355', [0.03, 0.03, 0.55], [0, 0, 0], { shadow: false }); part(g, 'cone', '#c0cbdc', [0.07, 0.12, 0.07], [0, 0, 0.3], { rot: [Math.PI / 2, 0, 0], shadow: false }); part(g, 'box', '#e43b44', [0.08, 0.02, 0.1], [0, 0, -0.24], { shadow: false }); }
+      if (s.opts.lob) { // Flasche: bunter Bauch, heller Hals, Leuchten in der Farbe der Füllung
+        const fl = part(g, 'sph', s.color, [0.2, 0.24, 0.2], [0, 0, 0], { shadow: false, m: { emissive: col(s.color), emissiveIntensity: 0.9 } });
+        part(fl, 'cyl', '#c0cbdc', [0.35, 0.5, 0.35], [0, 0.65, 0], { shadow: false });
+        const gl = new Sprite(new SpriteMaterial({ map: tex('glow'), color: col(s.color), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.6 })); gl.scale.set(0.55, 0.55, 1); g.add(gl);
+      }
+      else if (s.side === 'hero' && s.opts.kind !== 'magic') { part(g, 'box', '#8b7355', [0.03, 0.03, 0.55], [0, 0, 0], { shadow: false }); part(g, 'cone', '#c0cbdc', [0.07, 0.12, 0.07], [0, 0, 0.3], { rot: [Math.PI / 2, 0, 0], shadow: false }); part(g, 'box', '#e43b44', [0.08, 0.02, 0.1], [0, 0, -0.24], { shadow: false }); }
       else {
         const hero = s.side === 'hero', ring = hero ? s.color : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44');
         part(g, 'sph', ring, [0.24, 0.24, 0.24], [0, 0, 0], { shadow: false, m: { emissive: col(ring), emissiveIntensity: 1.3 } });
@@ -508,7 +553,7 @@ import {
         if (m.mid === 'glutmotte') push(x, 0.8, z, '#ff8a30', 3 * fl(m.x, 2), 4, 3); else if (m.mid === 'spiegelgeist') push(x, 0.8, z, '#9fd8ff', 2, 4, 3); else if (m.boss) push(x, 1.5, z, '#e43b44', 3, 6, 6);
         if (m.state === 'windup') push(x, 0.6, z, '#e43b44', 3, 3, 8);
       }
-      if (run && (run.cls === 'weber' || run.cls === 'rufer') && h.alive) push(hx + h.fx * 0.3, 1.3, hz + h.fy * 0.3, '#2ce8f5', 2.5 + (h.swing > 0 ? 2 : 0), 3.5, 9);
+      if (run && (run.cls === 'weber' || run.cls === 'rufer') && h.alive) push(hx + h.fx * 0.3, 1.3, hz + h.fy * 0.3, run.cls === 'rufer' ? '#e0a4ff' : '#2ce8f5', 2.5 + (h.swing > 0 ? 2 : 0), 3.5, 9);
       if (A.FX) for (const f of A.FX.flashes) push(f.x * U, 0.6, f.y * U, f.color, f.r * U * 2.2 * (f.life / f.max), f.r * U * 2 + 2, 50);
       L.sort((a, b) => b.s - a.s);
       for (let i = 0; i < this.pl.length; i++) { const l = this.pl[i], src = i < this.nLights ? L[i] : null; l.visible = true; if (!src) { l.intensity = 0; continue; } l.position.set(src.x, src.y, src.z); l.color.set(src.color); l.intensity = src.i; l.distance = src.d; }
@@ -558,6 +603,19 @@ import {
         else if (m.elite && !(m.spawn > 0)) setTint(g, ELITE_COL[m.eliteKind] || '#fee761', 0.3);
         else setFlash(g, false);
       }
+      for (const a of W.allies || []) {
+        seen.add(a); let g = this.figs.get(a); if (!g) { g = buildAlly(a); this.dyn.add(g); this.figs.set(a, g); }
+        g.position.set(a.x * U, 0, a.y * U); animAlly(g, a, t, W);
+      }
+      for (const k of W.marks || []) {
+        if (k.kind !== 'barrel') continue;
+        seen.add(k); let g = this.figs.get(k); if (!g) { g = buildKeg(); this.dyn.add(g); this.figs.set(k, g); }
+        const fly = clamp((W.t - k.t0) / 0.3, 0, 1), p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1);
+        g.position.set((k.sx + (k.x - k.sx) * fly) * U, Math.sin(fly * Math.PI) * 0.5, (k.sy + (k.y - k.sy) * fly) * U);
+        g.rotation.z = fly < 1 ? fly * 6 : Math.sin(t * (20 + p * 40)) * p * 0.12;
+        g.userData.parts.spark.scale.setScalar(0.06 + Math.random() * 0.05);
+        setFlash(g, p > 0.85 && Math.floor(t * 20) % 2 === 0);
+      }
       for (const [kk, g] of this.figs) if (!seen.has(kk)) { this.dyn.remove(g); this.figs.delete(kk); }
       // Beute
       const seenP = new Set();
@@ -571,7 +629,8 @@ import {
       const seenS = new Set();
       for (const s of W.shots) {
         seenS.add(s); let g = this.shotPool.get(s); if (!g) { g = this.buildShot(s); this.dyn.add(g); this.shotPool.set(s, g); }
-        g.position.set(s.x * U, 0.45, s.y * U); g.rotation.y = Math.atan2(s.vx, s.vy);
+        if (s.opts.lob) { const q = clamp(1 - s.life / s.life0, 0, 1); g.position.set(s.x * U, 0.3 + 4 * s.peak * q * (1 - q) * U, s.y * U); g.rotation.x = s.spin * (s.life0 - s.life); }
+        else { g.position.set(s.x * U, 0.45, s.y * U); g.rotation.y = Math.atan2(s.vx, s.vy); }
         if (!(s.side === 'hero' && s.opts.kind !== 'magic') && A.FX && Math.random() < 0.5) A.FX.part({ kind: 'px', add: true, x: s.x, y: s.y, z: 12, vx: -s.vx * 0.1, vy: -s.vy * 0.1, life: 0.25, color: s.side === 'hero' ? s.color : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44') });
       }
       for (const [kk, g] of this.shotPool) if (!seenS.has(kk)) { this.dyn.remove(g); this.shotPool.delete(kk); }
@@ -604,6 +663,8 @@ import {
       const ring = (x, z, R, color, a, y) => { if (ri >= this.rings.length || R <= 0) return; const m = this.rings[ri++]; m.visible = true; m.position.set(x, y || 0.05, z); m.scale.set(R, R, 1); m.material.color.set(color); m.material.opacity = clamp(a, 0, 1); };
       if (A.FX) for (const p of A.FX.P) { const q = 1 - p.life / p.max; if (p.kind === 'ring') ring(p.x * U, p.y * U, p.size * U * (0.2 + q), p.color, p.life / p.max); else if (p.kind === 'rune') ring(p.x * U, p.y * U, p.size * U * (0.6 + q * 0.4) * 0.6, p.color, p.life / p.max); }
       for (const f of W.fx) if (f.kind === 'ring') ring(f.x * U, f.y * U, f.r * (1.2 - f.life) * U, f.color, clamp(f.life / 0.4, 0, 1));
+      for (const z of W.zones || []) if (!z.trail) ring(z.x * U, z.y * U, z.r * U, z.col, 0.55 * clamp((z.until - W.t) / 0.5, 0, 1) * clamp((W.t - z.t0) / 0.25, 0, 1));   // Wolken, Lachen, Grabeshände
+      for (const k of W.marks || []) if (k.kind === 'meteor' || k.kind === 'barrel') { const p = clamp((W.t - k.t0) / (k.at - k.t0), 0, 1), c = k.kind === 'barrel' ? '#feae34' : '#ff0044'; ring(k.x * U, k.y * U, k.r * U, c, 0.7); ring(k.x * U, k.y * U, k.r * U * p, c, 0.35); }
       for (let i = ri; i < this.rings.length; i++) this.rings[i].visible = false;
       let ai = 0;
       for (const f of W.fx) {

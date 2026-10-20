@@ -99,6 +99,20 @@ A.SKILLS = {
   flicken:   { name: { de: 'Flicken', en: 'Mend' }, kind: 'heal', pow: 0.3, cd: 4, desc: { de: 'Heilt 30 % des max. Lebens.', en: 'Heals 30% of max health.' } },
   fesseln:   { name: { de: 'Fadenfessel', en: 'Thread Bind' }, kind: 'magic', pow: 0.8, cd: 3, stun: 1, desc: { de: '80 % Zauberschaden, Gegner ist 1 Sekunde betäubt.', en: '80% magic damage, stuns the enemy for 1 second.' } },
   entladung: { name: { de: 'Entladung', en: 'Discharge' }, kind: 'magic', multi: true, pow: 1.6, cd: 5, desc: { de: '160 % Zauberschaden auf alle Gegner.', en: '160% magic damage to all enemies.' } },
+  // Rufer (wirkt in classes.js): Diener rufen, stärken und opfern; pow bei Dienern = Schaden pro Schlag
+  knochenruf: { name: { de: 'Knochenruf', en: 'Bone Call' }, kind: 'summon', look: 'skel', n: 2, any: true, pow: 0.45, dur: 10, cd: 4, col: '#e0a4ff', icon: 's_skel', desc: { de: '2 Skelette steigen aus dem Boden und kämpfen 10 Sekunden mit (je 45 % pro Schlag).', en: '2 skeletons rise from the ground and fight for 10 seconds (45% per hit each).' } },
+  seelenpfeil: { name: { de: 'Seelenpfeil', en: 'Soul Arrow' }, kind: 'magic', pow: 1.6, cd: 2, raise: true, col: '#e0a4ff', icon: 's_soul', desc: { de: '160 % Zauberschaden. Stirbt das Ziel, steht es als Geist auf und kämpft für dich.', en: '160% magic damage. If the target dies, it rises as a ghost and fights for you.' } },
+  grabhaende: { name: { de: 'Grabeshände', en: 'Grave Hands' }, kind: 'grab', any: true, pow: 0.9, radius: 85, hold: 1.5, dur: 3, cd: 4, col: '#b55088', icon: 's_hand', desc: { de: 'Knochenhände packen alle Gegner im Kreis: 90 % Schaden, 1,5 Sekunden festgehalten, danach langsam.', en: 'Bone hands grab every enemy in a circle: 90% damage, held for 1.5 seconds, then slowed.' } },
+  seelenband: { name: { de: 'Seelenband', en: 'Soul Bond' }, kind: 'rally', pow: 0.1, dur: 6, extend: 4, cd: 5, col: '#f6757a', icon: 's_band', desc: { de: 'Heilt dich um 10 %. Deine Diener sind 6 Sekunden schneller, machen 50 % mehr Schaden und bleiben 4 Sekunden länger.', en: 'Heals you 10%. Your minions are faster for 6 seconds, deal 50% more damage and stay 4 seconds longer.' } },
+  opfergabe: { name: { de: 'Opfergabe', en: 'Offering' }, kind: 'sacrifice', any: true, pow: 1.3, radius: 80, cd: 3, col: '#b55088', icon: 's_offer', desc: { de: 'Alle Diener zerplatzen: je 130 % Schaden um sie herum, du heilst 5 % pro Diener.', en: 'All minions burst: 130% damage around each, you heal 5% per minion.' } },
+  totenheer: { name: { de: 'Totenheer', en: 'Army of the Dead' }, kind: 'summon', look: 'skel', n: 5, any: true, pow: 0.4, dur: 8, cd: 7, col: '#e0a4ff', icon: 's_army', desc: { de: 'Ruft 5 Skelette auf einmal, 8 Sekunden lang.', en: 'Calls 5 skeletons at once, for 8 seconds.' } },
+  // Braumeister (wirkt in classes.js): Flaschen fliegen im Bogen und zerplatzen am Ziel
+  brandflasche: { name: { de: 'Brandflasche', en: 'Fire Flask' }, kind: 'lob', any: true, pow: 0.8, radius: 70, zone: 'fire', zpow: 0.3, zdur: 4, cd: 3, col: '#f77622', icon: 's_fflask', desc: { de: 'Wirft eine Flasche: 80 % Schaden in der Fläche, danach brennt der Boden 4 Sekunden.', en: 'Throws a flask: 80% area damage, then the ground burns for 4 seconds.' } },
+  heiltrunk: { name: { de: 'Heiltrunk', en: 'Healing Draught' }, kind: 'brew', pow: 0.25, dur: 6, cd: 4, col: '#e43b44', icon: 's_brew', desc: { de: 'Heilt 25 % und gibt 6 Sekunden Rausch: schneller laufen und angreifen.', en: 'Heals 25% and gives 6 seconds of rush: move and attack faster.' } },
+  giftflasche: { name: { de: 'Giftflasche', en: 'Poison Flask' }, kind: 'lob', any: true, pow: 0.4, radius: 85, zone: 'poison', zpow: 0.3, zdur: 5, cd: 3, col: '#63c74d', icon: 's_pflask', desc: { de: 'Wirft eine Flasche: eine Giftwolke vergiftet 5 Sekunden lang alles darin.', en: 'Throws a flask: a poison cloud poisons everything inside for 5 seconds.' } },
+  frostflasche: { name: { de: 'Frostflasche', en: 'Frost Flask' }, kind: 'lob', any: true, pow: 0.9, radius: 80, freeze: 1, cd: 3, col: '#2ce8f5', icon: 's_iflask', desc: { de: 'Wirft eine Flasche: 90 % Schaden, alle Getroffenen frieren 1 Sekunde ein und werden langsam.', en: 'Throws a flask: 90% damage, everything hit freezes for 1 second and is slowed.' } },
+  sprengfass: { name: { de: 'Sprengfass', en: 'Powder Keg' }, kind: 'barrel', any: true, pow: 2.4, radius: 115, cd: 5, col: '#feae34', icon: 's_barrel', desc: { de: 'Wirft ein Fass mit brennender Lunte. Kurz danach: 240 % Schaden in grosser Fläche.', en: 'Throws a keg with a burning fuse. Moments later: 240% damage in a large area.' } },
+  wundertrank: { name: { de: 'Wundertrank', en: 'Wonder Brew' }, kind: 'wonder', any: true, pow: 0.7, cd: 4, col: '#c77dff', icon: 's_wonder', desc: { de: 'Trinkt etwas Unbekanntes: Riesenwuchs, Feuerspucke, Glückssträhne oder Blubberblasen.', en: 'Drinks something unknown: giant growth, fire breath, lucky streak or bubbles.' } },
 };
 
 // ---------- Klassen ----------
@@ -112,12 +126,12 @@ A.CLASSES = [
   { id: 'weber', name: { de: 'Fadenweber', en: 'Threadweaver' }, color: '#5bc0de', unlock: 0, row: 'back',
     perk: { de: 'Zauber aus der Ferne, Flächen, Schilde, Heilung.', en: 'Area spells, shields, healing.' },
     base: { str: 0, tou: 1, dex: 0, mind: 4, luck: 0 }, skills: ['funke', 'gewebe', 'flaeche', 'flicken', 'fesseln', 'entladung'], startSkills: ['funke', 'gewebe'], weapon: 'stab' },
-  { id: 'rufer', name: { de: 'Rufer', en: 'Caller' }, color: '#b07cd8', unlock: 150, row: 'back', soon: true,
-    perk: { de: 'Beschwört Wesen, die mitkämpfen. (Bald)', en: 'Summons creatures that fight along. (Soon)' },
-    base: { str: 0, tou: 1, dex: 0, mind: 3, luck: 1 }, skills: ['funke', 'flicken', 'fesseln', 'gewebe', 'flaeche', 'entladung'], startSkills: ['funke', 'flicken'], weapon: 'stab' },
-  { id: 'brau', name: { de: 'Braumeister', en: 'Brewmaster' }, color: '#e0a83a', unlock: 150, row: 'front', soon: true,
-    perk: { de: 'Tränke, Gifte, Glücksspiel. (Bald)', en: 'Potions, poisons, gambling. (Soon)' },
-    base: { str: 1, tou: 1, dex: 1, mind: 1, luck: 3 }, skills: ['giftpfeil', 'hieb', 'flicken', 'wirbel', 'rueckzug', 'rache'], startSkills: ['giftpfeil', 'flicken'], weapon: 'schwert' },
+  { id: 'rufer', name: { de: 'Rufer', en: 'Caller' }, color: '#b07cd8', unlock: 0, row: 'back',
+    perk: { de: 'Ruft Skelette und Geister, die mitkämpfen. Besiegte Gegner stehen manchmal als Geist auf.', en: 'Calls skeletons and ghosts that fight alongside. Slain enemies sometimes rise as ghosts.' },
+    base: { str: 0, tou: 1, dex: 0, mind: 3, luck: 1 }, skills: ['knochenruf', 'seelenpfeil', 'grabhaende', 'seelenband', 'opfergabe', 'totenheer'], startSkills: ['knochenruf', 'seelenpfeil'], weapon: 'zepter' },
+  { id: 'brau', name: { de: 'Braumeister', en: 'Brewmaster' }, color: '#e0a83a', unlock: 0, row: 'back',
+    perk: { de: 'Wirft platzende Flaschen. Tränke heilen 60 % und geben Rausch. Startet mit einem Trank mehr.', en: 'Throws bursting flasks. Potions heal 60% and give rush. Starts with one extra potion.' },
+    base: { str: 1, tou: 1, dex: 1, mind: 1, luck: 3 }, skills: ['brandflasche', 'heiltrunk', 'giftflasche', 'frostflasche', 'sprengfass', 'wundertrank'], startSkills: ['brandflasche', 'heiltrunk'], weapon: 'kelle', potionPct: 0.6, startPotion: 1 },
 ];
 
 // ---------- Items ----------
@@ -141,6 +155,7 @@ A.BASES = [
   { id: 'stab', slot: 'weapon', name: { de: 'Stab', en: 'Staff' }, mag: 7, cls: ['weber', 'rufer'] },
   { id: 'zepter', slot: 'weapon', name: { de: 'Zepter', en: 'Scepter' }, mag: 5, hp: 15, cls: ['weber', 'rufer'] },
   { id: 'loeffel', slot: 'weapon', name: { de: 'Löffel', en: 'Spoon' }, atk: 3, mag: 3, cls: ['klinge', 'schuetze', 'weber', 'rufer', 'brau'] },
+  { id: 'kelle', slot: 'weapon', name: { de: 'Braukelle', en: 'Brew Ladle' }, atk: 4, mag: 4, hp: 10, cls: ['brau'] },
   { id: 'leder', slot: 'armor', name: { de: 'Lederwams', en: 'Leather Jerkin' }, def: 3, dodge: 3 },
   { id: 'kette', slot: 'armor', name: { de: 'Kettenhemd', en: 'Chainmail' }, def: 6, spd: -1 },
   { id: 'robe', slot: 'armor', name: { de: 'Robe', en: 'Robe' }, def: 2, mag: 3 },

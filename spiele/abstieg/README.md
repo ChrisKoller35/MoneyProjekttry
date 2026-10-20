@@ -6,7 +6,7 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 
 ## Stand Stufe 1
 - 6 Ebenen (Boss auf 3 und 6), je Ebene 6-8 verbundene Räume (Kampf, Elite, Truhe, Händler, Feuer, Ereignis, Treppe/Boss); Kampfräume verriegeln die Türen bis alle Gegner tot sind. Kein Auto-Kampf mehr (Christoph 18.10.).
-- 2 Rassen frei (Mensch, Felsgeborener), 3 freischaltbar im Lager. 3 Klassen (Klinge, Schütze, Weber); Rufer und Brauerin kommen in Stufe 2.
+- 2 Rassen frei (Mensch, Felsgeborener), 3 freischaltbar im Lager. 3 Klassen (Klinge, Schütze, Weber); Rufer und Braumeister kamen am 20.10. dazu (siehe unten).
 - 22 Gegenstands-Grundformen, 14 Zusätze, 6 Einzelstücke, verfluchte Items; Beutel mit 8 Plätzen.
 - 12 Monster, 2 Bosse, 6 Ereignisse, Händler, Rast, Schatz. 4 Aufgaben.
 - Stufenaufstieg mit Statpunkten, alle 3 Stufen eine neue Fähigkeit.
@@ -39,6 +39,13 @@ Waffe, Rüstung, Helm, Stiefel und zwei Schmuckstücke bekommen Zufalls-Eigensch
 - **Schmiede** auf jeder geraden Ebene ab 2 (Schmied mit Hammer, Esse, Amboss): Werte neu würfeln, eine neue Kraft schmieden (ab selten) oder das Element frei wählen, gegen Gold. Einzelstücke und Boss-Trophäen haben ein festes Element und bleiben, wie sie sind.
 - Spielstand bleibt: ein laufender Durchlauf behält seine aktuelle Ebene genau so, wie sie war; die Schmiede kommt erst auf den nächsten Ebenen dazu.
 
+## Rufer und Braumeister (20.10.2026)
+Zwei neue Klassen, gleich von Anfang an spielbar, je mit eigener Figur, eigener Waffe und 6 eigenen Zaubern (2 zum Start, die anderen beim Aufsteigen). Regeln in `js/classes.js`, Zahlen in `A.SKILLS` und `A.CLASSES` (`js/data.js`):
+- **Rufer** (Kapuze, Schädelstab, lila Zauberkugeln): Knochenruf (2 Skelette), Seelenpfeil (Ziel steht als Geist auf, wenn es stirbt), Grabeshände (Hände aus dem Boden halten fest), Seelenband (heilt, Diener schneller und stärker, länger da), Opfergabe (alle Diener explodieren), Totenheer (5 Skelette). Höchstens 7 Diener gleichzeitig, die ältesten zerfallen zuerst. Jeder besiegte Gegner (ausser Bossen) steht mit 20 % Chance als Geist auf. Diener verteilen sich auf die Gegner und stellen sich rundherum.
+- **Braumeister** (Hut, Bart, Schürze): wirft Flaschen im Bogen, die beim Aufprall platzen (über Säulen und Gruben hinweg, an Wänden zerschellen sie); jede 4. Flasche ist eine Überraschung (Feuer, Gift oder Frost). Zauber: Brandflasche (Feuerlache), Heiltrunk, Giftflasche (Giftwolke), Frostflasche (friert ein), Sprengfass (Lunte, grosse Explosion), Wundertrank (zufällig Riesenwuchs, Feuerspucke, Glückssträhne oder Blubberblasen). Tränke heilen 60 % statt 40 % und geben «Rausch» (schneller laufen und werfen); startet mit einem Trank mehr.
+- Beide sehen auch im 3D-Look eigen aus (Kapuze mit Schädel, Hut mit Bart und Schürze, Diener, Fass, fliegende Flaschen).
+- Spielstand bleibt: laufende Durchläufe und Lager sind unverändert, die zwei Klassen sind in der Heldenwahl einfach frei.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -50,6 +57,7 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
   - `rng`, `data`, `game` – Zufall, Inhalte (Rassen, Klassen, Gegenstände, Monster), Spielstand.
   - `boons` – Schrein: Zauber für alle, passive Talente, Verstärkungen.
   - `gear` – Ausrüstung: Element-Boni (2/4/6 Teile) und besondere Kräfte im Kampf, Build-Übersicht.
+  - `classes` – eigene Spielweise von Rufer (Diener) und Braumeister (Flaschen im Bogen, Sprengfass, Tränke).
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.
@@ -62,7 +70,7 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
 - `fonts/` – Pixelify Sans und Jacquard 24 (beide SIL Open Font License, Lizenztext in `fonts/OFL-*.txt`), werden beim Bauen in die Datei eingebettet.
 - `npm install` (einmal) und `node build3d.js` – bündelt den 3D-Look nach `js/draw3.js` (esbuild + three.js aus `package.json`).
 - `node build.js` – baut `dist/index.html` (eine Datei mit allem, auch den Schriften; für Artifact und Portal).
-- `node test-abstieg.js <ordner> [playwright-pfad] [chromium-pfad] [retro|3d]` – steuert den Helden automatisch durch die Räume (läuft, schlägt, benutzt Truhen und Treppen), macht Bildschirmfotos, bricht bei Fehlern ab.
+- `node test-abstieg.js <ordner> [playwright-pfad] [chromium-pfad] [retro|3d] [klasse]` – steuert den Helden automatisch durch die Räume (läuft, schlägt, benutzt Truhen und Treppen), macht Bildschirmfotos, bricht bei Fehlern ab. Klasse z. B. `rufer` oder `brau` (sonst Klinge).
 - `node shots.js dist/index.html <ordner> [handy|pc|beide] [retro|3d]` – Vergleichsbilder aller wichtigen Bildschirme.
 
 ## Portal

@@ -50,7 +50,7 @@ A.World = (function () {
   }
   function refreshHero(h) {
     h = h || W.hero; const d = G().derived(), r = G().run, cls = A.CLASSES.find(c => c.id === r.cls), race = A.RACES.find(x => x.id === r.race);
-    Object.assign(h, d, { melee: cls.row === 'front', magic: cls.id === 'weber' || cls.id === 'rufer', color: cls.color, raceColor: race.color, name: A.t(race.name) + ' ' + A.t(cls.name), skills: r.active.filter(Boolean) });
+    Object.assign(h, d, { cls: cls.id, melee: cls.row === 'front', magic: cls.id === 'weber' || cls.id === 'rufer', boltCol: cls.id === 'rufer' ? '#e0a4ff' : null, color: cls.color, raceColor: race.color, name: A.t(race.name) + ' ' + A.t(cls.name), skills: r.active.filter(Boolean) });
     h.hp = Math.min(h.hp, h.maxHp); h.speed = 150 + d.spd * 4; h.atkRate = clamp(1.05 - d.spd * 0.03, 0.32, 1.05);
     h.tal = {}; for (const id of r.talents || []) h.tal[id] = true;
     if (W && W.orbs) syncPerm(h);
@@ -223,9 +223,10 @@ A.World = (function () {
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     const gp = A.Gear.pre(from, to, opts); if (gp) dmg *= gp.mul;   // Element-Stufen und Kräfte der Ausrüstung (gear.js)
+    const cp = A.Classes.pre(from, to, opts); if (cp) dmg *= cp.mul;   // Riesenwuchs, Glückssträhne (classes.js)
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
-    if ((gp && gp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
+    if ((gp && gp.force) || (cp && cp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
     if (opts.execute && to.hp / to.maxHp < opts.execute && !to.boss) dmg = to.hp + 1;
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
@@ -237,7 +238,7 @@ A.World = (function () {
     if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) A.Gear.onHurt(to, from); }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
-    if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn') {
+    if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
       const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1);
       to.kbx = (to.x - from.x) / k * pow; to.kby = (to.y - from.y) / k * pow; to.kbT = 0.12;
     }
@@ -261,6 +262,7 @@ A.World = (function () {
       if (to.tro.schleim && to.hp < to.maxHp * 0.3 && W.active && to.slimeRoom !== W.active) { to.slimeRoom = W.active; to.shield = Math.max(to.shield, Math.round(to.maxHp * 0.35)); float(to.x, to.y - 44, A.LANG === 'de' ? 'Schleimhülle!' : 'Slime shell!', '#9be37a', 15); fx('shield', { e: to }); }
       if (to.tro.dorn && dmg > 0 && from.side === 'enemy' && !(to.dornT > W.t)) { to.dornT = W.t + 2; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; shoot(to, to.x + Math.cos(a) * 100, to.y + Math.sin(a) * 100, heroPower(to) * 0.6, { kind: 'phys', color: '#a2e05a', speed: 380, life: 0.7, r: 4 }); } }
     }
+    if (opts.raise && to.side === 'enemy' && to.hp <= 0) to.raiseMe = true;   // Seelenpfeil: steht als Geist auf
     if (crit && to.side === 'enemy' && from.tro && from.tro.auge && !(from.augeT > W.t)) { from.augeT = W.t + 0.6; W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 64, at: W.t + 0.35, dmg: dmg * 0.6, col: '#b55088' }); fx('zap', { x: to.x, y: to.y, color: '#b55088' }); }
     checkDeath(to);
     return dmg;
@@ -282,6 +284,7 @@ A.World = (function () {
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
     fx('death', { e });
     A.Gear.onKill(e);
+    A.Classes.onKill(e);
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
@@ -326,16 +329,17 @@ A.World = (function () {
   function heroAttack() {
     const h = W.hero; if (!h.alive || h.atkCd > 0 || h.stun > 0) return false;
     if (!h.moving) faceTarget(h);
-    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h); h.swing = 0.2;
+    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h) * A.Classes.atkMul(h); h.swing = 0.2;
     h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = big ? 2 : 1;   // Doppelte Wucht: jeder dritte Schlag
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
     if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
     if (h.melee) arc(h, h.tal.spalt ? 82 : 58, mul, { kind: 'phys', basic: true });
+    else if (A.Classes.attack(h, mul, big)) { /* Braumeister: Flasche im Bogen (classes.js) */ }
     else {
       const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100;
       const dmg = (h.magic ? statOf(h, 'mag') : statOf(h, 'atk')) * mul, kind = h.magic ? 'magic' : 'phys';
-      shoot(h, tx, ty, dmg, { kind, basic: true, r: big ? 8 : 5 });
-      if (h.tal.spalt) { const a0 = Math.atan2(ty - h.y, tx - h.x); for (const da of [-0.28, 0.28]) shoot(h, h.x + Math.cos(a0 + da) * 100, h.y + Math.sin(a0 + da) * 100, dmg * 0.5, { kind, basic: true }); }
+      shoot(h, tx, ty, dmg, { kind, basic: true, r: big ? 8 : 5, color: h.boltCol });
+      if (h.tal.spalt) { const a0 = Math.atan2(ty - h.y, tx - h.x); for (const da of [-0.28, 0.28]) shoot(h, h.x + Math.cos(a0 + da) * 100, h.y + Math.sin(a0 + da) * 100, dmg * 0.5, { kind, basic: true, color: h.boltCol }); }
     }
     return true;
   }
@@ -352,7 +356,8 @@ A.World = (function () {
     float(h.x, h.y - 44, B.skName(id), '#fee761', 12);
     if (h.tal.echo && Math.random() < 0.25) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); }
     const magic = sk.kind === 'magic' || !!sk.any;
-    if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * pw)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
+    if (A.Classes.skill(h, id, sk, P, pw)) { /* Rufer und Braumeister (classes.js) */ }
+    else if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * pw)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
     else if (sk.kind === 'heal') heal(h, Math.round(h.maxHp * pw), true);
     else if (sk.kind === 'buff') { h.buffs[sk.stat] = sk.stat === 'dodge' ? { add: pw, until: W.t + sk.dur * 2 } : { mul: pw, until: W.t + sk.dur * 2 }; fx('buff', { e: h }); }
     else if (sk.kind === 'dash') dash(h, P * pw, sk.col);
@@ -363,7 +368,7 @@ A.World = (function () {
     }
     else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
     else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
-    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
     else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
     else if (sk.kind === 'multi' || sk.multi) {
       const R = sk.radius || 170;
@@ -374,7 +379,7 @@ A.World = (function () {
     }
     else if (sk.chain) chain(h, P * pw, sk.chain, sk.col);
     else { // Einzelziel (attack / magic), Feuerball explodiert beim Aufprall
-      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast };
+      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise };
       let pow = pw; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
       const hits = sk.hits || 1;
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
@@ -413,7 +418,7 @@ A.World = (function () {
     W.fx.push({ kind: 'dash', x: sx, y: sy, x1: h.x, y1: h.y, life: 0.32, color: col });
     fx('zap', { x: h.x, y: h.y, color: col });
   }
-  // Geisterwolf (Zauber oder Talent): jagt Gegner, folgt sonst dem Helden
+  // Geisterwolf (Zauber oder Talent) und Diener des Rufers (classes.js): jagen Gegner, folgen sonst dem Helden
   function mkAlly(h, pow, until, perm) {
     const a = { side: 'hero', ally: true, hp: 1e9, maxHp: 1e9, x: h.x - h.fx * 30, y: h.y - h.fy * 30 + 10, r: 11, fx: h.fx, fy: 0, pow, until, perm, cd: 0.4, swing: 0, alive: true, crit: 0, spawn: 0.35 };
     fx('spawn', { m: a });
@@ -424,20 +429,38 @@ A.World = (function () {
     if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); return; }
     if (a.spawn > 0) { a.spawn -= dt; return; }
     a.cd -= dt; if (a.swing > 0) a.swing -= dt; a.crit = h.crit;
+    const rally = a.rallyUntil > W.t ? 1.5 : 1, sp = (a.spd || 1) * rally;   // Seelenband: schneller laufen und schlagen, 50 % mehr Schaden
     let tgt = null, bd = 400;
-    for (const m of W.mons) { if (!m.alive || m.spawn > 0) continue; const d = dist(a, m); if (d < bd && clearLine(a, m)) { bd = d; tgt = m; } }
+    if (a.minion) tgt = minionTarget(a);
+    else for (const m of W.mons) { if (!m.alive || m.spawn > 0) continue; const d = dist(a, m); if (d < bd && clearLine(a, m)) { bd = d; tgt = m; } }
     const goal = tgt || h, d = dist(a, goal) || 1;
     a.moving = false;
     if (tgt) {
       a.fx = (tgt.x - a.x) / d; a.fy = (tgt.y - a.y) / d;
-      if (d > a.r + tgt.r + 6) { moveEnt(a, a.fx * 250 * dt, a.fy * 250 * dt); a.moving = true; }
-      else if (a.cd <= 0) { a.cd = 0.65; a.swing = 0.2; hit(a, tgt, heroPower(h) * a.pow, { kind: 'phys', color: '#2ce8f5' }); W.fx.push({ kind: 'claw', x: a.x, y: a.y, fx: a.fx, fy: a.fy, r: a.r + tgt.r + 10, life: 0.2, ally: true }); }
+      if (d > a.r + tgt.r + 6) { moveEnt(a, a.fx * 250 * sp * dt, a.fy * 250 * sp * dt); a.moving = true; }
+      else if (a.cd <= 0) { a.cd = (a.rate || 0.65) / (rally > 1 ? 1.25 : 1); a.swing = 0.2; hit(a, tgt, heroPower(h) * a.pow * rally, { kind: 'phys', color: a.col || '#2ce8f5' }); W.fx.push({ kind: 'claw', x: a.x, y: a.y, fx: a.fx, fy: a.fy, r: a.r + tgt.r + 10, life: 0.2, ally: true, col: a.col }); }
     } else if (d > 64) {
       if (d > 360) { a.x = h.x - h.fx * 30; a.y = h.y + 12; fx('spawn', { m: a }); return; }
       let mx = (h.x - a.x) / d, my = (h.y - a.y) / d;
       if (!clearLine(a, h)) { const fd = flowDir(a); if (fd) { mx = fd[0]; my = fd[1]; } }
-      a.fx = mx; a.fy = my; moveEnt(a, mx * 230 * dt, my * 230 * dt); a.moving = true;
+      a.fx = mx; a.fy = my; moveEnt(a, mx * 230 * sp * dt, my * 230 * sp * dt); a.moving = true;
     }
+    // Diener nicht übereinander: sie schieben sich auseinander und stellen sich so rund um ihr Ziel
+    if (a.minion) for (const o of W.allies) { if (o === a || !o.minion || o.gone) continue; const dd = dist(a, o); if (dd < a.r + o.r + 8 && dd > 0) moveEnt(a, (a.x - o.x) / dd * 140 * dt, (a.y - o.y) / dd * 140 * dt); }
+  }
+  // Diener verteilen sich auf die Gegner: wer schon viele Diener am Hals hat, zählt wie ein weiter entfernter Gegner
+  function minionTarget(a) {
+    const old = a.tgt;
+    if (old && old.alive && !(old.spawn > 0) && W.t < a.tgtT) return old;
+    let best = null, bs = 1e9;
+    for (const m of W.mons) {
+      if (!m.alive || m.spawn > 0) continue;
+      const d = dist(a, m); if (d > 400 || !clearLine(a, m)) continue;
+      let n = 0; for (const o of W.allies) if (o !== a && o.minion && !o.gone && o.tgt === m) n++;
+      const sc = d + n * 45 - (m === old ? 30 : 0); if (sc < bs) { bs = sc; best = m; }
+    }
+    a.tgt = best; a.tgtT = W.t + 0.6;
+    return best;
   }
   // kreisende Geister und Klingen
   function orbStep(o, dt) {
@@ -450,18 +473,19 @@ A.World = (function () {
       hit(h, m, dmg, { kind: o.kind === 'blade' ? 'phys' : 'magic', color: o.col }); fx('wallhit', { x: o.x, y: o.y, color: o.col });
     }
   }
-  // Wolken und Quellen am Boden (Giftwolke, Giftspur, Heilquelle)
+  // Wolken und Quellen am Boden (Giftwolke, Giftspur, Heilquelle, Feuerlache; Grabeshände halten nur fest)
   function zoneStep(z) {
-    if (W.t < z.tick) return; z.tick = W.t + 0.5;
+    if (W.t < z.tick || z.kind === 'grab') return; z.tick = W.t + 0.5;
     const h = W.hero;
     if (z.kind === 'heal') { if (Math.hypot(h.x - z.x, h.y - z.y) < z.r) heal(h, Math.max(1, Math.round(h.maxHp * z.heal))); return; }
-    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r * 0.5) hit(h, m, z.dmg, { kind: z.ember ? 'burn' : 'poison', noDodge: true });
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r * 0.5) hit(h, m, z.dmg, { kind: z.ember || z.kind === 'fire' ? 'burn' : 'poison', noDodge: true });
   }
   // Verzögerte Treffer: Meteor (mit roter Markierung) und Explosionen (Kettenreaktion, Schwarzpulver)
   function markStep(k) {
     if (W.t < k.at) return;
     k.done = true;
     if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, Object.assign({ burn: k.burn }, k.opts), k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
+    else if (A.Classes.mark(k)) { /* Sprengfass (classes.js) */ }
     else boom(k.x, k.y, k.r, k.dmg, Object.assign({}, k.opts), k.col);
   }
   function boonStep(dt) {
@@ -477,7 +501,7 @@ A.World = (function () {
     if (h.tro && h.tro.glut && h.moving && (h.emberT = (h.emberT || 0) - dt) <= 0) { h.emberT = 0.3; W.zones.push({ kind: 'poison', trail: true, ember: true, x: h.x, y: h.y + 10, r: 26, t0: W.t, until: W.t + 2.5, tick: W.t + 0.3, dmg: heroPower(h) * 0.15, col: '#f77622' }); }   // Glutstiefel
     if (h.tal.giftspur && h.moving && (h.trailT = (h.trailT || 0) - dt) <= 0) { h.trailT = 0.3; W.zones.push({ kind: 'poison', trail: true, x: h.x, y: h.y + 10, r: 26, t0: W.t, until: W.t + 2.5, tick: W.t + 0.3, dmg: heroPower(h) * 0.15, col: '#63c74d' }); }
   }
-  function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * 0.4) - (h.hp - G().run.hp > 0 ? 0 : 0)); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); return true; }
+  function usePotion() { const h = W.hero; if (!G().usePotion()) return false; fx('potion', { e: h }); const d = G().derived(); heal(h, Math.round(d.maxHp * G().potionPct())); h.hp = G().run.hp = Math.max(h.hp, G().run.hp); A.Classes.onPotion(h); return true; }
 
   // ---------- Hauptschritt ----------
   function step(dt, input) {
@@ -491,7 +515,7 @@ A.World = (function () {
     if (h.stun > 0) { h.stun -= dt; mx = my = 0; }
     if (h.rootUntil > W.t) mx = my = 0;   // von Ranken festgehalten
     h.moving = len > 0.15;
-    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h) * A.Gear.moveMul(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
+    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h) * A.Gear.moveMul(h) * A.Classes.moveMul(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
     if (input.attack) heroAttack();
     // Gefahr-Boden unter dem Helden
     const hz = hazardAt(h); h.onHazard = hz;
@@ -508,6 +532,7 @@ A.World = (function () {
     W.mons = W.mons.filter(m => m.alive || (m.alpha -= dt * 2) > 0);
     // Geschosse
     for (const s of W.shots) {
+      if (s.opts.lob) { A.Classes.lobStep(s, dt); continue; }   // Flasche im Bogen (classes.js)
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
       if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
       if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
@@ -554,6 +579,7 @@ A.World = (function () {
 
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
+  A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
 
   return {
     get W() { return W; }, TS, CW, CH, MW, MH, enter, step, interact, markUsed, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon,

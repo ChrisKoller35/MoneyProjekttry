@@ -32,7 +32,7 @@ A.Game = (function () {
       seed: Math.floor(Math.random() * 1e9), race: race.id, cls: cls.id,
       floor: 1, step: 0, level: 1, xp: 0, points: 0,
       stats: { str: race.base.str + cls.base.str, tou: race.base.tou + cls.base.tou, dex: race.base.dex + cls.base.dex, mind: race.base.mind + cls.base.mind, luck: race.base.luck + cls.base.luck },
-      hp: 0, gold: 10 + me.startGold, potions: me.startPotion,
+      hp: 0, gold: 10 + me.startGold, potions: me.startPotion + (cls.startPotion || 0),
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
       bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
@@ -337,7 +337,9 @@ A.Game = (function () {
   function buy(idx) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; addToBag(s.it); return true; }
   function buyPotion() { const p = 25 + run.floor * 5; if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
   function potionPrice() { return 25 + run.floor * 5; }
-  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.4)); save(); return true; }
+  // Tränke heilen 40 %, beim Braumeister 60 %
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (cls && cls.potionPct) || 0.4; }
+  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
   function finishRun() {
@@ -359,6 +361,6 @@ A.Game = (function () {
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, treasure, buy, buyPotion, potionPrice, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, treasure, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

@@ -58,11 +58,12 @@ A.Scenes = (function () {
   function heroImage(race, cls, frame, bob) {
     const c = mk(40, 40), x = c.getContext('2d'); x.imageSmoothingEnabled = false;
     const spr = A.Art.heroSprite(race, cls, frame || 0); const hx = 20, hy = 34 + (bob || 0);
-    const wpn = A.Art.sprite(cls === 'schuetze' ? 'w_bow' : (cls === 'weber' || cls === 'rufer') ? 'w_staff' : 'w_sword');
+    const wpn = cls === 'brau' ? A.Art.sprite('flask', 0, { C: '#feae34', H: '#fee761' }, 'held') : A.Art.sprite(cls === 'schuetze' ? 'w_bow' : cls === 'weber' ? 'w_staff' : cls === 'rufer' ? 'w_skullstaff' : 'w_sword');
     const drawW = () => {
       x.save(); x.translate(hx + 4, hy - 7);
       if (cls === 'schuetze') x.drawImage(wpn.img, -2, -Math.round(wpn.h / 2));
       else if (cls === 'weber' || cls === 'rufer') { x.rotate(0.15); x.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 4); }
+      else if (cls === 'brau') { x.rotate(0.3); x.drawImage(wpn.img, -Math.round(wpn.w / 2), -wpn.h + 2); }
       else { x.rotate(0.9); x.drawImage(wpn.img, -2, -Math.round(wpn.h / 2)); }
       x.restore();
     };
