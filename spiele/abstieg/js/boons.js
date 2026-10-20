@@ -56,7 +56,8 @@ A.Boons = (function () {
   const upgOf = (id, r) => { r = r || run(); return (r && r.upg && r.upg[id]) || 0; };
   // Stärke und Abklingzeit (Sekunden) eines Zaubers mit Verstärkungen und Talenten
   function pow(id) { return A.SKILLS[id].pow * (1 + 0.3 * upgOf(id)); }
-  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1); }
+  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1) * (hasTrophy('sandpharao') ? 0.8 : 1); }
+  function hasTrophy(id) { const r = run(); return !!(r && r.gear && Object.values(r.gear).some(it => it && it.trophy === id)); }
   function icon(id) { const s = A.SKILLS[id]; return s && s.icon; }
   // Name mit Stufe (Feuerball II)
   function skName(id) { const n = A.t(A.SKILLS[id].name), u = upgOf(id); return u ? n + ' ' + ['', 'II', 'III'][u] : n; }

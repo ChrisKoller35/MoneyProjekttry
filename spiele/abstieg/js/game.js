@@ -70,6 +70,7 @@ A.Game = (function () {
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns'), poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
       regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
       xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'),
+      tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0), itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     return d;
@@ -132,6 +133,17 @@ A.Game = (function () {
     if (rng.chance(rarity === 'common' ? 0.15 : 0.5)) it.flavor = rng.pick(A.QUIRKS);
     return it;
   }
+  // Boss-Trophäe: einmal pro Durchgang und Boss, Werte wachsen mit der Ebene
+  function makeTrophy(bossId) {
+    const T = A.TROPHIES[bossId]; if (!T || !run) return null;
+    run.seenTrophies = run.seenTrophies || []; if (run.seenTrophies.includes(bossId)) return null;
+    run.seenTrophies.push(bossId);
+    const base = A.BASES.find(b => b.id === T.base), scale = (1 + 0.18 * (run.floor - 1)) * A.RARITY.legendary.mult;
+    const it = { uid: 'i' + (++itemSeq) + '_' + Math.floor(run.rng.next() * 1e6), base: base.id, slot: base.slot, rarity: 'legendary', floor: run.floor, stats: {}, affixes: [], name: T.name, flavor: T.flavor, trophy: bossId };
+    for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+    for (const k of Object.keys(T.stats)) it.stats[k] = (it.stats[k] || 0) + Math.round(T.stats[k] * (['hp', 'def'].includes(k) ? 1 + 0.15 * (run.floor - 1) : 1));
+    return it;
+  }
   function itemName(it) {
     if (it.name) return A.t(it.name);
     const base = A.BASES.find(b => b.id === it.base);
@@ -147,6 +159,7 @@ A.Game = (function () {
     for (const a of A.AFFIXES) if (it.stats[a.key] && !['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'].includes(a.key)) out.push(A.t(a.text).replace('{v}', it.stats[a.key]));
     if (it.stats.revive) out.push(A.LANG === 'de' ? 'Einmal pro Durchlauf überleben' : 'Survive once per run');
     if (it.stats.luck) out.push('+' + it.stats.luck + ' ' + A.t(A.UI.stat.luck));
+    if (it.trophy && A.TROPHIES[it.trophy]) out.push('★ ' + A.t(A.TROPHIES[it.trophy].text));
     return out;
   }
   function randomItem(rarity, slotPref) {
@@ -202,7 +215,7 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 2 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++;
     const items = [];
-    if (e.boss) { items.push(randomItem('legendary'), randomItem(rollRarity(2))); }
+    if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); }
     else if (e.elite) { items.push(randomItem(rollRarity(1))); questEvent('elite'); }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03)) items.push(randomItem());
     const levels = addXp(xp);
