@@ -1,6 +1,6 @@
 // Der Abstieg – Vergleich: Was ändert sich am Helden, wenn er ein Stück anlegt?
 // Rechnet die Heldenwerte (game.js derived) einmal wie jetzt und einmal mit dem neuen Stück am Platz, also mit Element-Boni (gear.js),
-// Kräften, Trophäen und Legenden (legends.js), und fällt ein Urteil: besser, schlechter, anders (Vor- und Nachteile) oder gleich.
+// Kräften, Trophäen, Legenden (legends.js) und Kombos (combos.js), und fällt ein Urteil: besser, schlechter, anders (Vor- und Nachteile) oder gleich.
 // Punkte sind grob «Prozent Stärke»: mehr Schaden zählt so viel wie mehr Leben, Gold und Erfahrung zählen wenig.
 // ui.js zeigt das Ergebnis an; hier wird nichts verändert oder gespeichert.
 'use strict';
@@ -53,7 +53,7 @@ A.Compare = (function () {
   const power = (cls, d) => MAGIC[cls] ? d.mag : cls === 'brau' ? Math.max(d.atk, d.mag) : d.atk;
   const union = (a, b) => Object.keys(Object.assign({}, a, b));
 
-  // Was kommt dazu, was fällt weg: Element-Boni, Kräfte, Legenden, Trophäen und die zweite Chance
+  // Was kommt dazu, was fällt weg: Element-Boni, Kräfte, Legenden, Trophäen, Kombos und die zweite Chance
   function effects(it, old, d0, d1, r) {
     const out = [];
     for (const el of Object.keys(A.ELEMENTS)) {
@@ -73,6 +73,13 @@ A.Compare = (function () {
     for (const id of union(d0.leg, d1.leg)) if (!!d0.leg[id] !== !!d1.leg[id]) out.push({ kind: 'leg', id, up: !!d1.leg[id], pts: d1.leg[id] ? 12 : -12 });
     for (const key of union(d0.tro, d1.tro)) if (!!d0.tro[key] !== !!d1.tro[key]) out.push({ kind: 'tro', key, up: !!d1.tro[key], pts: d1.tro[key] ? 7 : -7 });
     if ((d0.revive > 0) !== (d1.revive > 0)) out.push({ kind: 'revive', up: d1.revive > 0, used: !!r.reviveUsed, pts: r.reviveUsed ? 0 : d1.revive > 0 ? 10 : -10 });
+    // Kombos: macht das Stück eine ganz (erwachte wirkt wieder, sonst «bereit» bis zum nächsten Schrein) oder fehlt danach ein Teil?
+    const f0 = d0.comboFull || {}, f1 = d1.comboFull || {};
+    for (const id of union(f0, f1)) {
+      if (!!f0[id] === !!f1[id] || !A.COMBOS[id]) continue;
+      const woke = (r.combos || []).includes(id), up = !!f1[id];
+      out.push({ kind: woke ? 'combo' : 'comboready', id, up, pts: (woke ? 10 : 6) * (up ? 1 : -1) });
+    }
     return out;
   }
 
@@ -116,6 +123,8 @@ A.Compare = (function () {
     if (x.kind === 'leg') return x.up ? L('eine Legende', 'a legend') : L('Legende weg', 'legend lost');
     if (x.kind === 'tro') return x.up ? L('eine Trophäen-Kraft', 'a trophy power') : L('Trophäen-Kraft weg', 'trophy power lost');
     if (x.kind === 'revive') return x.up ? L('eine zweite Chance', 'a second chance') : L('zweite Chance weg', 'second chance lost');
+    if (x.kind === 'combo') return x.up ? L('eine Kombo wirkt', 'a combo works') : L('eine Kombo ruht', 'a combo rests');
+    if (x.kind === 'comboready') return x.up ? L('eine Kombo bereit', 'a combo ready') : L('ein Kombo-Teil weg', 'a combo piece lost');
     return '';
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);

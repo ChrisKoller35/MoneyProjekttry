@@ -71,9 +71,10 @@ A.World = (function () {
     const blades = W.orbs.filter(o => o.perm);
     if (h.tal.klingen && !blades.length) for (let i = 0; i < 2; i++) W.orbs.push({ perm: true, kind: 'blade', a: i * Math.PI, R: 48, spin: 4, pow: 0.35, col: '#c0cbdc', hits: new Map() });
     if (!h.tal.klingen && blades.length) W.orbs = W.orbs.filter(o => !o.perm);
-    const wolf = W.allies.find(a => a.perm);
-    if (h.tal.begleiter && !wolf) W.allies.push(mkAlly(h, 0.5, 0, true));
-    if (!h.tal.begleiter && wolf) W.allies = W.allies.filter(a => !a.perm);
+    // Treuer Begleiter: ein Wolf, mit der Kombo «Das Rudel» drei (combos.js)
+    const wolves = W.allies.filter(a => a.perm), want = h.tal.begleiter ? A.Combos.wolves(h) : 0;
+    for (let i = wolves.length; i < want; i++) { const a = mkAlly(h, 0.5, 0, true); if (i) [a.x, a.y] = freeSpot(a.x + (i === 1 ? -26 : 26), a.y + 12, a.r); W.allies.push(a); }
+    if (wolves.length > want) { const drop = wolves.slice(want); W.allies = W.allies.filter(a => !drop.includes(a)); }
   }
 
   // ---------- Kacheln und Kollision ----------
@@ -238,17 +239,18 @@ A.World = (function () {
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
-    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) A.Gear.onDodge(to); return -1; }
+    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     const gp = A.Gear.pre(from, to, opts); if (gp) dmg *= gp.mul;   // Element-Stufen und Kräfte der Ausrüstung (gear.js)
     const cp = A.Classes.pre(from, to, opts); if (cp) dmg *= cp.mul;   // Riesenwuchs, Glückssträhne (classes.js)
     const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
+    const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
-    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
+    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || (bp && bp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
     if (opts.execute && to.hp / to.maxHp < opts.execute && !to.boss) dmg = to.hp + 1;
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
@@ -257,7 +259,7 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -312,9 +314,10 @@ A.World = (function () {
     A.Gear.onKill(e);
     A.Classes.onKill(e);
     A.Legends.onKill(e);
+    A.Combos.onKill(e);
     const h = W.hero;
     if (h && h.alive && h.tal) {
-      if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
+      if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34', opts: { kette: true } });
       if (h.tal.rausch) h.rushUntil = W.t + 3;
       if (h.tal.seele) heal(h, Math.max(1, Math.round(h.maxHp * 0.03)));
       if (h.tal.strom) for (const k in h.cds) h.cds[k] -= 1;
@@ -361,6 +364,7 @@ A.World = (function () {
     if (!h.moving) faceTarget(h);
     h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h) * A.Classes.atkMul(h) * A.Legends.atkMul(h); h.swing = 0.2;
     h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = (big ? 2 : 1) * A.Legends.onAttack(h);   // Doppelte Wucht: jeder dritte Schlag; Münzfresser
+    A.Combos.onAttack(h);   // Wirbelwind: jeder 4. Schlag schleudert die Klingen hinaus
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
     if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
     if (h.melee) arc(h, (h.tal.spalt ? 82 : 58) * (h.legBig ? 1.25 : 1), mul, { kind: 'phys', basic: true });
@@ -384,7 +388,7 @@ A.World = (function () {
     h.cds[id] = W.t + B.cd(id); h.swing = 0.25;
     if (!h.moving) faceTarget(h);
     float(h.x, h.y - 44, B.skName(id), '#fee761', 12);
-    if (h.tal.echo && Math.random() < 0.25) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); }
+    if (h.tal.echo && Math.random() < A.Combos.echoChance(h)) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); A.Combos.onEcho(h, id); }   // Echokaskade: öfter, und das Echo wirkt nach
     castSkill(h, id, 1);
     A.Gear.onSkill(h);
     A.Legends.onSkill(h, id);   // Spiegelscherbe: kurz danach noch einmal
@@ -406,7 +410,7 @@ A.World = (function () {
     }
     else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
     else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
-    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg || a.cb); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
     else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
     else if (sk.kind === 'multi' || sk.multi) {
       const R = sk.radius || 170;
@@ -429,6 +433,7 @@ A.World = (function () {
   function boom(x, y, r, dmg, opts, col) {
     for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
     fx('boom', { x, y, r, color: col });
+    A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }
   // Kettenblitz: springt vom Helden zum nächsten Gegner und weiter
   function chain(h, dmg, n, col) {
@@ -439,6 +444,7 @@ A.World = (function () {
       if (!best) break; done.add(best);
       W.bolts.push({ x0: from.x, y0: from.y - 12, x1: best.x, y1: best.y - 10, life: 0.28, max: 0.28, col, seed: Math.random() * 99 });
       hit(h, best, dmg * (i ? 0.85 : 1), { kind: 'magic', color: col }); from = best;
+      A.Combos.onChainHit(best, dmg * (i ? 0.85 : 1));   // Plasmaball: kleine Explosion
     }
     if (!done.size) W.bolts.push({ x0: h.x, y0: h.y - 12, x1: h.x + h.fx * 90, y1: h.y + h.fy * 90 - 12, life: 0.2, max: 0.2, col, seed: 1 });
     fx('zap', { x: h.x, y: h.y, color: col });
@@ -462,7 +468,7 @@ A.World = (function () {
   }
   function allyStep(a, dt) {
     const h = W.hero;
-    if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); return; }
+    if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); A.Combos.onAllyGone(a); return; }
     if (a.spawn > 0) { a.spawn -= dt; return; }
     a.cd -= dt; if (a.swing > 0) a.swing -= dt; a.crit = h.crit;
     const rally = a.rallyUntil > W.t ? 1.5 : 1, sp = (a.spd || 1) * rally;   // Seelenband: schneller laufen und schlagen, 50 % mehr Schaden
@@ -501,8 +507,9 @@ A.World = (function () {
   // kreisende Geister und Klingen
   function orbStep(o, dt) {
     const h = W.hero;
-    o.a += o.spin * dt; o.x = h.x + Math.cos(o.a) * o.R; o.y = h.y + Math.sin(o.a) * o.R * 0.7;
-    const dmg = o.perm ? heroPower(h) * o.pow : o.dmg;
+    const sw = o.perm ? A.Combos.swirl() : 0, R = o.R + 90 * sw;   // Wirbelwind (combos.js): die Klingen fliegen weit hinaus und zurück
+    o.a += o.spin * dt * (1 + sw * 1.5); o.x = h.x + Math.cos(o.a) * R; o.y = h.y + Math.sin(o.a) * R * 0.7;
+    const dmg = (o.perm ? heroPower(h) * o.pow : o.dmg) * (sw > 0 ? 2 : 1);
     for (const m of W.mons) {
       if (!m.alive || m.spawn > 0 || Math.hypot(m.x - o.x, m.y - o.y) > m.r + 10) continue;
       if ((o.hits.get(m) || 0) > W.t) continue; o.hits.set(m, W.t + 0.5);
@@ -520,7 +527,7 @@ A.World = (function () {
   function markStep(k) {
     if (W.t < k.at) return;
     k.done = true;
-    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, Object.assign({ burn: k.burn }, k.opts), k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
+    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, Object.assign({ burn: k.burn }, k.opts), k.col); if (A.FX) { A.FX.shake(k.mini ? 0.15 : 0.5); A.FX.rocks(k.x, k.y, k.mini ? 4 : 10, k.mini ? 50 : 90, ['#5d275d', '#b13e53', '#f77622']); } A.Combos.onMeteor(k); }
     else if (A.Classes.mark(k)) { /* Sprengfass (classes.js) */ }
     else boom(k.x, k.y, k.r, k.dmg, Object.assign({}, k.opts), k.col);
   }
@@ -563,6 +570,7 @@ A.World = (function () {
     if (!ls) A.Elites.tick(dt);
     A.Gear.tick(dt);
     A.Legends.tick(dt);
+    A.Combos.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -574,11 +582,11 @@ A.World = (function () {
       if (s.opts.lob) { A.Classes.lobStep(s, dt); continue; }   // Flasche im Bogen (classes.js)
       if (s.side !== 'hero' && ls) continue;   // Zeitstopp: Geschosse der Gegner hängen in der Luft
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
-      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
+      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); } else { hit(s.from, m, s.dmg, s.opts); A.Combos.onShotHit(s, m); } s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
-    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); }   // Feuerball verpufft nicht
+    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); }   // Feuerball verpufft nicht
     W.shots = W.shots.filter(s => s.life > 0);
     // Beute aufsammeln
     for (const p of W.picks) {
@@ -590,7 +598,7 @@ A.World = (function () {
       const d = dist(p, h);
       if (p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
-        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); }
+        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); }
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }
       }
@@ -635,6 +643,7 @@ A.World = (function () {
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
+  A.Combos.bind({ get W() { return W; }, hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot });
 
   return {
     get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill,

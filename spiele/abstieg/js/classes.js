@@ -21,7 +21,7 @@ A.Classes = (function () {
     const w = W(), lk = LOOK[look] || LOOK.skel;
     [x, y] = api.freeSpot(x, y, 11);
     const rat = look === 'ratte', list = minions().filter(m => (m.look === 'ratte') === rat);   // Ratten haben ihre eigene Obergrenze
-    if (list.length >= (rat ? 6 : MAX_MINIONS)) { const old = list.sort((p, q) => p.until - q.until)[0]; old.gone = true; api.fx('appear', { m: old }); }
+    if (list.length >= (rat ? 6 : MAX_MINIONS)) { const old = list.sort((p, q) => p.until - q.until)[0]; old.gone = true; api.fx('appear', { m: old }); A.Combos.onAllyGone(old); }   // Knochenknall (combos.js)
     const a = { side: 'hero', ally: true, minion: true, look, hp: 1e9, maxHp: 1e9, x, y, r: 11, fx: h.fx < 0 ? -1 : 1, fy: 0, pow, until: w.t + dur, perm: false,
       cd: 0.3 + Math.random() * 0.3, swing: 0, alive: true, crit: 0, spawn: 0.4, spd: lk.spd, rate: lk.rate, col: '#e0a4ff' };
     w.allies.push(a);
@@ -37,13 +37,14 @@ A.Classes = (function () {
   }
 
   // ---------- Braumeister: Flaschen ----------
-  // Eine Flasche fliegt im Bogen zum Ziel (folgt ihm ein wenig) und zerplatzt dort: Schaden in der Fläche, je nach Sorte Brand, Gift, Frost oder eine Lache
-  function throwFlask(h, tx, ty, tgt, dmg, spec) {
-    const w = W(), d = Math.hypot(tx - h.x, ty - h.y) || 1, life = Math.max(0.25, d / 360);
-    w.shots.push({ x: h.x + h.fx * 6, y: h.y - 2, vx: (tx - h.x) / life, vy: (ty - h.y) / life, r: 5, side: 'hero', from: h, dmg,
+  // Eine Flasche fliegt im Bogen zum Ziel (folgt ihm ein wenig) und zerplatzt dort: Schaden in der Fläche, je nach Sorte Brand, Gift, Frost oder eine Lache.
+  // src: Startpunkt, wenn sie nicht aus der Hand kommt (Hausbrauerei: die Überraschung springt weiter)
+  function throwFlask(h, tx, ty, tgt, dmg, spec, src) {
+    const w = W(), sx = src ? src.x : h.x + h.fx * 6, sy = src ? src.y : h.y - 2, d = Math.hypot(tx - sx, ty - sy) || 1, life = Math.max(0.25, d / 360);
+    w.shots.push({ x: sx, y: sy, vx: (tx - sx) / life, vy: (ty - sy) / life, r: 5, side: 'hero', from: h, dmg,
       opts: Object.assign({ kind: 'magic', lob: true }, spec), life, life0: life, peak: Math.min(64, 26 + d * 0.22),
       spin: (Math.random() < 0.5 ? -1 : 1) * (9 + Math.random() * 5), color: spec.col, tgt: tgt || null });
-    h.thrownT = w.t;
+    if (!src) h.thrownT = w.t;
   }
   function lobStep(s, dt) {
     if (s.tgt && live(s.tgt) && s.life > 0.08) { const k = Math.min(1, dt * 5); s.vx += ((s.tgt.x - s.x) / s.life - s.vx) * k; s.vy += ((s.tgt.y - s.y) / s.life - s.vy) * k; }
@@ -61,14 +62,20 @@ A.Classes = (function () {
     }
     if (o.zone) w.zones.push({ kind: o.zone, x: s.x, y: s.y + 4, r: o.r, t0: w.t, until: w.t + o.zdur, tick: w.t + 0.25, dmg: o.zdmg, col: o.col });
     api.fx('flask', { x: s.x, y: s.y, r: o.r, color: o.col, big: !o.basic });
+    // Hausbrauerei (combos.js): eine Überraschung springt weiter, am liebsten zu einem Gegner, den sie noch nicht erwischt hat
+    if (o.surprise && (o.hops || 0) < A.Combos.bounces(h) && h.alive) {
+      let next = null, bd = 1e9;
+      for (const m of w.mons) { if (!live(m)) continue; const d = Math.hypot(m.x - s.x, m.y - s.y); if (d > 240) continue; const k = d + (d < o.r + m.r ? 400 : 0); if (k < bd) { bd = k; next = m; } }
+      if (next) throwFlask(h, next.x, next.y, next, s.dmg * 0.8, Object.assign({}, o, { hops: (o.hops || 0) + 1 }), { x: s.x, y: s.y });
+    }
   }
-  // Normaler Angriff des Braumeisters: Flasche werfen; jede 4. ist eine Überraschung (Brand, Gift oder Frost)
+  // Normaler Angriff des Braumeisters: Flasche werfen; jede 4. ist eine Überraschung (Brand, Gift oder Frost), mit der Hausbrauerei jede 3.
   const SURPRISE = [{ col: '#f77622', burn: 0.5 }, { col: '#63c74d', poison: 1.2 }, { col: '#9be8ff', slow: true }];
   function attack(h, mul, big) {
     if (h.cls !== 'brau') return false;
     const m = api.nearestMon(h.x, h.y, 360), tx = m ? m.x : h.x + h.fx * 150, ty = m ? m.y : h.y + h.fy * 150;
     h.flaskN = (h.flaskN || 0) + 1;
-    const spec = Object.assign({ basic: true, r: big ? 62 : 46, col: '#feae34' }, h.flaskN % 4 === 0 ? SURPRISE[Math.floor(Math.random() * SURPRISE.length)] : null);
+    const spec = Object.assign({ basic: true, r: big ? 62 : 46, col: '#feae34' }, h.flaskN % A.Combos.surpriseEvery(h) === 0 ? Object.assign({ surprise: true }, SURPRISE[Math.floor(Math.random() * SURPRISE.length)]) : null);
     const dmg = api.heroPower(h) * 0.85 * mul;
     throwFlask(h, tx, ty, m, dmg, spec);
     if (h.tal.spalt) for (const da of [-0.4, 0.4]) {   // Gespaltener Schlag: zwei Extra-Flaschen links und rechts
