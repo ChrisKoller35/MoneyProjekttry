@@ -62,13 +62,12 @@ window.A = window.A || {};
   H.btn.addEventListener('click', () => { S.click(); showSheet(); });
 
   // ---------- Hilfen ----------
-  function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30 + (it.power ? 12 : 0) + (it.el ? 3 : 0) + (it.legend ? 30 : 0); }
-  function slotCurrent(it) { const r = G.run; if (it.slot === 'trinket') { if (!r.gear.trinket) return null; if (!r.gear.trinket2) return null; return scoreItem(r.gear.trinket) < scoreItem(r.gear.trinket2) ? r.gear.trinket : r.gear.trinket2; } return r.gear[it.slot] || null; }
-  function cmpHtml(it, cmpWith) {
-    if (cmpWith === undefined) return '';
-    if (cmpWith === null) return `<span class="up">${L('neu', 'new')}</span>`;
-    const diff = Math.round(scoreItem(it) - scoreItem(cmpWith));
-    return diff >= 0 ? `<span class="up">${diff}</span>` : `<span class="down">${-diff}</span>`;
+  // Urteil aus dem Vergleich (compare.js): Abzeichen an Stücken im Beutel, beim Händler und in Truhen (bei zwei Schmuck-Plätzen zählt der bessere Tausch)
+  const VERD = { better: { de: 'Besser', en: 'Better' }, worse: { de: 'Schlechter', en: 'Worse' }, mixed: { de: 'Anders', en: 'Different' }, same: { de: 'Gleich', en: 'Same' } };
+  function vChip(it) {
+    if (A.SLOTS.some(s => G.run.gear[s] === it)) return `<span class="vchip worn">${L('Angelegt', 'Equipped')}</span>`;
+    const c = A.Compare.all(it)[0];
+    return `<span class="vchip ${c.verdict}">${t(VERD[c.verdict])}</span>`;
   }
   // Element-Abzeichen und besondere Kraft (gear.js)
   function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
@@ -91,12 +90,13 @@ window.A = window.A || {};
     }
     return out.join('');
   }
-  function itemHtml(it, actions, cmpWith, cls) {
+  // badge: Urteil-Abzeichen (vChip); attrs: z. B. data-cmp, damit Antippen den Vergleich öffnet
+  function itemHtml(it, actions, badge, cls, attrs) {
     const lines = G.itemLines(it);
-    return `<div class="item ${it.legend ? 'leg' : ''} ${cls || ''}" style="--rc:${rarCol(it.rarity)}">
+    return `<div class="item ${it.legend ? 'leg' : ''} ${cls || ''}" style="--rc:${rarCol(it.rarity)}" ${attrs || ''}>
       <div class="ic">${itIcon(it, 36)}</div>
       <div class="bd">
-        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${cmpHtml(it, cmpWith)}</div>
+        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${badge || ''}</div>
         <div class="nm">${esc(G.itemName(it))}</div>
         <div class="ln">${lines.map(esc).join(' · ')}</div>
         ${powerHtml(it.power)}${legHtml(it)}
@@ -405,40 +405,126 @@ window.A = window.A || {};
   }
   input.onKey = (code, e) => {
     if (!dungeonEl.classList.contains('on')) return;
-    if (overlay.classList.contains('on')) { if (code === 'Escape' || code === 'KeyI' || code === 'Tab') { const b = $('#bClose'); if (b) b.click(); e.preventDefault(); } return; }
+    if (overlay.classList.contains('on')) { if (code === 'Escape' || code === 'KeyI' || code === 'Tab') { const b = overlay.querySelector('[data-esc]') || $('#bClose'); if (b) b.click(); e.preventDefault(); } return; }
     if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3' || code === 'Digit4') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
     if (code === 'KeyQ') { if (Wd.usePotion()) hudUpdate(); }
     if (code === 'KeyE' || code === 'Enter') Wd.interact();
     if (code === 'KeyI' || code === 'Tab' || code === 'Escape') { e.preventDefault(); S.click(); showSheet(); }
     if (code === 'Space') e.preventDefault();
   };
-  // Gefundenes Item
-  // Welche Plätze kann das Item belegen? Schmuck hat zwei; sind beide voll, gibt es zwei Knöpfe
-  function equipChoices(it) {
-    const r = G.run;
-    if (it.slot === 'trinket' && r.gear.trinket && r.gear.trinket2) return [{ slot: 'trinket', old: r.gear.trinket }, { slot: 'trinket2', old: r.gear.trinket2 }];
-    return [{ slot: null, old: it.slot === 'trinket' ? null : r.gear[it.slot] || null }];
+  // ---------- Vergleich: ein Stück gegen das angelegte (Rechnung in compare.js) ----------
+  // Karte für die Gegenüberstellung: schmal, damit zwei nebeneinander aufs Handy passen
+  function cmpCard(it, tag, isNew) {
+    const P = it.power && A.POWERS[it.power.id];
+    const lines = G.itemLines(it).map(l => l.charAt(0) === '★' ? '★ ' + L('Trophäen-Kraft', 'Trophy power') : l);
+    return `<div class="ccard ${isNew ? 'new' : ''} ${it.legend ? 'leg' : ''}" style="--rc:${rarCol(it.rarity)}"><div class="ctag">${tag}</div>
+      <div class="chead">${itIcon(it, 36)}<div class="cmeta">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])}<br>${t(U.rarity[it.rarity])}</div></div>
+      <div class="cname">${esc(G.itemName(it))}</div>${it.el ? `<div class="cel">${elBadge(it.el)}</div>` : ''}
+      <div class="clines">${lines.map(l => `<div>${esc(l)}</div>`).join('') || `<div>${L('keine Werte', 'no stats')}</div>`}</div>
+      ${P ? `<div class="cpw">${ic('u_spark', 12)}<span>${esc(t(P.name))}</span></div>` : ''}${it.legend ? `<div class="clg">${ic('u_star', 12)}<span>${L('Legende', 'Legend')}</span></div>` : ''}
+    </div>`;
   }
-  // Beide Schmuck-Plätze voll: fragen, welcher Schmuck weichen muss
-  function pickTrinket(it, back) {
-    const ch = equipChoices(it);
-    ov(`<div class="center"><div class="bigicon">${itIcon(it, 54)}</div><h2 class="mid">${L('Welchen Schmuck ersetzen?', 'Replace which trinket?')}</h2><div class="sub">${esc(G.itemName(it))} ${elBadge(it.el)}</div></div>
-      ${ch.map((c, i) => `${itemHtml(c.old, `<button class="primary" data-eqs="${i}">${L('Ersetzen', 'Replace')}</button>`)}${elDelta(it, c.old)}`).join('')}
-      <button class="btn" id="bClose">${t(U.back)}</button>`);
-    overlay.querySelectorAll('[data-eqs]').forEach(b => b.onclick = () => { G.equip(it, ch[+b.dataset.eqs].slot); S.buy(); back(); });
-    $('#bClose').onclick = () => { S.click(); back(); };
+  function cmpEmpty(slot) {
+    return `<div class="ccard empty"><div class="ctag">${L('Angelegt', 'Equipped')}</div><div class="chead">${ic(SLOT_ICON[slot], 36, 'empty')}<div class="cmeta">${t(U.slot[slot === 'trinket2' ? 'trinket' : slot])}<br>${L('frei', 'free')}</div></div>
+      <div class="cname">${L('Nichts', 'Nothing')}</div><div class="clines">${L('Der Platz ist frei.', 'The slot is free.')}</div></div>`;
   }
+  // Zeile «Angriff 34 ▸ 41 +7»: grün mehr, rot weniger, grau, wenn der Wert für die Klasse kaum zählt
+  function cmpRow(x) {
+    const f = (v) => v + (x.pct ? ' %' : '');
+    return `<div class="dr ${x.muted ? 'mute' : x.diff > 0 ? 'pos' : 'neg'}"><span class="dn">${esc(x.name)}${x.muted ? `<i>${L('nützt dir kaum', 'barely helps you')}</i>` : ''}</span><span class="dv">${f(x.a)}<i class="ar"></i><b>${f(x.b)}</b></span><span class="dd">${x.diff > 0 ? '+' : '−'}${f(Math.abs(x.diff))}</span></div>`;
+  }
+  // Was kommt dazu (grün), was fällt weg (rot): Element-Bonus, Kraft, Legende, Trophäe, zweite Chance; grau: ein Teil näher am nächsten Element-Bonus
+  function cmpFx(x) {
+    let icon = 'u_spark', html = '';
+    if (x.kind === 'el' || x.kind === 'elnext') {
+      const E = A.ELEMENTS[x.el], head = `<b style="color:${E.col}">${esc(t(E.name))} ${x.n}/6:</b> `; icon = E.icon;
+      html = head + (x.kind === 'elnext' ? L(`Bei ${A.EL_TIERS[x.tier - 1]} Teilen`, `At ${A.EL_TIERS[x.tier - 1]} pieces`) : x.up ? L('Neuer Bonus', 'New bonus') : L('Bonus weg', 'Bonus lost')) + ': ' + esc(t(E.tiers[x.tier - 1]));
+    } else if (x.kind === 'pw') {
+      const nm = esc(t(A.POWERS[x.id].name)), txt = esc(A.Gear.powerText({ id: x.id, v: x.v }));
+      html = x.from != null ? `<b>${nm} ${x.up ? L('stärker', 'stronger') : L('schwächer', 'weaker')}:</b> ${txt} (${L('bisher', 'before')} ${x.from})` : `<b>${x.up ? L('Neue Kraft', 'New power') : L('Kraft weg', 'Power lost')}: ${nm}.</b> ${txt}`;
+    } else if (x.kind === 'leg') {
+      const Lg = A.LEGENDS[x.id]; icon = 'u_star';
+      html = `<b>${x.up ? L('Legende', 'Legend') : L('Legende weg', 'Legend lost')}: ${esc(t(Lg.name))}.</b> ${esc(t(Lg.text))}`;
+    } else if (x.kind === 'tro') {
+      const T = Object.values(A.TROPHIES).find(q => q.power === x.key); icon = 'u_star';
+      html = `<b>${x.up ? L('Trophäen-Kraft', 'Trophy power') : L('Trophäen-Kraft weg', 'Trophy power lost')}:</b> ${esc(t(T.text))}`;
+    } else if (x.kind === 'revive') {
+      icon = 'u_heart';
+      html = `<b>${x.up ? L('Zweite Chance', 'Second chance') : L('Zweite Chance weg', 'Second chance lost')}:</b> ${L('Einmal pro Durchlauf überleben', 'Survive once per run')}${x.used ? L(' (schon verbraucht)', ' (already used)') : ''}`;
+    }
+    return `<div class="eld ${x.kind === 'elnext' ? 'next' : x.up ? 'up' : 'down'} ${x.kind === 'leg' ? 'leg' : ''}">${ic(icon, 14)}<span>${html}</span></div>`;
+  }
+  // Tipp: besser oder unterm Strich eher stärker: anlegen (eine Legende auch bei Geschmackssache: ausprobieren lohnt sich, das alte Stück bleibt im Beutel);
+  // sonst anders: behalten; schlechter oder gleich: verkaufen (Legenden behalten)
+  function cmpTip(c) {
+    if (c.verdict === 'better' || (c.verdict === 'mixed' && (c.lean === 'up' || (c.lean === 'even' && c.it.legend)))) return 'equip';
+    return c.verdict === 'mixed' || c.it.legend ? 'keep' : 'sell';
+  }
+  // Vergleichsfenster. o.ctx: 'found' (gerade aufgehoben), 'bag' (liegt im Beutel) oder 'shop' (beim Händler, o.idx und o.price);
+  // o.back: zurück zum Fenster davor; o.slot: welcher Schmuck weichen soll; o.lg: Eintrag in der Legenden-Sammlung (beim Fund)
+  function compareView(it, o) {
+    const r = G.run, list = A.Compare.all(it), c = list.find(x => x.slot === o.slot) || list[0], tip = cmpTip(c);
+    const found = o.ctx === 'found', inShop = o.ctx === 'shop';
+    const head = found ? `<div class="foundhead"><div class="bigicon ${it.legend ? 'legicon' : ''}" style="filter:drop-shadow(0 0 14px ${rarCol(it.rarity)})">${itIcon(it, 54)}</div><h2 class="${it.legend ? 'goldc' : ''}">${it.legend ? L('Eine Legende!', 'A legend!') : L('Gefunden', 'Found')}</h2></div>${legNewHtml(o.lg)}`
+      : `<h2 class="mid">${L('Vergleich', 'Comparison')}</h2>`;
+    const pick = list.length > 1 ? `<div class="cmppick"><div class="mini">${L('Beide Schmuck-Plätze sind belegt. Welcher Schmuck soll weichen?', 'Both trinket slots are taken. Which trinket should go?')}</div>${list.map(x => `<button data-slot="${x.slot}" class="${x === c ? 'on' : ''}">${itIcon(x.old, 22)}<span>${esc(G.itemName(x.old))}</span><span class="vchip ${x.verdict}">${t(VERD[x.verdict])}</span></button>`).join('')}</div>` : '';
+    const tag = inShop ? L('Zu kaufen', 'For sale') : o.ctx === 'bag' ? L('Im Beutel', 'In your bag') : L('Neu', 'New');
+    const cards = `<div class="cmpcards">${cmpCard(it, tag, true)}${c.old ? cmpCard(c.old, L('Angelegt', 'Equipped')) : cmpEmpty(c.slot)}</div>`;
+    const lean = c.lean === 'up' ? L(' Unterm Strich eher stärker.', ' Overall rather stronger.') : c.lean === 'down' ? L(' Unterm Strich eher schwächer.', ' Overall rather weaker.') : c.lean === 'even' ? L(' Geschmackssache.', ' A matter of taste.') : '';
+    const verdict = `<div class="verdict ${c.verdict}"><b>${t(VERD[c.verdict])}</b><span>${esc(c.why + lean)}</span></div>`;
+    const changes = `<div class="drows">${c.rows.map(cmpRow).join('')}</div>${c.fx.map(cmpFx).join('')}`;
+    // Knöpfe: immer in derselben Reihenfolge, der Tipp leuchtet golden
+    const sub = (h) => `<span class="bs">${h}</span>`;
+    const sold = (x) => { const w = G.wouldSell(x); return w ? ' ' + L(`Beutel voll: ${esc(G.itemName(w))} wird verkauft.`, `Bag full: ${esc(G.itemName(w))} gets sold.`) : ''; };
+    const eqSub = c.old ? L(`${esc(G.itemName(c.old))} kommt in den Beutel.`, `${esc(G.itemName(c.old))} goes to your bag.`) + (o.ctx === 'bag' ? '' : sold(c.old)) : L('Der Platz ist frei.', 'The slot is free.');
+    const bagSub = L(`Kommt in den Beutel (${Math.min(r.bag.length + 1, G.BAG_MAX)}/${G.BAG_MAX}).`, `Goes to your bag (${Math.min(r.bag.length + 1, G.BAG_MAX)}/${G.BAG_MAX}).`) + sold(it);
+    const gold = `${ic('coin', 16, 'coin')}<span>+${G.sellValue(it)}</span>`;
+    const can = !inShop || r.gold >= o.price, miss = inShop && !can ? ' ' + L(`Dir fehlen ${o.price - r.gold} Gold.`, `You are ${o.price - r.gold} gold short.`) : '';
+    const btns = found ? `<button class="btn two ${tip === 'equip' ? 'primary' : ''}" id="bEq"><span class="bl">${t(U.equip)}</span>${sub(eqSub)}</button>
+        <button class="btn two ${tip === 'keep' ? 'primary' : ''}" id="bBag" data-esc><span class="bl">${ic('u_bag', 20)}${L('Behalten', 'Keep')}</span>${sub(bagSub)}</button>
+        <button class="btn two ${tip === 'sell' ? 'primary' : ''}" id="bSell"><span class="bl">${t(U.sell)}</span>${sub(gold)}</button>`
+      : inShop ? `<button class="btn two ${tip === 'equip' && can ? 'primary' : ''}" id="bBuyEq" ${can ? '' : 'disabled'}><span class="bl">${L('Kaufen und anlegen', 'Buy and equip')} ${coin(o.price)}</span>${sub(eqSub + miss)}</button>
+        <button class="btn two" id="bBuy" ${can ? '' : 'disabled'}><span class="bl">${L('Nur kaufen', 'Just buy')} ${coin(o.price)}</span>${sub(bagSub)}</button>
+        <button class="btn" id="bClose" data-esc>${t(U.back)}</button>`
+      : `<button class="btn two ${tip === 'equip' ? 'primary' : ''}" id="bEq"><span class="bl">${t(U.equip)}</span>${sub(eqSub)}</button>
+        <button class="btn two ${tip === 'sell' ? 'primary' : ''}" id="bSell"><span class="bl">${t(U.sell)}</span>${sub(gold)}</button>
+        <button class="btn two ${tip === 'keep' ? 'primary' : ''}" id="bClose" data-esc><span class="bl">${t(U.back)}</span>${sub(L('Bleibt im Beutel.', 'Stays in your bag.'))}</button>`;
+    ov(`${head}${pick}${cards}${verdict}${changes}${btns}`, o.again ? 'nopop' : '');
+    overlay.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { S.click(); compareView(it, Object.assign({}, o, { slot: b.dataset.slot, again: true })); });
+    const done = () => { if (o.back) o.back(); else ovClose(); };
+    if (found) {
+      $('#bEq').onclick = () => { G.equip(it, c.slot); S.buy(); ovClose(); };
+      $('#bBag').onclick = () => { G.addToBag(it); S.click(); ovClose(); };
+      $('#bSell').onclick = () => { r.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
+      return;
+    }
+    if (inShop) {
+      $('#bBuyEq').onclick = () => { if (G.buy(o.idx, c.slot)) { S.buy(); done(); } };
+      $('#bBuy').onclick = () => { if (G.buy(o.idx)) { S.buy(); done(); } };
+    } else {
+      $('#bEq').onclick = () => { G.equip(it, c.slot); S.buy(); done(); };
+      $('#bSell').onclick = () => { G.sell(it); S.buy(); done(); };
+    }
+    $('#bClose').onclick = () => { S.click(); done(); };
+  }
+  // Gefundenes Item: gleich der Vergleich mit dem angelegten Stück
   function foundItem(it) {
-    const cur = slotCurrent(it), ch = equipChoices(it), lg = G.legendFound(it);
+    const lg = G.legendFound(it);
     if (lg && lg.first) S.level();
-    ov(`<div class="bigicon ${it.legend ? 'legicon' : ''}" style="filter:drop-shadow(0 0 16px ${rarCol(it.rarity)})">${itIcon(it, 72)}</div>
-      <h2 class="mid ${it.legend ? 'goldc' : ''}">${it.legend ? L('Eine Legende!', 'A legend!') : L('Gefunden', 'Found')}</h2>${itemHtml(it, null, cur)}${legNewHtml(lg)}
-      ${ch.map((c, i) => `${elDelta(it, c.old)}<button class="btn primary" ${i ? '' : 'id="bEq"'} data-eqs="${i}">${t(U.equip)}${c.old ? `<span class="mini" style="color:inherit;opacity:0.8">(${L('ersetzt', 'replaces')} ${esc(G.itemName(c.old))})</span>` : ''}</button>`).join('')}
-      <button class="btn" id="bBag">${ic('u_bag', 22)}${t(U.bag)}</button>
-      <button class="btn" id="bClose">${t(U.sell)} ${coin(G.sellValue(it))}</button>`);
-    overlay.querySelectorAll('[data-eqs]').forEach(b => b.onclick = () => { G.addToBag(it); G.equip(it, ch[+b.dataset.eqs].slot); S.buy(); ovClose(); });
-    $('#bBag').onclick = () => { G.addToBag(it); S.click(); ovClose(); };
-    $('#bClose').onclick = () => { G.run.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
+    compareView(it, { ctx: 'found', lg });
+  }
+  // Stücke in Truhen, Ereignissen und im Beutel: Antippen öffnet den Vergleich (nicht auf den Knöpfen Anlegen, Verkaufen, Kaufen)
+  function bindCmp(back) {
+    overlay.querySelectorAll('[data-cmp]').forEach(el => el.onclick = (e) => {
+      if (e.target.closest('[data-eq],[data-sell],[data-buy]')) return;
+      const it = G.run.bag.find(x => x.uid === el.dataset.cmp); if (!it) return;
+      S.click(); compareView(it, { ctx: 'bag', back });
+    });
+  }
+  // Beute, die schon im Beutel liegt (Truhen, Ereignisse): mit Urteil; inzwischen angelegt oder verkauft steht dabei
+  function lootRow(it) {
+    const r = G.run, inBag = r.bag.includes(it), worn = A.SLOTS.some(s => r.gear[s] === it);
+    return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '');
   }
   // Dinge im Raum
   function useProp(p) {
@@ -468,17 +554,19 @@ window.A = window.A || {};
     const kv = `<div class="kv" style="margin-top:12px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
     const gear = buildHtml(r) + A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : emptySlot(s); }).join('');
-    const bag = r.bag.length ? r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, slotCurrent(it))).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
+    const bag = r.bag.length ? `<div class="mini" style="margin:-4px 0 8px">${L('Antippen: Vergleich mit dem, was du trägst.', 'Tap: compare with what you wear.')}</div>` + r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, vChip(it), 'tap', `data-cmp="${it.uid}"`)).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
     const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${esc(A.Boons.skName(id))}</div><div class="ds">${t(sk.desc)}${A.Boons.upgOf(id) ? ` <b class="goldc">+${A.Boons.upgOf(id) * 30} %</b>` : ''}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${cdTxt(id)}</div></div>`; }).join('');
     const tals = (r.talents || []).map(id => { const T = A.TALENTS[id]; return `<div class="skill on" style="cursor:default"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(T.name))}</div><div class="ds">${esc(t(T.desc))}</div></div></div>`; }).join('');
     const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}` :
-      tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/8)</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
+      tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
       `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}`;
     ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.click(); showSheet(b.dataset.tab); });
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); S.click(); showSheet('stats'); });
-    overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { const it = r.bag.find(x => x.uid === b.dataset.eq); if (equipChoices(it).length > 1) { S.click(); pickTrinket(it, () => showSheet('gear')); return; } G.equip(it); S.buy(); showSheet('gear'); });
+    // Anlegen geht sofort; sind beide Schmuck-Plätze belegt, fragt der Vergleich, welcher Schmuck weichen soll
+    overlay.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { const it = r.bag.find(x => x.uid === b.dataset.eq); if (A.Compare.slots(it).length > 1) { S.click(); compareView(it, { ctx: 'bag', back: () => showSheet('gear') }); return; } G.equip(it); S.buy(); showSheet('gear'); });
+    bindCmp(() => showSheet('gear'));
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
@@ -571,19 +659,24 @@ window.A = window.A || {};
     const r = G.run, ev = r.currentEvent;
     ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${c.needItem && !r.bag.length ? 'disabled' : ''}>${t(c.text)}</button>`).join('')}`);
     overlay.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); S.click(); r.currentEvent = null; Wd.W.hero.hp = r.hp; hudUpdate();
-      ov(`<h2 class="mid">${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(it => itemHtml(it)).join('')}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);
-      $('#bClose').onclick = () => { S.click(); ovClose(); }; });
+      const show = () => {
+        ov(`<h2 class="mid">${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(lootRow).join('')}${res.items.length ? `<div class="mini">${L('Liegt im Beutel. Antippen zum Vergleichen und Anlegen.', 'Now in your bag. Tap to compare and equip.')}</div>` : ''}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+        bindCmp(show); $('#bClose').onclick = () => { S.click(); ovClose(); };
+      };
+      show(); });
   }
   function shop() {
     const r = G.run;
-    const items = r.shopItems.map((s, i) => s ? itemHtml(s.it, `<button class="${r.gold >= s.price ? 'primary' : ''}" data-buy="${i}" ${r.gold >= s.price ? '' : 'disabled'}>${t(U.buy)} ${coin(s.price)}</button>`, slotCurrent(s.it)) : '').join('');
-    const bag = r.bag.map(it => itemHtml(it, `<button data-sell="${it.uid}">${t(U.sell)} ${coin(G.sellValue(it))}</button>`)).join('');
+    const items = r.shopItems.map((s, i) => s ? itemHtml(s.it, `<button class="${r.gold >= s.price ? 'primary' : ''}" data-buy="${i}" ${r.gold >= s.price ? '' : 'disabled'}>${t(U.buy)} ${coin(s.price)}</button>`, vChip(s.it), 'tap', `data-shop="${i}"`) : '').join('');
+    const bag = r.bag.map(it => itemHtml(it, `<button data-sell="${it.uid}">${t(U.sell)} ${coin(G.sellValue(it))}</button>`, vChip(it), 'tap', `data-cmp="${it.uid}"`)).join('');
     const pp = G.potionPrice(), canPot = r.gold >= pp;
-    ov(`<div class="bigicon">${A.Art.img('merchant', 64)}</div><h2 class="mid">${t(U.node.shop)}</h2><div class="sub center">${L('«Alles frisch. Fast alles. Keine Rückgabe.»', '"All fresh. Mostly. No returns."')}<br>${L('Dein Gold', 'Your gold')}: <b class="goldc">${coin(r.gold)}</b></div>${items}
+    ov(`<div class="bigicon">${A.Art.img('merchant', 64)}</div><h2 class="mid">${t(U.node.shop)}</h2><div class="sub center">${L('«Alles frisch. Fast alles. Keine Rückgabe.»', '"All fresh. Mostly. No returns."')}<br>${L('Dein Gold', 'Your gold')}: <b class="goldc">${coin(r.gold)}</b></div>${items.length ? `<div class="mini" style="margin:-6px 0 8px;text-align:center">${L('Antippen: Vergleich mit dem, was du trägst.', 'Tap: compare with what you wear.')}</div>` : ''}${items}
       <div class="item" style="--rc:#e43b44"><div class="ic">${ic('potion', 36)}</div><div class="bd"><div class="nm">${t(U.potion)}</div><div class="ln">+${Math.round(G.potionPct() * 100)} % ${t(U.hp)}</div></div><div class="act"><button class="${canPot ? 'primary' : ''}" id="bPot" ${canPot ? '' : 'disabled'}>${t(U.buy)} ${coin(pp)}</button></div></div>
       ${bag ? `<h3>${t(U.bag)}</h3>${bag}` : ''}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);
     overlay.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { if (G.buy(+b.dataset.buy)) { S.buy(); shop(); } });
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); shop(); });
+    overlay.querySelectorAll('[data-shop]').forEach(el => el.onclick = (e) => { if (e.target.closest('[data-buy]')) return; const i = +el.dataset.shop, s = r.shopItems[i]; if (!s) return; S.click(); compareView(s.it, { ctx: 'shop', idx: i, price: s.price, back: shop }); });
+    bindCmp(shop);
     $('#bPot').onclick = () => { if (G.buyPotion()) { S.buy(); shop(); } };
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
@@ -625,16 +718,22 @@ window.A = window.A || {};
     const res = G.treasure();
     for (const it of res.items) G.addToBag(it);
     S.loot(res.items.some(it => it.rarity === 'legendary' || it.rarity === 'epic') ? 'epic' : 'rare');
-    ov(`<div class="bigicon">${ic('chest', 72)}</div><h2 class="mid">${t(U.node.treasure)}</h2><div class="msg">${L('Eine Truhe. Unverschlossen. Verdächtig.', 'A chest. Unlocked. Suspicious.')} <b class="goldc">+${coin(res.gold)}</b></div>${res.items.map(it => itemHtml(it)).join('')}<div class="mini">${L('Liegt im Beutel. Anlegen über das Heldenbild oben links.', 'Now in your bag. Equip via the hero picture top left.')}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
-    $('#bClose').onclick = () => { S.click(); ovClose(); };
+    const show = () => {
+      ov(`<div class="bigicon">${ic('chest', 72)}</div><h2 class="mid">${t(U.node.treasure)}</h2><div class="msg">${L('Eine Truhe. Unverschlossen. Verdächtig.', 'A chest. Unlocked. Suspicious.')} <b class="goldc">+${coin(res.gold)}</b></div>${res.items.map(lootRow).join('')}<div class="mini">${L('Liegt im Beutel. Antippen zum Vergleichen und Anlegen.', 'Now in your bag. Tap to compare and equip.')}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+      bindCmp(show); $('#bClose').onclick = () => { S.click(); ovClose(); };
+    };
+    show();
   }
   // Truhe im geheimen Raum: viel Gold, ein gutes Stück und oft die Legende dieser Welt
   function secretTreasure() {
     const res = G.secretChest(); let fresh = null;
     for (const it of res.items) { G.addToBag(it); const lg = G.legendFound(it); if (lg && lg.first) fresh = lg; }
     S.loot(res.legend ? 'legendary' : 'epic'); if (fresh) S.level();
-    ov(`<div class="bigicon legicon">${Art.img('chest', 72, { m: '#68386c', M: '#b55088', N: '#3e2731', n: '#262b44' }, 'secret')}</div><h2 class="mid goldc">${L('Geheime Truhe', 'Secret chest')}</h2><div class="msg">${res.legend ? L('Jemand hat hier etwas versteckt. Jemand mit Geschmack.', 'Someone hid something here. Someone with taste.') : L('Jemand hat hier etwas versteckt. Nicht das Allerbeste, aber immerhin.', 'Someone hid something here. Not the very best, but still.')} <b class="goldc">+${coin(res.gold)}</b></div>${res.items.map(it => itemHtml(it)).join('')}${legNewHtml(fresh)}<div class="mini">${L('Liegt im Beutel. Anlegen über das Heldenbild oben links.', 'Now in your bag. Equip via the hero picture top left.')}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
-    $('#bClose').onclick = () => { S.click(); ovClose(); };
+    const show = () => {
+      ov(`<div class="bigicon legicon">${Art.img('chest', 72, { m: '#68386c', M: '#b55088', N: '#3e2731', n: '#262b44' }, 'secret')}</div><h2 class="mid goldc">${L('Geheime Truhe', 'Secret chest')}</h2><div class="msg">${res.legend ? L('Jemand hat hier etwas versteckt. Jemand mit Geschmack.', 'Someone hid something here. Someone with taste.') : L('Jemand hat hier etwas versteckt. Nicht das Allerbeste, aber immerhin.', 'Someone hid something here. Not the very best, but still.')} <b class="goldc">+${coin(res.gold)}</b></div>${res.items.map(lootRow).join('')}${legNewHtml(fresh)}<div class="mini">${L('Liegt im Beutel. Antippen zum Vergleichen und Anlegen.', 'Now in your bag. Tap to compare and equip.')}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+      bindCmp(show); $('#bClose').onclick = () => { S.click(); ovClose(); };
+    };
+    show();
   }
 
   // ---------- Ende ----------
@@ -658,6 +757,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, forge, forgeElement } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement } };
   title();
 })();
