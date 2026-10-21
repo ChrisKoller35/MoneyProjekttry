@@ -91,6 +91,17 @@ Wunsch: «wenn ich neue bekomm ist es mir nicht übersichtlich genug, welche das
 - Behoben: ein Fund, der bei vollem Beutel angelegt wurde, konnte gleichzeitig verkauft werden; Flüche zeigen «−2 % Leben alle 2 Sekunden» statt «+-2».
 - Spielstand bleibt: nur Anzeige, keine neuen Felder.
 
+## Kombos (21.10.2026)
+Wunsch: «stacken dann die Effekte mehr, gibt es crazy Kombinationen? … finde ich Sachen, die besser zu meinem Build passen, oder Sachen, die es total eskalieren lassen». Regeln in `js/combos.js`, Liste in `A.COMBOS` (`js/data.js`):
+- **20 Kombos aus je zwei Teilen:** Segen vom Schrein, Zauber (das Zauberbuch reicht, er muss nicht auf einem Knopf liegen), Element (2 Ausrüstungs-Teile), Legende, Boss-Trophäe oder die eigene Klasse. Zum Beispiel Feuerwerk (Kettenreaktion + Feuer: jede Explosion schiesst 4 Raketen, die bunt zerplatzen), Königsfamilie (Pudding + Krone des Schleimkönigs: Pudding mit grosser Krone spuckt Baby-Schleime aus), Plasmaball (Feuerball + Kettenblitz), Das Rudel (Treuer Begleiter + Geisterwolf: 3 Wölfe), Todesmut (Glaskanone + Berserker: unter 35 % Leben nur Volltreffer). Jede Klasse hat ihre eigene (Wirbelwind, Pfeilhagel, Fadensturm, Knochenknall, Hausbrauerei).
+- **Erwachen am Schrein:** sind beide Teile da, meldet ein Banner «Kombo bereit»; am nächsten Schrein erwacht sie im goldenen Fenster, oder gleich dort, wenn der gewählte Segen das fehlende Teil ist. Fehlt später ein Teil, ruht sie und wirkt wieder, sobald es zurück ist.
+- **Der Schrein hilft mit:** je tiefer, desto öfter liegt ein Teil im Angebot, das eine Kombo ganz macht (Ebene 1 zu 30 %, ab Ebene 12 zu 85 %), die Karte sagt «Weckt die Kombo …».
+- **Heldenblatt** (Reiter «Segen» mit ★ und Anzahl): was wirkt, was bereit ist, was ruht und welchen Kombos nur noch ein Teil fehlt, mit Fundort. Der Vergleich beim Fund zeigt «Kombo bereit», «Kombo ruht» oder «Kombo-Teil weg».
+- **Kombo-Buch im Lager:** gefundene mit Name und Wirkung, unbekannte als «???» mit Rezept. Jede neue gibt sofort 15 Seelenfunken.
+- **Gleiche Kräfte stapeln:** trägt man dieselbe Kraft mehrfach, zählt das beste Stück ganz und jedes weitere halb (wo kleiner besser ist, nimmt jedes weitere Stück ein Viertel weg), mit Grenzen für die starken (z. B. Raserei höchstens 16 %, Vampirkuss 8 %). Das Heldenblatt zeigt «×2», der Vergleich «stärker» mit dem neuen Wert.
+- **Beute nach Build:** Kräfte, die man schon trägt, kommen auf neuen Stücken je tiefer desto öfter (ab Ebene 7 doppelt, ab Ebene 20 viermal so oft); Elemente kamen schon vorher bevorzugt.
+- Spielstand bleibt: alte Durchläufe laden gleich (neue Felder erst, wenn eine Kombo bereit ist), das Kombo-Buch beginnt leer; ein Durchlauf mit Kombo lädt auch noch in der Version davor.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -105,6 +116,7 @@ Den zweiten Look «3D» (three.js, 18.10.) gibt es nicht mehr: Christoph braucht
   - `classes` – eigene Spielweise von Rufer (Diener) und Braumeister (Flaschen im Bogen, Sprengfass, Tränke).
   - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise); `legends` – Wirkung der 20 Legenden (Haken für Treffer, Siege, Zauber, Kampfbeginn, Zeichnen).
   - `compare` – Vergleich: Heldenwerte mit dem alten und dem neuen Stück, Urteil besser/schlechter/anders/gleich.
+  - `combos` – Kombos: Teile prüfen, bereit/erwacht/ruht, Wirkung im Kampf (Haken aus world, classes, legends, gear), Raketen, Blutkugeln, Giftpilze, Baby-Schleime und Schattenklone zeichnen.
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.

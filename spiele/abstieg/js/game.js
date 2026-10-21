@@ -8,10 +8,10 @@ A.Game = (function () {
 
   // ---------- Dauerhaft (Lager) ----------
   // camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
-  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {} });
+  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {} });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -97,6 +97,32 @@ A.Game = (function () {
     saveMeta(); save();
     return { first, sparks: first ? A.LEGEND_SPARKS : 0, n: legCount() };
   }
+  // ---------- Kombo-Buch (A.COMBOS, Regeln in combos.js) ----------
+  function comboCount() { return Object.keys(A.COMBOS).filter(id => (meta.comboFound[id] || 0) > 0).length; }
+  // Am Schrein: alle bereiten Kombos (beide Teile da) erwachen; die erste ihrer Art kommt ins Kombo-Buch und bringt sofort Seelenfunken
+  function takeCombos() {
+    if (!run) return [];
+    const full = derived().comboFull || {}, out = [];
+    for (const id of Object.keys(full)) {
+      if ((run.combos || []).includes(id)) continue;
+      (run.combos || (run.combos = [])).push(id);
+      const first = !meta.comboFound[id];
+      meta.comboFound[id] = (meta.comboFound[id] || 0) + 1;
+      if (first) { meta.sparks += A.COMBO_SPARKS; run.comboSparks = (run.comboSparks || 0) + A.COMBO_SPARKS; }
+      out.push({ id, first });
+    }
+    if (out.length) { saveMeta(); save(); }
+    return out;
+  }
+  // Kombos, die gerade bereit geworden sind (beide Teile da, noch nicht erwacht, noch nicht gemeldet): für die Meldung «Kombo bereit»
+  function comboFresh() {
+    if (!run) return [];
+    const full = derived().comboFull || {}, had = run.comboAnn || [], woke = run.combos || [];
+    const ann = had.filter(id => full[id]);   // fällt eine wieder auseinander, darf sie später noch einmal gemeldet werden
+    const out = Object.keys(full).filter(id => !woke.includes(id) && !ann.includes(id));
+    if (out.length || ann.length !== had.length) { run.comboAnn = ann.concat(out); save(); }
+    return out;
+  }
   // Neue Eigenschaften (noch nie gesehen) merken und zurückgeben, damit die Oberfläche sie vorstellen kann
   function eliteSeen(list) {
     const out = [];
@@ -160,6 +186,7 @@ A.Game = (function () {
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
+    const ce = A.Combos.evaluate(r, d); d.combo = ce.on; d.comboFull = ce.full;   // Kombos: erwacht und vollständig wirken sie (combos.js)
     return d;
   }
 
@@ -235,12 +262,14 @@ A.Game = (function () {
     const c = run ? A.Gear.counts(run) : {};
     return rng.weighted(Object.keys(A.ELEMENTS), k => 1 + 1.5 * (c[k] || 0));
   }
-  // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht
+  // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht.
+  // Kräfte, die der Held schon trägt, kommen je tiefer desto öfter (sie stapeln, gear.js): ab Ebene 7 doppelt so oft, ab Ebene 20 viermal
   const POWER_CHANCE = { rare: 0.3, epic: 1, legendary: 1, cursed: 0.6 };
   function rollPower(rarity, rng, force, not) {
     if (!POWER_CHANCE[rarity] || (!force && !rng.chance(POWER_CHANCE[rarity]))) return null;
     const ids = Object.keys(A.POWERS).filter(id => id !== not && (!A.POWERS[id].legendary || rarity === 'legendary' || rarity === 'cursed'));
-    const id = rng.pick(ids), P = A.POWERS[id];
+    const worn = run ? A.Gear.summary(run).pw : {}, boost = run ? 1 + Math.min(3, 0.15 * run.floor) : 1;
+    const id = rng.weighted(ids, k => worn[k] != null ? boost : 1), P = A.POWERS[id];
     return { id, v: rng.int(P.min, P.max) };
   }
   // Boss-Trophäe: einmal pro Durchgang und Boss, Werte wachsen mit der Ebene
@@ -483,11 +512,11 @@ A.Game = (function () {
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
-  // die Funken für neue Wimpel, neue Seiten im Elite-Buch und neue Legenden sind schon gutgeschrieben und werden nur mit angezeigt
+  // die Funken für neue Wimpel, neue Seiten im Elite-Buch, neue Legenden und neue Kombos sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0;
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0;
     const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
-    run.sparksEarned = sparks + banners + book + legend; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend;
+    run.sparksEarned = sparks + banners + book + legend + combo; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
@@ -501,7 +530,7 @@ A.Game = (function () {
 
   loadMeta();
   return {
-    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound,
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, makeLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,

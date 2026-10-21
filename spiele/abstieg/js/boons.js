@@ -67,16 +67,22 @@ A.Boons = (function () {
     for (const id of r.talents) { const T = A.TALENTS[id]; if (T && T.mod) for (const k in T.mod) o[k] = (o[k] || 0) + T.mod[k]; }
     return o;
   }
-  // Drei Angebote: möglichst je ein neuer Zauber, ein Talent und eine Verstärkung
+  // Drei Angebote: möglichst je ein neuer Zauber, ein Talent und eine Verstärkung.
+  // Je tiefer, desto öfter ist ein Teil dabei, das eine Kombo ganz macht (combos.js): auf Ebene 1 zu 30 %, ab Ebene 12 zu 85 %
   function offer(r, rng) {
     const cls = A.CLASSES.find(c => c.id === r.cls);
     const spells = rng.shuffle(A.SHRINE_SPELLS.concat(cls.skills).filter((s, i, a) => a.indexOf(s) === i && !r.known.includes(s))).map(id => ({ type: 'spell', id }));
     const tals = rng.shuffle(Object.keys(A.TALENTS).filter(id => !(r.talents || []).includes(id))).map(id => ({ type: 'talent', id }));
     const ups = rng.shuffle(r.active.filter(id => id && upgOf(id, r) < MAX_UPG)).map(id => ({ type: 'upg', id }));
-    const out = [];
+    const pool = spells.concat(tals), out = [];
     for (const list of [spells, tals, ups]) if (list.length) out.push(list.shift());
     const rest = rng.shuffle(spells.concat(tals, ups));
     while (out.length < 3 && rest.length) out.push(rest.shift());
+    const d = A.Game.derived(r), whole = (b) => A.Combos.completes(b, r, d).length > 0;
+    if (out.length && !out.some(whole) && rng.chance(Math.min(0.85, 0.25 + 0.05 * (r.floor || 1)))) {
+      const bait = pool.filter(whole);
+      if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; }   // ersetzt das Angebot gleicher Art
+    }
     return rng.shuffle(out);
   }
   return { MAX_UPG, has, upgOf, pow, cd, icon, skName, mods, offer };

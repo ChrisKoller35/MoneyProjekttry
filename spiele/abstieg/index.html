@@ -233,6 +233,26 @@
   .boon.talent .si { background: radial-gradient(circle, #2e6b3a, #181425 75%); border-color: #3e8948; }
   .boon.upg .si { background: radial-gradient(circle, #8a6a1f, #181425 75%); border-color: #feae34; }
   .boon:hover, .boon:focus-visible { box-shadow: inset 0 0 0 2px var(--gold); }
+  /* Kombos: goldene Karten (Schrein, Heldenblatt), zwei Teile als Symbol */
+  .skill.combo { --cc: #fee761; cursor: default; align-items: flex-start; background: linear-gradient(#3e3427, #2a2433); box-shadow: inset 0 0 0 2px var(--gold); }
+  .skill.combo .si { width: auto; min-width: 52px; height: 42px; padding: 0 7px; border-radius: 21px; border-color: var(--gold); background: radial-gradient(circle, color-mix(in srgb, var(--cc) 35%, #181425), #181425 80%); }
+  .skill.combo .nm { color: var(--cc); }
+  .skill.combo .fl { color: var(--mist); font-size: 12.5px; font-style: italic; margin-top: 4px; }
+  .skill.combo .rc { color: var(--steel); font-size: 12px; margin-top: 3px; }
+  .skill .tg.combo { color: var(--gold2); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .skill.combo.rest, .skill.combo.near { box-shadow: inset 0 0 0 2px #3a4466; background: linear-gradient(#2a2f4a, #242840); }
+  .skill.combo.rest .si, .skill.combo.near .si { border-color: #3a4466; }
+  .skill.combo.rest .nm, .skill.combo.near .nm { color: var(--pale); }
+  .skill.combo.rest .tg.combo, .skill.combo.near .tg.combo { color: var(--mist); }
+  .skill.combo.woke { animation: comboIn 0.6s ease-out both; }
+  .skill.combo.woke:nth-of-type(3) { animation-delay: 0.15s; }
+  @keyframes comboIn { 0% { transform: scale(0.85); opacity: 0; filter: brightness(2.2); } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); filter: none; } }
+  .cbi { display: inline-flex; align-items: center; gap: 1px; }
+  .cbi i { font-style: normal; font-weight: 700; color: var(--gold2); font-size: 14px; margin: 0 2px; }
+  .cbhint { display: flex; align-items: center; gap: 5px; margin-top: 5px; color: var(--gold2); font-size: 12.5px; font-weight: 700; line-height: 1.25; }
+  .boon.hascombo { box-shadow: inset 0 0 0 2px var(--gold); }
+  .eld.cb b { color: var(--gold2); }
+  .eld > .cbi { flex: none; margin-top: 1px; }
   .slots { display: flex; gap: 6px; justify-content: center; margin: 4px 0 10px; flex-wrap: wrap; }
   .slots span { width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid #333b5c; border-radius: 50%; background: #181425; }
   .slots span.on { border-color: #3e8948; }
@@ -352,6 +372,9 @@
   .page .cnt { color: var(--steel); font-size: 12.5px; margin-left: 6px; }
   .page .mini { font-size: 12.5px; margin-top: 2px; }
   .fgrid.one { grid-template-columns: 1fr; }
+  .page .pi.cbp { width: 62px; }
+  .page.cb:not(.have) .pi img { filter: grayscale(1) opacity(0.5); }
+  .page.cb .rc { color: var(--steel); font-size: 12px; margin-top: 2px; }
   @media (max-width: 380px) { .fgrid { grid-template-columns: 1fr; } }
   #bCamp .dot { width: 9px; height: 9px; flex: none; background: var(--spark); box-shadow: 0 0 0 2px var(--ink); animation: ready 1.4s infinite; }
   .mini.extra { margin-top: 4px; color: var(--pale); }
@@ -395,6 +418,7 @@
 <script src="js/bosses.js"></script>
 <script src="js/elites.js"></script>
 <script src="js/legends.js"></script>
+<script src="js/combos.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>

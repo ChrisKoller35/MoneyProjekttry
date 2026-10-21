@@ -233,6 +233,26 @@
   .boon.talent .si { background: radial-gradient(circle, #2e6b3a, #181425 75%); border-color: #3e8948; }
   .boon.upg .si { background: radial-gradient(circle, #8a6a1f, #181425 75%); border-color: #feae34; }
   .boon:hover, .boon:focus-visible { box-shadow: inset 0 0 0 2px var(--gold); }
+  /* Kombos: goldene Karten (Schrein, Heldenblatt), zwei Teile als Symbol */
+  .skill.combo { --cc: #fee761; cursor: default; align-items: flex-start; background: linear-gradient(#3e3427, #2a2433); box-shadow: inset 0 0 0 2px var(--gold); }
+  .skill.combo .si { width: auto; min-width: 52px; height: 42px; padding: 0 7px; border-radius: 21px; border-color: var(--gold); background: radial-gradient(circle, color-mix(in srgb, var(--cc) 35%, #181425), #181425 80%); }
+  .skill.combo .nm { color: var(--cc); }
+  .skill.combo .fl { color: var(--mist); font-size: 12.5px; font-style: italic; margin-top: 4px; }
+  .skill.combo .rc { color: var(--steel); font-size: 12px; margin-top: 3px; }
+  .skill .tg.combo { color: var(--gold2); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .skill.combo.rest, .skill.combo.near { box-shadow: inset 0 0 0 2px #3a4466; background: linear-gradient(#2a2f4a, #242840); }
+  .skill.combo.rest .si, .skill.combo.near .si { border-color: #3a4466; }
+  .skill.combo.rest .nm, .skill.combo.near .nm { color: var(--pale); }
+  .skill.combo.rest .tg.combo, .skill.combo.near .tg.combo { color: var(--mist); }
+  .skill.combo.woke { animation: comboIn 0.6s ease-out both; }
+  .skill.combo.woke:nth-of-type(3) { animation-delay: 0.15s; }
+  @keyframes comboIn { 0% { transform: scale(0.85); opacity: 0; filter: brightness(2.2); } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); filter: none; } }
+  .cbi { display: inline-flex; align-items: center; gap: 1px; }
+  .cbi i { font-style: normal; font-weight: 700; color: var(--gold2); font-size: 14px; margin: 0 2px; }
+  .cbhint { display: flex; align-items: center; gap: 5px; margin-top: 5px; color: var(--gold2); font-size: 12.5px; font-weight: 700; line-height: 1.25; }
+  .boon.hascombo { box-shadow: inset 0 0 0 2px var(--gold); }
+  .eld.cb b { color: var(--gold2); }
+  .eld > .cbi { flex: none; margin-top: 1px; }
   .slots { display: flex; gap: 6px; justify-content: center; margin: 4px 0 10px; flex-wrap: wrap; }
   .slots span { width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid #333b5c; border-radius: 50%; background: #181425; }
   .slots span.on { border-color: #3e8948; }
@@ -352,6 +372,9 @@
   .page .cnt { color: var(--steel); font-size: 12.5px; margin-left: 6px; }
   .page .mini { font-size: 12.5px; margin-top: 2px; }
   .fgrid.one { grid-template-columns: 1fr; }
+  .page .pi.cbp { width: 62px; }
+  .page.cb:not(.have) .pi img { filter: grayscale(1) opacity(0.5); }
+  .page.cb .rc { color: var(--steel); font-size: 12px; margin-top: 2px; }
   @media (max-width: 380px) { .fgrid { grid-template-columns: 1fr; } }
   #bCamp .dot { width: 9px; height: 9px; flex: none; background: var(--spark); box-shadow: 0 0 0 2px var(--ink); animation: ready 1.4s infinite; }
   .mini.extra { margin-top: 4px; color: var(--pale); }
@@ -635,22 +658,23 @@ A.ELEMENTS = {
 A.EL_TIERS = [2, 4, 6];
 
 // ---------- Besondere Kräfte auf seltenen, epischen und legendären Items ({v} = zufällige Stärke; low: kleiner ist besser) ----------
+// Gleiche Kräfte auf mehreren Stücken stapeln (gear.js): cap = höchstens so viel, minv = bei «low» nie kleiner als das
 A.POWERS = {
   zauberklinge: { name: { de: 'Zauberklinge', en: 'Spellblade' }, min: 60, max: 120, text: { de: 'Nach einem Zauber macht dein nächster Angriff +{v} % Schaden.', en: 'After a spell, your next attack deals +{v}% damage.' } },
   riesentoeter: { name: { de: 'Riesentöter', en: 'Giantslayer' }, min: 20, max: 40, text: { de: '+{v} % Schaden gegen Elite-Gegner und Bosse.', en: '+{v}% damage to elites and bosses.' } },
-  vampirkuss: { name: { de: 'Vampirkuss', en: 'Vampire Kiss' }, min: 2, max: 4, text: { de: 'Volltreffer heilen {v} % deines Lebens.', en: 'Crits heal {v}% of your health.' } },
-  zweiterwind: { name: { de: 'Zweiter Wind', en: 'Second Wind' }, min: 20, max: 35, text: { de: 'Einmal pro Raum: Fällst du unter 30 % Leben, heilst du {v} %.', en: 'Once per room: dropping below 30% health heals you {v}%.' } },
+  vampirkuss: { name: { de: 'Vampirkuss', en: 'Vampire Kiss' }, min: 2, max: 4, cap: 8, text: { de: 'Volltreffer heilen {v} % deines Lebens.', en: 'Crits heal {v}% of your health.' } },
+  zweiterwind: { name: { de: 'Zweiter Wind', en: 'Second Wind' }, min: 20, max: 35, cap: 70, text: { de: 'Einmal pro Raum: Fällst du unter 30 % Leben, heilst du {v} %.', en: 'Once per room: dropping below 30% health heals you {v}%.' } },
   seelensammler: { name: { de: 'Seelensammler', en: 'Soul Collector' }, min: 15, max: 30, text: { de: 'Jeder Sieg: +1 % Schaden bis zum Ende der Ebene (höchstens +{v} %).', en: 'Every kill: +1% damage until the end of the floor (up to +{v}%).' } },
-  nachbeben: { name: { de: 'Nachbeben', en: 'Aftershock' }, min: 4, max: 6, low: true, text: { de: 'Jeder {v}. Treffer löst einen Erdstoss um das Ziel aus.', en: 'Every {v}th hit triggers a quake around the target.' } },
-  schattenwolf: { name: { de: 'Schattenwolf', en: 'Shadow Wolf' }, min: 9, max: 14, low: true, text: { de: 'Alle {v} Sekunden kämpft ein Schattenwolf 6 Sekunden mit.', en: 'Every {v} seconds a shadow wolf fights along for 6 seconds.' } },
-  raserei: { name: { de: 'Raserei', en: 'Frenzy' }, min: 4, max: 8, text: { de: 'Jeder Treffer: +{v} % Angriffstempo für 2 Sekunden (bis 5-mal).', en: 'Every hit: +{v}% attack speed for 2 seconds (up to 5 times).' } },
+  nachbeben: { name: { de: 'Nachbeben', en: 'Aftershock' }, min: 4, max: 6, low: true, minv: 2, text: { de: 'Jeder {v}. Treffer löst einen Erdstoss um das Ziel aus.', en: 'Every {v}th hit triggers a quake around the target.' } },
+  schattenwolf: { name: { de: 'Schattenwolf', en: 'Shadow Wolf' }, min: 9, max: 14, low: true, minv: 5, text: { de: 'Alle {v} Sekunden kämpft ein Schattenwolf 6 Sekunden mit.', en: 'Every {v} seconds a shadow wolf fights along for 6 seconds.' } },
+  raserei: { name: { de: 'Raserei', en: 'Frenzy' }, min: 4, max: 8, cap: 16, text: { de: 'Jeder Treffer: +{v} % Angriffstempo für 2 Sekunden (bis 5-mal).', en: 'Every hit: +{v}% attack speed for 2 seconds (up to 5 times).' } },
   funkenflug: { name: { de: 'Funkenflug', en: 'Sparkflight' }, min: 3, max: 5, text: { de: 'Jeder Zauber schickt {v} Funken zu Gegnern in der Nähe.', en: 'Every spell sends {v} sparks at nearby enemies.' } },
   goldmagnet: { name: { de: 'Goldmagnet', en: 'Gold Magnet' }, min: 20, max: 40, text: { de: '+{v} % Gold, und Gold fliegt von weit her zu dir.', en: '+{v}% gold, and gold flies to you from afar.' } },
   panzerbrecher: { name: { de: 'Panzerbrecher', en: 'Armor Breaker' }, min: 2, max: 4, text: { de: 'Treffer senken die Rüstung des Ziels um {v} (bis 5-mal).', en: 'Hits lower the target\'s armor by {v} (up to 5 times).' } },
-  wirbelklingen: { name: { de: 'Wirbelklingen', en: 'Whirling Blades' }, min: 6, max: 9, low: true, text: { de: 'Alle {v} Sekunden kreisen 4 Sekunden lang 3 Klingen um dich.', en: 'Every {v} seconds 3 blades circle you for 4 seconds.' } },
-  sturmlauf: { name: { de: 'Sturmlauf', en: 'Stormrun' }, min: 20, max: 40, text: { de: 'Nach jedem Sieg: 3 Sekunden lang +{v} % Lauftempo.', en: 'After every kill: +{v}% move speed for 3 seconds.' } },
-  glueckspilz: { name: { de: 'Glückspilz', en: 'Lucky Charm' }, min: 3, max: 6, text: { de: '+{v} % Chance, dass Gegner ein Item fallen lassen.', en: '+{v}% chance that enemies drop an item.' } },
-  phoenix: { name: { de: 'Phönix', en: 'Phoenix' }, min: 30, max: 50, legendary: true, text: { de: 'Einmal pro Ebene: Stirbst du, stehst du mit {v} % Leben wieder auf.', en: 'Once per floor: if you die, you rise again with {v}% health.' } },
+  wirbelklingen: { name: { de: 'Wirbelklingen', en: 'Whirling Blades' }, min: 6, max: 9, low: true, minv: 4, text: { de: 'Alle {v} Sekunden kreisen 4 Sekunden lang 3 Klingen um dich.', en: 'Every {v} seconds 3 blades circle you for 4 seconds.' } },
+  sturmlauf: { name: { de: 'Sturmlauf', en: 'Stormrun' }, min: 20, max: 40, cap: 80, text: { de: 'Nach jedem Sieg: 3 Sekunden lang +{v} % Lauftempo.', en: 'After every kill: +{v}% move speed for 3 seconds.' } },
+  glueckspilz: { name: { de: 'Glückspilz', en: 'Lucky Charm' }, min: 3, max: 6, cap: 15, text: { de: '+{v} % Chance, dass Gegner ein Item fallen lassen.', en: '+{v}% chance that enemies drop an item.' } },
+  phoenix: { name: { de: 'Phönix', en: 'Phoenix' }, min: 30, max: 50, cap: 100, legendary: true, text: { de: 'Einmal pro Ebene: Stirbst du, stehst du mit {v} % Leben wieder auf.', en: 'Once per floor: if you die, you rise again with {v}% health.' } },
 };
 
 // Legendäre und verfluchte Einzelstücke
@@ -833,6 +857,93 @@ A.LEGENDS = {
 };
 A.LEGEND_SPARKS = 20;   // Seelenfunken für jede Legende, die zum ersten Mal in die Sammlung kommt
 A.LEGEND_DMG = 0.01;     // jede Legende in der Sammlung: +1 % Schaden, für immer
+
+// Kombos (Regeln in js/combos.js): zwei passende Teile wecken am Schrein eine neue Kraft, die es nur zusammen gibt.
+// need: die zwei Teile. tal = passiver Segen, el = mindestens 2 Ausrüstungs-Teile dieses Elements, spell = Zauber (im Zauberbuch reicht),
+// leg = getragene Legende, tro = getragene Trophäe dieses Bosses, cls = Klasse. col: Farbe der Kombo
+A.COMBOS = {
+  feuerwerk: { need: [{ tal: 'kette' }, { el: 'feuer' }], col: '#f77622',
+    name: { de: 'Feuerwerk', en: 'Fireworks' },
+    text: { de: 'Jede Explosion der Kettenreaktion schiesst 4 Raketen auf Gegner in der Nähe. Sie zerplatzen bunt und setzen alles in Brand.', en: 'Every chain reaction blast launches 4 rockets at nearby enemies. They burst in color and set everything on fire.' },
+    flavor: { de: 'Ab jetzt ist jeden Abend Silvester.', en: 'From now on, every night is New Year\'s Eve.' } },
+  domino: { need: [{ tal: 'kette' }, { tal: 'pulver' }], col: '#feae34',
+    name: { de: 'Domino', en: 'Domino' },
+    text: { de: 'Jede Explosion hat 35 % Chance, gleich daneben noch eine auszulösen, bis zu 2-mal hintereinander.', en: 'Every explosion has a 35% chance to set off another one right next to it, up to 2 in a row.' },
+    flavor: { de: 'Einer fällt. Alle fallen. Laut.', en: 'One falls. All fall. Loudly.' } },
+  gewitterklingen: { need: [{ tal: 'klingen' }, { el: 'blitz' }], col: '#fee761',
+    name: { de: 'Gewitterklingen', en: 'Storm Blades' },
+    text: { de: 'Deine kreisenden Klingen laden sich auf: Jede schickt alle 1,2 Sekunden einen Blitz in einen Gegner in der Nähe (50 % Stärke).', en: 'Your orbiting blades charge up: each one zaps a nearby enemy every 1.2 seconds (50% power).' },
+    flavor: { de: 'Nicht anfassen. Wirklich nicht.', en: 'Do not touch. Seriously.' } },
+  permafrost: { need: [{ tal: 'frost' }, { el: 'eis' }], col: '#9be8ff',
+    name: { de: 'Permafrost', en: 'Permafrost' },
+    text: { de: 'Wer 1,5 Sekunden in deiner Frostaura steht, friert 1,2 Sekunden ein (Bosse kürzer).', en: 'Whoever stays in your frost aura for 1.5 seconds freezes for 1.2 seconds (bosses shorter).' },
+    flavor: { de: 'Bleib doch noch. Für immer.', en: 'Do stay. Forever.' } },
+  pilzteppich: { need: [{ tal: 'giftspur' }, { el: 'gift' }], col: '#63c74d',
+    name: { de: 'Pilzteppich', en: 'Mushroom Carpet' },
+    text: { de: 'Im Kampf wachsen in deiner Giftspur Giftpilze (bis 8). Tritt ein Gegner drauf: Puff! Schaden und eine Giftwolke.', en: 'In battle, poison mushrooms sprout in your trail (up to 8). An enemy steps on one: poof! Damage and a poison cloud.' },
+    flavor: { de: 'Nicht essen. Nicht drauftreten. Ausser du bist ein Gegner.', en: 'Do not eat. Do not step on. Unless you are an enemy.' } },
+  rudel: { need: [{ tal: 'begleiter' }, { spell: 'geisterwolf' }], col: '#2ce8f5',
+    name: { de: 'Das Rudel', en: 'The Pack' },
+    text: { de: 'Statt einem Geisterwolf kämpfen 3 dauerhaft an deiner Seite.', en: 'Instead of one spirit wolf, three fight at your side permanently.' },
+    flavor: { de: 'Einer ist ein Haustier. Drei sind ein Problem. Für die anderen.', en: 'One is a pet. Three are a problem. For the others.' } },
+  vampirfuerst: { need: [{ tal: 'vampir' }, { tal: 'seele' }], col: '#e43b44',
+    name: { de: 'Vampirfürst', en: 'Vampire Lord' },
+    text: { de: 'Jeder besiegte Gegner schickt dir eine Blutkugel: Sie heilt ein wenig und gibt 4 Sekunden +6 % Schaden (bis 5-mal).', en: 'Every defeated enemy sends you a blood orb: it heals a little and gives +6% damage for 4 seconds (up to 5 times).' },
+    flavor: { de: 'Du hast jetzt einen Umhang. Innerlich.', en: 'You have a cape now. On the inside.' } },
+  echokaskade: { need: [{ tal: 'echo' }, { tal: 'geist' }], col: '#2ce8f5',
+    name: { de: 'Echokaskade', en: 'Echo Cascade' },
+    text: { de: 'Zauberecho kommt öfter (40 %), und jedes Echo wirkt den Zauber gleich noch einmal (60 % Kraft).', en: 'Spell echo happens more often (40%), and every echo casts the spell once more right away (60% power).' },
+    flavor: { de: 'Echo! Echo! Echo! Aua.', en: 'Echo! Echo! Echo! Ouch.' } },
+  goldregen: { need: [{ tal: 'gold' }, { tal: 'glueck' }], col: '#feae34',
+    name: { de: 'Goldregen', en: 'Golden Rain' },
+    text: { de: 'Jede Münze, die du im Kampf aufhebst, schiesst einen Goldsplitter auf den nächsten Gegner (40 % Stärke).', en: 'Every coin you pick up in battle fires a gold shard at the nearest enemy (40% power).' },
+    flavor: { de: 'Geld regiert die Welt. Und trifft.', en: 'Money rules the world. And hits.' } },
+  kaktus: { need: [{ tal: 'dornen' }, { el: 'stein' }], col: '#a2e05a',
+    name: { de: 'Kaktus', en: 'Cactus' },
+    text: { de: 'Wirst du getroffen, schiessen 6 Steinstacheln rundum (50 % Stärke, alle 1,2 Sekunden).', en: 'When you are hit, 6 stone spikes burst out around you (50% power, every 1.2 seconds).' },
+    flavor: { de: 'Umarmungen nur nach Vereinbarung.', en: 'Hugs by appointment only.' } },
+  koenigsfamilie: { need: [{ leg: 'pudding' }, { tro: 'schleimkoenig' }], col: '#9be37a',
+    name: { de: 'Königsfamilie', en: 'Royal Family' },
+    text: { de: 'Pudding trägt jetzt die grosse Krone: stärker, grösser, verschluckt Gegner schon unter 25 % Leben, und jeder Happen spuckt einen Baby-Schleim aus, der 15 Sekunden mitkämpft (bis 4).', en: 'Pudding now wears the big crown: stronger, bigger, swallows enemies below 25% health, and every gulp spits out a baby slime that fights for 15 seconds (up to 4).' },
+    flavor: { de: 'Lang lebe der König. Und seine 37 Enkel.', en: 'Long live the king. And his 37 grandchildren.' } },
+  knochenknall: { need: [{ cls: 'rufer' }, { tal: 'kette' }], col: '#e0a4ff',
+    name: { de: 'Knochenknall', en: 'Bone Blast' },
+    text: { de: 'Läuft die Zeit eines Dieners ab, zerplatzt er in einer Knochenexplosion (60 % Stärke). Wer dabei fällt, steht als Geist auf.', en: 'When a minion\'s time runs out, it bursts in a bone explosion (60% power). Whoever falls rises as a ghost.' },
+    flavor: { de: 'Recycling, aber laut.', en: 'Recycling, but loud.' } },
+  brauerei: { need: [{ cls: 'brau' }, { tal: 'pulver' }], col: '#c77dff',
+    name: { de: 'Hausbrauerei', en: 'House Brewery' },
+    text: { de: 'Jede 3. Flasche ist eine Überraschung (statt jede 4.), und Überraschungen springen noch 2-mal zum nächsten Gegner weiter.', en: 'Every 3rd flask is a surprise (instead of every 4th), and surprises bounce on to the next enemy 2 more times.' },
+    flavor: { de: 'Prost! In Deckung!', en: 'Cheers! Take cover!' } },
+  pfeilhagel: { need: [{ cls: 'schuetze' }, { tal: 'spalt' }], col: '#e8dcc0',
+    name: { de: 'Pfeilhagel', en: 'Arrow Hail' },
+    text: { de: 'Normale Pfeile teilen sich beim Treffer in 2 weitere Pfeile (je 50 %).', en: 'Basic arrows split into 2 more arrows on impact (50% each).' },
+    flavor: { de: 'Zielen wird überschätzt.', en: 'Aiming is overrated.' } },
+  wirbelwind: { need: [{ cls: 'klinge' }, { tal: 'klingen' }], col: '#c0cbdc',
+    name: { de: 'Wirbelwind', en: 'Whirlwind' },
+    text: { de: 'Jeder 4. Schlag schleudert deine kreisenden Klingen weit hinaus und wieder zurück, mit doppeltem Schaden.', en: 'Every 4th swing flings your orbiting blades far out and back again, with double damage.' },
+    flavor: { de: 'Abstand halten ist auch keine Lösung.', en: 'Keeping your distance won\'t help either.' } },
+  fadensturm: { need: [{ cls: 'weber' }, { tal: 'strom' }], col: '#7fd8ff',
+    name: { de: 'Fadensturm', en: 'Thread Storm' },
+    text: { de: 'Jeder besiegte Gegner schickt einen Fadenfunken zum nächsten (70 % Zauberkraft). Fällt der auch, springt der Funke weiter.', en: 'Every defeated enemy sends a thread spark to the next one (70% magic). If that one falls too, the spark jumps on.' },
+    flavor: { de: 'Ein Faden, viele Knoten.', en: 'One thread, many knots.' } },
+  meteorschauer: { need: [{ spell: 'meteor' }, { el: 'feuer' }], col: '#f77622',
+    name: { de: 'Meteorschauer', en: 'Meteor Shower' },
+    text: { de: 'Alle 7 Sekunden im Kampf fällt ein Meteor auf den stärksten Gegner, und jeder Meteor bringt 2 kleine Brocken mit.', en: 'Every 7 seconds in battle a meteor strikes the strongest enemy, and every meteor brings 2 small chunks along.' },
+    flavor: { de: 'Wetterbericht: heiter bis brennend.', en: 'Forecast: sunny, turning to fire.' } },
+  plasmaball: { need: [{ spell: 'feuerball' }, { spell: 'kettenblitz' }], col: '#c77dff',
+    name: { de: 'Plasmaball', en: 'Plasma Ball' },
+    text: { de: 'Feuerball-Explosionen schicken Blitze in 3 Gegner, und jeder Treffer des Kettenblitzes macht eine kleine Explosion.', en: 'Fireball blasts send lightning into 3 enemies, and every chain lightning hit causes a small explosion.' },
+    flavor: { de: 'Physiklehrer hassen diesen Trick.', en: 'Physics teachers hate this trick.' } },
+  schattenklon: { need: [{ el: 'schatten' }, { tal: 'flink' }], col: '#b55088',
+    name: { de: 'Schattenklon', en: 'Shadow Clone' },
+    text: { de: 'Weichst du aus, springt ein Schattenklon von dir heraus und kämpft 4 Sekunden mit (höchstens alle 1,5 Sekunden).', en: 'When you dodge, a shadow clone of you jumps out and fights for 4 seconds (at most every 1.5 seconds).' },
+    flavor: { de: 'Ich war das nicht. Das war der andere.', en: 'Wasn\'t me. It was the other one.' } },
+  todesmut: { need: [{ tal: 'glaskanone' }, { tal: 'berserker' }], col: '#e43b44',
+    name: { de: 'Todesmut', en: 'Death Wish' },
+    text: { de: 'Unter 35 % Leben ist jeder deiner Treffer ein Volltreffer.', en: 'Below 35% health, every hit you land is a critical hit.' },
+    flavor: { de: 'Glas bricht. Du nicht. Noch nicht.', en: 'Glass breaks. You don\'t. Not yet.' } },
+};
+A.COMBO_SPARKS = 15;   // Seelenfunken für jede Kombo, die zum ersten Mal ins Kombo-Buch kommt
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
@@ -1034,16 +1145,22 @@ A.Boons = (function () {
     for (const id of r.talents) { const T = A.TALENTS[id]; if (T && T.mod) for (const k in T.mod) o[k] = (o[k] || 0) + T.mod[k]; }
     return o;
   }
-  // Drei Angebote: möglichst je ein neuer Zauber, ein Talent und eine Verstärkung
+  // Drei Angebote: möglichst je ein neuer Zauber, ein Talent und eine Verstärkung.
+  // Je tiefer, desto öfter ist ein Teil dabei, das eine Kombo ganz macht (combos.js): auf Ebene 1 zu 30 %, ab Ebene 12 zu 85 %
   function offer(r, rng) {
     const cls = A.CLASSES.find(c => c.id === r.cls);
     const spells = rng.shuffle(A.SHRINE_SPELLS.concat(cls.skills).filter((s, i, a) => a.indexOf(s) === i && !r.known.includes(s))).map(id => ({ type: 'spell', id }));
     const tals = rng.shuffle(Object.keys(A.TALENTS).filter(id => !(r.talents || []).includes(id))).map(id => ({ type: 'talent', id }));
     const ups = rng.shuffle(r.active.filter(id => id && upgOf(id, r) < MAX_UPG)).map(id => ({ type: 'upg', id }));
-    const out = [];
+    const pool = spells.concat(tals), out = [];
     for (const list of [spells, tals, ups]) if (list.length) out.push(list.shift());
     const rest = rng.shuffle(spells.concat(tals, ups));
     while (out.length < 3 && rest.length) out.push(rest.shift());
+    const d = A.Game.derived(r), whole = (b) => A.Combos.completes(b, r, d).length > 0;
+    if (out.length && !out.some(whole) && rng.chance(Math.min(0.85, 0.25 + 0.05 * (r.floor || 1)))) {
+      const bait = pool.filter(whole);
+      if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; }   // ersetzt das Angebot gleicher Art
+    }
     return rng.shuffle(out);
   }
   return { MAX_UPG, has, upgOf, pow, cd, icon, skName, mods, offer };
@@ -1067,15 +1184,20 @@ A.Gear = (function () {
   function worn(r) { return r && r.gear ? A.SLOTS.map(s => r.gear[s]).filter(Boolean) : []; }
   function counts(r) { const c = {}; for (const it of worn(r)) if (it.el) c[it.el] = (c[it.el] || 0) + 1; return c; }
   function tierOf(n) { return n >= 6 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0; }
-  // Stufen je Element und die stärkste Kraft je Art (gleiche Kräfte zählen nicht doppelt)
+  // Stufen je Element und die Kräfte. Gleiche Kräfte stapeln: das beste Stück zählt ganz, jedes weitere halb
+  // (bei «low», kleiner ist besser: jedes weitere Stück nimmt ein Viertel weg); cap/minv in data.js setzen Grenzen. pwN: auf wie vielen Stücken
   function summary(r) {
-    const count = counts(r), tier = {}, pw = {};
+    const count = counts(r), tier = {}, pw = {}, pwN = {}, vals = {};
     for (const el in count) tier[el] = tierOf(count[el]);
-    for (const it of worn(r)) {
-      if (!it.power) continue; const P = A.POWERS[it.power.id]; if (!P) continue;
-      const cur = pw[it.power.id]; pw[it.power.id] = cur == null ? it.power.v : P.low ? Math.min(cur, it.power.v) : Math.max(cur, it.power.v);
+    for (const it of worn(r)) { if (it.power && A.POWERS[it.power.id]) (vals[it.power.id] = vals[it.power.id] || []).push(it.power.v); }
+    for (const id in vals) {
+      const P = A.POWERS[id], v = vals[id].slice().sort((a, b) => P.low ? a - b : b - a), n = v.length;
+      pwN[id] = n;
+      if (n === 1) pw[id] = v[0];
+      else if (P.low) pw[id] = Math.max(P.minv || 2, Math.round(v[0] * Math.pow(0.75, n - 1)));
+      else pw[id] = Math.min(P.cap || 1e9, v[0] + v.slice(1).reduce((s, x) => s + Math.round(x / 2), 0));
     }
-    return { count, tier, pw };
+    return { count, tier, pw, pwN };
   }
   // Werte für das Heldenblatt (game.js derived)
   function mods(r) {
@@ -1141,6 +1263,7 @@ A.Gear = (function () {
     const w = W();
     for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
     api.fx('boom', { x, y, r, color: col });
+    A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
   // Blitz springt von Gegner zu Gegner
   function zap(h, dmg, n, col) {
@@ -1254,7 +1377,7 @@ A.Classes = (function () {
     const w = W(), lk = LOOK[look] || LOOK.skel;
     [x, y] = api.freeSpot(x, y, 11);
     const rat = look === 'ratte', list = minions().filter(m => (m.look === 'ratte') === rat);   // Ratten haben ihre eigene Obergrenze
-    if (list.length >= (rat ? 6 : MAX_MINIONS)) { const old = list.sort((p, q) => p.until - q.until)[0]; old.gone = true; api.fx('appear', { m: old }); }
+    if (list.length >= (rat ? 6 : MAX_MINIONS)) { const old = list.sort((p, q) => p.until - q.until)[0]; old.gone = true; api.fx('appear', { m: old }); A.Combos.onAllyGone(old); }   // Knochenknall (combos.js)
     const a = { side: 'hero', ally: true, minion: true, look, hp: 1e9, maxHp: 1e9, x, y, r: 11, fx: h.fx < 0 ? -1 : 1, fy: 0, pow, until: w.t + dur, perm: false,
       cd: 0.3 + Math.random() * 0.3, swing: 0, alive: true, crit: 0, spawn: 0.4, spd: lk.spd, rate: lk.rate, col: '#e0a4ff' };
     w.allies.push(a);
@@ -1270,13 +1393,14 @@ A.Classes = (function () {
   }
 
   // ---------- Braumeister: Flaschen ----------
-  // Eine Flasche fliegt im Bogen zum Ziel (folgt ihm ein wenig) und zerplatzt dort: Schaden in der Fläche, je nach Sorte Brand, Gift, Frost oder eine Lache
-  function throwFlask(h, tx, ty, tgt, dmg, spec) {
-    const w = W(), d = Math.hypot(tx - h.x, ty - h.y) || 1, life = Math.max(0.25, d / 360);
-    w.shots.push({ x: h.x + h.fx * 6, y: h.y - 2, vx: (tx - h.x) / life, vy: (ty - h.y) / life, r: 5, side: 'hero', from: h, dmg,
+  // Eine Flasche fliegt im Bogen zum Ziel (folgt ihm ein wenig) und zerplatzt dort: Schaden in der Fläche, je nach Sorte Brand, Gift, Frost oder eine Lache.
+  // src: Startpunkt, wenn sie nicht aus der Hand kommt (Hausbrauerei: die Überraschung springt weiter)
+  function throwFlask(h, tx, ty, tgt, dmg, spec, src) {
+    const w = W(), sx = src ? src.x : h.x + h.fx * 6, sy = src ? src.y : h.y - 2, d = Math.hypot(tx - sx, ty - sy) || 1, life = Math.max(0.25, d / 360);
+    w.shots.push({ x: sx, y: sy, vx: (tx - sx) / life, vy: (ty - sy) / life, r: 5, side: 'hero', from: h, dmg,
       opts: Object.assign({ kind: 'magic', lob: true }, spec), life, life0: life, peak: Math.min(64, 26 + d * 0.22),
       spin: (Math.random() < 0.5 ? -1 : 1) * (9 + Math.random() * 5), color: spec.col, tgt: tgt || null });
-    h.thrownT = w.t;
+    if (!src) h.thrownT = w.t;
   }
   function lobStep(s, dt) {
     if (s.tgt && live(s.tgt) && s.life > 0.08) { const k = Math.min(1, dt * 5); s.vx += ((s.tgt.x - s.x) / s.life - s.vx) * k; s.vy += ((s.tgt.y - s.y) / s.life - s.vy) * k; }
@@ -1294,14 +1418,20 @@ A.Classes = (function () {
     }
     if (o.zone) w.zones.push({ kind: o.zone, x: s.x, y: s.y + 4, r: o.r, t0: w.t, until: w.t + o.zdur, tick: w.t + 0.25, dmg: o.zdmg, col: o.col });
     api.fx('flask', { x: s.x, y: s.y, r: o.r, color: o.col, big: !o.basic });
+    // Hausbrauerei (combos.js): eine Überraschung springt weiter, am liebsten zu einem Gegner, den sie noch nicht erwischt hat
+    if (o.surprise && (o.hops || 0) < A.Combos.bounces(h) && h.alive) {
+      let next = null, bd = 1e9;
+      for (const m of w.mons) { if (!live(m)) continue; const d = Math.hypot(m.x - s.x, m.y - s.y); if (d > 240) continue; const k = d + (d < o.r + m.r ? 400 : 0); if (k < bd) { bd = k; next = m; } }
+      if (next) throwFlask(h, next.x, next.y, next, s.dmg * 0.8, Object.assign({}, o, { hops: (o.hops || 0) + 1 }), { x: s.x, y: s.y });
+    }
   }
-  // Normaler Angriff des Braumeisters: Flasche werfen; jede 4. ist eine Überraschung (Brand, Gift oder Frost)
+  // Normaler Angriff des Braumeisters: Flasche werfen; jede 4. ist eine Überraschung (Brand, Gift oder Frost), mit der Hausbrauerei jede 3.
   const SURPRISE = [{ col: '#f77622', burn: 0.5 }, { col: '#63c74d', poison: 1.2 }, { col: '#9be8ff', slow: true }];
   function attack(h, mul, big) {
     if (h.cls !== 'brau') return false;
     const m = api.nearestMon(h.x, h.y, 360), tx = m ? m.x : h.x + h.fx * 150, ty = m ? m.y : h.y + h.fy * 150;
     h.flaskN = (h.flaskN || 0) + 1;
-    const spec = Object.assign({ basic: true, r: big ? 62 : 46, col: '#feae34' }, h.flaskN % 4 === 0 ? SURPRISE[Math.floor(Math.random() * SURPRISE.length)] : null);
+    const spec = Object.assign({ basic: true, r: big ? 62 : 46, col: '#feae34' }, h.flaskN % A.Combos.surpriseEvery(h) === 0 ? Object.assign({ surprise: true }, SURPRISE[Math.floor(Math.random() * SURPRISE.length)]) : null);
     const dmg = api.heroPower(h) * 0.85 * mul;
     throwFlask(h, tx, ty, m, dmg, spec);
     if (h.tal.spalt) for (const da of [-0.4, 0.4]) {   // Gespaltener Schlag: zwei Extra-Flaschen links und rechts
@@ -1427,10 +1557,10 @@ A.Game = (function () {
 
   // ---------- Dauerhaft (Lager) ----------
   // camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
-  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {} });
+  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {} });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -1516,6 +1646,32 @@ A.Game = (function () {
     saveMeta(); save();
     return { first, sparks: first ? A.LEGEND_SPARKS : 0, n: legCount() };
   }
+  // ---------- Kombo-Buch (A.COMBOS, Regeln in combos.js) ----------
+  function comboCount() { return Object.keys(A.COMBOS).filter(id => (meta.comboFound[id] || 0) > 0).length; }
+  // Am Schrein: alle bereiten Kombos (beide Teile da) erwachen; die erste ihrer Art kommt ins Kombo-Buch und bringt sofort Seelenfunken
+  function takeCombos() {
+    if (!run) return [];
+    const full = derived().comboFull || {}, out = [];
+    for (const id of Object.keys(full)) {
+      if ((run.combos || []).includes(id)) continue;
+      (run.combos || (run.combos = [])).push(id);
+      const first = !meta.comboFound[id];
+      meta.comboFound[id] = (meta.comboFound[id] || 0) + 1;
+      if (first) { meta.sparks += A.COMBO_SPARKS; run.comboSparks = (run.comboSparks || 0) + A.COMBO_SPARKS; }
+      out.push({ id, first });
+    }
+    if (out.length) { saveMeta(); save(); }
+    return out;
+  }
+  // Kombos, die gerade bereit geworden sind (beide Teile da, noch nicht erwacht, noch nicht gemeldet): für die Meldung «Kombo bereit»
+  function comboFresh() {
+    if (!run) return [];
+    const full = derived().comboFull || {}, had = run.comboAnn || [], woke = run.combos || [];
+    const ann = had.filter(id => full[id]);   // fällt eine wieder auseinander, darf sie später noch einmal gemeldet werden
+    const out = Object.keys(full).filter(id => !woke.includes(id) && !ann.includes(id));
+    if (out.length || ann.length !== had.length) { run.comboAnn = ann.concat(out); save(); }
+    return out;
+  }
   // Neue Eigenschaften (noch nie gesehen) merken und zurückgeben, damit die Oberfläche sie vorstellen kann
   function eliteSeen(list) {
     const out = [];
@@ -1579,6 +1735,7 @@ A.Game = (function () {
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
+    const ce = A.Combos.evaluate(r, d); d.combo = ce.on; d.comboFull = ce.full;   // Kombos: erwacht und vollständig wirken sie (combos.js)
     return d;
   }
 
@@ -1654,12 +1811,14 @@ A.Game = (function () {
     const c = run ? A.Gear.counts(run) : {};
     return rng.weighted(Object.keys(A.ELEMENTS), k => 1 + 1.5 * (c[k] || 0));
   }
-  // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht
+  // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht.
+  // Kräfte, die der Held schon trägt, kommen je tiefer desto öfter (sie stapeln, gear.js): ab Ebene 7 doppelt so oft, ab Ebene 20 viermal
   const POWER_CHANCE = { rare: 0.3, epic: 1, legendary: 1, cursed: 0.6 };
   function rollPower(rarity, rng, force, not) {
     if (!POWER_CHANCE[rarity] || (!force && !rng.chance(POWER_CHANCE[rarity]))) return null;
     const ids = Object.keys(A.POWERS).filter(id => id !== not && (!A.POWERS[id].legendary || rarity === 'legendary' || rarity === 'cursed'));
-    const id = rng.pick(ids), P = A.POWERS[id];
+    const worn = run ? A.Gear.summary(run).pw : {}, boost = run ? 1 + Math.min(3, 0.15 * run.floor) : 1;
+    const id = rng.weighted(ids, k => worn[k] != null ? boost : 1), P = A.POWERS[id];
     return { id, v: rng.int(P.min, P.max) };
   }
   // Boss-Trophäe: einmal pro Durchgang und Boss, Werte wachsen mit der Ebene
@@ -1902,11 +2061,11 @@ A.Game = (function () {
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
-  // die Funken für neue Wimpel, neue Seiten im Elite-Buch und neue Legenden sind schon gutgeschrieben und werden nur mit angezeigt
+  // die Funken für neue Wimpel, neue Seiten im Elite-Buch, neue Legenden und neue Kombos sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0;
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0;
     const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
-    run.sparksEarned = sparks + banners + book + legend; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend;
+    run.sparksEarned = sparks + banners + book + legend + combo; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
@@ -1920,7 +2079,7 @@ A.Game = (function () {
 
   loadMeta();
   return {
-    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound,
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, makeLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
@@ -6021,7 +6180,7 @@ A.Legends = (function () {
   function guard(from, to, opts) {
     const w = W(); if (!w || to !== w.hero || !from || from.side !== 'enemy' || (opts.kind !== 'phys' && opts.kind !== 'magic')) return null;
     if (from.blindUntil > w.t && Math.random() < 0.5) {
-      api.float(to.x, to.y - to.r - 8, L('daneben', 'miss'), '#c0cbdc', 12); api.fx('miss', { to }); A.Gear.onDodge(to);
+      api.float(to.x, to.y - to.r - 8, L('daneben', 'miss'), '#c0cbdc', 12); api.fx('miss', { to }); A.Gear.onDodge(to); A.Combos.onDodge(to);
       return -1;
     }
     if (has(to, 'pfannen') && (to.panN = (to.panN || 0) + 1) % 3 === 0) {
@@ -6266,6 +6425,7 @@ A.Legends = (function () {
     const w = W();
     for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
     api.fx('boom', { x, y, r, color: col });
+    A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
   // Der Amboss schlägt ein: grosser Schaden, kurz betäubt, Rüstung verbeult; daneben gibt es etwas ab
   function anvil(h, o) {
@@ -6281,18 +6441,22 @@ A.Legends = (function () {
   }
 
   // ---------- Pudding: der Sohn des Schleimkönigs ----------
-  // Ein Begleiter in W.allies (leg: 'pudding'); world.js lässt ihn laufen und beissen. Hier: da sein, wachsen und angeschlagene Gegner verschlucken
+  // Ein Begleiter in W.allies (leg: 'pudding'); world.js lässt ihn laufen und beissen. Hier: da sein, wachsen und angeschlagene Gegner verschlucken.
+  // Kombo Königsfamilie (Krone des Schleimkönigs dazu, combos.js): grosse Krone, stärker, grösser, verschluckt schon unter 25 %, spuckt Baby-Schleime
   function pudding(w, h, lg, dt) {
     let p = w.allies.find(a => a.leg === 'pudding' && !a.gone);
     if (!lg.pudding || !h.alive) { if (p) { p.gone = true; api.fx('appear', { m: p }); } return; }
     if (!p) { p = api.mkAlly(h, 0.6, 0, false); p.leg = 'pudding'; p.r = 12; p.col = '#feae34'; p.rate = 0.75; p.eatT = 0; w.allies.push(p); }
-    const n = w.pudN || 0;
-    p.pow = 0.6 * (1 + 0.1 * n); p.size = 1 + 0.06 * n;
+    const n = w.pudN || 0, royal = A.Combos.on(h, 'koenigsfamilie');
+    p.royal = royal; p.pow = 0.6 * (1 + 0.1 * n) * (royal ? 1.3 : 1); p.size = (1 + 0.06 * n) * (royal ? 1.2 : 1);
+    if (royal && A.FX && !A.FX.low && Math.random() < dt * 4) A.FX.part({ add: true, x: p.x + (Math.random() - 0.5) * 16, y: p.y, z: 18 + Math.random() * 10, vx: 0, vy: 0, vz: 20, life: 0.5, color: Math.random() < 0.5 ? '#fee761' : '#ffffff', drag: 1 });
     if ((p.eatT -= dt) > 0 || p.spawn > 0) return;
     for (const m of w.mons) {
-      if (!live(m) || m.boss || m.hp >= m.maxHp * 0.15 || Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r + 14) continue;
+      if (!live(m) || m.boss || m.hp >= m.maxHp * (royal ? 0.25 : 0.15) || Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r + 14) continue;
       p.eatT = 1; p.gulp = w.t;
+      const mx = m.x, my = m.y;
       api.kill(m, L('Happs!', 'Gulp!'), '#feae34');
+      A.Combos.onGulp(p, mx, my);
       if (n < 10) { w.pudN = n + 1; api.float(p.x, p.y - 34, L('Pudding wächst!', 'Pudding grows!') + ' ' + (n + 1) + '/10', '#fee761', 12); }
       if (A.FX) A.FX.burst(p.x, p.y - 8, 14, { color: ['#fee761', '#feae34', '#9be37a'], smin: 40, smax: 140, life: 0.5, z: 6, vz: 100, g: 380 });
       if (A.Sound.gulp) A.Sound.gulp();
@@ -6361,7 +6525,8 @@ A.Legends = (function () {
     dr.shadow(x, y, 5 * sz);
     dr.outlineGlow(spr, x + ox, y, flip, '#feae34', sz);
     dr.blit(spr, x + ox, y, flip, { sx, sy, alpha });
-    const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(x + ox - cr.w / 2), Math.round(y - spr.h * sy - cr.h + 4));
+    const cr = A.Art.sprite('crown'), cs = a.royal ? 2 : 1;   // Königsfamilie: die grosse Krone
+    b.drawImage(cr.img, Math.round(x + ox - cr.w * cs / 2), Math.round(y - spr.h * sy - cr.h * cs + 3 + cs), cr.w * cs, cr.h * cs);
     return true;
   }
   // Licht im Dunkeln
@@ -6372,7 +6537,7 @@ A.Legends = (function () {
       else if (o.kind === 'anvil' && !o.hit) Lt(o.x, o.y, 22, '#c0cbdc', 0.3);
       else if (o.kind === 'duck') Lt(o.x, o.y - 6, 18, '#fee761', 0.4);
     }
-    for (const a of w.allies || []) if (a.leg === 'pudding') Lt(a.x, a.y - 8, 30, '#feae34', 0.45);
+    for (const a of w.allies || []) if (a.leg === 'pudding') Lt(a.x, a.y - 8, a.royal ? 40 : 30, '#feae34', a.royal ? 0.6 : 0.45);
     if (h && h.alive && has(h, 'grillschuerze')) Lt(h.x, h.y, 50, '#f77622', 0.25 + Math.sin(w.t * 9) * 0.05);
     if (stopped()) Lt(h.x, h.y, 140, '#feae34', 0.12);
   }
@@ -6388,9 +6553,487 @@ A.Legends = (function () {
 
 </script>
 <script>
+// Der Abstieg – Kombos (A.COMBOS in data.js): zwei passende Teile wecken am Schrein eine neue Kraft, die es nur zusammen gibt.
+// Teile: passiver Segen, Element (2 Ausrüstungs-Teile), Zauber (das Zauberbuch reicht), Legende, Trophäe oder die eigene Klasse.
+// Sind beide Teile da, ist die Kombo bereit und erwacht am nächsten Schrein (game.js takeCombos, ui.js zeigt das goldene Fenster).
+// Erwacht wirkt sie, solange beide Teile da sind (fehlt eins, ruht sie). Das Kombo-Buch im Lager zählt jede Kombo (meta.comboFound).
+// world.js, classes.js, legends.js und gear.js rufen die Haken (pre, onKill, onHurt, onDodge, onBoom, onMeteor, onChainHit, onShotHit, onCoin,
+// onEcho, onAttack, onAllyGone, onGulp, tick ...); draw.js zeichnet, was dabei entsteht (W.cbfx: Raketen, Blutkugeln, Giftpilze; Baby-Schleime, Schattenklone).
+'use strict';
+window.A = window.A || {};
+
+A.Combos = (function () {
+  const TAU = Math.PI * 2, PX = 2, EY = 0.6;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const L = (de, en) => (A.LANG === 'de' ? de : en);
+  let api = null;   // Werkzeuge aus world.js: hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot
+  const W = () => api && api.W;
+  function bind(a) { api = a; }
+  const C = (id) => A.COMBOS[id];
+  const live = (m) => m.alive && !(m.spawn > 0);
+  const on = (h, id) => !!(h && h.combo && h.combo[id]);
+  const fight = (w) => !!(w && w.active && w.mons.some(live));
+  const pow = (h) => api.heroPower(h);
+  function add(o) { const w = W(); (w.cbfx || (w.cbfx = [])).push(o); return o; }
+  function later(o) { const w = W(); (w.cbQ || (w.cbQ = [])).push(o); }
+  function nearest(x, y, maxD) { let best = null, bd = maxD; for (const m of W().mons) { if (!live(m)) continue; const d = Math.hypot(m.x - x, m.y - y); if (d < bd) { bd = d; best = m; } } return best; }
+  let popT = 0;   // Knall der Raketen nicht zu oft hintereinander
+
+  // ---------- Teile ----------
+  const EL_MIN = 2;   // so viele Ausrüstungs-Teile eines Elements braucht ein Element-Teil
+  const CLS_ICON = { klinge: 'i_schwert', schuetze: 'i_bogen', weber: 'i_stab', rufer: 's_skel', brau: 's_wonder' };
+  function hasPart(p, r, d) {
+    if (p.tal) return (r.talents || []).includes(p.tal);
+    if (p.el) return ((d.gear && d.gear.count[p.el]) || 0) >= EL_MIN;
+    if (p.spell) return (r.known || []).includes(p.spell);
+    if (p.leg) return !!(d.leg && d.leg[p.leg]);
+    if (p.tro) { const T = A.TROPHIES[p.tro]; return !!(T && d.tro && d.tro[T.power]); }
+    if (p.cls) return r.cls === p.cls;
+    return false;
+  }
+  function partName(p) {
+    if (p.tal) return A.t(A.TALENTS[p.tal].name);
+    if (p.el) return L(`${A.t(A.ELEMENTS[p.el].name)} (${EL_MIN} Teile)`, `${A.t(A.ELEMENTS[p.el].name)} (${EL_MIN} pieces)`);
+    if (p.spell) return L('Zauber ', 'Spell ') + A.t(A.SKILLS[p.spell].name);
+    if (p.leg) return A.t(A.LEGENDS[p.leg].name);
+    if (p.tro) return A.t(A.TROPHIES[p.tro].name);
+    return A.t(A.CLASSES.find(c => c.id === p.cls).name);
+  }
+  // Wo gibt es das fehlende Teil?
+  function partWhere(p) {
+    if (p.tal) return L('Segen am Schrein', 'shrine blessing');
+    if (p.spell) return L('am Schrein, das Zauberbuch reicht', 'at the shrine, the spell book is enough');
+    if (p.el) return L('Ausrüstung oder Schmiede', 'gear or forge');
+    if (p.leg) return A.Legends.hint(p.leg);
+    if (p.tro) return L('Trophäe vom ', 'trophy from ') + A.t(A.BOSSES[p.tro].name);
+    return L('nur diese Klasse', 'this class only');
+  }
+  function partIcon(p) {
+    if (p.tal) return A.TALENTS[p.tal].icon || 'u_star';
+    if (p.el) return A.ELEMENTS[p.el].icon;
+    if (p.spell) return A.SKILLS[p.spell].icon || 's_strike';
+    if (p.leg) return 'i_' + A.LEGENDS[p.leg].ico;
+    if (p.tro) return p.tro === 'schleimkoenig' ? 'crown' : A.Art.itemIcon(A.TROPHIES[p.tro].base);
+    return CLS_ICON[p.cls] || 'u_star';
+  }
+  function recipe(id) { return C(id).need.map(partName).join(' + '); }
+
+  // ---------- Stand (game.js derived, Heldenblatt, Schrein) ----------
+  // full: beide Teile da; on: ausserdem schon am Schrein erwacht (run.combos) – nur diese wirken
+  function evaluate(r, d) {
+    const full = {}, act = {}, woke = r.combos || [];
+    for (const id in A.COMBOS) if (C(id).need.every(p => hasPart(p, r, d))) { full[id] = true; if (woke.includes(id)) act[id] = true; }
+    return { full, on: act };
+  }
+  // Für das Heldenblatt: wirkt, bereit (erwacht am nächsten Schrein), ruht (erwacht, aber ein Teil fehlt), fast (ein Teil fehlt noch)
+  function list(r, d) {
+    const out = [], woke = r.combos || [], ord = { on: 0, ready: 1, rest: 2, near: 3 };
+    for (const id in A.COMBOS) {
+      const miss = C(id).need.filter(p => !hasPart(p, r, d));
+      if (miss.some(p => p.cls)) continue;   // gehört zu einer anderen Klasse
+      const st = !miss.length ? (woke.includes(id) ? 'on' : 'ready') : woke.includes(id) ? 'rest' : miss.length === 1 ? 'near' : null;
+      if (st) out.push({ id, st, miss });
+    }
+    return out.sort((a, b) => ord[a.st] - ord[b.st]);
+  }
+  // Welche Kombos würde ein Segen am Schrein ganz machen?
+  function completes(b, r, d) {
+    if (!b || (b.type !== 'talent' && b.type !== 'spell')) return [];
+    const key = b.type === 'talent' ? 'tal' : 'spell', out = [];
+    for (const id in A.COMBOS) {
+      const need = C(id).need; if (!need.some(p => p[key] === b.id)) continue;
+      if (need.every(p => p[key] === b.id || hasPart(p, r, d))) out.push(id);
+    }
+    return out;
+  }
+
+  // ---------- Treffer ----------
+  // vor der Schadensrechnung: Vampirfürst (+6 % je Blutkugel) und Todesmut (unter 35 % Leben ist jeder Treffer ein Volltreffer)
+  function pre(from, to, opts) {
+    const w = W(); if (!w || from !== w.hero || to.side !== 'enemy' || !from.combo) return null;
+    let mul = 1, force = false;
+    if (from.bloodUntil > w.t && from.bloodN) mul *= 1 + 0.06 * from.bloodN;
+    if (on(from, 'todesmut') && from.hp < from.maxHp * 0.35 && (opts.kind === 'phys' || opts.kind === 'magic')) force = true;
+    return mul === 1 && !force ? null : { mul, force };
+  }
+  // Geschoss ohne Schuss-Ton (es kommen oft viele auf einmal)
+  function bolt(h, x, y, a, dmg, o) {
+    const sp = o.speed || 420;
+    W().shots.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: o.r || 4, side: 'hero', from: h, dmg, opts: Object.assign({ kind: 'magic', proc: true }, o), life: o.life || 0.8, color: o.color });
+  }
+  // eigener Begleiter (Baby-Schleim, Schattenklon): world.js lässt ihn laufen und beissen wie den Geisterwolf, gezeichnet wird er hier
+  function ally(h, p, dur, x, y) {
+    const w = W(), [ax, ay] = api.freeSpot(x, y, 10);
+    const a = { side: 'hero', ally: true, hp: 1e9, maxHp: 1e9, x: ax, y: ay, r: 10, fx: h.fx, fy: 0, pow: p, until: w.t + dur, perm: false, cd: 0.25, swing: 0, alive: true, crit: 0, spawn: 0.25 };
+    w.allies.push(a);
+    return a;
+  }
+  // Gegner besiegt: Blutkugel (Vampirfürst), Fadenfunke (Fadensturm)
+  function onKill(e) {
+    const w = W(), h = w && w.hero; if (!h || !h.alive || !h.combo) return;
+    if (on(h, 'vampirfuerst')) { const a = Math.random() * TAU; add({ kind: 'blood', x: e.x, y: e.y - 10, vx: Math.cos(a) * 130, vy: Math.sin(a) * 90 - 40, t0: w.t }); }
+    if (on(h, 'fadensturm')) later({ kind: 'thread', at: w.t + 0.12, x: e.x, y: e.y });
+  }
+  // Held getroffen: Kaktus schiesst Steinstacheln
+  function onHurt(h, from) {
+    const w = W(); if (!on(h, 'kaktus') || !h.alive || h.hp <= 0 || !from || from.side !== 'enemy' || h.cactT > w.t) return;
+    h.cactT = w.t + 1.2;
+    const a0 = Math.random() * TAU;
+    for (let i = 0; i < 6; i++) { const a = a0 + i / 6 * TAU; bolt(h, h.x + Math.cos(a) * 14, h.y + Math.sin(a) * 10, a, pow(h) * 0.5, { kind: 'phys', color: '#a2e05a', speed: 400, life: 0.6 }); }
+    api.float(h.x, h.y - 56, L('Stachelig!', 'Prickly!'), '#a2e05a', 13);
+    if (A.FX) A.FX.burst(h.x, h.y - 8, 12, { color: ['#a2e05a', '#8b9bb4', '#c0cbdc'], smin: 60, smax: 170, life: 0.4, z: 6, vz: 90, g: 380 });
+  }
+  // Held weicht aus: ein Schattenklon springt heraus
+  function onDodge(h) {
+    const w = W(); if (!on(h, 'schattenklon') || !h.alive || h.cloneT > w.t || !fight(w)) return;
+    h.cloneT = w.t + 1.5;
+    const c = ally(h, 0.6, 4, h.x - h.fx * 26, h.y + 6);
+    c.cb = 'clone'; c.col = '#b55088'; c.rate = 0.5; c.spd = 1.3; c.r = 11;
+    api.float(h.x, h.y - 60, L('Schattenklon!', 'Shadow clone!'), '#e0a4ff', 13);
+    if (A.FX) A.FX.burst(c.x, c.y - 10, 14, { color: ['#b55088', '#68386c', '#e0a4ff'], smin: 50, smax: 160, life: 0.45, add: true, kind: 'spark', drag: 3 });
+  }
+
+  // ---------- Explosionen ----------
+  // Nach jeder Explosion (world.js boom, Legenden, Ausrüstung): Raketen der Kettenreaktion, Blitze des Feuerballs, Domino, Knochen
+  function onBoom(x, y, r, dmg, opts) {
+    const w = W(), h = w && w.hero; if (!h || !h.alive || !h.combo) return;
+    if (opts.kette && on(h, 'feuerwerk')) rockets(h, x, y);
+    if (opts.fb && on(h, 'plasmaball')) plasma(h, x, y, dmg * 0.5);
+    if (on(h, 'domino') && (opts.domino || 0) < 2 && Math.random() < 0.35) {
+      const a = Math.random() * TAU, d = 45 + Math.random() * 45;
+      w.marks.push({ kind: 'boom', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * EY, r: Math.max(54, r * 0.85), at: w.t + 0.22, dmg: dmg * 0.7, col: '#feae34', opts: { proc: true, domino: (opts.domino || 0) + 1 } });
+    }
+    if (opts.bone && A.FX) A.FX.burst(x, y - 8, 16, { color: ['#ead4aa', '#c0cbdc', '#e0a4ff'], smin: 60, smax: 200, life: 0.6, z: 6, vz: 140, g: 420 });
+  }
+  // Feuerwerk: 4 Raketen fliegen im Bogen zu Gegnern in der Nähe und zerplatzen bunt
+  const FW = ['#fee761', '#f77622', '#2ce8f5', '#f6757a', '#63c74d', '#c77dff', '#ffffff'];
+  function rockets(h, x, y) {
+    const w = W(), tg = w.mons.filter(m => live(m) && Math.hypot(m.x - x, m.y - y) < 300), k0 = Math.floor(Math.random() * 4);
+    for (let i = 0; i < 4; i++) {
+      const m = tg.length ? tg[(k0 + i) % tg.length] : null, a = Math.random() * TAU, d = 50 + Math.random() * 80;
+      add({ kind: 'rocket', x0: x, y0: y, x, y, z: 0, tx: m ? m.x : x + Math.cos(a) * d, ty: m ? m.y : y + Math.sin(a) * d * EY, tgt: m, t0: w.t + i * 0.07, at: w.t + 0.45 + i * 0.07,
+        col: FW[Math.floor(Math.random() * FW.length)], arc: 50 + Math.random() * 40, side: (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 30), tr: [] });
+    }
+    if (A.Sound.ignite) A.Sound.ignite();
+  }
+  function rocketStep(o, w, h) {
+    if (w.t < o.t0) return;
+    if (o.tgt && live(o.tgt)) { o.tx = o.tgt.x; o.ty = o.tgt.y; }
+    const p = clamp((w.t - o.t0) / (o.at - o.t0), 0, 1), s = Math.sin(Math.PI * p), dx = o.tx - o.x0, dy = o.ty - o.y0, dl = Math.hypot(dx, dy) || 1;
+    o.x = o.x0 + dx * p - dy / dl * o.side * s; o.y = o.y0 + dy * p + dx / dl * o.side * s * EY; o.z = o.arc * s;
+    o.tr.push([o.x, o.y - o.z]); if (o.tr.length > 10) o.tr.shift();
+    if (A.FX && !A.FX.low && Math.random() < 0.5) A.FX.part({ add: true, x: o.x, y: o.y, z: o.z, vx: (Math.random() - 0.5) * 20, vy: 0, vz: -30, life: 0.3, color: Math.random() < 0.5 ? o.col : '#fee761', drag: 2 });
+    if (p >= 1) { o.done = true; if (h.alive) pop(h, o.x, o.y, o.col); }
+  }
+  function pop(h, x, y, col) {
+    const w = W(), r = 58, dmg = pow(h) * 0.4;
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col });
+    api.fx('boom', { x, y, r, color: col, soft: true });
+    if (A.FX) {
+      const c2 = FW[Math.floor(Math.random() * FW.length)];
+      for (let i = 0; i < 24; i++) { const a = i / 24 * TAU, sp = 90 + Math.random() * 100; A.FX.part({ add: true, x, y, z: 26, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * EY, vz: 40 + Math.random() * 40, g: 160, life: 0.55 + Math.random() * 0.3, color: i % 2 ? col : c2, drag: 2.2, size: Math.random() < 0.3 ? 2 : 1 }); }
+      A.FX.flash(x, y - 20, r, col, 0.18);
+    }
+    const now = performance.now(); if (now - popT > 70) { popT = now; if (A.Sound.glass) A.Sound.glass(false); }
+    onBoom(x, y, r, dmg, { proc: true });
+  }
+  // Plasmaball: aus der Feuerball-Explosion springen Blitze in die 3 nächsten Gegner
+  function plasma(h, x, y, dmg) {
+    const w = W(), tg = w.mons.filter(m => live(m) && Math.hypot(m.x - x, m.y - y) < 260).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y)).slice(0, 3);
+    for (const m of tg) {
+      w.bolts.push({ x0: x, y0: y - 10, x1: m.x, y1: m.y - 10, life: 0.3, max: 0.3, col: '#c77dff', seed: Math.random() * 99 });
+      api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#c77dff' });
+    }
+    if (tg.length) api.fx('zap', { x, y, color: '#c77dff' });
+  }
+  // Kettenblitz trifft: kleine Plasma-Explosion
+  function onChainHit(m, dmg) {
+    const w = W(), h = w && w.hero; if (!on(h, 'plasmaball')) return;
+    api.boom(m.x, m.y, 52, dmg * 0.4, { proc: true }, '#c77dff');
+  }
+  // Meteor schlägt ein: Meteorschauer bringt 2 kleine Brocken mit (auf Gegner in der Nähe, sonst daneben)
+  function onMeteor(k) {
+    const w = W(), h = w && w.hero; if (k.mini || !on(h, 'meteorschauer')) return;
+    const near = w.mons.filter(m => live(m) && Math.hypot(m.x - k.x, m.y - k.y) < 220).sort(() => Math.random() - 0.5);
+    for (let i = 0; i < 2; i++) {
+      const m = near[i], a = Math.random() * TAU, d = 60 + Math.random() * 40;
+      w.marks.push({ kind: 'meteor', mini: true, x: m ? m.x : k.x + Math.cos(a) * d, y: m ? m.y : k.y + Math.sin(a) * d * EY, r: 54, t0: w.t, at: w.t + 0.35 + i * 0.2, dmg: k.dmg * 0.35, burn: k.burn, col: k.col, opts: { proc: true } });
+    }
+  }
+
+  // ---------- Geschosse, Münzen, Zauber, Angriffe ----------
+  // Pfeilhagel: ein normaler Pfeil teilt sich beim Treffer in 2 weitere (die teilen sich nicht noch einmal)
+  function onShotHit(s, m) {
+    const w = W(), h = w && w.hero; if (s.from !== h || !s.opts.basic || !on(h, 'pfeilhagel')) return;
+    const a0 = Math.atan2(s.vy, s.vx), sp = Math.hypot(s.vx, s.vy) || 420;
+    for (const da of [-0.5, 0.5]) { const a = a0 + da; bolt(h, m.x + Math.cos(a) * (m.r + 6), m.y + Math.sin(a) * (m.r + 6), a, s.dmg * 0.5, { kind: s.opts.kind, color: s.color, speed: sp, life: 0.45 }); }
+  }
+  // Goldregen: jede Münze im Kampf schiesst einen Goldsplitter auf den nächsten Gegner
+  function onCoin(h) {
+    const w = W(); if (!on(h, 'goldregen') || !fight(w)) return;
+    const m = nearest(h.x, h.y, 420); if (!m) return;
+    bolt(h, h.x, h.y - 6, Math.atan2(m.y - h.y, m.x - h.x), pow(h) * 0.4, { kind: 'magic', color: '#feae34', speed: 560, life: 0.9 });
+    if (A.FX) A.FX.burst(h.x, h.y - 18, 4, { color: ['#fee761', '#feae34', '#ffffff'], smin: 30, smax: 90, life: 0.3, add: true, kind: 'spark', drag: 4 });
+  }
+  // Zauberecho: mit Echokaskade öfter, und das Echo wirkt den Zauber gleich noch einmal (nicht bei Schutz-, Heil- und Helfer-Zaubern)
+  const NO_ECHO = ['shield', 'heal', 'buff', 'dash', 'ally', 'sacrifice', 'rally', 'brew', 'summon', 'wonder'];
+  function echoChance(h) { return on(h, 'echokaskade') ? 0.4 : 0.25; }
+  function onEcho(h, id) {
+    const w = W(), sk = A.SKILLS[id]; if (!on(h, 'echokaskade') || !sk || NO_ECHO.includes(sk.kind) || sk.zone === 'heal') return;
+    later({ kind: 'echo', at: w.t + 0.3, id });
+  }
+  // Wirbelwind: jeder 4. Schlag schleudert die kreisenden Klingen weit hinaus und zurück (world.js orbStep fragt swirl)
+  function onAttack(h) {
+    const w = W(); if (!on(h, 'wirbelwind') || h.atkN % 4 !== 0 || !w.orbs.some(o => o.perm)) return;
+    w.cbSwirl = { t0: w.t, until: w.t + 0.9 };
+    api.float(h.x, h.y - 58, L('Wirbelwind!', 'Whirlwind!'), '#c0cbdc', 13);
+    if (A.FX) A.FX.part({ kind: 'ring', x: h.x, y: h.y, life: 0.5, size: 150, color: '#c0cbdc', add: true });
+    if (A.Sound.swing) A.Sound.swing();
+  }
+  function swirl() { const w = W(), s = w && w.cbSwirl; if (!s || w.t >= s.until) return 0; return Math.sin(Math.PI * (w.t - s.t0) / (s.until - s.t0)); }
+  // Begleiter geht (Zeit abgelaufen oder verdrängt): Knochenknall lässt Diener zerplatzen
+  function onAllyGone(a) {
+    const w = W(), h = w && w.hero; if (!a.minion || !on(h, 'knochenknall') || !h.alive || !fight(w)) return;
+    w.marks.push({ kind: 'boom', x: a.x, y: a.y, r: 72, at: w.t + 0.05, dmg: pow(h) * 0.6, col: '#e0a4ff', opts: { raise: true, proc: true, bone: true } });
+  }
+  // Pudding verschluckt einen Gegner: Königsfamilie spuckt einen Baby-Schleim aus (bis 4)
+  function onGulp(p, x, y) {
+    const w = W(), h = w && w.hero; if (!on(h, 'koenigsfamilie')) return;
+    const kids = w.allies.filter(a => a.cb === 'baby' && !a.gone);
+    if (kids.length >= 4) { const old = kids.sort((q, r) => q.until - r.until)[0]; old.gone = true; api.fx('appear', { m: old }); }
+    const b = ally(h, 0.3, 15, x, y);
+    b.cb = 'baby'; b.r = 8; b.col = '#9be37a'; b.rate = 0.55; b.spd = 1.25; b.fx = p.fx;
+    api.float(x, y - 30, L('Ein Enkel!', 'A grandchild!'), '#9be37a', 12);
+    if (A.FX) A.FX.burst(x, y - 6, 10, { color: ['#9be37a', '#63c74d', '#fee761'], smin: 40, smax: 120, life: 0.45, z: 4, vz: 90, g: 380 });
+  }
+  // Zahlen für andere Dateien
+  function wolves(h) { return on(h, 'rudel') ? 3 : 1; }               // Treuer Begleiter (world.js syncPerm)
+  function surpriseEvery(h) { return on(h, 'brauerei') ? 3 : 4; }     // Überraschungs-Flaschen (classes.js)
+  function bounces(h) { return on(h, 'brauerei') ? 2 : 0; }           // so oft springt eine Überraschung weiter
+
+  // ---------- Jedes Bild ----------
+  function tick(dt) {
+    const w = W(); if (!w) return; const h = w.hero; if (!h) return;
+    const inFight = fight(w);
+    if (h.alive && h.combo) {
+      if (inFight) {
+        if (on(h, 'gewitterklingen')) storm(w, h, dt);
+        if (on(h, 'meteorschauer') && (h.cbMetT = (h.cbMetT == null ? 3 : h.cbMetT) - dt) <= 0) { h.cbMetT = 7; shower(w, h); }
+        if (on(h, 'pilzteppich') && h.moving && (h.shroomT = (h.shroomT || 0) - dt) <= 0) { h.shroomT = 1.3; plant(w, h); }
+      } else h.cbMetT = 3;
+      if (on(h, 'permafrost')) permafrost(w, h, dt);
+      todesmut(w, h, dt);
+    }
+    // Warteschlange: Echo-Echo und Fadenfunken
+    if (w.cbQ && w.cbQ.length) {
+      for (const q of w.cbQ) if (w.t >= q.at) { q.done = true; if (h.alive) queued(q, w, h); }
+      w.cbQ = w.cbQ.filter(q => !q.done);
+    }
+    // Raketen, Blutkugeln, Giftpilze
+    for (const o of w.cbfx || []) {
+      if (o.done) continue;
+      if (o.kind === 'rocket') rocketStep(o, w, h);
+      else if (o.kind === 'blood') bloodStep(o, w, h, dt);
+      else if (o.kind === 'shroom') shroomStep(o, w, h);
+    }
+    if (w.cbfx && w.cbfx.length) w.cbfx = w.cbfx.filter(o => !o.done);
+  }
+  function queued(q, w, h) {
+    if (q.kind === 'echo') {
+      if (!h.skills.includes(q.id)) return;
+      api.castSkill(h, q.id, 0.6);
+      api.float(h.x + 16, h.y - 50, L('Echo-Echo!', 'Echo-echo!'), '#2ce8f5', 12);
+      if (A.FX) A.FX.part({ kind: 'ring', x: h.x, y: h.y, life: 0.4, size: 70, color: '#2ce8f5', add: true });
+    } else if (q.kind === 'thread') {   // Fadenfunke springt zum nächsten Gegner; fällt der, springt der nächste weiter (onKill)
+      const m = nearest(q.x, q.y, 320); if (!m) return;
+      w.bolts.push({ x0: q.x, y0: q.y - 8, x1: m.x, y1: m.y - 10, life: 0.3, max: 0.3, col: '#7fd8ff', seed: Math.random() * 99 });
+      api.hit(h, m, api.statOf(h, 'mag') * 0.7, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff' });
+      api.fx('zap', { x: m.x, y: m.y, color: '#7fd8ff' });
+    }
+  }
+  // Gewitterklingen: jede kreisende Klinge blitzt alle 1,2 Sekunden einen Gegner in der Nähe an
+  function storm(w, h, dt) {
+    for (const o of w.orbs) {
+      if (!o.perm || o.x == null) continue;
+      if (A.FX && !A.FX.low && Math.random() < dt * 10) A.FX.part({ add: true, x: o.x + (Math.random() - 0.5) * 8, y: o.y, z: 12 + Math.random() * 6, vx: (Math.random() - 0.5) * 40, vy: (Math.random() - 0.5) * 30, life: 0.2, color: Math.random() < 0.6 ? '#fee761' : '#ffffff', drag: 2 });
+      if ((o.zapT = (o.zapT == null ? 0.6 : o.zapT) - dt) > 0) continue;
+      const m = nearest(o.x, o.y, 170); if (!m) { o.zapT = 0.2; continue; }
+      o.zapT = 1.2;
+      w.bolts.push({ x0: o.x, y0: o.y - 14, x1: m.x, y1: m.y - 10, life: 0.22, max: 0.22, col: '#fee761', seed: Math.random() * 99 });
+      api.hit(h, m, pow(h) * 0.5, { kind: 'magic', proc: true, noKb: true, color: '#fee761' });
+      api.fx('zap', { x: m.x, y: m.y, color: '#fee761' });
+    }
+  }
+  // Meteorschauer: ein Meteor auf den Gegner mit dem meisten Leben
+  function shower(w, h) {
+    let tg = null;
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - h.x, m.y - h.y) < 480 && (!tg || m.hp > tg.hp)) tg = m;
+    if (!tg) return;
+    w.marks.push({ kind: 'meteor', x: tg.x, y: tg.y, r: 90, t0: w.t, at: w.t + 0.85, dmg: pow(h) * 2, burn: 0.5, col: '#f77622', opts: { proc: true } });
+    api.float(h.x, h.y - 60, L('Meteorschauer!', 'Meteor shower!'), '#f77622', 13);
+  }
+  // Pilzteppich: in der Giftspur wachsen Giftpilze (höchstens 8, der älteste macht Platz)
+  function plant(w, h) {
+    const list = (w.cbfx || []).filter(o => o.kind === 'shroom' && !o.done);
+    if (list.length >= 8) list[0].done = true;
+    add({ kind: 'shroom', x: h.x - h.fx * 12, y: h.y + 10, t0: w.t, until: w.t + 14, seed: Math.random() * 9 });
+  }
+  function shroomStep(o, w, h) {
+    if (w.t > o.until) { o.done = true; return; }
+    if (w.t - o.t0 < 0.4 || !h.alive) return;   // wächst noch
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - o.x, m.y - o.y) < m.r + 12) { o.done = true; shroomPop(h, o); return; }
+  }
+  function shroomPop(h, o) {
+    const w = W(), r = 56;
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - o.x, m.y - o.y) < r + m.r) api.hit(h, m, pow(h) * 0.6, { kind: 'magic', proc: true, poison: 0.8, color: '#63c74d' });
+    w.zones.push({ kind: 'poison', x: o.x, y: o.y, r: 60, t0: w.t, until: w.t + 3, tick: w.t + 0.3, dmg: pow(h) * 0.3, col: '#63c74d' });
+    api.fx('boom', { x: o.x, y: o.y, r, color: '#63c74d', soft: true });
+    if (A.FX) A.FX.burst(o.x, o.y - 6, 14, { color: ['#63c74d', '#a2e05a', '#b55088', '#e0a4ff'], smin: 30, smax: 110, life: 0.8, z: 6, vz: 60, g: -10, size: 2 });
+    api.float(o.x, o.y - 26, L('Puff!', 'Poof!'), '#a2e05a', 12);
+    if (A.Sound.gulp) A.Sound.gulp(0.5);
+  }
+  // Blutkugel: fliegt kurz heraus, dann zum Helden; heilt 2 % und gibt 4 Sekunden +6 % Schaden (bis 5-mal)
+  function bloodStep(o, w, h, dt) {
+    const age = w.t - o.t0;
+    if (age < 0.25) { o.x += o.vx * dt; o.y += o.vy * dt; o.vx *= 1 - dt * 4; o.vy *= 1 - dt * 4; }
+    else {
+      const dx = h.x - o.x, dy = h.y - 10 - o.y, d = Math.hypot(dx, dy) || 1, sp = (300 + 700 * age) * dt;
+      if (d <= sp + 10 || age > 3 || !h.alive) { o.done = true; if (h.alive) drink(w, h); return; }
+      o.x += dx / d * sp; o.y += dy / d * sp;
+    }
+    if (A.FX && !A.FX.low && Math.random() < dt * 20) A.FX.part({ add: true, x: o.x, y: o.y, vx: 0, vy: 0, life: 0.25, color: '#e43b44', drag: 1 });
+  }
+  function drink(w, h) {
+    h.bloodN = Math.min(5, (h.bloodUntil > w.t ? h.bloodN || 0 : 0) + 1); h.bloodUntil = w.t + 4;
+    api.heal(h, Math.max(1, Math.round(h.maxHp * 0.02)));
+    if (A.FX) A.FX.burst(h.x, h.y - 12, 6, { color: ['#e43b44', '#ff0044', '#f6757a'], smin: 20, smax: 70, life: 0.35, add: true, kind: 'spark', drag: 4 });
+  }
+  // Permafrost: wer 1,5 Sekunden in der Frostaura steht, friert ein; danach kurz Ruhe, damit er nicht für immer festsitzt
+  function permafrost(w, h, dt) {
+    for (const m of w.mons) {
+      if (!live(m)) continue;
+      const t0 = m.pfT || 0;
+      if (t0 < 0) { m.pfT = Math.min(0, t0 + dt); continue; }
+      const near = Math.hypot(m.x - h.x, m.y - h.y) < 110 + m.r;   // so gross ist die Frostaura (world.js)
+      m.pfT = near ? t0 + dt : Math.max(0, t0 - dt);
+      if (near && A.FX && !A.FX.low && Math.random() < dt * 5 * (1 + m.pfT * 3)) A.FX.part({ add: true, x: m.x + (Math.random() - 0.5) * m.r * 2, y: m.y, z: Math.random() * 24, vx: 0, vy: 0, vz: 16, life: 0.45, color: Math.random() < 0.5 ? '#9be8ff' : '#ffffff', drag: 1 });
+      if (m.pfT < 1.5) continue;
+      m.pfT = -1.6;
+      const d = m.boss ? 0.35 : 1.2; m.stun = Math.max(m.stun, d); m.frozenUntil = w.t + d;
+      api.float(m.x, m.y - m.r - 24, L('Permafrost!', 'Permafrost!'), '#9be8ff', 12);
+      if (A.FX) A.FX.burst(m.x, m.y - 8, 14, { color: ['#9be8ff', '#ffffff', '#2ce8f5'], smin: 30, smax: 120, life: 0.5, add: true, kind: 'spark', drag: 4 });
+      if (A.Sound.glass) A.Sound.glass(false);
+    }
+  }
+  // Todesmut: unter 35 % Leben glüht der Held rot (die Volltreffer kommen aus pre)
+  function todesmut(w, h, dt) {
+    const brave = on(h, 'todesmut') && h.hp < h.maxHp * 0.35;
+    if (brave && !h.braveOn) {
+      api.float(h.x, h.y - 66, L('Todesmut!', 'Death wish!'), '#e43b44', 16);
+      if (A.FX) A.FX.burst(h.x, h.y - 10, 16, { color: ['#e43b44', '#ff0044', '#fee761'], smin: 60, smax: 180, life: 0.45, add: true, kind: 'spark', drag: 3 });
+    }
+    h.braveOn = brave;
+    if (brave && A.FX && !A.FX.low && Math.random() < dt * 16) A.FX.part({ add: true, x: h.x + (Math.random() - 0.5) * 24, y: h.y, z: 4 + Math.random() * 16, vx: 0, vy: 0, vz: 40, life: 0.45, color: Math.random() < 0.5 ? '#e43b44' : '#ff0044', drag: 1 });
+  }
+
+  // ---------- Bilder (Pixel-Raster wie in art.js) ----------
+  A.Art.R.cb_pilz = [[
+    '...VVV...',
+    '.VVlVVVV.',
+    'VVVVVVlVV',
+    'VlVVVVVVV',
+    'vvvvvvvvv',
+    '...sss...',
+    '...sss...',
+  ]];
+  A.Art.R.cb_baby = [[
+    '...Y.Y...',
+    '...YYY...',
+    '..lllll..',
+    '.ll0l0ll.',
+    'lllllllll',
+    'lGllllllG',
+    '.GGGGGGG.',
+  ]];
+
+  // ---------- Zeichnen im Retro-Look (dr.b = Bild, dr.g = Leuchten) ----------
+  function drawGround(dr, w, cx, cy) {
+    const list = w.cbfx; if (!list || !list.length) return;
+    const t = dr.t, spr = A.Art.sprite('cb_pilz');
+    for (const o of list) {
+      if (o.kind !== 'shroom' || o.done) continue;
+      const x = o.x / PX - cx, y = o.y / PX - cy, grow = clamp((w.t - o.t0) / 0.4, 0.1, 1), wob = Math.sin(t * 3 + o.seed) * 0.06, end = o.until - w.t;
+      dr.shadow(x, y, 3 * grow);
+      dr.blit(spr, x, y + 1, false, { sx: grow * (1 + wob), sy: grow * (1 - wob), alpha: end < 1.5 && Math.floor(t * 12) % 2 ? 0.45 : 1 });
+    }
+  }
+  function drawTop(dr, w, cx, cy) {
+    const b = dr.b, g = dr.g, h = w.hero, k = swirl();
+    if (k > 0 && h) { const x = h.x / PX - cx, y = h.y / PX - cy - 7, R = (48 + 90 * k) / PX; g.globalAlpha = 0.35 * k; g.strokeStyle = '#c0cbdc'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.7, 0, 0, TAU); g.stroke(); }
+    for (const o of w.cbfx || []) {
+      if (o.kind === 'rocket') {
+        if (w.t < o.t0 || !o.tr.length || o.done) continue;
+        g.fillStyle = o.col; b.fillStyle = o.col;
+        o.tr.forEach(([px, py], i) => {   // Schweif: hinten dünn und blass, vorne dick
+          const k = (i + 1) / o.tr.length, sz = k > 0.6 ? 2 : 1, tx = Math.round(px / PX - cx), ty = Math.round(py / PX - cy);
+          b.globalAlpha = k * 0.5; b.fillRect(tx, ty, sz, sz); g.globalAlpha = k * 0.8; g.fillRect(tx, ty, sz, sz);
+        });
+        const x = Math.round(o.x / PX - cx), y = Math.round((o.y - o.z) / PX - cy);
+        b.globalAlpha = 1; b.fillStyle = '#181425'; b.fillRect(x - 1, y - 1, 4, 4); b.fillStyle = o.col; b.fillRect(x, y, 2, 2);
+        g.globalAlpha = 0.5; g.fillStyle = o.col; g.fillRect(x - 1, y - 1, 4, 4); g.globalAlpha = 1; g.fillStyle = '#ffffff'; g.fillRect(x, y, 1, 1);
+      } else if (o.kind === 'blood') {
+        const x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy);
+        b.globalAlpha = 1; b.fillStyle = '#181425'; b.fillRect(x - 2, y - 2, 4, 4); b.fillStyle = '#a22633'; b.fillRect(x - 1, y - 1, 2, 2);
+        g.globalAlpha = 0.9; g.fillStyle = '#ff0044'; g.fillRect(x - 1, y - 1, 1, 1);
+      }
+    }
+    b.globalAlpha = 1; g.globalAlpha = 1;
+  }
+  // Baby-Schleim (grün, mit Mini-Krone) und Schattenklon (der Held in Lila, halb durchsichtig)
+  function drawAlly(dr, a, cx, cy) {
+    if (a.cb !== 'baby' && a.cb !== 'clone') return false;
+    const w = W(), b = dr.b, t = dr.t, x = a.x / PX - cx, y = a.y / PX - cy + 7, flip = a.fx < 0;
+    let alpha = 1; if (a.spawn > 0) alpha = clamp(1 - a.spawn / 0.25, 0, 1);
+    if (w && a.until - w.t < 1.2 && Math.floor(t * 14) % 2) alpha *= 0.4;   // läuft ab: blinkt
+    const ox = a.swing > 0 ? a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 3 : 0;
+    if (a.cb === 'baby') {
+      const spr = A.Art.sprite('cb_baby'), hop = a.moving ? Math.round(Math.abs(Math.sin(t * 12 + a.x * 0.1)) * 2) : 0, q = Math.sin(t * 9 + a.x * 0.1);
+      dr.shadow(x, y, 4);
+      dr.outlineGlow(spr, x + ox, y - hop, flip, '#9be37a');
+      dr.blit(spr, x + ox, y - hop, flip, { sx: 1 + q * 0.08, sy: 1 - q * 0.08, alpha });
+      return true;
+    }
+    const run = A.Game.run; if (!run) return true;
+    const frame = a.moving ? [1, 2, 3, 2][Math.floor(t * 10) % 4] : 0, spr = A.Art.heroSprite(run.race, run.cls, frame);
+    dr.shadow(x, y, 6);
+    dr.outlineGlow(spr, x + ox, y, flip, '#b55088');
+    dr.blit(spr, x + ox, y, flip, { alpha: 0.45 * alpha });
+    const k = flip ? 'cbShadeF' : 'cbShade'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#68386c');
+    b.globalAlpha = 0.5 * alpha; b.drawImage(spr[k], Math.round(x + ox - spr.w / 2), Math.round(y - spr.h)); b.globalAlpha = 1;
+    if (A.FX && !A.FX.low && Math.random() < 0.2) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 16, y: a.y, vx: 0, vy: -20, life: 0.45, color: Math.random() < 0.5 ? '#b55088' : '#e0a4ff', drag: 1 });
+    return true;
+  }
+  // Licht im Dunkeln
+  function lights(w, Lt) {
+    const h = w.hero;
+    for (const o of w.cbfx || []) {
+      if (o.kind === 'rocket' && w.t >= o.t0) Lt(o.x, o.y - o.z, 26, o.col, 0.7);
+      else if (o.kind === 'blood') Lt(o.x, o.y, 16, '#e43b44', 0.6);
+      else if (o.kind === 'shroom') Lt(o.x, o.y - 4, 14, '#63c74d', 0.25);
+    }
+    if (h && h.alive && h.braveOn) Lt(h.x, h.y - 8, 56, '#e43b44', 0.25 + Math.sin(w.t * 8) * 0.06);
+    if (h && h.alive && h.bloodUntil > w.t) Lt(h.x, h.y - 8, 40, '#a22633', 0.08 * (h.bloodN || 1));
+  }
+
+  return { bind, on, evaluate, list, completes, hasPart, partName, partWhere, partIcon, recipe, pre, onKill, onHurt, onDodge, onBoom, onMeteor, onChainHit, onShotHit, onCoin,
+    echoChance, onEcho, onAttack, swirl, onAllyGone, onGulp, wolves, surpriseEvery, bounces, tick, drawGround, drawTop, drawAlly, lights };
+})();
+
+</script>
+<script>
 // Der Abstieg – Vergleich: Was ändert sich am Helden, wenn er ein Stück anlegt?
 // Rechnet die Heldenwerte (game.js derived) einmal wie jetzt und einmal mit dem neuen Stück am Platz, also mit Element-Boni (gear.js),
-// Kräften, Trophäen und Legenden (legends.js), und fällt ein Urteil: besser, schlechter, anders (Vor- und Nachteile) oder gleich.
+// Kräften, Trophäen, Legenden (legends.js) und Kombos (combos.js), und fällt ein Urteil: besser, schlechter, anders (Vor- und Nachteile) oder gleich.
 // Punkte sind grob «Prozent Stärke»: mehr Schaden zählt so viel wie mehr Leben, Gold und Erfahrung zählen wenig.
 // ui.js zeigt das Ergebnis an; hier wird nichts verändert oder gespeichert.
 'use strict';
@@ -6443,7 +7086,7 @@ A.Compare = (function () {
   const power = (cls, d) => MAGIC[cls] ? d.mag : cls === 'brau' ? Math.max(d.atk, d.mag) : d.atk;
   const union = (a, b) => Object.keys(Object.assign({}, a, b));
 
-  // Was kommt dazu, was fällt weg: Element-Boni, Kräfte, Legenden, Trophäen und die zweite Chance
+  // Was kommt dazu, was fällt weg: Element-Boni, Kräfte, Legenden, Trophäen, Kombos und die zweite Chance
   function effects(it, old, d0, d1, r) {
     const out = [];
     for (const el of Object.keys(A.ELEMENTS)) {
@@ -6463,6 +7106,13 @@ A.Compare = (function () {
     for (const id of union(d0.leg, d1.leg)) if (!!d0.leg[id] !== !!d1.leg[id]) out.push({ kind: 'leg', id, up: !!d1.leg[id], pts: d1.leg[id] ? 12 : -12 });
     for (const key of union(d0.tro, d1.tro)) if (!!d0.tro[key] !== !!d1.tro[key]) out.push({ kind: 'tro', key, up: !!d1.tro[key], pts: d1.tro[key] ? 7 : -7 });
     if ((d0.revive > 0) !== (d1.revive > 0)) out.push({ kind: 'revive', up: d1.revive > 0, used: !!r.reviveUsed, pts: r.reviveUsed ? 0 : d1.revive > 0 ? 10 : -10 });
+    // Kombos: macht das Stück eine ganz (erwachte wirkt wieder, sonst «bereit» bis zum nächsten Schrein) oder fehlt danach ein Teil?
+    const f0 = d0.comboFull || {}, f1 = d1.comboFull || {};
+    for (const id of union(f0, f1)) {
+      if (!!f0[id] === !!f1[id] || !A.COMBOS[id]) continue;
+      const woke = (r.combos || []).includes(id), up = !!f1[id];
+      out.push({ kind: woke ? 'combo' : 'comboready', id, up, pts: (woke ? 10 : 6) * (up ? 1 : -1) });
+    }
     return out;
   }
 
@@ -6506,6 +7156,8 @@ A.Compare = (function () {
     if (x.kind === 'leg') return x.up ? L('eine Legende', 'a legend') : L('Legende weg', 'legend lost');
     if (x.kind === 'tro') return x.up ? L('eine Trophäen-Kraft', 'a trophy power') : L('Trophäen-Kraft weg', 'trophy power lost');
     if (x.kind === 'revive') return x.up ? L('eine zweite Chance', 'a second chance') : L('zweite Chance weg', 'second chance lost');
+    if (x.kind === 'combo') return x.up ? L('eine Kombo wirkt', 'a combo works') : L('eine Kombo ruht', 'a combo rests');
+    if (x.kind === 'comboready') return x.up ? L('eine Kombo bereit', 'a combo ready') : L('ein Kombo-Teil weg', 'a combo piece lost');
     return '';
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -6599,9 +7251,10 @@ A.World = (function () {
     const blades = W.orbs.filter(o => o.perm);
     if (h.tal.klingen && !blades.length) for (let i = 0; i < 2; i++) W.orbs.push({ perm: true, kind: 'blade', a: i * Math.PI, R: 48, spin: 4, pow: 0.35, col: '#c0cbdc', hits: new Map() });
     if (!h.tal.klingen && blades.length) W.orbs = W.orbs.filter(o => !o.perm);
-    const wolf = W.allies.find(a => a.perm);
-    if (h.tal.begleiter && !wolf) W.allies.push(mkAlly(h, 0.5, 0, true));
-    if (!h.tal.begleiter && wolf) W.allies = W.allies.filter(a => !a.perm);
+    // Treuer Begleiter: ein Wolf, mit der Kombo «Das Rudel» drei (combos.js)
+    const wolves = W.allies.filter(a => a.perm), want = h.tal.begleiter ? A.Combos.wolves(h) : 0;
+    for (let i = wolves.length; i < want; i++) { const a = mkAlly(h, 0.5, 0, true); if (i) [a.x, a.y] = freeSpot(a.x + (i === 1 ? -26 : 26), a.y + 12, a.r); W.allies.push(a); }
+    if (wolves.length > want) { const drop = wolves.slice(want); W.allies = W.allies.filter(a => !drop.includes(a)); }
   }
 
   // ---------- Kacheln und Kollision ----------
@@ -6766,17 +7419,18 @@ A.World = (function () {
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
-    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) A.Gear.onDodge(to); return -1; }
+    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     const gp = A.Gear.pre(from, to, opts); if (gp) dmg *= gp.mul;   // Element-Stufen und Kräfte der Ausrüstung (gear.js)
     const cp = A.Classes.pre(from, to, opts); if (cp) dmg *= cp.mul;   // Riesenwuchs, Glückssträhne (classes.js)
     const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
+    const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
-    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
+    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || (bp && bp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
     if (opts.execute && to.hp / to.maxHp < opts.execute && !to.boss) dmg = to.hp + 1;
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
@@ -6785,7 +7439,7 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -6840,9 +7494,10 @@ A.World = (function () {
     A.Gear.onKill(e);
     A.Classes.onKill(e);
     A.Legends.onKill(e);
+    A.Combos.onKill(e);
     const h = W.hero;
     if (h && h.alive && h.tal) {
-      if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
+      if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34', opts: { kette: true } });
       if (h.tal.rausch) h.rushUntil = W.t + 3;
       if (h.tal.seele) heal(h, Math.max(1, Math.round(h.maxHp * 0.03)));
       if (h.tal.strom) for (const k in h.cds) h.cds[k] -= 1;
@@ -6889,6 +7544,7 @@ A.World = (function () {
     if (!h.moving) faceTarget(h);
     h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h) * A.Classes.atkMul(h) * A.Legends.atkMul(h); h.swing = 0.2;
     h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = (big ? 2 : 1) * A.Legends.onAttack(h);   // Doppelte Wucht: jeder dritte Schlag; Münzfresser
+    A.Combos.onAttack(h);   // Wirbelwind: jeder 4. Schlag schleudert die Klingen hinaus
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
     if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
     if (h.melee) arc(h, (h.tal.spalt ? 82 : 58) * (h.legBig ? 1.25 : 1), mul, { kind: 'phys', basic: true });
@@ -6912,7 +7568,7 @@ A.World = (function () {
     h.cds[id] = W.t + B.cd(id); h.swing = 0.25;
     if (!h.moving) faceTarget(h);
     float(h.x, h.y - 44, B.skName(id), '#fee761', 12);
-    if (h.tal.echo && Math.random() < 0.25) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); }
+    if (h.tal.echo && Math.random() < A.Combos.echoChance(h)) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); A.Combos.onEcho(h, id); }   // Echokaskade: öfter, und das Echo wirkt nach
     castSkill(h, id, 1);
     A.Gear.onSkill(h);
     A.Legends.onSkill(h, id);   // Spiegelscherbe: kurz danach noch einmal
@@ -6934,7 +7590,7 @@ A.World = (function () {
     }
     else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
     else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
-    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg || a.cb); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
     else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
     else if (sk.kind === 'multi' || sk.multi) {
       const R = sk.radius || 170;
@@ -6957,6 +7613,7 @@ A.World = (function () {
   function boom(x, y, r, dmg, opts, col) {
     for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
     fx('boom', { x, y, r, color: col });
+    A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }
   // Kettenblitz: springt vom Helden zum nächsten Gegner und weiter
   function chain(h, dmg, n, col) {
@@ -6967,6 +7624,7 @@ A.World = (function () {
       if (!best) break; done.add(best);
       W.bolts.push({ x0: from.x, y0: from.y - 12, x1: best.x, y1: best.y - 10, life: 0.28, max: 0.28, col, seed: Math.random() * 99 });
       hit(h, best, dmg * (i ? 0.85 : 1), { kind: 'magic', color: col }); from = best;
+      A.Combos.onChainHit(best, dmg * (i ? 0.85 : 1));   // Plasmaball: kleine Explosion
     }
     if (!done.size) W.bolts.push({ x0: h.x, y0: h.y - 12, x1: h.x + h.fx * 90, y1: h.y + h.fy * 90 - 12, life: 0.2, max: 0.2, col, seed: 1 });
     fx('zap', { x: h.x, y: h.y, color: col });
@@ -6990,7 +7648,7 @@ A.World = (function () {
   }
   function allyStep(a, dt) {
     const h = W.hero;
-    if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); return; }
+    if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); A.Combos.onAllyGone(a); return; }
     if (a.spawn > 0) { a.spawn -= dt; return; }
     a.cd -= dt; if (a.swing > 0) a.swing -= dt; a.crit = h.crit;
     const rally = a.rallyUntil > W.t ? 1.5 : 1, sp = (a.spd || 1) * rally;   // Seelenband: schneller laufen und schlagen, 50 % mehr Schaden
@@ -7029,8 +7687,9 @@ A.World = (function () {
   // kreisende Geister und Klingen
   function orbStep(o, dt) {
     const h = W.hero;
-    o.a += o.spin * dt; o.x = h.x + Math.cos(o.a) * o.R; o.y = h.y + Math.sin(o.a) * o.R * 0.7;
-    const dmg = o.perm ? heroPower(h) * o.pow : o.dmg;
+    const sw = o.perm ? A.Combos.swirl() : 0, R = o.R + 90 * sw;   // Wirbelwind (combos.js): die Klingen fliegen weit hinaus und zurück
+    o.a += o.spin * dt * (1 + sw * 1.5); o.x = h.x + Math.cos(o.a) * R; o.y = h.y + Math.sin(o.a) * R * 0.7;
+    const dmg = (o.perm ? heroPower(h) * o.pow : o.dmg) * (sw > 0 ? 2 : 1);
     for (const m of W.mons) {
       if (!m.alive || m.spawn > 0 || Math.hypot(m.x - o.x, m.y - o.y) > m.r + 10) continue;
       if ((o.hits.get(m) || 0) > W.t) continue; o.hits.set(m, W.t + 0.5);
@@ -7048,7 +7707,7 @@ A.World = (function () {
   function markStep(k) {
     if (W.t < k.at) return;
     k.done = true;
-    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, Object.assign({ burn: k.burn }, k.opts), k.col); if (A.FX) { A.FX.shake(0.5); A.FX.rocks(k.x, k.y, 10, 90, ['#5d275d', '#b13e53', '#f77622']); } }
+    if (k.kind === 'meteor') { boom(k.x, k.y, k.r, k.dmg, Object.assign({ burn: k.burn }, k.opts), k.col); if (A.FX) { A.FX.shake(k.mini ? 0.15 : 0.5); A.FX.rocks(k.x, k.y, k.mini ? 4 : 10, k.mini ? 50 : 90, ['#5d275d', '#b13e53', '#f77622']); } A.Combos.onMeteor(k); }
     else if (A.Classes.mark(k)) { /* Sprengfass (classes.js) */ }
     else boom(k.x, k.y, k.r, k.dmg, Object.assign({}, k.opts), k.col);
   }
@@ -7091,6 +7750,7 @@ A.World = (function () {
     if (!ls) A.Elites.tick(dt);
     A.Gear.tick(dt);
     A.Legends.tick(dt);
+    A.Combos.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -7102,11 +7762,11 @@ A.World = (function () {
       if (s.opts.lob) { A.Classes.lobStep(s, dt); continue; }   // Flasche im Bogen (classes.js)
       if (s.side !== 'hero' && ls) continue;   // Zeitstopp: Geschosse der Gegner hängen in der Luft
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
-      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
+      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); } else { hit(s.from, m, s.dmg, s.opts); A.Combos.onShotHit(s, m); } s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
-    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); }   // Feuerball verpufft nicht
+    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); }   // Feuerball verpufft nicht
     W.shots = W.shots.filter(s => s.life > 0);
     // Beute aufsammeln
     for (const p of W.picks) {
@@ -7118,7 +7778,7 @@ A.World = (function () {
       const d = dist(p, h);
       if (p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
-        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); }
+        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); }
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }
       }
@@ -7163,6 +7823,7 @@ A.World = (function () {
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
+  A.Combos.bind({ get W() { return W; }, hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot });
 
   return {
     get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill,
@@ -7607,6 +8268,7 @@ window.A = window.A || {};
       A.Bosses.drawGround(this, W, cx, cy);
       A.Elites.drawGround(this, W, cx, cy);
       A.Legends.drawGround(this, W, cx, cy);   // Tinte, Leerenloch, Amboss-Schatten, Quietsche-Ente
+      A.Combos.drawGround(this, W, cx, cy);    // Giftpilze
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -7652,6 +8314,7 @@ window.A = window.A || {};
       A.Bosses.drawTop(this, W, cx, cy);
       A.Elites.drawTop(this, W, cx, cy);
       A.Legends.drawTop(this, W, cx, cy);   // fallender Amboss, Spiegelbild
+      A.Combos.drawTop(this, W, cx, cy);    // Raketen, Blutkugeln, Wirbelwind
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -8174,6 +8837,7 @@ window.A = window.A || {};
       A.Bosses.lights(W, L);
       A.Elites.lights(W, L);
       A.Legends.lights(W, L);
+      A.Combos.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -8238,6 +8902,7 @@ window.A = window.A || {};
     // Geisterwolf: halb durchsichtig, leuchtender Umriss, kleine Funken
     drawAlly(a, cx, cy) {
       if (A.Legends.drawAlly(this, a, cx, cy)) return;   // Pudding
+      if (A.Combos.drawAlly(this, a, cx, cy)) return;    // Baby-Schleim, Schattenklon
       if (a.minion) { this.drawMinion(a, cx, cy); return; }
       const x = a.x / PX - cx, y = a.y / PX - cy + 7;
       const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
@@ -8329,10 +8994,10 @@ window.A = window.A || {};
       // Meteor im Anflug
       for (const k of W.marks || []) {
         if (k.kind !== 'meteor') continue; const left = k.at - W.t; if (left > 0.45) continue;
-        const q = 1 - left / 0.45, x = k.x / PX - cx + (1 - q) * 40, y = k.y / PX - cy - (1 - q) * 110;
-        g.globalAlpha = 1; g.fillStyle = '#fee761'; g.beginPath(); g.arc(x, y, 5, 0, TAU); g.fill();
-        g.fillStyle = '#f77622'; for (let i = 1; i < 6; i++) { g.globalAlpha = 1 - i / 6; g.beginPath(); g.arc(x + i * 5, y - i * 13, 5 - i * 0.7, 0, TAU); g.fill(); }
-        b.fillStyle = '#5d275d'; b.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6); b.fillStyle = '#b13e53'; b.fillRect(Math.round(x) - 2, Math.round(y) - 2, 3, 3);
+        const q = 1 - left / 0.45, x = k.x / PX - cx + (1 - q) * 40, y = k.y / PX - cy - (1 - q) * 110, sz = k.mini ? 0.6 : 1;   // mini: Brocken des Meteorschauers (combos.js)
+        g.globalAlpha = 1; g.fillStyle = '#fee761'; g.beginPath(); g.arc(x, y, 5 * sz, 0, TAU); g.fill();
+        g.fillStyle = '#f77622'; for (let i = 1; i < 6; i++) { g.globalAlpha = 1 - i / 6; g.beginPath(); g.arc(x + i * 5, y - i * 13, (5 - i * 0.7) * sz, 0, TAU); g.fill(); }
+        const rs = Math.round(6 * sz); b.fillStyle = '#5d275d'; b.fillRect(Math.round(x) - (rs >> 1), Math.round(y) - (rs >> 1), rs, rs); b.fillStyle = '#b13e53'; b.fillRect(Math.round(x) - 2, Math.round(y) - 2, rs > 4 ? 3 : 2, rs > 4 ? 3 : 2);
       }
       g.globalAlpha = 1; b.globalAlpha = 1;
     }
@@ -9321,11 +9986,17 @@ window.A = window.A || {};
   }
   // Element-Abzeichen und besondere Kraft (gear.js)
   function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
-  function powerHtml(p) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }
+  function powerHtml(p, n) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}${n > 1 ? ` ×${n}` : ''}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }   // n: auf so vielen Stücken (sie stapeln)
   // Legende (legends.js): ihr Effekt steht gross und golden unter den Werten
   function legHtml(it) { const Lg = it.legend && A.LEGENDS[it.legend]; return Lg ? `<div class="lg">${ic('u_star', 14)}<span><b>${L('Legende', 'Legend')}:</b> ${esc(t(Lg.text))}</span></div>` : ''; }
   // erste Legende ihrer Art: kommt in die Sammlung im Lager
   function legNewHtml(lg) { return lg && lg.first ? `<div class="msg legnew">${ic('u_star', 18)}<span>${L(`<b>Neu in der Legenden-Sammlung</b> (${lg.n}/${Object.keys(A.LEGENDS).length}): +${lg.sparks} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `<b>New in the legend collection</b> (${lg.n}/${Object.keys(A.LEGENDS).length}): +${lg.sparks} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)}</span></div>` : ''; }
+  // Kombos (combos.js): zwei Teile als Symbol; Karte mit Zustand, Name, Wirkung (extra: Spruch, Rezept, was fehlt)
+  function cbIcon(id, size) { const n = A.COMBOS[id].need; return `<span class="cbi">${ic(A.Combos.partIcon(n[0]), size)}<i>+</i>${ic(A.Combos.partIcon(n[1]), size)}</span>`; }
+  function comboCard(id, tag, cls, size, extra) {
+    const Cb = A.COMBOS[id];
+    return `<div class="skill combo ${cls || ''}" style="--cc:${Cb.col}"><div class="si">${cbIcon(id, size || 26)}</div><div><div class="tg combo">${tag}</div><div class="nm">${esc(t(Cb.name))}</div><div class="ds">${esc(t(Cb.text))}</div>${extra || ''}</div></div>`;
+  }
   // Was ändert sich an den Element-Boni, wenn it angelegt wird und old wegfällt?
   function elDelta(it, old) {
     const c = A.Gear.counts(G.run), n = Object.assign({}, c), out = [];
@@ -9384,7 +10055,7 @@ window.A = window.A || {};
     $('#bYes').onclick = () => { S.click(); ovClose(); onYes(); };
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
-  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); } hudUpdate(); }
+  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); comboNews(); } hudUpdate(); }
 
   // ---------- Titel ----------
   // Überblenden: schwarz werden (fadeOut) und wieder aufhellen (fadeIn), für Ebenen-Wechsel
@@ -9517,6 +10188,13 @@ window.A = window.A || {};
       return `<div class="page ${n ? 'have' : ''}"><div class="pi">${ic('i_' + Lg.ico, 27)}</div><div><b ${n ? 'class="goldc"' : ''}>${n ? esc(t(Lg.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
         <div class="mini">${n ? esc(t(Lg.text)) : esc(A.Legends.hint(id))}</div></div></div>`;
     }).join('');
+    // Kombo-Buch: gefundene mit Name und Wirkung, unbekannte als «???» mit Rezept (ein Ziel für den nächsten Durchlauf)
+    const NCB = Object.keys(A.COMBOS).length, cbn = G.comboCount();
+    const cbook = Object.keys(A.COMBOS).map(id => {
+      const Cb = A.COMBOS[id], n = m.comboFound[id] || 0;
+      return `<div class="page cb ${n ? 'have' : ''}"><div class="pi cbp">${cbIcon(id, 20)}</div><div><b ${n ? `style="color:${Cb.col}"` : ''}>${n ? esc(t(Cb.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
+        <div class="rc">${esc(A.Combos.recipe(id))}</div>${n ? `<div class="mini">${esc(t(Cb.text))}</div>` : ''}</div></div>`;
+    }).join('');
     const note = m.campNote;
     show(`<div class="fade-in"><h2>${ic('u_tent', 42)}${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div>
       ${note ? `<div class="msg">${L('Das Lager ist gewachsen!', 'The camp has grown!')}${note.old ? ' ' + L('Was du früher gekauft hast, steckt jetzt in den Gebäuden, mit mindestens gleicher Wirkung.', 'What you bought before now lives in the buildings, at least as strong as before.') : ''}${note.bonus ? ' ' + L(`Für die Weltenbosse, die du schon besiegt hast, hängen Wimpel am Eingang: ${note.bonus} Seelenfunken obendrauf.`, `Pennants for the world bosses you already beat hang at the entrance: ${note.bonus} soul sparks on top.`) : ''}</div>` : ''}
@@ -9529,6 +10207,7 @@ window.A = window.A || {};
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
       <h3>${L('Legenden-Sammlung', 'Legend collection')} ${legs}/${NL}</h3><div class="card flags"><div class="mini">${L(`Legenden fallen bei Weltenbossen, bei Elite-Gegnern mit der passenden Eigenschaft und in geheimen Räumen (Geröll am Ende eines Gangs wegräumen). Jede neue bringt ${A.LEGEND_SPARKS} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `Legends drop from world bosses, from elites with the matching trait and in secret rooms (clear the rubble at the end of a corridor). Each new one gives ${A.LEGEND_SPARKS} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(legs * A.LEGEND_DMG * 100)} %</b></div><div class="fgrid one">${coll}</div></div>
+      <h3>${L('Kombo-Buch', 'Combo book')} ${cbn}/${NCB}</h3><div class="card flags"><div class="mini">${L(`Zwei passende Teile wecken am Schrein eine Kombo: eine neue Kraft, die es nur zusammen gibt. Jede neue bringt ${A.COMBO_SPARKS} Seelenfunken. Manche gibt es nur mit einer bestimmten Klasse.`, `Two matching pieces awaken a combo at the shrine: a new power that only exists together. Each new one gives ${A.COMBO_SPARKS} soul sparks. Some only exist for a certain class.`)}</div><div class="fgrid one">${cbook}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
     if (keep) screen.scrollTop = keep;
@@ -9701,6 +10380,10 @@ window.A = window.A || {};
     } else if (x.kind === 'revive') {
       icon = 'u_heart';
       html = `<b>${x.up ? L('Zweite Chance', 'Second chance') : L('Zweite Chance weg', 'Second chance lost')}:</b> ${L('Einmal pro Durchlauf überleben', 'Survive once per run')}${x.used ? L(' (schon verbraucht)', ' (already used)') : ''}`;
+    } else if (x.kind === 'combo' || x.kind === 'comboready') {   // Kombo (combos.js): erwachte wirkt wieder oder ruht, sonst bereit bis zum nächsten Schrein
+      const Cb = A.COMBOS[x.id], head = x.kind === 'combo' ? (x.up ? L('Kombo wirkt wieder', 'Combo works again') : L('Kombo ruht', 'Combo rests')) : x.up ? L('Kombo bereit', 'Combo ready') : L('Kombo-Teil weg', 'Combo piece lost');
+      html = `<b>${head}: ${esc(t(Cb.name))}.</b> ${x.kind === 'comboready' && x.up ? L('Erwacht am nächsten Schrein. ', 'Awakens at the next shrine. ') : ''}${esc(t(Cb.text))}`;
+      return `<div class="eld cb ${x.up ? 'up' : 'down'}">${cbIcon(x.id, 12)}<span>${html}</span></div>`;
     }
     return `<div class="eld ${x.kind === 'elnext' ? 'next' : x.up ? 'up' : 'down'} ${x.kind === 'leg' ? 'leg' : ''}">${ic(icon, 14)}<span>${html}</span></div>`;
   }
@@ -9807,11 +10490,18 @@ window.A = window.A || {};
     const bag = r.bag.length ? `<div class="mini" style="margin:-4px 0 8px">${L('Antippen: Vergleich mit dem, was du trägst.', 'Tap: compare with what you wear.')}</div>` + r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, vChip(it), 'tap', `data-cmp="${it.uid}"`)).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
     const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${esc(A.Boons.skName(id))}</div><div class="ds">${t(sk.desc)}${A.Boons.upgOf(id) ? ` <b class="goldc">+${A.Boons.upgOf(id) * 30} %</b>` : ''}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${cdTxt(id)}</div></div>`; }).join('');
     const tals = (r.talents || []).map(id => { const T = A.TALENTS[id]; return `<div class="skill on" style="cursor:default"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(T.name))}</div><div class="ds">${esc(t(T.desc))}</div></div></div>`; }).join('');
+    // Kombos: was wirkt, was am nächsten Schrein erwacht, was ruht und wo nur noch ein Teil fehlt (mit Fundort)
+    const cbl = A.Combos.list(r, d), nCb = cbl.filter(x => x.st === 'on' || x.st === 'ready').length;
+    const missHtml = (x) => x.miss.map(p => `${esc(A.Combos.partName(p))} (${esc(A.Combos.partWhere(p))})`).join(', ');
+    const CB_TAG = { on: L('Wirkt', 'Active'), ready: L('Bereit', 'Ready'), rest: L('Ruht', 'Resting'), near: L('Fast', 'Almost') };
+    const cbs = cbl.map(x => comboCard(x.id, CB_TAG[x.st], x.st, 22, x.st === 'on' ? `<div class="rc">${esc(A.Combos.recipe(x.id))}</div>`
+      : `<div class="cbhint">${x.st === 'ready' ? L('Erwacht am nächsten Schrein.', 'Awakens at the next shrine.') : L('Es fehlt: ', 'Missing: ') + missHtml(x)}</div>`)).join('');
+    const cbSec = `<h3>${L('Kombos', 'Combos')} <span class="mini">${L('Kombo-Buch', 'Combo book')} ${G.comboCount()}/${Object.keys(A.COMBOS).length}</span></h3>${cbs || `<div class="mini">${L('Zwei passende Teile (Segen, Zauber, Element, Legende, Trophäe) wecken am Schrein eine Kombo. Hier steht, sobald dir nur noch ein Teil fehlt.', 'Two matching pieces (blessing, spell, element, legend, trophy) awaken a combo at the shrine. It shows up here as soon as only one piece is missing.')}</div>`}`;
     const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}` :
       tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
-      `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}`;
-    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
+      `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}${cbSec}`;
+    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}${nCb ? ` <b class="goldc">★${nCb}</b>` : ''}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.click(); showSheet(b.dataset.tab); });
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); S.click(); showSheet('stats'); });
     // Anlegen geht sofort; sind beide Schmuck-Plätze belegt, fragt der Vergleich, welcher Schmuck weichen soll
@@ -9832,7 +10522,7 @@ window.A = window.A || {};
       for (let i = 0; i < tr; i++) bon.push(`<div class="eld on">${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${A.EL_TIERS[i]}:</b> ${esc(t(E.tiers[i]))}</span></div>`);
       if (n && tr < 3) bon.push(`<div class="eld next">${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${n}/${A.EL_TIERS[tr]}:</b> ${esc(t(E.tiers[tr]))}</span></div>`);
     }
-    const pws = Object.keys(sum.pw).map(id => powerHtml({ id, v: sum.pw[id] })).join('');
+    const pws = Object.keys(sum.pw).map(id => powerHtml({ id, v: sum.pw[id] }, sum.pwN[id])).join('') + (Object.values(sum.pwN).some(n => n > 1) ? `<div class="mini">${L('Gleiche Kräfte stapeln: jedes weitere Stück zählt halb dazu.', 'Equal powers stack: every extra piece adds half.')}</div>` : '');
     return `<h3>${L('Dein Build', 'Your build')}</h3><div class="elgrid">${chips}</div>
       ${bon.join('') || `<div class="mini" style="margin-bottom:8px">${L('Trage 2 Teile mit demselben Element für einen Bonus. 4 und 6 Teile schalten stärkere Boni frei. Die Schmiede ändert Elemente.', 'Wear 2 pieces of the same element for a bonus. 4 and 6 pieces unlock stronger ones. The forge changes elements.')}</div>`}
       ${pws ? `<div class="pwbox">${pws}</div>` : ''}<h3>${L('Angelegt', 'Equipped')}</h3>`;
@@ -9871,22 +10561,57 @@ window.A = window.A || {};
   }
   function boonPick() {
     const r = G.run, d = G.derived(); if (!(r.pendingBoon > 0)) return;
+    const awake = G.takeCombos(); if (awake.length) { comboWin(awake, () => { ovClose(); boonPick(); }); return; }   // bereite Kombos erwachen zuerst
     const offer = G.boonOffer();
     if (!offer.length) { G.skipBoon(); return; }
     S.level();
     const nT = (r.talents || []).length;
     ov(`<h2>${ic('u_star', 30)}${L('Wähle einen Segen', 'Choose a blessing')}</h2>
       <div class="sub center">${L('Der Schrein flüstert. Eins davon darfst du behalten.', 'The shrine whispers. You may keep one of these.')}<br><span class="mini">${L('Zauber', 'Spells')} ${r.active.length}/${d.skillSlots} · ${L('Passiv', 'Passive')} ${nT}/${d.talentSlots}</span></div>
-      ${offer.map((b, i) => { const x = boonText(b); return `<div class="skill boon ${b.type}" data-b="${i}" tabindex="0"><div class="si">${x.icon}</div><div><div class="tg ${b.type}">${x.tg}</div><div class="nm">${esc(x.nm)}</div><div class="ds">${esc(x.ds)}</div></div><div class="cd">${x.cd}</div></div>`; }).join('')}
+      ${offer.map((b, i) => { const x = boonText(b), cb = A.Combos.completes(b, r, d); return `<div class="skill boon ${b.type} ${cb.length ? 'hascombo' : ''}" data-b="${i}" tabindex="0"><div class="si">${x.icon}</div><div><div class="tg ${b.type}">${x.tg}</div><div class="nm">${esc(x.nm)}</div><div class="ds">${esc(x.ds)}</div>${cb.map(id => `<div class="cbhint">${cbIcon(id, 14)}<span>${L('Weckt die Kombo', 'Awakens the combo')} ${esc(t(A.COMBOS[id].name))}</span></div>`).join('')}</div><div class="cd">${x.cd}</div></div>`; }).join('')}
       <button class="btn" id="bSkip">${L('Verzichten', 'Skip')} ${coin('+' + G.boonGold())}</button>`);
     overlay.querySelectorAll('[data-b]').forEach(el => el.onclick = () => {
       const b = offer[+el.dataset.b]; S.click();
-      const finish = (rep) => { G.takeBoon(b, rep); S.buy(); ovClose(); buildControls(); const x = boonText(b); A.FX.banner(x.nm, x.tg, b.type === 'talent' ? '#63c74d' : b.type === 'upg' ? '#feae34' : '#7fd8ff', 1.8); if (Wd.W) A.FX.ev('nova', { e: Wd.W.hero, r: 90, color: '#2ce8f5', magic: true }); pendingPicks(); };
+      const finish = (rep) => {
+        G.takeBoon(b, rep); S.buy();
+        const woke = G.takeCombos();   // macht der Segen eine Kombo ganz, erwacht sie gleich hier
+        const done = () => {
+          ovClose(); buildControls(); const x = boonText(b), cb = woke.length && A.COMBOS[woke[0].id];
+          if (cb) A.FX.banner(t(cb.name), L('Kombo erwacht!', 'Combo awakened!'), '#fee761', 2.4); else A.FX.banner(x.nm, x.tg, b.type === 'talent' ? '#63c74d' : b.type === 'upg' ? '#feae34' : '#7fd8ff', 1.8);
+          if (Wd.W) A.FX.ev('nova', { e: Wd.W.hero, r: cb ? 140 : 90, color: cb ? '#fee761' : '#2ce8f5', magic: true });
+          pendingPicks();
+        };
+        if (woke.length) comboWin(woke, done); else done();
+      };
       if (b.type === 'spell') chooseSlot(b.id, finish);
       else if (b.type === 'talent' && nT >= d.talentSlots) chooseTalent(b, finish);
       else finish(null);
     });
     $('#bSkip').onclick = () => { const g = G.skipBoon(); S.coin(); ovClose(); A.FX.banner('+' + g + ' ' + t(U.gold), null, '#feae34', 1.4); pendingPicks(); };
+  }
+  // Kombo erwacht (am Schrein): goldenes Fenster mit allem, was gerade erwacht
+  function comboWin(list, done) {
+    S.level(); setTimeout(() => S.drop('legendary'), 260);
+    const tag = (x) => x.first ? `${L('Neu im Kombo-Buch', 'New in the combo book')} ${spark('+' + A.COMBO_SPARKS, 14)}` : L('Erwacht', 'Awakened');
+    ov(`<div class="center"><div class="bigicon">${ic('u_star', 54)}</div><h2 class="mid goldc">${list.length > 1 ? L(`${list.length} Kombos erwachen!`, `${list.length} combos awaken!`) : L('Eine Kombo erwacht!', 'A combo awakens!')}</h2>
+      <div class="sub">${L('Zwei Teile passen zusammen. Daraus wird etwas, das es nur zusammen gibt.', 'Two pieces fit together. They become something that only exists together.')}</div></div>
+      ${list.map(x => comboCard(x.id, tag(x), 'woke', 26, `<div class="fl">${esc(t(A.COMBOS[x.id].flavor))}</div><div class="rc">${esc(A.Combos.recipe(x.id))}</div>`)).join('')}
+      <button class="btn primary" id="bCombo" data-esc>${L('Weiter', 'Continue')}</button>`);
+    $('#bCombo').onclick = () => { S.click(); done(); };
+  }
+  // Kombo bereit (beide Teile da, aber noch nicht erwacht): kurz melden, sobald kein Fenster offen ist
+  function comboNews() {
+    const r = G.run; if (!r || r.over) return;
+    const ids = G.comboFresh(); if (!ids.length) return;
+    const say = () => {
+      if (!dungeonEl.classList.contains('on') || G.run !== r) return;
+      if (overlay.classList.contains('on')) { setTimeout(say, 700); return; }
+      const left = ids.filter(id => !(r.combos || []).includes(id)); if (!left.length) return;   // inzwischen schon am Schrein erwacht
+      const many = left.length > 1;
+      A.FX.banner((many ? L('Kombos bereit: ', 'Combos ready: ') : L('Kombo bereit: ', 'Combo ready: ')) + left.map(id => t(A.COMBOS[id].name)).join(' · '), many ? L('Am nächsten Schrein erwachen sie.', 'They awaken at the next shrine.') : L('Am nächsten Schrein erwacht sie.', 'It awakens at the next shrine.'), '#fee761', 3);
+      S.drop('epic');
+    };
+    setTimeout(say, 450);
   }
   // Alle Talent-Plätze voll: eins wird ersetzt
   function chooseTalent(b, done) {
@@ -9999,7 +10724,7 @@ window.A = window.A || {};
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
     $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
@@ -10007,7 +10732,7 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin } };
   title();
 })();
 

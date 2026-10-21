@@ -71,11 +71,17 @@ window.A = window.A || {};
   }
   // Element-Abzeichen und besondere Kraft (gear.js)
   function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
-  function powerHtml(p) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }
+  function powerHtml(p, n) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}${n > 1 ? ` ×${n}` : ''}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }   // n: auf so vielen Stücken (sie stapeln)
   // Legende (legends.js): ihr Effekt steht gross und golden unter den Werten
   function legHtml(it) { const Lg = it.legend && A.LEGENDS[it.legend]; return Lg ? `<div class="lg">${ic('u_star', 14)}<span><b>${L('Legende', 'Legend')}:</b> ${esc(t(Lg.text))}</span></div>` : ''; }
   // erste Legende ihrer Art: kommt in die Sammlung im Lager
   function legNewHtml(lg) { return lg && lg.first ? `<div class="msg legnew">${ic('u_star', 18)}<span>${L(`<b>Neu in der Legenden-Sammlung</b> (${lg.n}/${Object.keys(A.LEGENDS).length}): +${lg.sparks} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `<b>New in the legend collection</b> (${lg.n}/${Object.keys(A.LEGENDS).length}): +${lg.sparks} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)}</span></div>` : ''; }
+  // Kombos (combos.js): zwei Teile als Symbol; Karte mit Zustand, Name, Wirkung (extra: Spruch, Rezept, was fehlt)
+  function cbIcon(id, size) { const n = A.COMBOS[id].need; return `<span class="cbi">${ic(A.Combos.partIcon(n[0]), size)}<i>+</i>${ic(A.Combos.partIcon(n[1]), size)}</span>`; }
+  function comboCard(id, tag, cls, size, extra) {
+    const Cb = A.COMBOS[id];
+    return `<div class="skill combo ${cls || ''}" style="--cc:${Cb.col}"><div class="si">${cbIcon(id, size || 26)}</div><div><div class="tg combo">${tag}</div><div class="nm">${esc(t(Cb.name))}</div><div class="ds">${esc(t(Cb.text))}</div>${extra || ''}</div></div>`;
+  }
   // Was ändert sich an den Element-Boni, wenn it angelegt wird und old wegfällt?
   function elDelta(it, old) {
     const c = A.Gear.counts(G.run), n = Object.assign({}, c), out = [];
@@ -134,7 +140,7 @@ window.A = window.A || {};
     $('#bYes').onclick = () => { S.click(); ovClose(); onYes(); };
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
-  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); } hudUpdate(); }
+  function ovClose() { overlay.classList.remove('on'); overlay.innerHTML = ''; if (dungeonEl.classList.contains('on')) { Wd.pause(false); Wd.refreshHero(); comboNews(); } hudUpdate(); }
 
   // ---------- Titel ----------
   // Überblenden: schwarz werden (fadeOut) und wieder aufhellen (fadeIn), für Ebenen-Wechsel
@@ -267,6 +273,13 @@ window.A = window.A || {};
       return `<div class="page ${n ? 'have' : ''}"><div class="pi">${ic('i_' + Lg.ico, 27)}</div><div><b ${n ? 'class="goldc"' : ''}>${n ? esc(t(Lg.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
         <div class="mini">${n ? esc(t(Lg.text)) : esc(A.Legends.hint(id))}</div></div></div>`;
     }).join('');
+    // Kombo-Buch: gefundene mit Name und Wirkung, unbekannte als «???» mit Rezept (ein Ziel für den nächsten Durchlauf)
+    const NCB = Object.keys(A.COMBOS).length, cbn = G.comboCount();
+    const cbook = Object.keys(A.COMBOS).map(id => {
+      const Cb = A.COMBOS[id], n = m.comboFound[id] || 0;
+      return `<div class="page cb ${n ? 'have' : ''}"><div class="pi cbp">${cbIcon(id, 20)}</div><div><b ${n ? `style="color:${Cb.col}"` : ''}>${n ? esc(t(Cb.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
+        <div class="rc">${esc(A.Combos.recipe(id))}</div>${n ? `<div class="mini">${esc(t(Cb.text))}</div>` : ''}</div></div>`;
+    }).join('');
     const note = m.campNote;
     show(`<div class="fade-in"><h2>${ic('u_tent', 42)}${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div>
       ${note ? `<div class="msg">${L('Das Lager ist gewachsen!', 'The camp has grown!')}${note.old ? ' ' + L('Was du früher gekauft hast, steckt jetzt in den Gebäuden, mit mindestens gleicher Wirkung.', 'What you bought before now lives in the buildings, at least as strong as before.') : ''}${note.bonus ? ' ' + L(`Für die Weltenbosse, die du schon besiegt hast, hängen Wimpel am Eingang: ${note.bonus} Seelenfunken obendrauf.`, `Pennants for the world bosses you already beat hang at the entrance: ${note.bonus} soul sparks on top.`) : ''}</div>` : ''}
@@ -279,6 +292,7 @@ window.A = window.A || {};
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
       <h3>${L('Legenden-Sammlung', 'Legend collection')} ${legs}/${NL}</h3><div class="card flags"><div class="mini">${L(`Legenden fallen bei Weltenbossen, bei Elite-Gegnern mit der passenden Eigenschaft und in geheimen Räumen (Geröll am Ende eines Gangs wegräumen). Jede neue bringt ${A.LEGEND_SPARKS} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `Legends drop from world bosses, from elites with the matching trait and in secret rooms (clear the rubble at the end of a corridor). Each new one gives ${A.LEGEND_SPARKS} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(legs * A.LEGEND_DMG * 100)} %</b></div><div class="fgrid one">${coll}</div></div>
+      <h3>${L('Kombo-Buch', 'Combo book')} ${cbn}/${NCB}</h3><div class="card flags"><div class="mini">${L(`Zwei passende Teile wecken am Schrein eine Kombo: eine neue Kraft, die es nur zusammen gibt. Jede neue bringt ${A.COMBO_SPARKS} Seelenfunken. Manche gibt es nur mit einer bestimmten Klasse.`, `Two matching pieces awaken a combo at the shrine: a new power that only exists together. Each new one gives ${A.COMBO_SPARKS} soul sparks. Some only exist for a certain class.`)}</div><div class="fgrid one">${cbook}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
     if (keep) screen.scrollTop = keep;
@@ -451,6 +465,10 @@ window.A = window.A || {};
     } else if (x.kind === 'revive') {
       icon = 'u_heart';
       html = `<b>${x.up ? L('Zweite Chance', 'Second chance') : L('Zweite Chance weg', 'Second chance lost')}:</b> ${L('Einmal pro Durchlauf überleben', 'Survive once per run')}${x.used ? L(' (schon verbraucht)', ' (already used)') : ''}`;
+    } else if (x.kind === 'combo' || x.kind === 'comboready') {   // Kombo (combos.js): erwachte wirkt wieder oder ruht, sonst bereit bis zum nächsten Schrein
+      const Cb = A.COMBOS[x.id], head = x.kind === 'combo' ? (x.up ? L('Kombo wirkt wieder', 'Combo works again') : L('Kombo ruht', 'Combo rests')) : x.up ? L('Kombo bereit', 'Combo ready') : L('Kombo-Teil weg', 'Combo piece lost');
+      html = `<b>${head}: ${esc(t(Cb.name))}.</b> ${x.kind === 'comboready' && x.up ? L('Erwacht am nächsten Schrein. ', 'Awakens at the next shrine. ') : ''}${esc(t(Cb.text))}`;
+      return `<div class="eld cb ${x.up ? 'up' : 'down'}">${cbIcon(x.id, 12)}<span>${html}</span></div>`;
     }
     return `<div class="eld ${x.kind === 'elnext' ? 'next' : x.up ? 'up' : 'down'} ${x.kind === 'leg' ? 'leg' : ''}">${ic(icon, 14)}<span>${html}</span></div>`;
   }
@@ -557,11 +575,18 @@ window.A = window.A || {};
     const bag = r.bag.length ? `<div class="mini" style="margin:-4px 0 8px">${L('Antippen: Vergleich mit dem, was du trägst.', 'Tap: compare with what you wear.')}</div>` + r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, vChip(it), 'tap', `data-cmp="${it.uid}"`)).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;
     const skills = r.known.map(id => { const sk = A.SKILLS[id]; const on = r.active.includes(id); return `<div class="skill ${on ? 'on' : ''}" data-sk="${id}"><div class="si">${skIcon(id, 36)}</div><div><div class="nm">${esc(A.Boons.skName(id))}</div><div class="ds">${t(sk.desc)}${A.Boons.upgOf(id) ? ` <b class="goldc">+${A.Boons.upgOf(id) * 30} %</b>` : ''}</div></div><div class="cd">${on ? `<b class="goldc">${L('aktiv', 'active')}</b><br>` : ''}${cdTxt(id)}</div></div>`; }).join('');
     const tals = (r.talents || []).map(id => { const T = A.TALENTS[id]; return `<div class="skill on" style="cursor:default"><div class="si">${talIcon(id, 30)}</div><div><div class="nm">${esc(t(T.name))}</div><div class="ds">${esc(t(T.desc))}</div></div></div>`; }).join('');
+    // Kombos: was wirkt, was am nächsten Schrein erwacht, was ruht und wo nur noch ein Teil fehlt (mit Fundort)
+    const cbl = A.Combos.list(r, d), nCb = cbl.filter(x => x.st === 'on' || x.st === 'ready').length;
+    const missHtml = (x) => x.miss.map(p => `${esc(A.Combos.partName(p))} (${esc(A.Combos.partWhere(p))})`).join(', ');
+    const CB_TAG = { on: L('Wirkt', 'Active'), ready: L('Bereit', 'Ready'), rest: L('Ruht', 'Resting'), near: L('Fast', 'Almost') };
+    const cbs = cbl.map(x => comboCard(x.id, CB_TAG[x.st], x.st, 22, x.st === 'on' ? `<div class="rc">${esc(A.Combos.recipe(x.id))}</div>`
+      : `<div class="cbhint">${x.st === 'ready' ? L('Erwacht am nächsten Schrein.', 'Awakens at the next shrine.') : L('Es fehlt: ', 'Missing: ') + missHtml(x)}</div>`)).join('');
+    const cbSec = `<h3>${L('Kombos', 'Combos')} <span class="mini">${L('Kombo-Buch', 'Combo book')} ${G.comboCount()}/${Object.keys(A.COMBOS).length}</span></h3>${cbs || `<div class="mini">${L('Zwei passende Teile (Segen, Zauber, Element, Legende, Trophäe) wecken am Schrein eine Kombo. Hier steht, sobald dir nur noch ein Teil fehlt.', 'Two matching pieces (blessing, spell, element, legend, trophy) awaken a combo at the shrine. It shows up here as soon as only one piece is missing.')}</div>`}`;
     const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}` :
       tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
-      `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}`;
-    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
+      `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}${cbSec}`;
+    ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}${nCb ? ` <b class="goldc">★${nCb}</b>` : ''}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
     overlay.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.click(); showSheet(b.dataset.tab); });
     overlay.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { G.spend(b.dataset.sp); S.click(); showSheet('stats'); });
     // Anlegen geht sofort; sind beide Schmuck-Plätze belegt, fragt der Vergleich, welcher Schmuck weichen soll
@@ -582,7 +607,7 @@ window.A = window.A || {};
       for (let i = 0; i < tr; i++) bon.push(`<div class="eld on">${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${A.EL_TIERS[i]}:</b> ${esc(t(E.tiers[i]))}</span></div>`);
       if (n && tr < 3) bon.push(`<div class="eld next">${ic(E.icon, 14)}<span><b style="color:${E.col}">${esc(t(E.name))} ${n}/${A.EL_TIERS[tr]}:</b> ${esc(t(E.tiers[tr]))}</span></div>`);
     }
-    const pws = Object.keys(sum.pw).map(id => powerHtml({ id, v: sum.pw[id] })).join('');
+    const pws = Object.keys(sum.pw).map(id => powerHtml({ id, v: sum.pw[id] }, sum.pwN[id])).join('') + (Object.values(sum.pwN).some(n => n > 1) ? `<div class="mini">${L('Gleiche Kräfte stapeln: jedes weitere Stück zählt halb dazu.', 'Equal powers stack: every extra piece adds half.')}</div>` : '');
     return `<h3>${L('Dein Build', 'Your build')}</h3><div class="elgrid">${chips}</div>
       ${bon.join('') || `<div class="mini" style="margin-bottom:8px">${L('Trage 2 Teile mit demselben Element für einen Bonus. 4 und 6 Teile schalten stärkere Boni frei. Die Schmiede ändert Elemente.', 'Wear 2 pieces of the same element for a bonus. 4 and 6 pieces unlock stronger ones. The forge changes elements.')}</div>`}
       ${pws ? `<div class="pwbox">${pws}</div>` : ''}<h3>${L('Angelegt', 'Equipped')}</h3>`;
@@ -621,22 +646,57 @@ window.A = window.A || {};
   }
   function boonPick() {
     const r = G.run, d = G.derived(); if (!(r.pendingBoon > 0)) return;
+    const awake = G.takeCombos(); if (awake.length) { comboWin(awake, () => { ovClose(); boonPick(); }); return; }   // bereite Kombos erwachen zuerst
     const offer = G.boonOffer();
     if (!offer.length) { G.skipBoon(); return; }
     S.level();
     const nT = (r.talents || []).length;
     ov(`<h2>${ic('u_star', 30)}${L('Wähle einen Segen', 'Choose a blessing')}</h2>
       <div class="sub center">${L('Der Schrein flüstert. Eins davon darfst du behalten.', 'The shrine whispers. You may keep one of these.')}<br><span class="mini">${L('Zauber', 'Spells')} ${r.active.length}/${d.skillSlots} · ${L('Passiv', 'Passive')} ${nT}/${d.talentSlots}</span></div>
-      ${offer.map((b, i) => { const x = boonText(b); return `<div class="skill boon ${b.type}" data-b="${i}" tabindex="0"><div class="si">${x.icon}</div><div><div class="tg ${b.type}">${x.tg}</div><div class="nm">${esc(x.nm)}</div><div class="ds">${esc(x.ds)}</div></div><div class="cd">${x.cd}</div></div>`; }).join('')}
+      ${offer.map((b, i) => { const x = boonText(b), cb = A.Combos.completes(b, r, d); return `<div class="skill boon ${b.type} ${cb.length ? 'hascombo' : ''}" data-b="${i}" tabindex="0"><div class="si">${x.icon}</div><div><div class="tg ${b.type}">${x.tg}</div><div class="nm">${esc(x.nm)}</div><div class="ds">${esc(x.ds)}</div>${cb.map(id => `<div class="cbhint">${cbIcon(id, 14)}<span>${L('Weckt die Kombo', 'Awakens the combo')} ${esc(t(A.COMBOS[id].name))}</span></div>`).join('')}</div><div class="cd">${x.cd}</div></div>`; }).join('')}
       <button class="btn" id="bSkip">${L('Verzichten', 'Skip')} ${coin('+' + G.boonGold())}</button>`);
     overlay.querySelectorAll('[data-b]').forEach(el => el.onclick = () => {
       const b = offer[+el.dataset.b]; S.click();
-      const finish = (rep) => { G.takeBoon(b, rep); S.buy(); ovClose(); buildControls(); const x = boonText(b); A.FX.banner(x.nm, x.tg, b.type === 'talent' ? '#63c74d' : b.type === 'upg' ? '#feae34' : '#7fd8ff', 1.8); if (Wd.W) A.FX.ev('nova', { e: Wd.W.hero, r: 90, color: '#2ce8f5', magic: true }); pendingPicks(); };
+      const finish = (rep) => {
+        G.takeBoon(b, rep); S.buy();
+        const woke = G.takeCombos();   // macht der Segen eine Kombo ganz, erwacht sie gleich hier
+        const done = () => {
+          ovClose(); buildControls(); const x = boonText(b), cb = woke.length && A.COMBOS[woke[0].id];
+          if (cb) A.FX.banner(t(cb.name), L('Kombo erwacht!', 'Combo awakened!'), '#fee761', 2.4); else A.FX.banner(x.nm, x.tg, b.type === 'talent' ? '#63c74d' : b.type === 'upg' ? '#feae34' : '#7fd8ff', 1.8);
+          if (Wd.W) A.FX.ev('nova', { e: Wd.W.hero, r: cb ? 140 : 90, color: cb ? '#fee761' : '#2ce8f5', magic: true });
+          pendingPicks();
+        };
+        if (woke.length) comboWin(woke, done); else done();
+      };
       if (b.type === 'spell') chooseSlot(b.id, finish);
       else if (b.type === 'talent' && nT >= d.talentSlots) chooseTalent(b, finish);
       else finish(null);
     });
     $('#bSkip').onclick = () => { const g = G.skipBoon(); S.coin(); ovClose(); A.FX.banner('+' + g + ' ' + t(U.gold), null, '#feae34', 1.4); pendingPicks(); };
+  }
+  // Kombo erwacht (am Schrein): goldenes Fenster mit allem, was gerade erwacht
+  function comboWin(list, done) {
+    S.level(); setTimeout(() => S.drop('legendary'), 260);
+    const tag = (x) => x.first ? `${L('Neu im Kombo-Buch', 'New in the combo book')} ${spark('+' + A.COMBO_SPARKS, 14)}` : L('Erwacht', 'Awakened');
+    ov(`<div class="center"><div class="bigicon">${ic('u_star', 54)}</div><h2 class="mid goldc">${list.length > 1 ? L(`${list.length} Kombos erwachen!`, `${list.length} combos awaken!`) : L('Eine Kombo erwacht!', 'A combo awakens!')}</h2>
+      <div class="sub">${L('Zwei Teile passen zusammen. Daraus wird etwas, das es nur zusammen gibt.', 'Two pieces fit together. They become something that only exists together.')}</div></div>
+      ${list.map(x => comboCard(x.id, tag(x), 'woke', 26, `<div class="fl">${esc(t(A.COMBOS[x.id].flavor))}</div><div class="rc">${esc(A.Combos.recipe(x.id))}</div>`)).join('')}
+      <button class="btn primary" id="bCombo" data-esc>${L('Weiter', 'Continue')}</button>`);
+    $('#bCombo').onclick = () => { S.click(); done(); };
+  }
+  // Kombo bereit (beide Teile da, aber noch nicht erwacht): kurz melden, sobald kein Fenster offen ist
+  function comboNews() {
+    const r = G.run; if (!r || r.over) return;
+    const ids = G.comboFresh(); if (!ids.length) return;
+    const say = () => {
+      if (!dungeonEl.classList.contains('on') || G.run !== r) return;
+      if (overlay.classList.contains('on')) { setTimeout(say, 700); return; }
+      const left = ids.filter(id => !(r.combos || []).includes(id)); if (!left.length) return;   // inzwischen schon am Schrein erwacht
+      const many = left.length > 1;
+      A.FX.banner((many ? L('Kombos bereit: ', 'Combos ready: ') : L('Kombo bereit: ', 'Combo ready: ')) + left.map(id => t(A.COMBOS[id].name)).join(' · '), many ? L('Am nächsten Schrein erwachen sie.', 'They awaken at the next shrine.') : L('Am nächsten Schrein erwacht sie.', 'It awakens at the next shrine.'), '#fee761', 3);
+      S.drop('epic');
+    };
+    setTimeout(say, 450);
   }
   // Alle Talent-Plätze voll: eins wird ersetzt
   function chooseTalent(b, done) {
@@ -749,7 +809,7 @@ window.A = window.A || {};
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
     $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
@@ -757,6 +817,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin } };
   title();
 })();

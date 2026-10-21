@@ -433,6 +433,7 @@ window.A = window.A || {};
       A.Bosses.drawGround(this, W, cx, cy);
       A.Elites.drawGround(this, W, cx, cy);
       A.Legends.drawGround(this, W, cx, cy);   // Tinte, Leerenloch, Amboss-Schatten, Quietsche-Ente
+      A.Combos.drawGround(this, W, cx, cy);    // Giftpilze
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -478,6 +479,7 @@ window.A = window.A || {};
       A.Bosses.drawTop(this, W, cx, cy);
       A.Elites.drawTop(this, W, cx, cy);
       A.Legends.drawTop(this, W, cx, cy);   // fallender Amboss, Spiegelbild
+      A.Combos.drawTop(this, W, cx, cy);    // Raketen, Blutkugeln, Wirbelwind
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -1000,6 +1002,7 @@ window.A = window.A || {};
       A.Bosses.lights(W, L);
       A.Elites.lights(W, L);
       A.Legends.lights(W, L);
+      A.Combos.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -1064,6 +1067,7 @@ window.A = window.A || {};
     // Geisterwolf: halb durchsichtig, leuchtender Umriss, kleine Funken
     drawAlly(a, cx, cy) {
       if (A.Legends.drawAlly(this, a, cx, cy)) return;   // Pudding
+      if (A.Combos.drawAlly(this, a, cx, cy)) return;    // Baby-Schleim, Schattenklon
       if (a.minion) { this.drawMinion(a, cx, cy); return; }
       const x = a.x / PX - cx, y = a.y / PX - cy + 7;
       const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
@@ -1155,10 +1159,10 @@ window.A = window.A || {};
       // Meteor im Anflug
       for (const k of W.marks || []) {
         if (k.kind !== 'meteor') continue; const left = k.at - W.t; if (left > 0.45) continue;
-        const q = 1 - left / 0.45, x = k.x / PX - cx + (1 - q) * 40, y = k.y / PX - cy - (1 - q) * 110;
-        g.globalAlpha = 1; g.fillStyle = '#fee761'; g.beginPath(); g.arc(x, y, 5, 0, TAU); g.fill();
-        g.fillStyle = '#f77622'; for (let i = 1; i < 6; i++) { g.globalAlpha = 1 - i / 6; g.beginPath(); g.arc(x + i * 5, y - i * 13, 5 - i * 0.7, 0, TAU); g.fill(); }
-        b.fillStyle = '#5d275d'; b.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6); b.fillStyle = '#b13e53'; b.fillRect(Math.round(x) - 2, Math.round(y) - 2, 3, 3);
+        const q = 1 - left / 0.45, x = k.x / PX - cx + (1 - q) * 40, y = k.y / PX - cy - (1 - q) * 110, sz = k.mini ? 0.6 : 1;   // mini: Brocken des Meteorschauers (combos.js)
+        g.globalAlpha = 1; g.fillStyle = '#fee761'; g.beginPath(); g.arc(x, y, 5 * sz, 0, TAU); g.fill();
+        g.fillStyle = '#f77622'; for (let i = 1; i < 6; i++) { g.globalAlpha = 1 - i / 6; g.beginPath(); g.arc(x + i * 5, y - i * 13, (5 - i * 0.7) * sz, 0, TAU); g.fill(); }
+        const rs = Math.round(6 * sz); b.fillStyle = '#5d275d'; b.fillRect(Math.round(x) - (rs >> 1), Math.round(y) - (rs >> 1), rs, rs); b.fillStyle = '#b13e53'; b.fillRect(Math.round(x) - 2, Math.round(y) - 2, rs > 4 ? 3 : 2, rs > 4 ? 3 : 2);
       }
       g.globalAlpha = 1; b.globalAlpha = 1;
     }

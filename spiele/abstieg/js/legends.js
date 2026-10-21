@@ -58,7 +58,7 @@ A.Legends = (function () {
   function guard(from, to, opts) {
     const w = W(); if (!w || to !== w.hero || !from || from.side !== 'enemy' || (opts.kind !== 'phys' && opts.kind !== 'magic')) return null;
     if (from.blindUntil > w.t && Math.random() < 0.5) {
-      api.float(to.x, to.y - to.r - 8, L('daneben', 'miss'), '#c0cbdc', 12); api.fx('miss', { to }); A.Gear.onDodge(to);
+      api.float(to.x, to.y - to.r - 8, L('daneben', 'miss'), '#c0cbdc', 12); api.fx('miss', { to }); A.Gear.onDodge(to); A.Combos.onDodge(to);
       return -1;
     }
     if (has(to, 'pfannen') && (to.panN = (to.panN || 0) + 1) % 3 === 0) {
@@ -303,6 +303,7 @@ A.Legends = (function () {
     const w = W();
     for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
     api.fx('boom', { x, y, r, color: col });
+    A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
   // Der Amboss schlägt ein: grosser Schaden, kurz betäubt, Rüstung verbeult; daneben gibt es etwas ab
   function anvil(h, o) {
@@ -318,18 +319,22 @@ A.Legends = (function () {
   }
 
   // ---------- Pudding: der Sohn des Schleimkönigs ----------
-  // Ein Begleiter in W.allies (leg: 'pudding'); world.js lässt ihn laufen und beissen. Hier: da sein, wachsen und angeschlagene Gegner verschlucken
+  // Ein Begleiter in W.allies (leg: 'pudding'); world.js lässt ihn laufen und beissen. Hier: da sein, wachsen und angeschlagene Gegner verschlucken.
+  // Kombo Königsfamilie (Krone des Schleimkönigs dazu, combos.js): grosse Krone, stärker, grösser, verschluckt schon unter 25 %, spuckt Baby-Schleime
   function pudding(w, h, lg, dt) {
     let p = w.allies.find(a => a.leg === 'pudding' && !a.gone);
     if (!lg.pudding || !h.alive) { if (p) { p.gone = true; api.fx('appear', { m: p }); } return; }
     if (!p) { p = api.mkAlly(h, 0.6, 0, false); p.leg = 'pudding'; p.r = 12; p.col = '#feae34'; p.rate = 0.75; p.eatT = 0; w.allies.push(p); }
-    const n = w.pudN || 0;
-    p.pow = 0.6 * (1 + 0.1 * n); p.size = 1 + 0.06 * n;
+    const n = w.pudN || 0, royal = A.Combos.on(h, 'koenigsfamilie');
+    p.royal = royal; p.pow = 0.6 * (1 + 0.1 * n) * (royal ? 1.3 : 1); p.size = (1 + 0.06 * n) * (royal ? 1.2 : 1);
+    if (royal && A.FX && !A.FX.low && Math.random() < dt * 4) A.FX.part({ add: true, x: p.x + (Math.random() - 0.5) * 16, y: p.y, z: 18 + Math.random() * 10, vx: 0, vy: 0, vz: 20, life: 0.5, color: Math.random() < 0.5 ? '#fee761' : '#ffffff', drag: 1 });
     if ((p.eatT -= dt) > 0 || p.spawn > 0) return;
     for (const m of w.mons) {
-      if (!live(m) || m.boss || m.hp >= m.maxHp * 0.15 || Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r + 14) continue;
+      if (!live(m) || m.boss || m.hp >= m.maxHp * (royal ? 0.25 : 0.15) || Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r + 14) continue;
       p.eatT = 1; p.gulp = w.t;
+      const mx = m.x, my = m.y;
       api.kill(m, L('Happs!', 'Gulp!'), '#feae34');
+      A.Combos.onGulp(p, mx, my);
       if (n < 10) { w.pudN = n + 1; api.float(p.x, p.y - 34, L('Pudding wächst!', 'Pudding grows!') + ' ' + (n + 1) + '/10', '#fee761', 12); }
       if (A.FX) A.FX.burst(p.x, p.y - 8, 14, { color: ['#fee761', '#feae34', '#9be37a'], smin: 40, smax: 140, life: 0.5, z: 6, vz: 100, g: 380 });
       if (A.Sound.gulp) A.Sound.gulp();
@@ -398,7 +403,8 @@ A.Legends = (function () {
     dr.shadow(x, y, 5 * sz);
     dr.outlineGlow(spr, x + ox, y, flip, '#feae34', sz);
     dr.blit(spr, x + ox, y, flip, { sx, sy, alpha });
-    const cr = A.Art.sprite('crown'); b.drawImage(cr.img, Math.round(x + ox - cr.w / 2), Math.round(y - spr.h * sy - cr.h + 4));
+    const cr = A.Art.sprite('crown'), cs = a.royal ? 2 : 1;   // Königsfamilie: die grosse Krone
+    b.drawImage(cr.img, Math.round(x + ox - cr.w * cs / 2), Math.round(y - spr.h * sy - cr.h * cs + 3 + cs), cr.w * cs, cr.h * cs);
     return true;
   }
   // Licht im Dunkeln
@@ -409,7 +415,7 @@ A.Legends = (function () {
       else if (o.kind === 'anvil' && !o.hit) Lt(o.x, o.y, 22, '#c0cbdc', 0.3);
       else if (o.kind === 'duck') Lt(o.x, o.y - 6, 18, '#fee761', 0.4);
     }
-    for (const a of w.allies || []) if (a.leg === 'pudding') Lt(a.x, a.y - 8, 30, '#feae34', 0.45);
+    for (const a of w.allies || []) if (a.leg === 'pudding') Lt(a.x, a.y - 8, a.royal ? 40 : 30, '#feae34', a.royal ? 0.6 : 0.45);
     if (h && h.alive && has(h, 'grillschuerze')) Lt(h.x, h.y, 50, '#f77622', 0.25 + Math.sin(w.t * 9) * 0.05);
     if (stopped()) Lt(h.x, h.y, 140, '#feae34', 0.12);
   }

@@ -14,15 +14,20 @@ A.Gear = (function () {
   function worn(r) { return r && r.gear ? A.SLOTS.map(s => r.gear[s]).filter(Boolean) : []; }
   function counts(r) { const c = {}; for (const it of worn(r)) if (it.el) c[it.el] = (c[it.el] || 0) + 1; return c; }
   function tierOf(n) { return n >= 6 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0; }
-  // Stufen je Element und die stärkste Kraft je Art (gleiche Kräfte zählen nicht doppelt)
+  // Stufen je Element und die Kräfte. Gleiche Kräfte stapeln: das beste Stück zählt ganz, jedes weitere halb
+  // (bei «low», kleiner ist besser: jedes weitere Stück nimmt ein Viertel weg); cap/minv in data.js setzen Grenzen. pwN: auf wie vielen Stücken
   function summary(r) {
-    const count = counts(r), tier = {}, pw = {};
+    const count = counts(r), tier = {}, pw = {}, pwN = {}, vals = {};
     for (const el in count) tier[el] = tierOf(count[el]);
-    for (const it of worn(r)) {
-      if (!it.power) continue; const P = A.POWERS[it.power.id]; if (!P) continue;
-      const cur = pw[it.power.id]; pw[it.power.id] = cur == null ? it.power.v : P.low ? Math.min(cur, it.power.v) : Math.max(cur, it.power.v);
+    for (const it of worn(r)) { if (it.power && A.POWERS[it.power.id]) (vals[it.power.id] = vals[it.power.id] || []).push(it.power.v); }
+    for (const id in vals) {
+      const P = A.POWERS[id], v = vals[id].slice().sort((a, b) => P.low ? a - b : b - a), n = v.length;
+      pwN[id] = n;
+      if (n === 1) pw[id] = v[0];
+      else if (P.low) pw[id] = Math.max(P.minv || 2, Math.round(v[0] * Math.pow(0.75, n - 1)));
+      else pw[id] = Math.min(P.cap || 1e9, v[0] + v.slice(1).reduce((s, x) => s + Math.round(x / 2), 0));
     }
-    return { count, tier, pw };
+    return { count, tier, pw, pwN };
   }
   // Werte für das Heldenblatt (game.js derived)
   function mods(r) {
@@ -88,6 +93,7 @@ A.Gear = (function () {
     const w = W();
     for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
     api.fx('boom', { x, y, r, color: col });
+    A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
   // Blitz springt von Gegner zu Gegner
   function zap(h, dmg, n, col) {
