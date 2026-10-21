@@ -123,6 +123,16 @@ A.Sound = (function () {
     squeak() { if (!on()) return; const now = performance.now(); if (now - (S._sq || 0) < 90) return; S._sq = now; const f = r(1100, 1400); tone(f, f * 1.6, 0.07, 'square', 0.03); tone(f * 1.5, f * 0.9, 0.09, 'triangle', 0.03, 0.06); },
     klong(big) { if (!on()) return; const f = big ? r(380, 420) : r(620, 700); tone(f, f * 0.97, big ? 0.7 : 0.35, 'triangle', big ? 0.09 : 0.06); tone(f * 2.76, f * 2.7, big ? 0.5 : 0.25, 'sine', 0.03); noise(0.05, big ? 0.22 : 0.12, 'highpass', 2000, 5000); if (big) tone(90, 40, 0.3, 'sine', 0.18); },
     gulp(vol) { if (!on()) return; const v = vol || 1; tone(r(260, 300), r(90, 110), 0.16, 'sine', 0.12 * v); tone(r(180, 210), r(400, 450), 0.1, 'sine', 0.06 * v, 0.12); noise(0.12, 0.05 * v, 'lowpass', 600, 200, 0.02); },
+    // Begleiter: Eulenschrei, Gackern
+    hoot() { if (!on()) return; tone(520, 470, 0.22, 'sine', 0.08); tone(470, 400, 0.34, 'sine', 0.08, 0.28); },
+    cluck() { if (!on()) return; const now = performance.now(); if (now - (S._cl || 0) < 300) return; S._cl = now; for (let i = 0; i < 3; i++) tone(r(700, 820), r(480, 540), 0.05, 'square', 0.03, i * 0.08); },
+    // Verrückte Stücke: Bienen, Tröte, Plopp, Blubb, Rutschpfeife, Fliegenklatsche
+    buzz() { if (!on()) return; const now = performance.now(); if (now - (S._bz || 0) < 500) return; S._bz = now; tone(r(210, 230), r(240, 260), 0.45, 'sawtooth', 0.03); tone(r(330, 350), r(300, 320), 0.4, 'sawtooth', 0.015, 0.05); },
+    honk() { if (!on()) return; tone(r(330, 350), r(340, 360), 0.5, 'sawtooth', 0.07, 0, null, 0.02); tone(r(495, 520), r(500, 525), 0.5, 'square', 0.025, 0.01); noise(0.4, 0.05, 'bandpass', 800, 1400, 0, 3); },
+    pop() { if (!on()) return; const now = performance.now(); if (now - (S._pp || 0) < 60) return; S._pp = now; tone(r(500, 650), r(1400, 1800), 0.05, 'sine', 0.08); noise(0.04, 0.1, 'highpass', 1500, 4000); },
+    blub() { if (!on()) return; const now = performance.now(); if (now - (S._bl || 0) < 120) return; S._bl = now; const f = r(250, 350); tone(f, f * 2.6, 0.12, 'sine', 0.06); tone(f * 1.3, f * 3, 0.1, 'sine', 0.03, 0.07); },
+    slip() { if (!on()) return; const now = performance.now(); if (now - (S._sl || 0) < 150) return; S._sl = now; tone(1400, 320, 0.45, 'sine', 0.05); tone(1410, 330, 0.45, 'triangle', 0.02); },
+    swat() { if (!on()) return; noise(0.08, 0.3, 'lowpass', 3000, 400); tone(140, 60, 0.12, 'square', 0.08); noise(0.15, 0.08, 'bandpass', 1500, 600, 0.04, 2); },
     // Musik starten (theme = Farbwelt) oder mit null anhalten; läuft nur, wenn der Ton an ist
     music(theme) {
       if (mus && mus.timer) { clearInterval(mus.timer); }

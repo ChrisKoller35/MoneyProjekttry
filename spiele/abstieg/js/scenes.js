@@ -372,7 +372,8 @@ A.Scenes = (function () {
   const C = { cv: null, on: false, s: 4, bw: 0, bh: 0, t: 0, st: null, stat: null, parts: [], smoke: [], embers: [], flies: [], twinkle: [], shoot: null, nextShoot: 5, beat: -1, wob: {}, coin: null, fire: [] };
   layer(C, 'buf'); layer(C, 'lt'); layer(C, 'gl');
   // Platz je Gebäude: Abstand zur Mitte, Reihe (b = hinten beim Eingang, f = vorne beim Feuer)
-  const CAMP_POS = { schreib: [-62, 'b'], platz: [-37, 'b'], schmiede: [41, 'b'], zelt: [67, 'b'], brunnen: [-60, 'f'], kiste: [-37, 'f'], feuer: [0, 'f'], kessel: [37, 'f'], segen: [60, 'f'] };
+  // b: hintere Reihe (beim Eingang), f: vordere Reihe (beim Feuer), m: dazwischen am Rand
+  const CAMP_POS = { schreib: [-62, 'b'], platz: [-37, 'b'], schmiede: [41, 'b'], zelt: [67, 'b'], brunnen: [-60, 'f'], kiste: [-37, 'f'], feuer: [0, 'f'], kessel: [37, 'f'], segen: [60, 'f'], tier: [-82, 'm'] };
   // Völker am Feuer: Rasse, Kleidung, Abstand zum Feuer
   const CAMP_NPC = [['mensch', 'klinge', -13, 1], ['fels', 'brau', 13, 1], ['schatten', 'weber', -22, -4], ['pilz', 'rufer', 22, -4], ['kobold', 'schuetze', 5, -9]];
   const CAMP_FLAGS = ['schleimkoenig', 'dornenmutter', 'sandpharao', 'kraken', 'rostkoenig', 'waechter'];
@@ -381,9 +382,29 @@ A.Scenes = (function () {
   function shade(b, x, y, rx) { b.globalAlpha = 0.4; b.fillStyle = '#0d0a12'; b.fillRect(Math.round(x - rx), Math.round(y) - 1, Math.round(rx * 2), 2); b.fillRect(Math.round(x - rx + 2), Math.round(y) + 1, Math.round(rx * 2 - 4), 1); b.globalAlpha = 1; }
   const campLv = (id) => (C.st && C.st.lv[id]) || 0;
   function campXY(id) {
-    const p = CAMP_POS[id]; if (p) return { x: C.cx + p[0], y: p[1] === 'b' ? C.yb : C.yf };
+    const p = CAMP_POS[id];
+    if (p) { let x = C.cx + p[0]; if (id === 'tier' && x < 18) x = C.cx - 48;   // schmal (Handy): die Tierhütte rückt zwischen die Gebäude
+      return { x: Math.max(12, x), y: p[1] === 'b' ? C.yb : p[1] === 'm' ? C.gy + 34 : C.yf }; }
     const n = CAMP_NPC.find(q => 'race_' + q[0] === id); if (n) return { x: C.cx + n[2], y: C.yf + n[3] - 8 };
     return { x: C.cx, y: C.yf };
+  }
+  // Freie Plätze für n Tiere: möglichst nah bei der Hütte, zuerst in ihrer Reihe, dann vorne und hinten,
+  // nie auf einem Gebäude oder Bauplatz, dem Feuer mit den Völkern oder einem anderen Tier
+  function petSpots(n, lv) {
+    const shown = Object.keys(CAMP_POS).filter(id => campLv(id) > 0 || (C.st.open && C.st.open[id]));
+    const key = [C.bw, C.bh, n, lv, shown].join();
+    if (C.petKey === key) return C.petSpots;
+    const h = campXY('tier'), busy = [];
+    for (const id of shown) { const p = campXY(id); busy.push(id === 'tier' ? [h.x - (lv >= 4 ? 15 : 8), h.y - 13, h.x + (lv >= 2 ? 15 : 8), h.y + 1] : [p.x - 10, p.y - 15, p.x + 10, p.y + 1]); }   // Hütte mit Strohballen und Napf
+    busy.push([C.cx - 26, C.yb - 22, C.cx + 26, C.yf + 4]);   // Eingang, Laternen, Feuer und Völker
+    const hits = (x, y) => busy.some(([a, b, c, d]) => x - 7 < c && x + 7 > a && y - 11 < d && y > b);
+    const cand = [];
+    for (const [y, pen] of [[h.y, 0], [C.yf - 1, 10], [C.yb + 1, 18]]) for (let x = 8; x <= C.bw - 8; x += 3) cand.push([x, y, Math.abs(x - h.x) + pen]);
+    cand.sort((p, q) => p[2] - q[2]);
+    const out = [];
+    for (const [x, y] of cand) { if (out.length >= n) break; if (!hits(x, y)) { out.push([x, y]); busy.push([x - 8, y - 11, x + 8, y + 1]); } }
+    while (out.length < n) out.push([h.x + (out.length % 2 ? 11 : -11), h.y + 3]);   // zur Not dicht an die Hütte
+    C.petKey = key; C.petSpots = out; return out;
   }
 
   function campResize() {
@@ -602,6 +623,29 @@ A.Scenes = (function () {
       lamp(L, x, y - 11, 16 + lv * 4, '#2ce8f5', 0.65);
       if (Math.random() < 0.05 * lv * 60 * C.dt) C.parts.push({ x: x + rnd(-6, 6), y: y - 10, vx: 0, vy: rnd(-10, -20), life: rnd(0.6, 1), col: Math.random() < 0.5 ? '#2ce8f5' : '#ffffff', sz: 1, add: true });
     });
+    // Tierhütte: Hütte mit Strohdach, ab Stufe 2 ein Futternapf, ab 4 ein Strohballen, ganz ausgebaut ein goldenes Dach (die Eule sitzt oben drauf)
+    each('tier', (x, y, lv) => {
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 8);
+        if (lv >= 4) { b.fillStyle = '#181425'; b.fillRect(x - 15, y - 5, 8, 6); b.fillStyle = '#feae34'; b.fillRect(x - 14, y - 4, 6, 4); b.fillStyle = '#fee761'; b.fillRect(x - 14, y - 4, 6, 1); b.fillStyle = '#be4a2f'; b.fillRect(x - 12, y - 4, 1, 4); }
+        blit(b, lv >= 5 ? spr('c_hut', 0, { o: '#feae34', f: '#fee761' }, 'gold') : spr('c_hut'), x, y + 1);
+        if (lv >= 2) { b.fillStyle = '#181425'; b.fillRect(x + 8, y - 3, 7, 4); b.fillStyle = '#8b9bb4'; b.fillRect(x + 9, y - 2, 5, 2); b.fillStyle = '#b86f50'; b.fillRect(x + 10, y - 3, 3, 1); }
+        if (lv >= 5 && Math.sin(t * 2.2) > 0.6) { g.fillStyle = '#ffffff'; g.fillRect(x - 3, y - 8, 1, 1); g.fillRect(x + 4, y - 7, 1, 1); }
+      } });
+      if (lv >= 5) lamp(L, x, y - 9, 12, '#feae34', 0.45);
+    });
+    // Gefundene Begleiter dösen bei der Hütte: die Eule auf dem Dach, die anderen auf freien Plätzen daneben; ab und zu hüpft eins
+    if (st.pets && st.pets.length) {
+      const h = campXY('tier'), lv = campLv('tier'), roof = (id) => id === 'huhu' && lv > 0;   // ohne Hütte sitzt auch die Eule am Boden
+      const spots = petSpots(st.pets.filter(id => !roof(id) && A.PETS[id]).length, lv);
+      let k = 0;
+      st.pets.forEach((id, i) => {
+        const P = A.PETS[id]; if (!P) return;
+        const owl = roof(id), [x, y] = owl ? [h.x + 1, h.y - 12] : spots[k++], ph = i * 1.7;
+        const hop = !owl && Math.sin(t * 1.3 + ph) > 0.93 ? -2 : 0, fr = owl ? (Math.sin(t * 0.8 + ph) > 0.85 ? 1 : 0) : (hop ? 1 : 0);
+        D.push({ y: owl ? h.y + 1 : y, f: (b) => { if (!owl) shade(b, x, y, 4); blit(b, spr(P.spr, fr), x, y + 1 + hop, (i + Math.floor(t * 0.2 + ph)) % 2 === 1); } });
+      });
+    }
     // Laternen am Weg (ab Lager-Stufe 5), Wachturm (ab 30), Krone über dem Eingang (alles ausgebaut)
     if (st.rank >= 5) for (const sx of [-1, 1]) { const x = cx + sx * 12, y = yb + 9; D.push({ y, f: (b, g) => { blit(b, spr('c_lantern'), x, y + 1); g.fillStyle = '#fee761'; if (Math.sin(t * 8 + sx) > -0.7) g.fillRect(x, y - 10, 1, 1); } }); lamp(L, x, y - 10, 16, '#feae34', 0.7); }
     if (st.rank >= 30) { const x = cx - 30, y = C.gy + 9; D.push({ y, f: (b, g) => { blit(b, spr('c_tower'), x, y + 1); b.fillStyle = '#181425'; b.fillRect(x + 4, y - 20, 3, 4); b.fillStyle = '#733e39'; b.fillRect(x + 5, y - 19, 1, 3); g.fillStyle = Math.sin(t * 11) > -0.4 ? '#fee761' : '#f77622'; g.fillRect(x + 5, y - 21, 1, 2); } }); lamp(L, x + 5, y - 21, 20, '#ff9a3c', 0.8); }

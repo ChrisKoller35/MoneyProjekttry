@@ -8,10 +8,11 @@ A.Game = (function () {
 
   // ---------- Dauerhaft (Lager) ----------
   // camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
-  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {} });
+  // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch;
+  // pets: gefundene Begleiter mit ihrer Treue ({ xp, n }); petSel: wer aus der Tierhütte mitkommt
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [] });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -37,7 +38,7 @@ A.Game = (function () {
   // Alle dauerhaften Wirkungen zusammengezählt (Gebäude, Wimpel, Völker); wird erst nach einer Änderung am Lager neu berechnet
   function metaEffects() {
     if (fxCache) return fxCache;
-    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [], potionHeal: 0, cdr: 0, talentSlots: 0, gearW: 0, gearA: 0, gearHB: 0, shopOff: 0, startBoon: 0, def: 0, crit: 0, thorns: 0, eliteDmg: 0 };
+    const eff = { hpMul: 0, startGold: 0, dmgMul: 0, startPotion: 0, extraStartSkill: 0, itemLuck: 0, races: [], potionHeal: 0, cdr: 0, talentSlots: 0, gearW: 0, gearA: 0, gearHB: 0, shopOff: 0, startBoon: 0, def: 0, crit: 0, thorns: 0, eliteDmg: 0, petStart: 0, petDmg: 0, petXp: 0, petSlots: 0 };
     const add = (e, n) => { for (const k in e) eff[k] = (eff[k] || 0) + e[k] * (n || 1); };
     for (const id of meta.unlocked) { const u = A.META_SHOP.find(x => x.id === id); if (u && u.effect.race) eff.races.push(u.effect.race); }
     for (const b of A.CAMP) for (let i = 0; i < campLevel(b.id); i++) add(b.lv[i]);
@@ -149,6 +150,7 @@ A.Game = (function () {
       log: [], reviveUsed: false, over: false, won: false,
     };
     run.rng = new A.RNG(run.seed);
+    run.pets = A.Pets.startPets();   // Begleiter aus der Tierhütte
     // Startausrüstung (die Lagerschmiede macht sie besser)
     const base = A.BASES.find(b => b.id === cls.weapon);
     run.gear.weapon = makeItem(base, ['common', 'good', 'rare'][Math.min(2, me.gearW)], 1);
@@ -310,11 +312,20 @@ A.Game = (function () {
     const id = run.rng.pick(ids);
     return run.rng.chance((0.04 + 0.01 * nt) * (meta.legFound[id] ? 1 : 1.5)) ? makeLegend(id) : null;
   }
+  // Verrücktes Stück (wild.js): kann überall auftauchen (Truhe, Elite, Kampf, Weltenboss), ab Welt 2 viel öfter; noch nie gefundene 1.5-mal so oft
+  function wildLegend(kind) {
+    const ids = Object.keys(A.LEGENDS).filter(k => A.LEGENDS[k].src === 'wild' && !legSeen(k));
+    if (!ids.length) return null;
+    const p = A.WILD_CHANCE[kind][A.worldIndex(run.floor) >= 1 ? 1 : 0]; if (!p) return null;
+    const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 1.5);
+    return run.rng.chance(p * (meta.legFound[id] ? 1 : 1.5)) ? makeLegend(id) : null;
+  }
   // Truhe im geheimen Raum: viel Gold, ein gutes Item und oft die Legende dieser Welt
   function secretChest() {
     const id = Object.keys(A.LEGENDS).find(k => A.LEGENDS[k].src === 'secret' && A.LEGENDS[k].world === A.worldIndex(run.floor) % A.WORLDS.length);
     let lg = null;
     if (id && !legSeen(id) && run.rng.chance(meta.legFound[id] ? 0.4 : 0.7)) lg = makeLegend(id);
+    if (!lg) lg = wildLegend('chest');
     const items = [lg || randomItem('epic'), randomItem(run.rng.chance(0.5) ? 'epic' : 'rare')];
     const gold = Math.round(run.rng.int(25, 45) * (1 + 0.3 * (run.floor - 1))); run.gold += gold;
     save(); return { items, gold, legend: !!lg };
@@ -367,7 +378,8 @@ A.Game = (function () {
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
-    run.lvVer = 4;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3) und grossen Räumen (4); ältere Spielstände bauen ihre laufende Ebene wie bisher
+    run.lvVer = 5;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4) und Käfigen (5); ältere Spielstände bauen ihre laufende Ebene wie bisher
+    run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
@@ -399,10 +411,10 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++;
     const items = []; let esparks = 0, book = null;
-    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); bossBanner(e.mid); }
+    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); }
     else if (e.elite) {
       items.push(randomItem(rollRarity(nt)));
-      const lg = eliteLegend(e); if (lg) items.push(lg);
+      const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
       if (nt >= 3 && run.rng.chance(0.25 + (nt - 3) * 0.25)) items.push(randomItem(rollRarity(1)));   // tiefe Elite: oft ein zweites Item
       esparks = nt; run.eliteSparks = (run.eliteSparks || 0) + nt; run.eliteKills = (run.eliteKills || 0) + 1;
       book = bookKill(e);
@@ -419,6 +431,7 @@ A.Game = (function () {
     const items = [];
     if (room.type === 'fight') items.push(randomItem());
     if (room.type === 'elite') items.push(randomItem(rollRarity(1)));
+    if (room.type === 'fight' || room.type === 'elite') { const wl = wildLegend('room'); if (wl) items.push(wl); }
     if (room.type === 'elite' || room.type === 'boss') run.pendingBoon = (run.pendingBoon || 0) + 1;   // zweite Wahl nach Elite- und Boss-Kämpfen
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
@@ -499,7 +512,7 @@ A.Game = (function () {
     const d = derived(); if (run.hp > d.maxHp) run.hp = d.maxHp;
     save(); return true;
   }
-  function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
+  function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const wl = wildLegend('chest'); if (wl) items.unshift(wl); const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
   // slot: gleich anlegen statt in den Beutel (Vergleich beim Händler)
   function buy(idx, slot) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; if (slot) equip(s.it, slot); else addToBag(s.it); return true; }
   function buyPotion() { const p = potionPrice(); if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
@@ -512,11 +525,11 @@ A.Game = (function () {
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
-  // die Funken für neue Wimpel, neue Seiten im Elite-Buch, neue Legenden und neue Kombos sind schon gutgeschrieben und werden nur mit angezeigt
+  // die Funken für neue Wimpel, neue Seiten im Elite-Buch, neue Legenden, neue Kombos und neue Begleiter sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0;
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0;
     const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
-    run.sparksEarned = sparks + banners + book + legend + combo; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo;
+    run.sparksEarned = sparks + banners + book + legend + combo + pet; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
@@ -524,7 +537,7 @@ A.Game = (function () {
 
   // ---------- Speichern ----------
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; return run; } catch (e) { return null; } }
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; return run; } catch (e) { return null; } }
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
 
@@ -532,7 +545,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, makeLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
   };

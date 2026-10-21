@@ -40,6 +40,7 @@ A.Legends = (function () {
     const g = LG(id); if (!g) return '';
     if (g.src === 'boss') return L('Vom Weltenboss ', 'From the world boss ') + A.t(A.BOSSES[g.boss].name);
     if (g.src === 'elite') return L('Von Elite-Gegnern mit der Eigenschaft ', 'From elites with the trait ') + A.t(A.ELITE_TRAITS[g.trait].name);
+    if (g.src === 'wild') return L('Kann überall auftauchen: in Truhen, bei Elite-Gegnern, nach Kämpfen und bei Weltenbossen. Ab Welt 2 viel öfter.', 'Can turn up anywhere: in chests, from elites, after fights and from world bosses. Much more often from world 2.');
     return L('Aus einem geheimen Raum in ', 'From a secret room in ') + A.t(A.WORLDS[g.world].name);
   }
 
