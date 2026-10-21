@@ -434,6 +434,8 @@ window.A = window.A || {};
       A.Elites.drawGround(this, W, cx, cy);
       A.Legends.drawGround(this, W, cx, cy);   // Tinte, Leerenloch, Amboss-Schatten, Quietsche-Ente
       A.Combos.drawGround(this, W, cx, cy);    // Giftpilze
+      A.Pets.drawGround(this, W, cx, cy);      // Eier, Zunge, Schrei
+      A.Wild.drawGround(this, W, cx, cy);      // Bananenschalen
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -480,6 +482,7 @@ window.A = window.A || {};
       A.Elites.drawTop(this, W, cx, cy);
       A.Legends.drawTop(this, W, cx, cy);   // fallender Amboss, Spiegelbild
       A.Combos.drawTop(this, W, cx, cy);    // Raketen, Blutkugeln, Wirbelwind
+      A.Wild.drawTop(this, W, cx, cy);      // Seifenblasen, Fliegenklatsche, Gewitterwolke, Bienen, Sparschwein
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -701,7 +704,8 @@ window.A = window.A || {};
       const sc = m.boss || m.giant ? 2 : 1;   // Boss und riesige Elite: doppelt so gross
       if (!m.alive) {
         const spr = A.Art.monSprite(m.mid, 0);
-        if (m.shape === 'blob') { const q = clamp(m.alpha, 0, 1); this.blit(spr, x, y, m.fx < 0, { alpha: q, sx: sc * (1 + (1 - q) * 0.9), sy: sc * Math.max(0.15, q), white: q > 0.85 }); }
+        if (m.flat) { const q = clamp(m.alpha, 0, 1); this.blit(spr, x, y, m.fx < 0, { alpha: q, sx: sc * 1.7, sy: sc * 0.22 }); }   // Fliegenklatsche: platt wie eine Flunder
+        else if (m.shape === 'blob') { const q = clamp(m.alpha, 0, 1); this.blit(spr, x, y, m.fx < 0, { alpha: q, sx: sc * (1 + (1 - q) * 0.9), sy: sc * Math.max(0.15, q), white: q > 0.85 }); }
         else this.drawFallen(spr, x, y, m.fx < 0, m, sc);
         return;
       }
@@ -713,6 +717,7 @@ window.A = window.A || {};
       if (m.shape === 'blob') { const q = Math.sin(this.t * 7 + m.x * 0.1); sx = sc * (1 + q * 0.07); sy = sc * (1 - q * 0.09); }
       if (fly) lift = 7 + Math.sin(this.t * 5 + m.x) * 2;
       if (m.hop) lift += m.hop / PX;   // Schleimkönig im Sprung
+      if (m.lift) lift += m.lift / PX;   // schwebt in einer Seifenblase (wild.js)
       if (ghost) { lift = 3 + Math.sin(this.t * 3 + m.x) * 2; alpha = 0.85; }
       if (m.spawn > 0) { const p = clamp(1 - m.spawn / 0.5, 0, 1); alpha = p; lift -= (1 - p) * 6; }
       if (m.mirror) alpha *= 0.62 + Math.sin(this.t * 6 + m.x) * 0.12;   // Spiegelbild: durchscheinend
@@ -732,13 +737,15 @@ window.A = window.A || {};
       }
       const dx = Math.round(x + ox), dy = Math.round(y - lift + oy);
       if (m.ef && !(m.spawn > 0)) A.Elites.drawUnder(this, m, spr, cx, cy, sc, lift);   // Nachbilder (Flink)
-      if ((m.elite || m.mirror) && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, A.Elites.col(m, this.t), sc);
-      if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
-      const frozen = m.frozenUntil > W.t, sand = m.sandUntil > W.t;   // Zeitstopp der Totenmaske: golden und erstarrt
+      const slip = m.slipUntil > W.t;   // auf einer Bananenschale ausgerutscht: überschlägt sich (wild.js)
+      if ((m.elite || m.mirror) && !(m.spawn > 0) && !slip) this.outlineGlow(spr, dx, dy, flip, A.Elites.col(m, this.t), sc);
+      if (m.boss && !slip) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
+      const frozen = m.frozenUntil > W.t && !slip, sand = m.sandUntil > W.t && !slip;   // Zeitstopp der Totenmaske: golden und erstarrt
       if (frozen) this.outlineGlow(spr, dx, dy, flip, '#9be8ff', sc);
       else if (sand) this.outlineGlow(spr, dx, dy, flip, '#feae34', sc);
-      this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
-      if (m.state === 'windup' && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
+      if (slip) A.Wild.drawSlip(this, m, spr, dx, dy, flip, sx, sy, alpha);
+      else this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
+      if (m.state === 'windup' && !slip && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
       if (m.ef && !(m.spawn > 0)) A.Elites.drawOver(this, m, spr, dx, dy, sx, sy, cx, cy);   // Schildblase, kreisende Klingen
       if (frozen) {   // eingefroren (Eis-Ausrüstung): blaues Eis über der Figur, ein paar helle Punkte
         const k = flip ? 'iceF' : 'ice'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#9be8ff');
@@ -826,6 +833,9 @@ window.A = window.A || {};
       if (p.kind === 'gold') {
         const f = [0, 1, 2, 1][Math.floor(this.t * 10 + p.x) % 4]; const s = A.Art.sprite('coin', f);
         this.shadow(x, y + 2, 2.5); b.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h + 2 - z));
+      } else if (p.kind === 'candy') {   // Bonbon der Piñata
+        const s = A.Art.sprite('candy', 0, { C: p.col, H: '#ffffff' }, p.col); const bob = Math.round(Math.sin(this.t * 4 + p.x) * 1);
+        this.shadow(x, y + 2, 2); b.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h + bob - z));
       } else if (p.kind === 'potion') {
         const s = A.Art.sprite('potion'); const bob = Math.round(Math.sin(this.t * 4 + p.x) * 1.5);
         this.shadow(x, y + 2, 3); b.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h - 2 + bob - z));
@@ -913,6 +923,7 @@ window.A = window.A || {};
           if (A.FX && !A.FX.low && Math.random() < 0.03) A.FX.part({ kind: 'px', x: p.x + (Math.random() - 0.5) * 40, y: p.y + 8, z: 26, vx: 0, vy: 0, vz: 0, g: 300, life: 0.6, color: '#8b9bb4', size: 1 });
           break;
         }
+        case 'cage': top = A.Pets.drawCage(this, p, near, x, y); break;   // Käfig mit einem Begleiter (pets.js)
         case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
       if (near && !p.used || (near && (p.kind === 'merchant' || p.kind === 'forge' || p.kind === 'stairs'))) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
@@ -921,6 +932,12 @@ window.A = window.A || {};
     drawShot(s, cx, cy) {
       if (s.opts.lob) { this.drawFlask(s, cx, cy); return; }
       const b = this.b, g = this.g, x = s.x / PX - cx, y = s.y / PX - cy - 5;
+      if (s.opts.pebble) {   // Steinchen der Gartenzwerge: kleiner Bogen
+        const up = Math.round(Math.sin(clamp((1.3 - s.life) / 0.7, 0, 1) * Math.PI) * 5), px = Math.round(x), py = Math.round(y - up);
+        b.fillStyle = '#181425'; b.fillRect(px - 1, py - 1, 4, 4); b.fillStyle = '#8b9bb4'; b.fillRect(px, py, 2, 2); b.fillStyle = '#c0cbdc'; b.fillRect(px, py, 1, 1);
+        return;
+      }
+      if (s.opts.coin) { const c2 = A.Art.sprite('coin', Math.floor(this.t * 12 + s.x) % 3); b.drawImage(c2.img, Math.round(x - c2.w / 2), Math.round(y - c2.h / 2)); return; }   // Münzen aus dem Sparschwein
       if (s.side === 'hero' && s.opts.kind !== 'magic') {
         const a = A.Art.sprite('arrow'); b.save(); b.translate(Math.round(x), Math.round(y)); b.rotate(Math.atan2(s.vy, s.vx)); b.drawImage(a.img, -a.w + 2, -Math.round(a.h / 2)); b.restore();
         return;
@@ -994,7 +1011,7 @@ window.A = window.A || {};
       for (const s of W.shots) L(s.x, s.y - 10, s.side === 'hero' ? 26 : 22, s.side === 'hero' ? (s.opts.kind === 'magic' ? s.color : '#ffe2b8') : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), s.side === 'hero' && s.opts.kind !== 'magic' ? 0.25 : 0.8);
       for (const z of W.zones || []) if (!z.trail) L(z.x, z.y, z.r / PX * 1.3, z.col, 0.35);
       for (const o of W.orbs || []) if (o.x != null) L(o.x, o.y - 14, 22, o.col, 0.6);
-      for (const a of W.allies || []) L(a.x, a.y - 10, a.minion ? 26 : 34, a.col || (a.shadow ? '#b55088' : '#2ce8f5'), a.minion ? 0.4 : 0.55);
+      for (const a of W.allies || []) { const sm = a.minion || a.kid || a.gnome; L(a.x, a.y - 10, sm ? 26 : 34, a.col || (a.shadow ? '#b55088' : '#2ce8f5'), sm ? 0.4 : 0.55); }
       for (const k of W.marks || []) if (k.kind === 'meteor') L(k.x, k.y, k.r / PX * 1.2, '#e43b44', 0.3 + 0.3 * Math.sin(t * 20));
       else if (k.kind === 'barrel') { L(k.x, k.y - 22, 22, '#feae34', 0.6 + 0.4 * Math.sin(t * 30)); L(k.x, k.y, k.r / PX * 1.1, '#f77622', 0.15 + 0.2 * clamp((W.t - k.t0) / (k.at - k.t0), 0, 1)); }
       for (const bo of W.bolts || []) { L(bo.x1, bo.y1, 40, bo.col, bo.life / bo.max); L((bo.x0 + bo.x1) / 2, (bo.y0 + bo.y1) / 2, 40, bo.col, bo.life / bo.max * 0.6); }
@@ -1003,6 +1020,8 @@ window.A = window.A || {};
       A.Elites.lights(W, L);
       A.Legends.lights(W, L);
       A.Combos.lights(W, L);
+      A.Pets.lights(W, L);
+      A.Wild.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -1068,6 +1087,8 @@ window.A = window.A || {};
     drawAlly(a, cx, cy) {
       if (A.Legends.drawAlly(this, a, cx, cy)) return;   // Pudding
       if (A.Combos.drawAlly(this, a, cx, cy)) return;    // Baby-Schleim, Schattenklon
+      if (A.Pets.drawAlly(this, a, cx, cy)) return;      // Begleiter und Küken
+      if (A.Wild.drawAlly(this, a, cx, cy)) return;      // Gartenzwerge, Kisti
       if (a.minion) { this.drawMinion(a, cx, cy); return; }
       const x = a.x / PX - cx, y = a.y / PX - cy + 7;
       const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
@@ -1272,14 +1293,15 @@ window.A = window.A || {};
       m.fillStyle = 'rgba(24,20,37,0.78)'; m.fillRect(0, 0, w, hh); m.fillStyle = '#5a6988'; m.fillRect(0, 0, w, 1); m.fillRect(0, hh - 1, w, 1); m.fillRect(0, 0, 1, hh); m.fillRect(w - 1, 0, 1, hh);
       const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5', forge: '#c0cbdc', secret: '#fee761' };
       const pos = (r) => [3 + r.cx * (U + G), 3 + r.cy * (V + G)];
+      const owl = A.Pets.owlSees();   // Eule Huhu: zeigt geheime Räume (1), ab Treue 3 die ganze Ebene (2)
       m.fillStyle = '#3a4466';
-      for (const [p, q] of W.edges) { const a = W.rooms.find(r => r.cx === p.x && r.cy === p.y), b = W.rooms.find(r => r.cx === q.x && r.cy === q.y); if (!a || !b || (!a.visited && !b.visited)) continue; const [ax, ay] = pos(a), [bx, by] = pos(b); if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }
-      for (const r of W.rooms) if (r.secret && r.visited) { const [ax, ay] = pos(r), [bx, by] = pos(W.rooms[r.secret.nb]); m.fillStyle = '#feae34'; if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }   // geheimer Durchgang
+      for (const [p, q] of W.edges) { const a = W.rooms.find(r => r.cx === p.x && r.cy === p.y), b = W.rooms.find(r => r.cx === q.x && r.cy === q.y); if (!a || !b || (!a.visited && !b.visited && owl < 2)) continue; const [ax, ay] = pos(a), [bx, by] = pos(b); if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }
+      for (const r of W.rooms) if (r.secret && (r.visited || owl)) { const [ax, ay] = pos(r), [bx, by] = pos(W.rooms[r.secret.nb]); m.fillStyle = '#feae34'; if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }   // geheimer Durchgang
       for (const r of W.rooms) {
-        const [x, y] = pos(r); const known = r.visited || W.edges.some(([p, q]) => { const o = (p.x === r.cx && p.y === r.cy) ? q : (q.x === r.cx && q.y === r.cy) ? p : null; return o && W.rooms.some(z => z.cx === o.x && z.cy === o.y && z.visited); });
+        const [x, y] = pos(r); const known = r.visited || owl >= 2 || (owl && r.type === 'secret') || W.edges.some(([p, q]) => { const o = (p.x === r.cx && p.y === r.cy) ? q : (q.x === r.cx && q.y === r.cy) ? p : null; return o && W.rooms.some(z => z.cx === o.x && z.cy === o.y && z.visited); });
         if (!known) continue;
         m.fillStyle = r.visited ? '#262b44' : '#1a1a2a'; m.fillRect(x, y, U, V);
-        m.fillStyle = r.visited ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.cleared || r.used) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
+        m.fillStyle = r.visited || owl >= 2 || (owl && r.type === 'secret') ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.cleared || r.used) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
         if (r.visited && r.type !== 'fight' && r.type !== 'start') { m.fillStyle = '#ffffff'; m.fillRect(x + 4, y + 3, 1, 1); }
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }

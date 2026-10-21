@@ -15,7 +15,7 @@ A.World = (function () {
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
   function genFloor(floor, seed, saved) {
     const wd = A.worldOf(floor);
-    const v = G().run.lvVer || 0;   // Ebenen-Bau: 2 Schmiede, 3 geheime Räume, 4 grosse Räume (ältere Spielstände bauen ihre laufende Ebene wie bisher)
+    const v = G().run.lvVer || 0;   // Ebenen-Bau: 2 Schmiede, 3 geheime Räume, 4 grosse Räume, 5 Käfige (ältere Spielstände bauen ihre laufende Ebene wie bisher)
     const lv = A.Levels.gen(floor, seed, wd, { forge: v >= 2, secret: v >= 3, big: v >= 4 });
     ({ CW, CH, MW, MH } = lv.dims);
     const { rooms, tiles, edges } = lv;
@@ -33,6 +33,8 @@ A.World = (function () {
         r.props.push({ kind: 'rubble', x: gx * TS, y: gy * TS, room: r.i, used: false, rad: 70, tiles: d });
       }
     }
+    // Käfig mit einem Begleiter (pets.js): steht versteckt in einem Kampfraum, bis der gesäubert ist; immer als letztes Ding im Raum
+    if (v >= 5 && G().run.cage) { const r = A.Pets.cageRoom(rooms, seed); if (r) r.props.push({ kind: 'cage', x: (r.anchor.tx + 0.5) * TS, y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
     let reach = lv.reach;
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
@@ -256,10 +258,11 @@ A.World = (function () {
     let absorbed = 0;
     if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; if (to.shield <= 0 && to === W.hero) A.Gear.onShieldBreak(to); }
     to.hp -= dmg; to.flash = 0.12;
+    if (to.side === 'enemy') to.lastFrom = from;   // wer zuletzt getroffen hat (Begleiter: Langfinger)
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -315,6 +318,8 @@ A.World = (function () {
     A.Classes.onKill(e);
     A.Legends.onKill(e);
     A.Combos.onKill(e);
+    A.Pets.onKill(e, rw);   // Treue für die Begleiter
+    A.Wild.onKill(e);       // Piñata
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34', opts: { kette: true } });
@@ -356,7 +361,7 @@ A.World = (function () {
     const d = Math.hypot(tx - from.x, ty - from.y) || 1;
     const sp = opts.speed || 420;
     if (!opts.color) opts.color = opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0';
-    fx('shoot', { from, magic: opts.kind === 'magic', color: opts.color, dx: (tx - from.x) / d, dy: (ty - from.y) / d });
+    if (!opts.quiet) fx('shoot', { from, magic: opts.kind === 'magic', color: opts.color, dx: (tx - from.x) / d, dy: (ty - from.y) / d });   // quiet: viele auf einmal (Steinchen, Münzen, Stacheln)
     W.shots.push({ x: from.x + (tx - from.x) / d * (from.r + 4), y: from.y + (ty - from.y) / d * (from.r + 4), vx: (tx - from.x) / d * sp, vy: (ty - from.y) / d * sp, r: (opts.r || 5) * (from === W.hero && from.legBig ? 1.5 : 1), side: from.side, from, dmg, opts, life: opts.life || 1.0, color: opts.color || (opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0') });
   }
   function heroAttack() {
@@ -365,6 +370,7 @@ A.World = (function () {
     h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h) * A.Classes.atkMul(h) * A.Legends.atkMul(h); h.swing = 0.2;
     h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = (big ? 2 : 1) * A.Legends.onAttack(h);   // Doppelte Wucht: jeder dritte Schlag; Münzfresser
     A.Combos.onAttack(h);   // Wirbelwind: jeder 4. Schlag schleudert die Klingen hinaus
+    A.Wild.onAttack(h);     // Fliegenklatsche: jeder 4. Schlag
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
     if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
     if (h.melee) arc(h, (h.tal.spalt ? 82 : 58) * (h.legBig ? 1.25 : 1), mul, { kind: 'phys', basic: true });
@@ -410,7 +416,7 @@ A.World = (function () {
     }
     else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
     else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
-    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg || a.cb); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg || a.cb || a.pet || a.kid); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
     else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
     else if (sk.kind === 'multi' || sk.multi) {
       const R = sk.radius || 170;
@@ -471,6 +477,8 @@ A.World = (function () {
     if (a.until && W.t > a.until) { a.gone = true; fx('appear', { m: a }); A.Combos.onAllyGone(a); return; }
     if (a.spawn > 0) { a.spawn -= dt; return; }
     a.cd -= dt; if (a.swing > 0) a.swing -= dt; a.crit = h.crit;
+    if (a.pet && A.Pets.step(a, dt)) return;   // Begleiter: Sprung, Rolle, Feuer aus der Ferne (pets.js)
+    if (a.leg && A.Wild.step(a, dt)) return;   // Gartenzwerge, Kisti (wild.js)
     const rally = a.rallyUntil > W.t ? 1.5 : 1, sp = (a.spd || 1) * rally;   // Seelenband: schneller laufen und schlagen, 50 % mehr Schaden
     let tgt = null, bd = 400;
     if (a.minion) tgt = minionTarget(a);
@@ -571,6 +579,8 @@ A.World = (function () {
     A.Gear.tick(dt);
     A.Legends.tick(dt);
     A.Combos.tick(dt);
+    A.Pets.tick(dt);
+    A.Wild.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -596,9 +606,10 @@ A.World = (function () {
         p.vz -= 700 * dt; p.z += p.vz * dt; if (p.z <= 0) { p.z = 0; p.vz = Math.abs(p.vz) > 60 ? -p.vz * 0.42 : 0; p.vx *= 0.6; p.vy *= 0.6; if (p.vz === 0) { p.vx = p.vy = 0; [p.x, p.y] = freeSpot(p.x, p.y, 13); } }   // liegen geblieben: an eine Stelle rücken, die der Held erreicht
       }
       const d = dist(p, h);
-      if (p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
+      if ((p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) || p.kind === 'candy' && d < 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
-        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); }
+        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
+        else if (p.kind === 'candy') { p.done = true; heal(h, Math.max(1, Math.round(h.maxHp * 0.02))); if (A.Sound.pop) A.Sound.pop(); }   // Bonbon der Piñata
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }
       }
@@ -611,11 +622,11 @@ A.World = (function () {
     if (r && r !== W.room) { W.room = r; }
     if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
       if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
-      A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); } G().save(); }
+      A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
-      a.props.forEach(p => { if (p.hidden) p.hidden = false; });
+      a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); } });
       if (hooks.onCleared) hooks.onCleared(a); }
     // In der Nähe von etwas?
     W.near = null;
@@ -644,6 +655,8 @@ A.World = (function () {
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
   A.Combos.bind({ get W() { return W; }, hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot });
+  A.Pets.bind({ get W() { return W; }, hit, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
+  A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
 
   return {
     get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill,

@@ -283,7 +283,7 @@ A.Pets = (function () {
     if (A.FX && !A.FX.low && Math.random() < 0.6) A.FX.part({ x: a.x - R.dx * 8, y: a.y + 6, z: 1, vx: (Math.random() - 0.5) * 30, vy: 0, vz: 30, g: 200, life: 0.3, color: '#8b9bb4', size: 1 });
     if (R.t > 0) return;
     a.roll = null; a.r = 10; [a.x, a.y] = api.freeSpot(a.x, a.y, a.r);
-    if (T('stachel', 3)) for (let i = 0; i < 8; i++) { const ang = i / 8 * TAU; api.shoot(a, a.x + Math.cos(ang) * 100, a.y + Math.sin(ang) * 100, power(a) * 0.45, { kind: 'phys', color: '#e4a672', speed: 380, life: 0.6, r: 4 }); }
+    if (T('stachel', 3)) for (let i = 0; i < 8; i++) { const ang = i / 8 * TAU; api.shoot(a, a.x + Math.cos(ang) * 100, a.y + Math.sin(ang) * 100, power(a) * 0.45, { kind: 'phys', color: '#e4a672', speed: 380, life: 0.6, r: 4, quiet: i > 0 }); }
   }
   // Gacker: legt im Kampf Eier, daraus schlüpfen Küken (oder Gold)
   function hen(a, dt, w) {
