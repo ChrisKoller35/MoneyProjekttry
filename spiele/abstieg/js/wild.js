@@ -185,10 +185,12 @@ A.Wild = (function () {
   function kistiStep(a, dt) {
     const w = W(), h = w.hero;
     if (a.chew > 0) a.chew -= dt;
-    if (nearest(a.x, a.y, 80)) return false;
+    if (nearest(a.x, a.y, 80) || dist(a, h) > 300) return false;   // zu weit weg: erst zurück zum Helden
     let best = null, bd = 170;
-    for (const p of w.picks) { if (p.kind !== 'gold' || p.t < 0.45 || p.z > 4) continue; const d = dist(a, p); if (d < bd) { bd = d; best = p; } }
+    for (const p of w.picks) { if (p.kind !== 'gold' || p.t < 0.45 || p.z > 4 || p.noKisti) continue; const d = dist(a, p); if (d < bd && api.clearLine(a, p)) { bd = d; best = p; } }
     if (!best) return false;
+    if (a.coin !== best) { a.coin = best; a.coinT = 0; }
+    if ((a.coinT += dt) > 2.5) { best.noKisti = true; return false; }   // kommt nicht hin (Säule, Ecke): liegen lassen
     const d = bd || 1; a.fx = (best.x - a.x) / d; a.fy = (best.y - a.y) / d; a.moving = true;
     if (d > a.r + 6) { api.moveEnt(a, a.fx * 290 * dt, a.fy * 290 * dt); return true; }
     eat(a, best, w, h);

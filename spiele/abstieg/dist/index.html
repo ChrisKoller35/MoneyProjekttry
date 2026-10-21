@@ -7696,7 +7696,7 @@ A.Pets = (function () {
 
   // ---------- Treue (bleibt für immer, im Lager-Spielstand) ----------
   const rec = (id) => { const m = G().meta; return m && m.pets ? m.pets[id] : null; };
-  const found = (id) => !!rec(id);
+  const found = (id) => !!P(id) && !!rec(id);   // nur Tiere, die diese Version kennt (Spielstand einer neueren Version)
   const xpOf = (id) => (rec(id) && rec(id).xp) || 0;
   function treue(id) { const xp = xpOf(id); let lv = 1; for (let i = 1; i < A.PET_TREUE.length; i++) if (xp >= A.PET_TREUE[i]) lv = i + 1; return lv; }
   // Fortschritt zur nächsten Stufe als [geschafft, nötig]; null auf der höchsten Stufe
@@ -7707,7 +7707,7 @@ A.Pets = (function () {
   function slots() { return 1 + (me().petSlots || 0); }
   function startN() { return Math.min(slots(), me().petStart || 0); }
   function dmgMul(id) { return (1 + A.PET_GROW * (treue(id) - 1)) * (1 + (me().petDmg || 0)); }
-  const withMe = () => (G().run && G().run.pets) || [];
+  const withMe = () => ((G().run && G().run.pets) || []).filter(P);
 
   // ---------- Tierhütte: wer kommt von Anfang an mit? ----------
   // Die Wahl im Lager; fehlt eine, kommen die ersten gefundenen Tiere
@@ -7774,7 +7774,8 @@ A.Pets = (function () {
   function levelUp(id, lv) {
     const w = W(), Pt = P(id), a = w && w.allies.find(x => x.pet === id && !x.gone);
     const trick = lv === 3 ? Pt.t3 : lv === 5 ? Pt.t5 : null;
-    if (A.FX && w) A.FX.banner(A.t(Pt.name) + ': ' + L('Treue ', 'Loyalty ') + lv + '!', trick ? L('Neuer Trick: ', 'New trick: ') + A.t(trick).split(':')[0] : L(`Beisst jetzt ${Math.round(A.PET_GROW * 100)} % fester zu`, `Now bites ${Math.round(A.PET_GROW * 100)}% harder`), Pt.col, 2.8);
+    // die Meldung wartet, bis keine andere läuft («Raum gesäubert» oder «Stufe» kommen oft im selben Moment und würden sie überdecken)
+    if (w) (w.petNews || (w.petNews = [])).push([A.t(Pt.name) + ': ' + L('Treue ', 'Loyalty ') + lv + '!', trick ? L('Neuer Trick: ', 'New trick: ') + A.t(trick).split(':')[0] : L(`Beisst jetzt ${Math.round(A.PET_GROW * 100)} % fester zu`, `Now bites ${Math.round(A.PET_GROW * 100)}% harder`), Pt.col]);
     if (a) { api.float(a.x, a.y - 30, '♥', '#e43b44', 20); if (A.FX) A.FX.burst(a.x, a.y - 12, 14, { color: ['#e43b44', '#f6757a', '#ffffff'], smin: 30, smax: 120, life: 0.6, add: true, kind: 'spark', drag: 3 }); }
     if (A.Sound.level && w) A.Sound.level();
   }
@@ -7993,6 +7994,7 @@ A.Pets = (function () {
   // Tiere, die dabei sind, als Helfer in der Welt halten; Eier, Zungen und Schreie laufen lassen
   function tick(dt) {
     const w = W(); if (!w || !w.hero) return; const h = w.hero, want = withMe();
+    if (w.petNews && w.petNews.length && A.FX && !A.FX.banners.length) { const [a, b, c] = w.petNews.shift(); A.FX.banner(a, b, c, 2.8); }
     for (const a of w.allies) if (a.pet && !a.gone && !want.includes(a.pet)) { a.gone = true; api.fx('appear', { m: a }); }
     want.forEach((id, i) => {
       let a = w.allies.find(x => x.pet === id && !x.gone);
@@ -8287,10 +8289,12 @@ A.Wild = (function () {
   function kistiStep(a, dt) {
     const w = W(), h = w.hero;
     if (a.chew > 0) a.chew -= dt;
-    if (nearest(a.x, a.y, 80)) return false;
+    if (nearest(a.x, a.y, 80) || dist(a, h) > 300) return false;   // zu weit weg: erst zurück zum Helden
     let best = null, bd = 170;
-    for (const p of w.picks) { if (p.kind !== 'gold' || p.t < 0.45 || p.z > 4) continue; const d = dist(a, p); if (d < bd) { bd = d; best = p; } }
+    for (const p of w.picks) { if (p.kind !== 'gold' || p.t < 0.45 || p.z > 4 || p.noKisti) continue; const d = dist(a, p); if (d < bd && api.clearLine(a, p)) { bd = d; best = p; } }
     if (!best) return false;
+    if (a.coin !== best) { a.coin = best; a.coinT = 0; }
+    if ((a.coinT += dt) > 2.5) { best.noKisti = true; return false; }   // kommt nicht hin (Säule, Ecke): liegen lassen
     const d = bd || 1; a.fx = (best.x - a.x) / d; a.fy = (best.y - a.y) / d; a.moving = true;
     if (d > a.r + 6) { api.moveEnt(a, a.fx * 290 * dt, a.fy * 290 * dt); return true; }
     eat(a, best, w, h);
@@ -8704,6 +8708,7 @@ A.World = (function () {
   const G = () => A.Game;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const petOf = (s) => (s.from && s.from.pet ? s.from : null);   // Schuss eines Begleiters (Glut)
   let W = null;      // aktueller Zustand der Ebene
   let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
@@ -9132,10 +9137,11 @@ A.World = (function () {
   }
   // ---------- Neue Zauber und Talente in der Welt ----------
   // Explosion: trifft alle Gegner im Umkreis
-  function boom(x, y, r, dmg, opts, col) {
-    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
+  // src: wer explodiert (Glut, der kleine Drache); sonst der Held
+  function boom(x, y, r, dmg, opts, col, src) {
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
     fx('boom', { x, y, r, color: col });
-    A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
+    if (!src) A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }
   // Kettenblitz: springt vom Helden zum nächsten Gegner und weiter
   function chain(h, dmg, n, col) {
@@ -9288,11 +9294,11 @@ A.World = (function () {
       if (s.opts.lob) { A.Classes.lobStep(s, dt); continue; }   // Flasche im Bogen (classes.js)
       if (s.side !== 'hero' && ls) continue;   // Zeitstopp: Geschosse der Gegner hängen in der Luft
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
-      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); } else { hit(s.from, m, s.dmg, s.opts); A.Combos.onShotHit(s, m); } s.life = 0; break; } } }
+      if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
+      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); } else { hit(s.from, m, s.dmg, s.opts); A.Combos.onShotHit(s, m); } s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
-    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color); }   // Feuerball verpufft nicht
+    for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); }   // Feuerball verpufft nicht
     W.shots = W.shots.filter(s => s.life > 0);
     // Beute aufsammeln
     for (const p of W.picks) {
@@ -9331,7 +9337,7 @@ A.World = (function () {
     G().run.hp = h.hp;
   }
   function interact() { if (!W.near) return false; const p = W.near; if (hooks.onProp) hooks.onProp(p); return true; }
-  function markUsed(p) { p.used = true; const r = W.rooms[p.room]; r.used = true; G().save(); }
+  function markUsed(p) { p.used = true; const r = W.rooms[p.room]; r.used = true; if (G().run) G().run.rooms = saveRooms(); G().save(); }
   // Geröll wegräumen: der geheime Raum dahinter wird begehbar
   function openRubble(p) {
     const h = W.hero;
@@ -11797,7 +11803,7 @@ window.A = window.A || {};
       const lv = A.Pets.treue(id), pr = A.Pets.progress(id), on = psel.includes(id);
       const tricks = A.Pets.tricks(id).map(x => `<div class="trick ${lv >= x.lv ? 'on' : ''}"><span>${'★'.repeat(x.lv)}</span> ${esc(x.text)}</div>`).join('');
       return `<div class="petc have ${on ? 'sel' : ''}" ${sn ? `data-pet="${id}"` : ''}><div class="pp">${petImg(id, 40)}</div><div class="pb"><div class="ttl"><b style="color:${P.col}">${esc(t(P.name))}</b>${petStars(lv)}</div>
-        <div class="mini">${esc(t(P.kind))} · ${pr ? L(`Treue ${lv}: noch ${pr[1] - pr[0]} bis Stufe ${lv + 1}`, `Loyalty ${lv}: ${pr[1] - pr[0]} more to level ${lv + 1}`) : L('Treue 5: treuer geht nicht', 'Loyalty 5: as loyal as it gets')}</div>
+        <div class="mini">${esc(t(P.kind))} · ${pr ? L(`Treue ${lv}: noch ${pr[1] - pr[0]} bis Treue ${lv + 1}`, `Loyalty ${lv}: ${pr[1] - pr[0]} more to loyalty ${lv + 1}`) : L('Treue 5: treuer geht nicht', 'Loyalty 5: as loyal as it gets')}</div>
         <div class="bar"><i style="width:${pr ? Math.round(pr[0] / pr[1] * 100) : 100}%"></i></div>${tricks}
         ${sn ? `<div class="mini pick">${on ? `<b class="goldc">${L('Kommt mit in die Tiefe', 'Joins the descent')}</b>` : L('Antippen: kommt mit in die Tiefe', 'Tap: joins the descent')}</div>` : ''}</div></div>`;
     }).join('');

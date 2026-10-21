@@ -22,7 +22,7 @@ A.Pets = (function () {
 
   // ---------- Treue (bleibt für immer, im Lager-Spielstand) ----------
   const rec = (id) => { const m = G().meta; return m && m.pets ? m.pets[id] : null; };
-  const found = (id) => !!rec(id);
+  const found = (id) => !!P(id) && !!rec(id);   // nur Tiere, die diese Version kennt (Spielstand einer neueren Version)
   const xpOf = (id) => (rec(id) && rec(id).xp) || 0;
   function treue(id) { const xp = xpOf(id); let lv = 1; for (let i = 1; i < A.PET_TREUE.length; i++) if (xp >= A.PET_TREUE[i]) lv = i + 1; return lv; }
   // Fortschritt zur nächsten Stufe als [geschafft, nötig]; null auf der höchsten Stufe
@@ -33,7 +33,7 @@ A.Pets = (function () {
   function slots() { return 1 + (me().petSlots || 0); }
   function startN() { return Math.min(slots(), me().petStart || 0); }
   function dmgMul(id) { return (1 + A.PET_GROW * (treue(id) - 1)) * (1 + (me().petDmg || 0)); }
-  const withMe = () => (G().run && G().run.pets) || [];
+  const withMe = () => ((G().run && G().run.pets) || []).filter(P);
 
   // ---------- Tierhütte: wer kommt von Anfang an mit? ----------
   // Die Wahl im Lager; fehlt eine, kommen die ersten gefundenen Tiere
@@ -100,7 +100,8 @@ A.Pets = (function () {
   function levelUp(id, lv) {
     const w = W(), Pt = P(id), a = w && w.allies.find(x => x.pet === id && !x.gone);
     const trick = lv === 3 ? Pt.t3 : lv === 5 ? Pt.t5 : null;
-    if (A.FX && w) A.FX.banner(A.t(Pt.name) + ': ' + L('Treue ', 'Loyalty ') + lv + '!', trick ? L('Neuer Trick: ', 'New trick: ') + A.t(trick).split(':')[0] : L(`Beisst jetzt ${Math.round(A.PET_GROW * 100)} % fester zu`, `Now bites ${Math.round(A.PET_GROW * 100)}% harder`), Pt.col, 2.8);
+    // die Meldung wartet, bis keine andere läuft («Raum gesäubert» oder «Stufe» kommen oft im selben Moment und würden sie überdecken)
+    if (w) (w.petNews || (w.petNews = [])).push([A.t(Pt.name) + ': ' + L('Treue ', 'Loyalty ') + lv + '!', trick ? L('Neuer Trick: ', 'New trick: ') + A.t(trick).split(':')[0] : L(`Beisst jetzt ${Math.round(A.PET_GROW * 100)} % fester zu`, `Now bites ${Math.round(A.PET_GROW * 100)}% harder`), Pt.col]);
     if (a) { api.float(a.x, a.y - 30, '♥', '#e43b44', 20); if (A.FX) A.FX.burst(a.x, a.y - 12, 14, { color: ['#e43b44', '#f6757a', '#ffffff'], smin: 30, smax: 120, life: 0.6, add: true, kind: 'spark', drag: 3 }); }
     if (A.Sound.level && w) A.Sound.level();
   }
@@ -319,6 +320,7 @@ A.Pets = (function () {
   // Tiere, die dabei sind, als Helfer in der Welt halten; Eier, Zungen und Schreie laufen lassen
   function tick(dt) {
     const w = W(); if (!w || !w.hero) return; const h = w.hero, want = withMe();
+    if (w.petNews && w.petNews.length && A.FX && !A.FX.banners.length) { const [a, b, c] = w.petNews.shift(); A.FX.banner(a, b, c, 2.8); }
     for (const a of w.allies) if (a.pet && !a.gone && !want.includes(a.pet)) { a.gone = true; api.fx('appear', { m: a }); }
     want.forEach((id, i) => {
       let a = w.allies.find(x => x.pet === id && !x.gone);
