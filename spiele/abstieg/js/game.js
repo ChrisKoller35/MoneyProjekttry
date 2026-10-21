@@ -302,7 +302,7 @@ A.Game = (function () {
     const out = [];
     const L = { atk: A.UI.derived.atk, mag: A.UI.derived.mag, def: A.UI.derived.def, hp: A.UI.hp, spd: A.UI.derived.spd, crit: A.UI.derived.crit, dodge: A.UI.derived.dodge };
     for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (it.stats[k]) out.push((it.stats[k] > 0 ? '+' : '') + it.stats[k] + (k === 'crit' || k === 'dodge' ? ' %' : '') + ' ' + A.t(L[k]));
-    for (const a of A.AFFIXES) if (it.stats[a.key] && !['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'].includes(a.key)) out.push(A.t(a.text).replace('{v}', it.stats[a.key]));
+    for (const a of A.AFFIXES) if (it.stats[a.key] && !['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'].includes(a.key)) { const v = it.stats[a.key]; out.push(A.t(a.text).replace('+{v}', v < 0 ? '−' + -v : '+' + v).replace('{v}', v)); }   // Fluch: «−2 % Leben alle 2 Sekunden» statt «+-2»
     if (it.stats.revive) out.push(A.LANG === 'de' ? 'Einmal pro Durchlauf überleben' : 'Survive once per run');
     if (it.stats.luck) out.push('+' + it.stats.luck + ' ' + A.t(A.UI.stat.luck));
     if (it.trophy && A.TROPHIES[it.trophy]) out.push('★ ' + A.t(A.TROPHIES[it.trophy].text));
@@ -321,13 +321,19 @@ A.Game = (function () {
     const old = run.gear[slot];
     run.gear[slot] = it;
     run.bag = run.bag.filter(x => x.uid !== it.uid);
-    if (old) run.bag.push(old);
+    if (old) { run.bag.push(old); trimBag(); }   // ein Fund direkt angelegt: das alte Stück kommt in den Beutel, auch wenn der schon voll ist
     const d = derived(); if (run.hp > d.maxHp) run.hp = d.maxHp;
     save();
   }
   function sellValue(it) { return Math.round((8 + it.floor * 6) * A.RARITY[it.rarity].mult); }
   function sell(it) { run.gold += sellValue(it); run.bag = run.bag.filter(x => x.uid !== it.uid); save(); }
-  function addToBag(it) { run.bag.push(it); while (run.bag.length > 8) { const keep = run.bag.filter(x => !x.legend), worst = (keep.length ? keep : run.bag).slice().sort((a, b) => A.RARITY[a.rarity].mult - A.RARITY[b.rarity].mult)[0]; run.gold += sellValue(worst); run.bag = run.bag.filter(x => x.uid !== worst.uid); } save(); }   // Legenden verkauft die volle Tasche nicht
+  // Volle Tasche (mehr als 8): das Stück mit der tiefsten Seltenheit wird verkauft, Legenden nie
+  const BAG_MAX = 8;
+  function worstOf(list) { const keep = list.filter(x => !x.legend); return (keep.length ? keep : list).slice().sort((a, b) => A.RARITY[a.rarity].mult - A.RARITY[b.rarity].mult)[0]; }
+  function trimBag() { while (run.bag.length > BAG_MAX) { const worst = worstOf(run.bag); run.gold += sellValue(worst); run.bag = run.bag.filter(x => x.uid !== worst.uid); } }
+  function addToBag(it) { run.bag.push(it); trimBag(); save(); }
+  // Welches Stück würde verkauft, wenn x noch in den Beutel kommt? (für den Hinweis im Vergleich)
+  function wouldSell(x) { return x && run.bag.length >= BAG_MAX ? worstOf(run.bag.concat([x])) : null; }
 
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
@@ -465,7 +471,8 @@ A.Game = (function () {
     save(); return true;
   }
   function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
-  function buy(idx) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; addToBag(s.it); return true; }
+  // slot: gleich anlegen statt in den Beutel (Vergleich beim Händler)
+  function buy(idx, slot) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; if (slot) equip(s.it, slot); else addToBag(s.it); return true; }
   function buyPotion() { const p = potionPrice(); if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
   // Händler im Lager kennen dich: unten wird es billiger
   function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
@@ -496,7 +503,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, makeLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
+    makeItem, makeLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
   };

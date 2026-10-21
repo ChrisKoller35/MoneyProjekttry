@@ -35,7 +35,7 @@ Jeder der 6 Bosse hat eine eigene Mechanik mit Anzeige am Boden (`js/bosses.js`)
 Waffe, Rüstung, Helm, Stiefel und zwei Schmuckstücke bekommen Zufalls-Eigenschaften, aus denen man einen eigenen Build baut (`js/gear.js`, Inhalte `A.ELEMENTS` und `A.POWERS` in `js/data.js`):
 - **6 Elemente:** Feuer, Eis, Blitz, Gift, Schatten, Stein. Gute Stücke haben oft eins, seltene und bessere immer. 2, 4 und 6 Teile desselben Elements schalten je einen stärkeren Bonus frei (Feuer: Brand, dann Explosion beim Tod, dann Meteor alle 5 Sekunden; Eis: bremsen, einfrieren, Eisnova; Blitz: Tempo, Kettenblitz, schnellere Zauber; Gift: Gift, Giftwolke, doppeltes Gift das überspringt; Schatten: Volltreffer nach Ausweichen; Stein: Schild bei Kampfbeginn, weniger Schaden, Erdbeben). Elemente, die man schon trägt, fallen öfter.
 - **15 besondere Kräfte** (selten 30 %, episch und legendär immer, verflucht 60 %): Zauberklinge, Riesentöter, Vampirkuss, Zweiter Wind, Seelensammler, Nachbeben, Schattenwolf, Raserei, Funkenflug, Goldmagnet, Panzerbrecher, Wirbelklingen, Sturmlauf, Glückspilz und Phönix (nur legendär oder verflucht, einmal pro Ebene wieder aufstehen). Gleiche Kräfte zählen nicht doppelt, es gilt der beste Wert.
-- **Anzeige:** Fund-Fenster zeigt, welcher Element-Bonus dazukommt oder wegfällt; Heldenblatt «Ausrüstung» zeigt «Dein Build» (Teile je Element, laufende Boni, nächster Bonus, alle Kräfte). Bei zwei vollen Schmuckplätzen fragt das Spiel, welcher weichen soll.
+- **Anzeige:** das Fund-Fenster vergleicht mit dem angelegten Stück (siehe «Vergleich beim Fund»); Heldenblatt «Ausrüstung» zeigt «Dein Build» (Teile je Element, laufende Boni, nächster Bonus, alle Kräfte). Bei zwei vollen Schmuckplätzen fragt das Spiel, welcher weichen soll.
 - **Schmiede** auf jeder geraden Ebene ab 2 (Schmied mit Hammer, Esse, Amboss): Werte neu würfeln, eine neue Kraft schmieden (ab selten) oder das Element frei wählen, gegen Gold. Einzelstücke und Boss-Trophäen haben ein festes Element und bleiben, wie sie sind.
 - Spielstand bleibt: ein laufender Durchlauf behält seine aktuelle Ebene genau so, wie sie war; die Schmiede kommt erst auf den nächsten Ebenen dazu.
 
@@ -81,6 +81,16 @@ Wunsch: «die Räume sind bisschen eng, doppelt so viel Platz». Neue Ebenen bau
 - **Überblick:** die Kamera zoomt auf fast allen Bildschirmen eine Stufe heraus (man sieht in jede Richtung etwa ein Viertel mehr), auf Handy und PC. Der Kraken setzt in grossen Räumen einen sicheren Kreis mehr.
 - Spielstand bleibt: eine laufende Ebene bleibt wie sie ist, ab der nächsten Ebene sind die Räume gross (`lvVer` 4 in `game.js`).
 
+## Vergleich beim Fund (21.10.2026)
+Wunsch: «wenn ich neue bekomm ist es mir nicht übersichtlich genug, welche das alte ist und ob ich es wirklich ersetzen oder verkaufen soll». Rechnung in `js/compare.js`, Fenster in `js/ui.js` (`compareView`):
+- **Altes und neues Stück nebeneinander:** links «Neu» (beim Händler «Zu kaufen», aus dem Beutel «Im Beutel»), rechts «Angelegt» (oder «Nichts», wenn der Platz frei ist). Auf dem Handy passen beide Karten nebeneinander.
+- **Urteil:** «Besser», «Schlechter», «Anders» (Vor- und Nachteile, dazu «unterm Strich eher stärker/schwächer» oder «Geschmackssache») oder «Gleich», mit einem kurzen Satz wie «Mehr Angriff und eine neue Kraft.» Gerechnet wird mit den echten Heldenwerten vorher und nachher, also mit Stufe, Werten, Talenten, Element-Boni (auch Boni, die wegfallen), Kräften, Trophäen und Legenden. Schaden zählt so viel wie Leben; was die Klasse nicht braucht (Zauberkraft bei Klinge und Schütze, Angriff bei Weber und Rufer), steht grau mit «nützt dir kaum» da und zählt nicht.
+- **Werte farbig:** jede Zeile «Angriff 28 ▸ 39 +11», grün mehr, rot weniger. Darunter, was dazukommt oder wegfällt: Element-Bonus, Kraft, Legende (mit ihrer Wirkung), Trophäen-Kraft, zweite Chance; grau, wenn ein Teil näher am nächsten Element-Bonus ist.
+- **Knöpfe immer in derselben Reihenfolge,** der Tipp leuchtet golden: «Anlegen» (sagt, welches Stück in den Beutel kommt), «Behalten» (in den Beutel), «Verkaufen» (mit Gold). Esc, I und Tab behalten das Stück (früher: verkauft). Ist der Beutel voll, steht da, welches Stück dafür verkauft wird.
+- **Überall:** im Heldenblatt (Beutel), beim Händler (mit «Kaufen und anlegen»), in Truhen, geheimen Truhen und Ereignissen hat jedes Stück ein Abzeichen «Besser/Schlechter/Anders/Gleich»; Antippen öffnet den Vergleich. Bei zwei vollen Schmuckplätzen wählt man im Vergleich, welcher Schmuck weichen soll (der bessere Tausch steht oben).
+- Behoben: ein Fund, der bei vollem Beutel angelegt wurde, konnte gleichzeitig verkauft werden; Flüche zeigen «−2 % Leben alle 2 Sekunden» statt «+-2».
+- Spielstand bleibt: nur Anzeige, keine neuen Felder.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -94,6 +104,7 @@ Den zweiten Look «3D» (three.js, 18.10.) gibt es nicht mehr: Christoph braucht
   - `gear` – Ausrüstung: Element-Boni (2/4/6 Teile) und besondere Kräfte im Kampf, Build-Übersicht.
   - `classes` – eigene Spielweise von Rufer (Diener) und Braumeister (Flaschen im Bogen, Sprengfass, Tränke).
   - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise); `legends` – Wirkung der 20 Legenden (Haken für Treffer, Siege, Zauber, Kampfbeginn, Zeichnen).
+  - `compare` – Vergleich: Heldenwerte mit dem alten und dem neuen Stück, Urteil besser/schlechter/anders/gleich.
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.
