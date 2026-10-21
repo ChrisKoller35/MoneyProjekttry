@@ -1,13 +1,12 @@
 // Browser-Test: steuert den Helden automatisch durch die Ebenen (läuft zu Gegnern, schlägt, nutzt Fähigkeiten,
 // benutzt Truhen/Feuer/Treppe), macht Bildschirmfotos, meldet Fehler.
-// Aufruf: node test-abstieg.js <bilder-ordner> [playwright-pfad] [chromium-pfad] [retro|3d] [klasse, z. B. rufer]
+// Aufruf: node test-abstieg.js <bilder-ordner> [playwright-pfad] [chromium-pfad] [klasse, z. B. rufer]
 const path = require('path'), fs = require('fs');
 const out = process.argv[2] || '.';
 const pw = require(process.argv[3] || '/opt/node-tools/node_modules/playwright');
 const exe = process.argv[4] || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const look = process.argv[5] || 'retro';
-const cls = process.argv[6] || 'klinge';
-const file = 'file://' + path.join(__dirname, 'dist', 'index.html') + '?look=' + look;
+const cls = process.argv.slice(5).find(a => a !== 'retro') || 'klinge';   // ein altes «retro» davor wird übersprungen (3D gibt es nicht mehr)
+const file = 'file://' + path.join(__dirname, 'dist', 'index.html');
 fs.mkdirSync(out, { recursive: true });
 
 (async () => {
@@ -89,7 +88,7 @@ fs.mkdirSync(out, { recursive: true });
       if (!done) { await shot('xx-overlay'); log.push('unbekanntes Overlay'); return; }
     }
   }
-  const shots = {}, log = []; let kills = 0, floorsSeen = 1;
+  const shots = {}, log = [], skipRubble = new Set(); let kills = 0, floorsSeen = 1;
   const t0 = Date.now();
   outer: while (Date.now() - t0 < 240000) {
     let s = await state(); if (!s) break; if (s.over) break;
@@ -98,7 +97,7 @@ fs.mkdirSync(out, { recursive: true });
     if (process.env.DBG) console.log('t', Math.round((Date.now() - t0) / 1000), 'hero', Math.round(s.hx), Math.round(s.hy), 'room', s.room && s.room.i, s.room && s.room.type, 'active', s.active, 'ov', s.ov, 'mons', s.mons.length, 'picks', s.picks.length);
     if (s.ov) { await closeOverlays(s.near === 'stairs' ? '09-abstieg' : (await page.locator('#overlay [data-b]').count()) ? '08-segen' : (await page.locator('#overlay [data-pick]').count()) ? '08-faehigkeit' : (await page.locator('#overlay #bEq').count()) ? '06-gefunden' : null); continue; }
     if (s.points > 0 && !shots.sheet) { shots.sheet = 1; await page.keyboard.press('KeyI'); await page.waitForTimeout(200); await shot('07-heldenblatt'); const b = page.locator('#overlay [data-sp]'); while (await b.count()) { await b.first().click(); await page.waitForTimeout(60); } await page.click('#bClose'); await page.waitForTimeout(150); continue; }
-    if (s.floor > floorsSeen) { floorsSeen = s.floor; await page.waitForTimeout(300); await shot('10-ebene' + s.floor); }
+    if (s.floor > floorsSeen) { floorsSeen = s.floor; skipRubble.clear(); await page.waitForTimeout(300); await shot('10-ebene' + s.floor); }
     // Zielraum: unbesuchter oder unbenutzter Raum, zuletzt Treppe
     const cur = s.rooms.find(r => r.i === s.room.i);
     if (s.active) { const m = s.mons[0]; if (m) { await walkTo(m.x, m.y, 4000); } else await page.waitForTimeout(100); if (!shots.kampf) { shots.kampf = 1; await page.waitForTimeout(200); await shot('05-kampf'); } continue; }
@@ -107,7 +106,16 @@ fs.mkdirSync(out, { recursive: true });
     // Etwas benutzen?
     const prop = cur.props.find(p => !p.used && !p.hidden && p.kind !== 'sign' && (p.kind !== 'stairs' || s.rooms.every(r => r.type !== 'fight' && r.type !== 'elite' || r.cleared || !adjacentReachable(r))));
     function adjacentReachable() { return true; }
-    const todo = s.rooms.filter(r => r.i !== cur.i && (!r.visited || (['treasure', 'rest', 'event', 'shrine'].includes(r.type) && !r.used) || (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared)));
+    const blockedSecret = (r) => r.type === 'secret' && r.props.some(p => p.kind === 'rubble' && !p.used);
+    // Geheimer Raum: erst das Geröll wegräumen (vorher ist er nicht erreichbar)
+    const rbRoom = s.rooms.find(r => blockedSecret(r) && !skipRubble.has(r.i));
+    if (rbRoom) {
+      skipRubble.add(rbRoom.i);
+      const spot = await page.evaluate((i) => { const Wd = window.__abstieg.Wd, W = Wd.W, rb = W.rooms[i].props.find(p => p.kind === 'rubble'); for (const [x, y] of rb.tiles) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (W.reach[ny * Wd.MW + nx] && W.tiles[ny][nx] === 1) return { x: (nx + 0.5) * Wd.TS, y: (ny + 0.5) * Wd.TS }; } return null; }, rbRoom.i);
+      if (spot) { await walkTo(spot.x, spot.y, 15000); const s2 = await state(); if (s2 && s2.near === 'rubble') { await page.keyboard.press('KeyE'); await page.waitForTimeout(300); if (!shots.geroell) { shots.geroell = 1; await shot('15-geroell-weg'); } log.push('Geröll weggeräumt, Ebene ' + s2.floor); } }
+      continue;
+    }
+    const todo = s.rooms.filter(r => r.i !== cur.i && !blockedSecret(r) && (!r.visited || (['treasure', 'rest', 'event', 'shrine'].includes(r.type) && !r.used) || (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared)));
     const stairsOk = s.rooms.every(r => !['fight', 'elite', 'boss'].includes(r.type) || r.cleared);
     if (prop && (prop.kind !== 'stairs' || stairsOk || todo.length === 0)) {
       await walkTo(prop.x, prop.y + 30, 5000);

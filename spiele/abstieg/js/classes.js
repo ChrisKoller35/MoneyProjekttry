@@ -15,17 +15,17 @@ A.Classes = (function () {
   // Diener sind Begleiter in W.allies mit minion: true; world.js lässt sie laufen und zuschlagen (allyStep).
   // Höchstens 7 gleichzeitig; ein neuer verdrängt den, der am wenigsten Zeit übrig hat.
   const MAX_MINIONS = 7;
-  const LOOK = { skel: { spd: 0.85, rate: 0.75 }, geist: { spd: 1.2, rate: 0.6 } };
+  const LOOK = { skel: { spd: 0.85, rate: 0.75 }, geist: { spd: 1.2, rate: 0.6 }, ratte: { spd: 1.35, rate: 0.5 } };   // Ratten: Flöte des Rattenfängers (legends.js)
   function minions() { const w = W(); return w ? w.allies.filter(a => a.minion && !a.gone) : []; }
   function summon(h, look, pow, dur, x, y) {
     const w = W(), lk = LOOK[look] || LOOK.skel;
     [x, y] = api.freeSpot(x, y, 11);
-    const list = minions();
-    if (list.length >= MAX_MINIONS) { const old = list.sort((p, q) => p.until - q.until)[0]; old.gone = true; api.fx('appear', { m: old }); }
+    const rat = look === 'ratte', list = minions().filter(m => (m.look === 'ratte') === rat);   // Ratten haben ihre eigene Obergrenze
+    if (list.length >= (rat ? 6 : MAX_MINIONS)) { const old = list.sort((p, q) => p.until - q.until)[0]; old.gone = true; api.fx('appear', { m: old }); }
     const a = { side: 'hero', ally: true, minion: true, look, hp: 1e9, maxHp: 1e9, x, y, r: 11, fx: h.fx < 0 ? -1 : 1, fy: 0, pow, until: w.t + dur, perm: false,
       cd: 0.3 + Math.random() * 0.3, swing: 0, alive: true, crit: 0, spawn: 0.4, spd: lk.spd, rate: lk.rate, col: '#e0a4ff' };
     w.allies.push(a);
-    api.fx('raise', { m: a, color: look === 'geist' ? '#e0a4ff' : '#b55088' });
+    api.fx('raise', { m: a, color: look === 'geist' ? '#e0a4ff' : rat ? '#c28569' : '#b55088' });
     return a;
   }
   // Besiegte Gegner stehen manchmal (20 %) als Geist auf, nach einem Seelenpfeil immer
@@ -179,5 +179,5 @@ A.Classes = (function () {
     return mul === 1 && !force ? null : { mul, force };
   }
 
-  return { bind, MAX_MINIONS, minions, skill, attack, lobStep, mark, pre, onKill, onPotion, atkMul, moveMul };
+  return { bind, MAX_MINIONS, minions, summon, skill, attack, lobStep, mark, pre, onKill, onPotion, atkMul, moveMul };
 })();

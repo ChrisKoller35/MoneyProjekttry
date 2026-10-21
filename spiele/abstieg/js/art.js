@@ -1024,7 +1024,325 @@ A.Art = (function () {
     '.544445.........',
     '..5555..........',
   ];
+
+  // Legenden (A.LEGENDS in data.js): eigene Symbole
+  I.pudding = [
+    '.....Y..Y..Y....',
+    '.....YYYYYYY....',
+    '.....yRyByRy....',
+    '.....yyyyyyy....',
+    '....yyyyyyyyy...',
+    '..yyYYYYYYYYYyy.',
+    '.yYYY6YYYYY6YYy.',
+    '.yYYY0YYYYY0YYy.',
+    'yYYYYYYYYYYYYYYy',
+    'yYYYYY00000YYYYy',
+    'yYYYYYYYYYYYYYYy',
+    '.yyYYYYYYYYYYyy.',
+    '...yyyyyyyyyy...',
+  ];
+  I.strick = [
+    '....l......l....',
+    '...GGGg..gGGG...',
+    '..GGlGGggGGlGG..',
+    '.lGGGGGs.GGGGGl.',
+    '.GGlGGGs.GGlGGG.',
+    'lGG.GlGs.GlG.GGl',
+    'GGl.GGGs.GGG.lGG',
+    'gG..GlGs.GlG..Gg',
+    '.l..GGGs.GGG..l.',
+    '....GlGs.GlG....',
+    '....GGGs.GGG....',
+    '....ggg..ggg....',
+  ];
+  I.maske = [
+    '......yyyy......',
+    '....yyYYYYyy....',
+    '...yYYYYYYYYy...',
+    '..BbyYYYYYYybB..',
+    '..BYy00YY00yYB..',
+    '..bBYYYYYYYYBb..',
+    '..BYYYYyyYYYYB..',
+    '..bBYYYYYYYYBb..',
+    '..BYYyYYYYyYYB..',
+    '..bB.YyyyyY.Bb..',
+    '..BY..YYYY..YB..',
+    '..bB...yy...Bb..',
+  ];
+  I.mantel = [
+    '.....vvvvvv.....',
+    '....vV6..6Vv....',
+    '...vVV6..6VVv...',
+    '..vVVV6vv6VVVv..',
+    '.vVvVVVvvVVVvVv.',
+    'vV.vVVVVVVVVv.Vv',
+    'V..vVVVVVVVVv..V',
+    'V..vVVVVVVVVv..V',
+    '.V.vVVVVVVVVv.V.',
+    '...vVVcVVcVVv...',
+    '...vVVVVVVVVv...',
+    '...vvvvvvvvvv...',
+  ];
+  I.amboss = [
+    '.23333333333332.',
+    '2444444444444443',
+    '.24445444444432.',
+    '....24444443....',
+    '.....244443.....',
+    '.....244443.....',
+    '....23444432....',
+    '...2333333332...',
+    '...2222222222...',
+  ];
+  I.auge = [
+    '.....vvvv.......',
+    '....vV66Vv......',
+    '...vV6600Vv.....',
+    '...vV6600Vv.....',
+    '....vV66Vv......',
+    '.....vvvv.......',
+    '......NN........',
+    '......Nm........',
+    '.....Nm.........',
+    '.....Nm.........',
+    '....Nm..........',
+    '....Nm..........',
+    '...Nm...........',
+    '...N............',
+  ];
+  I.pilz = [
+    '.....RRRRRR.....',
+    '...RR6RRRR6RR...',
+    '..RRRRRR66RRRR..',
+    '.RR66RRRRRRR6RR.',
+    '.RR66RRRR6RRRRR.',
+    'RRRRRRRRRRRRRRRR',
+    'rrrrrrrrrrrrrrrr',
+    '....ssssssss....',
+    '....sseessss....',
+  ];
+  I.scherbe = [
+    '......6.........',
+    '.....656........',
+    '.....6c56.......',
+    '....6cc5c6......',
+    '....6c6c5c6.....',
+    '...6cc6cc5c6....',
+    '...6ccc6c5cc6...',
+    '..6cccc6cc5cc6..',
+    '..BcccccccccB...',
+    '...BBcccccBB....',
+    '.....BBBBB......',
+  ];
+  I.gebiss = [
+    '..wwwwwwwwwwww..',
+    '.wRRRRRRRRRRRRw.',
+    '.R666666666666R.',
+    '.R66666666666 6R.'.replace(' ', ''),
+    '..6..........6..',
+    '................',
+    '.R555555555555R.',
+    '.wRRRRRRRRRRRRw.',
+    '..wwwwwwwwwwww..',
+  ];
+  I.blitzab = [
+    '.......Y........',
+    '......YY........',
+    '.......YY.......',
+    '........5.......',
+    '........5.......',
+    '.......454......',
+    '.....3444443....',
+    '....344444443...',
+    '...34445444443..',
+    '...34444444443..',
+    '..2222222222222.',
+    '..2333333333332.',
+  ];
+  I.schuerze = [
+    '....N......N....',
+    '.....N....N.....',
+    '......6666......',
+    '......6ff6......',
+    '.NNN66666666NNN.',
+    '....66666666....',
+    '....666ff666....',
+    '....66fyyf66....',
+    '....66fyYf66....',
+    '....666ff666....',
+    '....66666666....',
+    '.....666666.....',
+  ];
+  I.kugel = [
+    '.....cccccc.....',
+    '....c6BBBBBc....',
+    '...cB6BB6BBBc...',
+    '...cBBB6BBB6c...',
+    '...cB6BBBGBBc...',
+    '...cBBBGGG6Bc...',
+    '....cBGGGGGc....',
+    '.....cccccc.....',
+    '....NNNNNNNN....',
+    '...NmmmmmmmmN...',
+    '...NNNNNNNNNN...',
+  ];
+  I.ente = [
+    '.....YYY........',
+    '....YYYYY.......',
+    '....YY0YYoo.....',
+    '....YYYYYoO.....',
+    '.....YYYY.......',
+    '..Y.YYYYYYY.....',
+    '..YYYYYYYYYY....',
+    '..YYYYYYYYYY....',
+    '...yYYYYYYy.....',
+    '....yyyyyy......',
+  ];
+  I.teppich = [
+    '.y.y.y.y.y.y.y..',
+    '.rRRRRRRRRRRRRr.',
+    '.RyYyRRRRRRyYyR.',
+    '.RYRYRryyrRYRYR.',
+    '.RyYyRRRRRRyYyR.',
+    '.rRRRRRRRRRRRRr.',
+    '.y.y.y.y.y.y.y..',
+  ];
+  I.floete = [
+    '.............NN.',
+    '............NmN.',
+    '...........NmN..',
+    '..........N0N...',
+    '.........NmN....',
+    '........N0N.....',
+    '.......NmN......',
+    '......N0N.......',
+    '.....NmN........',
+    '....NmN.........',
+    '...N5N..........',
+    '..N5N...........',
+    '.N5N............',
+    '.NN.............',
+  ];
+  I.wuerfel = [
+    '...4444444444.Y.',
+    '..466666666664..',
+    '..460066660064..',
+    '..460066660064..',
+    '..466666666664..',
+    '..466660066664..',
+    '..466660066664..',
+    '..466666666664..',
+    '..460066660064..',
+    '..460066660064..',
+    '..466666666664..',
+    '...4444444444...',
+  ];
+  I.prahl = [
+    '.............YY.',
+    '............YYY.',
+    '...........YyY..',
+    '..........YyY...',
+    '.........YyY....',
+    '........YyY.....',
+    '.......YyY......',
+    '..RR..YyY.......',
+    '..RRRYyY........',
+    '...RyyY.........',
+    '...ryRRR........',
+    '..NNr.RR........',
+    '.NN.............',
+    'NN..............',
+  ];
+  I.pfanne = [
+    '...22222222.....',
+    '..2333333332....',
+    '.233444444332...',
+    '.234445444432...',
+    '.234444444432NNN',
+    '.234444444432NmN',
+    '.233444444332NNN',
+    '..2333333332....',
+    '...22222222.....',
+  ];
+  I.muenz = [
+    '...........yy...',
+    '..........yYYy..',
+    '..........yYYy..',
+    '....N.N....yy...',
+    '...NNNNN........',
+    '..NmmmmmN.......',
+    '.Nm6.6.6mN......',
+    '.NmMMMMMmN......',
+    '.Nm6.6.6mN......',
+    '.NmmmmmmmN......',
+    '..NNNNNNN.......',
+  ];
+  I.voodoo = [
+    '.....NNNNN......',
+    '....NMMMMMN..x..',
+    '...NM0MMM0MN.5..',
+    '...NMMMMMMMN5...',
+    '...NMnMnMnMN....',
+    '....NMMMMMN.....',
+    '...NNMMMMMNN....',
+    '..NMMNMMMNMMN...',
+    '..NM.NMMMN.MN...',
+    '.....NMMMN......',
+    '.....NM.MN......',
+    '.....NN.NN......',
+  ];
   for (const k of Object.keys(I)) R['i_' + k] = [I[k]];
+
+  // ---------- Legenden in der Welt ----------
+  // Quietsche-Ente am Boden, Pudding (goldener Schleim, die Krone zeichnet legends.js dazu), Geröll vor dem geheimen Raum, fliegender Teppich
+  R.duck = [[
+    '....YYY.....',
+    '...YYYYY....',
+    '...YY0YYoo..',
+    '...YYYYYoO..',
+    '....YYYY....',
+    'Y..YYYYYY...',
+    'YYYYYYYYYY..',
+    'YYYYYYYYYY..',
+    '.yYYYYYYy...',
+    '..yyyyyy....',
+  ]];
+  R.pudding = [[
+    '....yyyyyy....',
+    '..yyYYYYYYyy..',
+    '.yYY6YYYY6YYy.',
+    '.yYY0YYYY0YYy.',
+    'yYYYYYYYYYYYYy',
+    'yYYYY0000YYYYy',
+    'yYYYYYYYYYYYYy',
+    '.yyYYYYYYYYyy.',
+    '...yyyyyyyy...',
+  ]];
+  R.geroell = [[
+    '.............5552...............',
+    '............554443..............',
+    '........555244433335552.........',
+    '......5555444233355554442.......',
+    '.....555444433225554444332......',
+    '..5552444433555522444333325552..',
+    '.554442433555554444233332554442.',
+    '.545555225555444444323555522333.',
+    '.555544444244444433355554444422.',
+    '5554444433324443333555444443332.',
+    '5444443333324333333544444333332.',
+    '4444333332555554444442433333222.',
+    '2433333255544444433333323322222.',
+    '.23332224444433333332222222222..',
+    '.3.222222.233333222222222222..3.',
+    '............3.......3...........',
+  ]];
+  R.carpet = [[
+    'y.y.y.y.y.y.y.y.y.y',
+    'rRRRRRRRRRRRRRRRRRr',
+    'RyYyRRRryyrRRRRyYyR',
+    'rRRRRRRRRRRRRRRRRRr',
+    '.y.y.y.y.y.y.y.y.y.',
+  ]];
 
   // ---------- Oberflächen-Symbole ----------
   R.u_heart = [[
@@ -2385,7 +2703,8 @@ A.Art = (function () {
     return `<img class="px ${cls || ''}" src="${url(name, pal, key)}" width="${s.w * k}" height="${s.h * k}" alt="">`;
   }
   const ICON_ALIAS = { kessel: 'teekessel' };
-  function itemIcon(base) { let b = String(base || '').replace(/^u_/, ''); b = ICON_ALIAS[b] || b; return 'i_' + (R['i_' + b] ? b : 'schwert'); }
+  // Symbol eines Items: Legenden haben ein eigenes (it.ico), sonst das der Grundform
+  function itemIcon(base) { if (base && typeof base === 'object') { if (base.ico && R['i_' + base.ico]) return 'i_' + base.ico; base = base.base; } let b = String(base || '').replace(/^u_/, ''); b = ICON_ALIAS[b] || b; return 'i_' + (R['i_' + b] ? b : 'schwert'); }
   function heroUrl(race, cls, scale) {
     const s = heroSprite(race, cls, 0); const k = 'hero|' + race + cls + '|' + (scale || 1);
     if (!urlCache[k]) urlCache[k] = (scale ? scaled(s.img, scale) : s.img).toDataURL();

@@ -116,6 +116,17 @@
   .item .pw { display: flex; align-items: flex-start; gap: 6px; margin-top: 5px; padding: 4px 7px 5px 5px; background: rgba(199,125,255,0.09); box-shadow: inset 2px 0 0 var(--spark); color: #e6c8ff; font-size: 13.5px; line-height: 1.3; }
   .item .pw > img, .eld > img { flex: none; margin-top: 1px; }
   .item .pw b, .pwbox .pw b { color: #fff; }
+  /* Legenden: goldener Rahmen, Wirkung als eigener Block */
+  .item.leg { box-shadow: inset 3px 0 0 var(--rc), inset 0 0 0 2px #feae34; }
+  .item.leg .ic { animation: legglow 2.4s ease-in-out infinite; }
+  @keyframes legglow { 0%, 100% { box-shadow: 0 0 0 0 rgba(254,231,97,0); } 50% { box-shadow: 0 0 10px 2px rgba(254,231,97,0.45); } }
+  .item .lg { display: flex; align-items: flex-start; gap: 6px; margin-top: 5px; padding: 4px 7px 5px 5px; background: rgba(254,174,52,0.1); box-shadow: inset 2px 0 0 var(--gold); color: #ffe2a8; font-size: 13.5px; line-height: 1.3; }
+  .item .lg > img { flex: none; margin-top: 1px; }
+  .item .lg b { color: #fff; }
+  .msg.legnew { display: flex; gap: 8px; align-items: flex-start; text-align: left; border-color: #feae34; }
+  .msg.legnew > img { flex: none; margin-top: 2px; }
+  .bigicon.legicon { animation: legpulse 1.6s ease-in-out infinite; }
+  @keyframes legpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
   .eld { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 6px; padding: 5px 8px 6px 7px; background: rgba(24,20,37,0.55); box-shadow: inset 3px 0 0 var(--steel); color: var(--pale); font-size: 13.5px; font-weight: 400; line-height: 1.3; text-transform: none; letter-spacing: 0; }
   .eld.up, .eld.on { box-shadow: inset 3px 0 0 var(--green); background: rgba(99,199,77,0.08); }
   .eld.down { box-shadow: inset 3px 0 0 var(--red); background: rgba(228,59,68,0.09); }
@@ -179,11 +190,6 @@
   #dungeon.on { display: block; }
   #fade { position: fixed; inset: 0; background: #0e0c16; opacity: 0; pointer-events: none; z-index: 50; }
   #arena { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; z-index: 1; }
-  #arena3d { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
-  #dungeon.d3 #arena3d { display: block; }
-  #dungeon.d3 #arena { image-rendering: auto; }
-  .iconbtn.look { width: auto; padding: 0 10px; font-weight: 700; font-size: 15px; color: var(--mist); letter-spacing: 0.5px; }
-  .iconbtn.look b { color: var(--gold2); margin-left: 5px; }
   #controls { position: absolute; right: calc(12px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 4; }
   #btnGrid { display: grid; grid-template-columns: repeat(4, 58px); grid-template-rows: 58px 88px; gap: 9px; justify-items: center; align-items: end; }
   .cbtn { pointer-events: auto; position: relative; width: 58px; height: 58px; border: 3px solid var(--ink); border-radius: 50%; color: #fff; cursor: pointer; display: grid; place-items: center; padding: 0; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none;
@@ -290,6 +296,7 @@
   .page:not(.have) b { color: var(--mist); }
   .page .cnt { color: var(--steel); font-size: 12.5px; margin-left: 6px; }
   .page .mini { font-size: 12.5px; margin-top: 2px; }
+  .fgrid.one { grid-template-columns: 1fr; }
   @media (max-width: 380px) { .fgrid { grid-template-columns: 1fr; } }
   #bCamp .dot { width: 9px; height: 9px; flex: none; background: var(--spark); box-shadow: 0 0 0 2px var(--ink); animation: ready 1.4s infinite; }
   .mini.extra { margin-top: 4px; color: var(--pale); }
@@ -313,7 +320,7 @@
   </div>
   <div id="screen"></div>
   <div id="dungeon">
-    <div id="fade"></div><canvas id="arena3d"></canvas>
+    <div id="fade"></div>
     <canvas id="arena"></canvas>
     <div id="joyHint"></div>
     <div id="controls"></div>
@@ -332,9 +339,9 @@
 <script src="js/levels.js"></script>
 <script src="js/bosses.js"></script>
 <script src="js/elites.js"></script>
+<script src="js/legends.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>
-<script src="js/draw3.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/input.js"></script>
 <script src="js/ui.js"></script>

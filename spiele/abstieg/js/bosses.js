@@ -98,7 +98,7 @@ A.Bosses = (function () {
         if (s.t2 <= 0) {
           s.t2 = s.p2 ? 10 : 13;
           const safes = [];
-          for (let i = 0; i < 30 && safes.length < (s.p2 ? 2 : 3); i++) { const p = roomSpot(20); if (p && safes.every(o => Math.hypot(o.x - p.x, o.y - p.y) > 170)) safes.push({ x: p.x, y: p.y, r: 66 }); }
+          for (let i = 0; i < 30 && safes.length < (s.p2 ? 2 : 3) + (w.big ? 1 : 0); i++) { const p = roomSpot(20); if (p && safes.every(o => Math.hypot(o.x - p.x, o.y - p.y) > 170)) safes.push({ x: p.x, y: p.y, r: 66 }); }
           if (!safes.length) return false;
           add({ kind: 'flood', from: m, t0: w.t, at: w.t + 3.2, safes, dmg: m.atk * 2.2, r: w.active });
           if (A.FX) A.FX.banner(L('Die Flut kommt!', 'The tide rises!'), L('Schnell in einen hellen Kreis!', 'Get into a bright circle!'), '#2ce8f5', 2.2);
@@ -152,7 +152,7 @@ A.Bosses = (function () {
         }
       } else if (b.kind === 'pool') {
         if (w.t > b.until) { b.done = true; continue; }
-        if (h.alive && inEll(b, h, 0) && w.t >= b.tick) {
+        if (h.alive && !h.fly && inEll(b, h, 0) && w.t >= b.tick) {   // fliegender Teppich: schwebt drüber
           b.tick = w.t + 0.5;
           if (b.pk === 'lava') api.addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.04)), 1.2);
           else { h.slowUntil = w.t + 0.6; h.slowPow = b.pk === 'sand' ? 0.45 : 0.55; }
@@ -242,20 +242,5 @@ A.Bosses = (function () {
     }
   }
 
-  // 3D-Look: Warnkreise, Pfützen und sichere Kreise als flache Ringe, Strahlen als Teilchen-Linie (src3d/draw3.js, jedes Bild)
-  const POOL3 = { lava: '#f77622', slime: '#3fbf5a', sand: '#e4a672', ink: '#68386c' };
-  function rings(w, ring, U) {
-    const F = A.FX;
-    for (const o of w.bfx || []) {
-      if (o.kind === 'tele') { const p = clamp((w.t - o.t0) / (o.at - o.t0), 0, 1); ring(o.x * U, o.y * U, o.r * U, o.col, 0.75, 0.05, EY); ring(o.x * U, o.y * U, o.r * U * p, o.col, 0.4, 0.05, EY); }
-      else if (o.kind === 'pool') ring(o.x * U, o.y * U, o.r * U, POOL3[o.pk] || POOL3.slime, 0.55 * clamp((o.until - w.t) / 0.8, 0, 1) * clamp((w.t - o.t0) / 0.3, 0, 1), 0.04, EY);
-      else if (o.kind === 'flood' && !o.fired) for (const sf of o.safes) ring(sf.x * U, sf.y * U, sf.r * U, '#ffffff', 0.7 + Math.sin(w.t * 8) * 0.3, 0.06, EY);
-      else if (o.kind === 'beam' && F && o.from.alive) {
-        const warm = w.t < o.warm;
-        for (let i = 0; i < o.n; i++) { const a = o.a + i * Math.PI; for (let k = 1; k <= 14; k++) { const q = k / 14; if ((warm && k % 2) || Math.random() < 0.45) continue; F.part({ add: true, x: o.from.x + Math.cos(a) * o.len * q, y: o.from.y + Math.sin(a) * o.len * q, z: 16, life: 0.1, color: warm ? '#ff0044' : k % 3 ? '#b55088' : '#ffffff', size: warm ? 3 : 4, drag: 0 }); } }
-      }
-    }
-  }
-
-  return { bind, step, tick, drawGround, drawTop, lights, rings };
+  return { bind, step, tick, drawGround, drawTop, lights };
 })();

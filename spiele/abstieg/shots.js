@@ -1,10 +1,9 @@
 // Bildschirmfotos für Vorher/Nachher-Vergleiche: Titel, Heldenwahl, Kampf, Beute, Heldenblatt – am Handy und am PC.
-// Aufruf: node shots.js <html-datei> <bilder-ordner> [handy|pc|beide] [retro|3d]
+// Aufruf: node shots.js <html-datei> <bilder-ordner> [handy|pc|beide]
 const path = require('path'), fs = require('fs');
 const file = 'file://' + path.resolve(process.argv[2] || path.join(__dirname, 'dist', 'index.html'));
 const out = process.argv[3] || '.';
 const which = process.argv[4] || 'beide';
-const look = process.argv[5] || 'retro';
 const pw = require('/opt/node-tools/node_modules/playwright');
 const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 fs.mkdirSync(out, { recursive: true });
@@ -16,7 +15,7 @@ async function session(browser, tag, vp) {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('dialog', d => d.accept());
   const shot = (n) => page.screenshot({ path: `${out}/${tag}-${n}.png` });
-  await page.goto(file + '?look=' + look); await page.waitForTimeout(900);
+  await page.goto(file); await page.waitForTimeout(900);
   await shot('1-titel');
   await page.click('#bNew'); await page.waitForTimeout(500);
   await shot('2-held');

@@ -119,6 +119,10 @@ A.Sound = (function () {
     stomp() { if (!on()) return; tone(90, 32, 0.35, 'sine', 0.24); noise(0.3, 0.22, 'lowpass', 700, 90); tone(140, 60, 0.12, 'square', 0.04, 0.02); },
     roar() { if (!on()) return; tone(170, 85, 0.55, 'sawtooth', 0.07); tone(120, 70, 0.6, 'square', 0.03, 0.03); noise(0.5, 0.1, 'bandpass', 500, 220, 0, 2); },
     drip() { if (!on()) return; const now = performance.now(); if (now - (S._dr || 0) < 400) return; S._dr = now; const f = r(1500, 2100); tone(f, f * 0.55, 0.07, 'sine', 0.018); tone(f * 1.4, f * 0.8, 0.05, 'sine', 0.008, 0.035); },
+    // Legenden: Quietsche-Ente, Klong (Bratpfanne, Amboss, Geröll), Happs (Pudding, Tinte)
+    squeak() { if (!on()) return; const now = performance.now(); if (now - (S._sq || 0) < 90) return; S._sq = now; const f = r(1100, 1400); tone(f, f * 1.6, 0.07, 'square', 0.03); tone(f * 1.5, f * 0.9, 0.09, 'triangle', 0.03, 0.06); },
+    klong(big) { if (!on()) return; const f = big ? r(380, 420) : r(620, 700); tone(f, f * 0.97, big ? 0.7 : 0.35, 'triangle', big ? 0.09 : 0.06); tone(f * 2.76, f * 2.7, big ? 0.5 : 0.25, 'sine', 0.03); noise(0.05, big ? 0.22 : 0.12, 'highpass', 2000, 5000); if (big) tone(90, 40, 0.3, 'sine', 0.18); },
+    gulp(vol) { if (!on()) return; const v = vol || 1; tone(r(260, 300), r(90, 110), 0.16, 'sine', 0.12 * v); tone(r(180, 210), r(400, 450), 0.1, 'sine', 0.06 * v, 0.12); noise(0.12, 0.05 * v, 'lowpass', 600, 200, 0.02); },
     // Musik starten (theme = Farbwelt) oder mit null anhalten; läuft nur, wenn der Ton an ist
     music(theme) {
       if (mus && mus.timer) { clearInterval(mus.timer); }

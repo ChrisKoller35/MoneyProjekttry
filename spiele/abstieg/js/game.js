@@ -7,11 +7,11 @@ A.Game = (function () {
   const META = 'abstieg.meta.v1';
 
   // ---------- Dauerhaft (Lager) ----------
-  // look: 'retro' (Pixel) oder '3d'; camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
+  // camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
   // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, look: 'retro', camp: {}, troph: {}, efBook: {}, efSeen: [] });
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {} });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -43,6 +43,7 @@ A.Game = (function () {
     for (const b of A.CAMP) for (let i = 0; i < campLevel(b.id); i++) add(b.lv[i]);
     for (const id in meta.troph) if (A.BANNERS[id]) add(A.BANNERS[id], Math.min(2, meta.troph[id]));
     eff.eliteDmg = bookPages() * A.ELITE_BOOK_DMG;   // jede Seite im Elite-Buch: mehr Schaden gegen Elite-Gegner
+    eff.dmgMul += legCount() * A.LEGEND_DMG;          // jede Legende in der Sammlung: etwas mehr Schaden
     return (fxCache = eff);
   }
   function raceUnlocked(r) { return r.unlock === 0 || metaEffects().races.includes(r.id); }
@@ -83,6 +84,18 @@ A.Game = (function () {
     if (news.length) { const n = news.length * A.ELITE_BOOK_SPARKS; meta.sparks += n; run.bookSparks = (run.bookSparks || 0) + n; }
     saveMeta();
     return news;
+  }
+  // ---------- Legenden-Sammlung (A.LEGENDS) ----------
+  function legCount() { return Object.keys(A.LEGENDS).filter(id => (meta.legFound[id] || 0) > 0).length; }
+  // Legende aufgehoben: zählt in der Sammlung, die erste ihrer Art bringt sofort Seelenfunken
+  function legendFound(it) {
+    if (!it || !it.legend || it.legSeen || !A.LEGENDS[it.legend]) return null;
+    it.legSeen = true;
+    const first = !meta.legFound[it.legend];
+    meta.legFound[it.legend] = (meta.legFound[it.legend] || 0) + 1;
+    if (first) { meta.sparks += A.LEGEND_SPARKS; run.legSparks = (run.legSparks || 0) + A.LEGEND_SPARKS; }
+    saveMeta(); save();
+    return { first, sparks: first ? A.LEGEND_SPARKS : 0, n: legCount() };
   }
   // Neue Eigenschaften (noch nie gesehen) merken und zurückgeben, damit die Oberfläche sie vorstellen kann
   function eliteSeen(list) {
@@ -146,6 +159,7 @@ A.Game = (function () {
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
+    A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
     return d;
   }
 
@@ -240,6 +254,42 @@ A.Game = (function () {
     for (const k of Object.keys(T.stats)) it.stats[k] = (it.stats[k] || 0) + Math.round(T.stats[k] * (['hp', 'def'].includes(k) ? 1 + 0.15 * (run.floor - 1) : 1));
     return it;
   }
+  // Legende: höchstens einmal pro Durchlauf, Werte wachsen mit der Ebene wie bei den Trophäen; Waffen passen immer zur Klasse
+  function makeLegend(id) {
+    const L = A.LEGENDS[id]; if (!L || !run) return null;
+    run.seenLegends = run.seenLegends || []; if (run.seenLegends.includes(id)) return null;
+    run.seenLegends.push(id);
+    const bid = L.base === 'weapon' ? A.CLASSES.find(c => c.id === run.cls).weapon : L.base;
+    const base = A.BASES.find(b => b.id === bid), scale = (1 + 0.18 * (run.floor - 1)) * A.RARITY.legendary.mult;
+    const it = { uid: 'i' + (++itemSeq) + '_' + Math.floor(run.rng.next() * 1e6), base: base.id, slot: base.slot, rarity: 'legendary', floor: run.floor, stats: {}, affixes: [], name: L.name, flavor: L.flavor, legend: id, ico: L.ico, el: L.el };
+    for (const k of STAT_KEYS) if (base[k]) it.stats[k] = Math.round(base[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
+    for (const k of Object.keys(L.stats)) it.stats[k] = (it.stats[k] || 0) + Math.round(L.stats[k] * (['hp', 'def'].includes(k) ? 1 + 0.15 * (run.floor - 1) : 1));
+    return it;
+  }
+  const legSeen = (id) => (run.seenLegends || []).includes(id);
+  // Weltenboss: sein Stück fällt oft beim ersten Mal, später seltener (in den Welten II etwas öfter)
+  function bossLegend(bossId) {
+    const id = Object.keys(A.LEGENDS).find(k => A.LEGENDS[k].src === 'boss' && A.LEGENDS[k].boss === bossId);
+    if (!id || legSeen(id)) return null;
+    return run.rng.chance((meta.legFound[id] ? 0.25 : 0.5) + (A.worldRound(run.floor) >= 1 ? 0.15 : 0)) ? makeLegend(id) : null;
+  }
+  // Elite: eine ihrer Eigenschaften gehört zu einer Legende; je mehr Eigenschaften, desto eher (neue Stücke öfter)
+  function eliteLegend(e) {
+    const nt = e.traits ? e.traits.length : 0;
+    const ids = Object.keys(A.LEGENDS).filter(k => A.LEGENDS[k].src === 'elite' && (e.traits || []).includes(A.LEGENDS[k].trait) && !legSeen(k));
+    if (!ids.length) return null;
+    const id = run.rng.pick(ids);
+    return run.rng.chance((0.04 + 0.01 * nt) * (meta.legFound[id] ? 1 : 1.5)) ? makeLegend(id) : null;
+  }
+  // Truhe im geheimen Raum: viel Gold, ein gutes Item und oft die Legende dieser Welt
+  function secretChest() {
+    const id = Object.keys(A.LEGENDS).find(k => A.LEGENDS[k].src === 'secret' && A.LEGENDS[k].world === A.worldIndex(run.floor) % A.WORLDS.length);
+    let lg = null;
+    if (id && !legSeen(id) && run.rng.chance(meta.legFound[id] ? 0.4 : 0.7)) lg = makeLegend(id);
+    const items = [lg || randomItem('epic'), randomItem(run.rng.chance(0.5) ? 'epic' : 'rare')];
+    const gold = Math.round(run.rng.int(25, 45) * (1 + 0.3 * (run.floor - 1))); run.gold += gold;
+    save(); return { items, gold, legend: !!lg };
+  }
   function itemName(it) {
     if (it.name) return A.t(it.name);
     const base = A.BASES.find(b => b.id === it.base);
@@ -277,12 +327,12 @@ A.Game = (function () {
   }
   function sellValue(it) { return Math.round((8 + it.floor * 6) * A.RARITY[it.rarity].mult); }
   function sell(it) { run.gold += sellValue(it); run.bag = run.bag.filter(x => x.uid !== it.uid); save(); }
-  function addToBag(it) { run.bag.push(it); while (run.bag.length > 8) { const worst = run.bag.slice().sort((a, b) => A.RARITY[a.rarity].mult - A.RARITY[b.rarity].mult)[0]; run.gold += sellValue(worst); run.bag = run.bag.filter(x => x.uid !== worst.uid); } save(); }
+  function addToBag(it) { run.bag.push(it); while (run.bag.length > 8) { const keep = run.bag.filter(x => !x.legend), worst = (keep.length ? keep : run.bag).slice().sort((a, b) => A.RARITY[a.rarity].mult - A.RARITY[b.rarity].mult)[0]; run.gold += sellValue(worst); run.bag = run.bag.filter(x => x.uid !== worst.uid); } save(); }   // Legenden verkauft die volle Tasche nicht
 
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
-    run.lvVer = 2;   // Ebenen-Bau mit Schmiede (ältere Spielstände bauen ihre laufende Ebene wie bisher)
+    run.lvVer = 4;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3) und grossen Räumen (4); ältere Spielstände bauen ihre laufende Ebene wie bisher
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
@@ -314,9 +364,10 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++;
     const items = []; let esparks = 0, book = null;
-    if (e.boss) { const tr = makeTrophy(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); bossBanner(e.mid); }
+    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); bossBanner(e.mid); }
     else if (e.elite) {
       items.push(randomItem(rollRarity(nt)));
+      const lg = eliteLegend(e); if (lg) items.push(lg);
       if (nt >= 3 && run.rng.chance(0.25 + (nt - 3) * 0.25)) items.push(randomItem(rollRarity(1)));   // tiefe Elite: oft ein zweites Item
       esparks = nt; run.eliteSparks = (run.eliteSparks || 0) + nt; run.eliteKills = (run.eliteKills || 0) + 1;
       book = bookKill(e);
@@ -395,10 +446,10 @@ A.Game = (function () {
     for (const it of res.items) addToBag(it);
     save(); return res;
   }
-  // ---------- Schmiede: Werte neu würfeln, Kraft neu würfeln, Element wählen (Einzelstücke und Trophäen bleiben, wie sie sind) ----------
+  // ---------- Schmiede: Werte neu würfeln, Kraft neu würfeln, Element wählen (Einzelstücke, Trophäen und Legenden bleiben, wie sie sind) ----------
   function forgeCost(it, kind) { const v = sellValue(it); return Math.round(kind === 'stats' ? v + 10 : v * 1.5 + 15); }
   function canForge(it, kind) {
-    if (!it || it.unique || it.trophy) return false;
+    if (!it || it.unique || it.trophy || it.legend) return false;
     if (kind === 'stats') return A.RARITY[it.rarity].affixes > 0;
     if (kind === 'power') return !!POWER_CHANCE[it.rarity];
     return true;
@@ -425,11 +476,11 @@ A.Game = (function () {
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
-  // die Funken für neue Wimpel und neue Seiten im Elite-Buch sind schon gutgeschrieben und werden nur mit angezeigt
+  // die Funken für neue Wimpel, neue Seiten im Elite-Buch und neue Legenden sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0;
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0;
     const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
-    run.sparksEarned = sparks + banners + book; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book;
+    run.sparksEarned = sparks + banners + book + legend; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     saveMeta(); save();
   }
@@ -439,14 +490,14 @@ A.Game = (function () {
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
   function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; return run; } catch (e) { return null; } }
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
-  function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { look: meta.look, campVer: 1 }); saveMeta(); }
+  function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
 
   loadMeta();
   return {
-    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen,
+    get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
+    makeItem, makeLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, treasure, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
   };
 })();
