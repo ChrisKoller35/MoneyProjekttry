@@ -431,6 +431,51 @@ A.LEGENDS = {
     text: { de: 'Was du einem Gegner antust, spüren alle anderen im Raum ein bisschen mit (20 %).', en: 'Whatever you do to one enemy, all others in the room feel a little of it too (20%).' },
     flavor: { de: 'Sieht aus wie jemand, den du kennst. Gut so.', en: 'Looks like someone you know. Good.' } },
 };
+// Zehn verrückte Stücke (Regeln in js/wild.js): fallen überall (Truhen, Elite-Gegner, Kämpfe, Weltenbosse), ab Welt 2 viel öfter
+Object.assign(A.LEGENDS, {
+  bienen: { src: 'wild', base: 'topfhelm', ico: 'bienen', el: 'gift', stats: { hp: 15, dodge: 3, def: 2 },
+    name: { de: 'Bienenkorb-Helm', en: 'Beehive Helmet' },
+    text: { de: 'Ein Bienenvolk wohnt in deinem Helm: 6 Bienen stechen Gegner (Gift). Wirst du getroffen, werden sie sauer: doppelt so viele, 5 Sekunden lang.', en: 'A bee colony lives in your helmet: 6 bees sting enemies (poison). When you are hit they get angry: twice as many, for 5 seconds.' },
+    flavor: { de: 'Summt. Immer. Auch nachts.', en: 'Buzzes. Always. Even at night.' } },
+  banane: { src: 'wild', base: 'stiefel', ico: 'banane', el: 'blitz', stats: { spd: 2, luck: 2 },
+    name: { de: 'Affenstiefel', en: 'Monkey Boots' },
+    text: { de: 'Läufst du im Kampf, fallen Bananenschalen aus den Stiefeln. Wer drauftritt, rutscht aus, überschlägt sich und bleibt kurz liegen.', en: 'When you run in battle, banana peels drop from your boots. Whoever steps on one slips, flips over and lies there for a moment.' },
+    flavor: { de: 'Der älteste Witz der Welt. Funktioniert immer noch.', en: 'The oldest joke in the world. Still works.' } },
+  zwerg: { src: 'wild', base: 'kappe', ico: 'zwerg', el: 'stein', stats: { def: 3, hp: 20 },
+    name: { de: 'Zipfelmütze der Gartenzwerge', en: 'Garden Gnome Hat' },
+    text: { de: 'Im Kampf stellst du alle 6 Sekunden einen Gartenzwerg auf (bis 3). Die Zwerge werfen Steinchen auf die Gegner.', en: 'In battle you set up a garden gnome every 6 seconds (up to 3). The gnomes throw pebbles at enemies.' },
+    flavor: { de: 'Sie lächeln. Immer. Das ist das Unheimliche.', en: 'They smile. Always. That is the creepy part.' } },
+  blasen: { src: 'wild', base: 'teekessel', ico: 'blasen', el: 'eis', stats: { def: 2, magPct: 12, atkPct: 6 },
+    name: { de: 'Blubber-Teekessel', en: 'Bubbling Kettle' },
+    text: { de: 'Der Kessel auf deinem Kopf kocht Seifenblasen. Gegner, die eine berühren, schweben 2.5 Sekunden hilflos darin, dann platzt sie mit Wucht.', en: 'The kettle on your head boils soap bubbles. Enemies that touch one float helplessly inside for 2.5 seconds, then it bursts with force.' },
+    flavor: { de: 'Pfeift beim Kochen. Blubbert beim Kämpfen.', en: 'Whistles when boiling. Bubbles when fighting.' } },
+  kisti: { src: 'wild', base: 'amulett', ico: 'kisti', el: 'schatten', stats: { luck: 2, goldPct: 20 },
+    name: { de: 'Kisti, die hungrige Truhe', en: 'Chesty, the Hungry Chest' },
+    text: { de: 'Eine kleine Truhe mit Zähnen hüpft dir nach und beisst Gegner. Sie frisst herumliegende Münzen (das Gold bekommst du trotzdem) und spuckt alle 20 Münzen ein Item aus.', en: 'A little chest with teeth hops after you and bites enemies. It eats coins lying around (you still get the gold) and spits out an item every 20 coins.' },
+    flavor: { de: 'Füttern erlaubt. Streicheln auf eigene Gefahr.', en: 'Feeding allowed. Petting at your own risk.' } },
+  wolke: { src: 'wild', base: 'ring', ico: 'wolke', el: 'blitz', stats: { crit: 5, magPct: 10 },
+    name: { de: 'Gewitterwolke an der Leine', en: 'Storm Cloud on a Leash' },
+    text: { de: 'Eine kleine Gewitterwolke schwebt über dir und schlägt alle 1.4 Sekunden einen Blitz in den nächsten Gegner. Jeder 5. Blitz springt weiter.', en: 'A little storm cloud floats above you and strikes the nearest enemy with lightning every 1.4 seconds. Every 5th bolt jumps on.' },
+    flavor: { de: 'Hat schlechte Laune. Aber auf deiner Seite.', en: 'In a bad mood. But on your side.' } },
+  pinata: { src: 'wild', base: 'weapon', ico: 'pinata', el: 'feuer', stats: { atkPct: 12, magPct: 12, hp: 10 },
+    name: { de: 'Piñata-Keule', en: 'Piñata Club' },
+    text: { de: 'Besiegte Gegner platzen wie eine Piñata: Konfetti und 3 Bonbons, die dich heilen (je 2 %). Elite-Gegner platzen in 8 Bonbons.', en: 'Defeated enemies burst like a piñata: confetti and 3 candies that heal you (2% each). Elites burst into 8 candies.' },
+    flavor: { de: 'Drinnen war Süsses. Draussen ist Chaos.', en: 'Inside was candy. Outside is chaos.' } },
+  sparschwein: { src: 'wild', base: 'platte', ico: 'sparschwein', el: 'stein', stats: { def: 6, hp: 25, goldPct: 15 },
+    name: { de: 'Sparschwein-Panzer', en: 'Piggy Bank Armor' },
+    text: { de: 'Jede Münze, die du aufhebst, legt eine Münze ins Sparschwein über deinem Kopf. Ein harter Treffer lässt es platzen: die Münzen schiessen rundum (je voller, desto stärker) und fallen als Gold zu Boden.', en: 'Every coin you pick up drops a coin into the piggy bank above your head. A hard hit makes it burst: the coins shoot out all around (the fuller, the stronger) and fall to the ground as gold.' },
+    flavor: { de: 'Oink. Klimper. BUMM.', en: 'Oink. Clink. BOOM.' } },
+  troete: { src: 'wild', base: 'zahn', ico: 'troete', el: 'feuer', stats: { spd: 1, crit: 4, hp: 10 },
+    name: { de: 'Party-Tröte', en: 'Party Horn' },
+    text: { de: 'Alle 7 Sekunden im Kampf trötest du: eine Schallwelle mit Konfetti stösst alle Gegner rundum weg und betäubt sie kurz.', en: 'Every 7 seconds in battle you toot: a sound wave with confetti knocks all enemies around you away and stuns them briefly.' },
+    flavor: { de: 'Die Party ist da, wo du bist. Ob die anderen wollen oder nicht.', en: 'The party is wherever you are. Whether the others like it or not.' } },
+  klatsche: { src: 'wild', base: 'weapon', ico: 'klatsche', el: 'schatten', stats: { atkPct: 15, magPct: 15, crit: 4 },
+    name: { de: 'Fliegenklatsche der Riesen', en: 'Giant\'s Fly Swatter' },
+    text: { de: 'Jeder 4. normale Angriff ist eine riesige Fliegenklatsche: grosser Schaden in einer Linie vor dir. Gegner unter 30 % Leben werden plattgedrückt.', en: 'Every 4th basic attack is a giant fly swatter: big damage in a line in front of you. Enemies below 30% health get flattened.' },
+    flavor: { de: 'Für sehr grosse Fliegen. Und kleine Drachen.', en: 'For very big flies. And small dragons.' } },
+});
+// Chance auf ein verrücktes Stück je Gelegenheit: [Welt 1, ab Welt 2]; noch nie gefundene Stücke 1.5-mal so oft
+A.WILD_CHANCE = { chest: [0.04, 0.12], elite: [0.02, 0.06], room: [0.01, 0.03], boss: [0, 0.25] };
 A.LEGEND_SPARKS = 20;   // Seelenfunken für jede Legende, die zum ersten Mal in die Sammlung kommt
 A.LEGEND_DMG = 0.01;     // jede Legende in der Sammlung: +1 % Schaden, für immer
 
@@ -520,6 +565,55 @@ A.COMBOS = {
     flavor: { de: 'Glas bricht. Du nicht. Noch nicht.', en: 'Glass breaks. You don\'t. Not yet.' } },
 };
 A.COMBO_SPARKS = 15;   // Seelenfunken für jede Kombo, die zum ersten Mal ins Kombo-Buch kommt
+
+// ---------- Begleiter (Regeln in js/pets.js) ----------
+// Tiere sitzen in Käfigen: ab Ebene 2 manchmal in einem Kampfraum, der Käfig taucht auf, wenn der Raum gesäubert ist.
+// Treue wächst mit jedem Sieg, den ein Tier miterlebt, und bleibt für immer (meta.pets). Treue 3 und 5 bringen neue Tricks.
+// Ohne Tierhütte bleibt ein Tier nur für den Durchlauf, in dem du es findest; die Tierhütte im Lager nimmt Tiere von Anfang an mit.
+// pow: Schaden (mal Kraft des Helden), rate: Sekunden zwischen Angriffen, spd: Tempo, range: kämpft aus der Ferne, fly: fliegt
+A.PETS = {
+  flitz: { spr: 'pet_fox', col: '#f77622', pow: 0.3, rate: 0.42, spd: 1.35,
+    name: { de: 'Flitz', en: 'Zippy' }, kind: { de: 'Fuchs', en: 'Fox' },
+    text: { de: 'Schnell wie der Wind. Beisst zu, bevor Gegner gucken können.', en: 'Fast as the wind. Bites before enemies can blink.' },
+    t3: { de: 'Langfinger: Gegner, die Flitz besiegt, lassen doppelt so viel Gold fallen.', en: 'Sticky fingers: enemies Zippy defeats drop twice the gold.' },
+    t5: { de: 'Zickzack: alle 6 Sekunden springt Flitz im Zickzack durch bis zu 5 Gegner.', en: 'Zigzag: every 6 seconds Zippy zigzags through up to 5 enemies.' },
+    flavor: { de: 'Hat noch nie etwas gestohlen. Sagt er.', en: 'Has never stolen anything. He says.' } },
+  huhu: { spr: 'pet_owl', col: '#e4a672', pow: 0.4, rate: 0.85, spd: 1.15, fly: true,
+    name: { de: 'Huhu', en: 'Hoot' }, kind: { de: 'Eule', en: 'Owl' },
+    text: { de: 'Stösst lautlos auf Gegner herab. Zeigt dir auf der Karte, wo ein geheimer Raum liegt.', en: 'Swoops down on enemies without a sound. Shows you on the map where a secret room is.' },
+    t3: { de: 'Nachtauge: die ganze Ebene liegt offen auf der Karte.', en: 'Night eye: the whole floor lies open on the map.' },
+    t5: { de: 'Schuhu: alle 8 Sekunden betäubt ein Schrei alle Gegner rundum.', en: 'Hoo-hoo: every 8 seconds a screech stuns all enemies around.' },
+    flavor: { de: 'Dreht den Kopf ganz herum. Vor allem, wenn du gerade etwas Peinliches machst.', en: 'Turns its head all the way round. Especially when you do something embarrassing.' } },
+  glut: { spr: 'pet_drake', col: '#e43b44', pow: 0.42, rate: 1.2, spd: 1.05, range: true,
+    name: { de: 'Glut', en: 'Ember' }, kind: { de: 'Kleiner Drache', en: 'Little dragon' },
+    text: { de: 'Spuckt aus sicherer Entfernung Feuer. Wer getroffen wird, brennt.', en: 'Spits fire from a safe distance. Whoever gets hit burns.' },
+    t3: { de: 'Feuerball: das Feuer explodiert beim Aufprall.', en: 'Fireball: the fire explodes on impact.' },
+    t5: { de: 'Feueratem: alle 7 Sekunden ein Flammenstrahl, der alles vor ihm anzündet.', en: 'Fire breath: every 7 seconds a stream of flame sets everything ahead alight.' },
+    flavor: { de: 'Wird mal ganz gross. Übt schon mal.', en: 'Will be huge one day. Practising already.' } },
+  brunhilde: { spr: 'pet_toad', col: '#63c74d', pow: 0.75, rate: 1.7, spd: 0.9,
+    name: { de: 'Brunhilde', en: 'Brunhilde' }, kind: { de: 'Kröte mit Krone', en: 'Crowned toad' },
+    text: { de: 'Springt Gegnern mit vollem Gewicht auf den Kopf. Wer daneben steht, kriegt auch was ab.', en: 'Jumps on enemies\' heads with all her weight. Whoever stands next to them gets some too.' },
+    t3: { de: 'Lange Zunge: alle 5 Sekunden holt sie einen Gegner von weit weg zu sich und betäubt ihn.', en: 'Long tongue: every 5 seconds she pulls a far enemy to her and stuns it.' },
+    t5: { de: 'Königssprung: alle 9 Sekunden ein riesiger Sprung, die Landung erschüttert den ganzen Raum.', en: 'Royal leap: every 9 seconds a giant jump, the landing shakes the whole room.' },
+    flavor: { de: 'Wartet seit Jahren auf einen Kuss. Bitte nicht.', en: 'Has been waiting for a kiss for years. Please don\'t.' } },
+  stachel: { spr: 'pet_hog', col: '#b86f50', pow: 0.55, rate: 2.4, spd: 0.95,
+    name: { de: 'Stachel', en: 'Prickles' }, kind: { de: 'Igel', en: 'Hedgehog' },
+    text: { de: 'Rollt sich zur Kugel und rollt quer durch die Gegner.', en: 'Curls into a ball and rolls right through the enemies.' },
+    t3: { de: 'Stachelregen: nach jeder Rolle schiesst er Stacheln rundum.', en: 'Spike rain: after every roll he shoots spikes all around.' },
+    t5: { de: 'Flipperkugel: alle 10 Sekunden rast Stachel als riesige Kugel durch den Raum und prallt von den Wänden ab.', en: 'Pinball: every 10 seconds Prickles races through the room as a giant ball, bouncing off the walls.' },
+    flavor: { de: 'Kuscheln nur mit Handschuhen.', en: 'Cuddles with gloves only.' } },
+  gacker: { spr: 'pet_hen', col: '#fee761', pow: 0.25, rate: 0.55, spd: 1.05,
+    name: { de: 'Gacker', en: 'Cluck' }, kind: { de: 'Huhn', en: 'Hen' },
+    text: { de: 'Pickt Gegner und legt im Kampf alle 6 Sekunden ein Ei. Daraus schlüpft ein wütendes Küken.', en: 'Pecks enemies and lays an egg every 6 seconds in a fight. An angry chick hatches from it.' },
+    t3: { de: 'Doppeldotter: aus jedem Ei schlüpfen zwei Küken.', en: 'Double yolk: two chicks hatch from every egg.' },
+    t5: { de: 'Goldenes Ei: jedes 4. Ei ist aus Gold und platzt in einen Haufen Münzen.', en: 'Golden egg: every 4th egg is made of gold and bursts into a pile of coins.' },
+    flavor: { de: 'Das Ei war zuerst da. Sagt das Huhn.', en: 'The egg came first. Says the hen.' } },
+};
+A.PET_TREUE = [0, 40, 120, 260, 480];   // Treue-Punkte für die Stufen 1 bis 5
+A.PET_GROW = 0.15;                      // jede Treue-Stufe über 1: +15 % Schaden
+A.PET_XP = { kill: 1, elite: 3, boss: 15 };   // Treue je Sieg, den ein Tier miterlebt
+A.PET_SPARKS = 25;                      // Seelenfunken für jedes neue Tier
+A.PET_CAGE = 0.45;                      // Chance auf einen Käfig je Ebene (ab Ebene 2; wer noch kein Tier hat, findet auf Ebene 2 sicher eins)
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
@@ -617,6 +711,8 @@ A.CAMP = [
     cost: [20, 35, 55, 80, 110, 145], lv: lvEach(6, { startGold: 25 }) },
   { id: 'kessel', name: { de: 'Kräuterkessel', en: 'Herb Cauldron' }, info: { de: 'Blubbert. Riecht nach Wald und ein bisschen nach Socke.', en: 'Bubbles. Smells of forest and a little of sock.' }, icon: 'c_cauldron', rank: 3,
     cost: [40, 70, 110, 160, 220, 290], lv: [{ startPotion: 1 }, { potionHeal: 0.05 }, { startPotion: 1 }, { potionHeal: 0.05 }, { startPotion: 1 }, { potionHeal: 0.05 }] },
+  { id: 'tier', name: { de: 'Tierhütte', en: 'Pet Hut' }, info: { de: 'Ein Zuhause für alles, was dir aus den Käfigen gefolgt ist.', en: 'A home for everything that followed you out of the cages.' }, icon: 'c_hut', rank: 4,
+    cost: [50, 100, 170, 260, 380], lv: [{ petStart: 1 }, { petDmg: 0.25 }, { petXp: 0.5 }, { petSlots: 1 }, { petDmg: 0.25, petStart: 1 }] },
   { id: 'schreib', name: { de: 'Schreibstube', en: 'Scriptorium' }, info: { de: 'Alte Bücher, neue Tricks.', en: 'Old books, new tricks.' }, icon: 'c_lectern', rank: 6,
     cost: [70, 140, 250, 450], lv: [{ extraStartSkill: 1 }, { cdr: 0.05 }, { cdr: 0.05 }, { talentSlots: 1 }] },
   { id: 'schmiede', name: { de: 'Lagerschmiede', en: 'Camp Forge' }, info: { de: 'Hier wird für den Abstieg geschmiedet.', en: 'Forging for the descent.' }, icon: 'anvil', rank: 9,
