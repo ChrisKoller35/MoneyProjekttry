@@ -102,6 +102,15 @@ Wunsch: «stacken dann die Effekte mehr, gibt es crazy Kombinationen? … finde 
 - **Beute nach Build:** Kräfte, die man schon trägt, kommen auf neuen Stücken je tiefer desto öfter (ab Ebene 7 doppelt, ab Ebene 20 viermal so oft); Elemente kamen schon vorher bevorzugt.
 - Spielstand bleibt: alte Durchläufe laden gleich (neue Felder erst, wenn eine Kombo bereit ist), das Kombo-Buch beginnt leer; ein Durchlauf mit Kombo lädt auch noch in der Version davor.
 
+## Begleiter und verrückte Stücke (21.10.2026)
+Wunsch: mehr vom Schlag «der Hut, der einen Schleim spawnt, ist ja mega». Regeln in `js/pets.js` und `js/wild.js`, Listen in `A.PETS` und `A.LEGENDS` (`js/data.js`):
+- **6 Begleiter in Käfigen:** ab Ebene 2 steht manchmal (45 %) ein Käfig in einem Kampfraum; er taucht auf, wenn der Raum gesäubert ist. Wer noch nie ein Tier gefunden hat, findet auf Ebene 2 sicher eins. Flitz (Fuchs, flink), Huhu (Eule, zeigt geheime Räume auf der Karte), Glut (kleiner Drache, spuckt Feuer aus der Ferne), Brunhilde (Kröte mit Krone, springt Gegnern auf den Kopf), Stachel (Igel, rollt als Kugel durch die Gegner), Gacker (Huhn, legt Eier, daraus schlüpfen Küken). Jedes neue Tier: 25 Seelenfunken.
+- **Treue:** wächst mit jedem Sieg, den ein Tier miterlebt (Elite 3, Weltenboss 15), und bleibt für immer. Jede Stufe +15 % Schaden; Treue 3 und 5 bringen je einen neuen Trick (z. B. Langfinger, Nachtauge, Feueratem, Königssprung, Flipperkugel, goldenes Ei).
+- **Tierhütte im Lager** (ab Lager-Stufe 4, 5 Stufen): ein Tier kommt von Anfang an mit, mehr Schaden, schneller Treue, zwei Tiere gleichzeitig. Ohne Tierhütte bleibt ein Tier nur für den Durchlauf, in dem es gefunden wurde. Im Lager-Abschnitt «Begleiter» antippen, wer mitkommt; gefundene Tiere dösen im Lager-Bild bei der Hütte.
+- **Käfig-Fenster:** Mitnehmen, oder (Plätze voll) «Statt X mitnehmen», oder ins Lager schicken. Ein bekanntes Tier freut sich: +10 Treue.
+- **10 verrückte Stücke** (Legenden, Sammlung jetzt 30): Bienenkorb-Helm, Affenstiefel (Bananenschalen), Zipfelmütze der Gartenzwerge, Blubber-Teekessel (Seifenblasen fangen Gegner), Kisti die hungrige Truhe (frisst Münzen, spuckt alle 20 ein Item aus), Gewitterwolke an der Leine, Piñata-Keule (Bonbons heilen), Sparschwein-Panzer, Party-Tröte, Fliegenklatsche der Riesen (drückt schwache Gegner platt). Sie fallen überall (Truhen, Elite-Gegner, gesäuberte Kämpfe, Weltenbosse), ab Welt 2 dreimal so oft; noch nie gefundene öfter.
+- Spielstand bleibt: alte Durchläufe laden gleich, die laufende Ebene bekommt keinen Käfig (neue Ebenen schon); der Käfig ist immer das letzte Ding im Raum und sein Raum hängt nur vom Startwert der Ebene ab. Neue Felder: `meta.pets`, `meta.petSel`, `run.pets` (leer, wenn nichts gefunden).
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -114,8 +123,9 @@ Den zweiten Look «3D» (three.js, 18.10.) gibt es nicht mehr: Christoph braucht
   - `boons` – Schrein: Zauber für alle, passive Talente, Verstärkungen.
   - `gear` – Ausrüstung: Element-Boni (2/4/6 Teile) und besondere Kräfte im Kampf, Build-Übersicht.
   - `classes` – eigene Spielweise von Rufer (Diener) und Braumeister (Flaschen im Bogen, Sprengfass, Tränke).
-  - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise); `legends` – Wirkung der 20 Legenden (Haken für Treffer, Siege, Zauber, Kampfbeginn, Zeichnen).
+  - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise); `legends` – Wirkung der 20 Legenden (die 10 verrückten in `wild`) (Haken für Treffer, Siege, Zauber, Kampfbeginn, Zeichnen).
   - `compare` – Vergleich: Heldenwerte mit dem alten und dem neuen Stück, Urteil besser/schlechter/anders/gleich.
+  - `pets` – Begleiter: Käfige, Treue, Tricks, Tierhütte, Verhalten im Kampf, Eier, Zunge, Käfig zeichnen; `wild` – die 10 verrückten Stücke (Bienen, Bananenschalen, Gartenzwerge, Seifenblasen, Kisti, Gewitterwolke, Piñata, Sparschwein, Tröte, Fliegenklatsche).
   - `combos` – Kombos: Teile prüfen, bereit/erwacht/ruht, Wirkung im Kampf (Haken aus world, classes, legends, gear), Raketen, Blutkugeln, Giftpilze, Baby-Schleime und Schattenklone zeichnen.
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.

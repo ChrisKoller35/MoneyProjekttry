@@ -575,7 +575,7 @@ A.PETS = {
   flitz: { spr: 'pet_fox', col: '#f77622', pow: 0.3, rate: 0.42, spd: 1.35,
     name: { de: 'Flitz', en: 'Zippy' }, kind: { de: 'Fuchs', en: 'Fox' },
     text: { de: 'Schnell wie der Wind. Beisst zu, bevor Gegner gucken können.', en: 'Fast as the wind. Bites before enemies can blink.' },
-    t3: { de: 'Langfinger: Gegner, die Flitz besiegt, lassen doppelt so viel Gold fallen.', en: 'Sticky fingers: enemies Zippy defeats drop twice the gold.' },
+    t3: { de: 'Langfinger: Gegner, die Flitz gebissen hat, lassen doppelt so viel Gold fallen.', en: 'Sticky fingers: enemies Zippy has bitten drop twice the gold.' },
     t5: { de: 'Zickzack: alle 6 Sekunden springt Flitz im Zickzack durch bis zu 5 Gegner.', en: 'Zigzag: every 6 seconds Zippy zigzags through up to 5 enemies.' },
     flavor: { de: 'Hat noch nie etwas gestohlen. Sagt er.', en: 'Has never stolen anything. He says.' } },
   huhu: { spr: 'pet_owl', col: '#e4a672', pow: 0.4, rate: 0.85, spd: 1.15, fly: true,

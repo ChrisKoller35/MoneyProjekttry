@@ -258,7 +258,7 @@ A.World = (function () {
     let absorbed = 0;
     if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; if (to.shield <= 0 && to === W.hero) A.Gear.onShieldBreak(to); }
     to.hp -= dmg; to.flash = 0.12;
-    if (to.side === 'enemy') to.lastFrom = from;   // wer zuletzt getroffen hat (Begleiter: Langfinger)
+    if (to.side === 'enemy' && from.pet) (to.bit || (to.bit = {}))[from.pet] = W.t;   // von welchem Begleiter zuletzt gebissen (Flitz: Langfinger)
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);

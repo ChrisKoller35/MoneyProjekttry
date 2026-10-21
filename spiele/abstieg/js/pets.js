@@ -104,17 +104,17 @@ A.Pets = (function () {
     if (a) { api.float(a.x, a.y - 30, '♥', '#e43b44', 20); if (A.FX) A.FX.burst(a.x, a.y - 12, 14, { color: ['#e43b44', '#f6757a', '#ffffff'], smin: 30, smax: 120, life: 0.6, add: true, kind: 'spark', drag: 3 }); }
     if (A.Sound.level && w) A.Sound.level();
   }
-  // Gegner besiegt: alle Tiere, die dabei sind, gewinnen Treue; Flitz mit Langfinger holt doppelt Gold
+  // Gegner besiegt: alle Tiere, die dabei sind, gewinnen Treue; hat Flitz (Langfinger) ihn kurz vorher gebissen, fällt doppelt Gold
   function onKill(e, rw) {
     const list = withMe(); if (!list.length) return;
     const k = (e.boss ? A.PET_XP.boss : e.elite ? A.PET_XP.elite : A.PET_XP.kill) * (1 + (me().petXp || 0));
     for (const id of list) gain(id, k);
     G().saveMeta();
-    const by = e.lastFrom;
-    if (by && by.pet === 'flitz' && T('flitz', 3) && rw && rw.gold > 0) {
+    const bit = e.bit && e.bit.flitz, w = W();
+    if (list.includes('flitz') && T('flitz', 3) && bit != null && w && w.t - bit < 4 && rw && rw.gold > 0) {
       const n = Math.max(1, rw.coins || 1);
       for (let i = 0; i < n; i++) api.drop({ kind: 'gold', val: Math.ceil(rw.gold / n) }, e.x, e.y, 60 + Math.random() * 90);
-      if (Math.random() < 0.4) api.float(e.x, e.y - e.r - 40, L('Langfinger!', 'Sticky fingers!'), '#f77622', 12);
+      if (!(w.langT > w.t)) { w.langT = w.t + 1.2; api.float(e.x, e.y - e.r - 40, L('Langfinger!', 'Sticky fingers!'), '#f77622', 12); }   // nicht öfter als alle 1.2 Sekunden
     }
   }
 
@@ -219,7 +219,7 @@ A.Pets = (function () {
       if (n) { jump(a, sx / n, sy / n, true); api.float(a.x, a.y - 34, L('Königssprung!', 'Royal leap!'), '#fee761', 15); return true; }
     }
     if (T('brunhilde', 3) && fight(w) && (a.tongueT = (a.tongueT == null ? 2 : a.tongueT) - dt) <= 0) {
-      let far = null, fd = 90;
+      let far = null, fd = 50;   // der Weiteste in Reichweite (nicht der, auf dem sie gerade sitzt)
       for (const m of w.mons) { if (!live(m) || m.boss) continue; const d = dist(a, m); if (d > fd && d < 340 && api.clearLine(a, m)) { fd = d; far = m; } }
       if (far) { a.tongueT = 5; tongue(a, far, w); } else a.tongueT = 0.5;
     }

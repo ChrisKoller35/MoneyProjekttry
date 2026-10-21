@@ -382,7 +382,9 @@ A.Scenes = (function () {
   function shade(b, x, y, rx) { b.globalAlpha = 0.4; b.fillStyle = '#0d0a12'; b.fillRect(Math.round(x - rx), Math.round(y) - 1, Math.round(rx * 2), 2); b.fillRect(Math.round(x - rx + 2), Math.round(y) + 1, Math.round(rx * 2 - 4), 1); b.globalAlpha = 1; }
   const campLv = (id) => (C.st && C.st.lv[id]) || 0;
   function campXY(id) {
-    const p = CAMP_POS[id]; if (p) return { x: Math.max(12, C.cx + p[0]), y: p[1] === 'b' ? C.yb : p[1] === 'm' ? C.gy + 34 : C.yf };
+    const p = CAMP_POS[id];
+    if (p) { let x = C.cx + p[0]; if (id === 'tier' && x < 18) x = C.cx - 48;   // schmal (Handy): die Tierhütte rückt zwischen die Gebäude
+      return { x: Math.max(12, x), y: p[1] === 'b' ? C.yb : p[1] === 'm' ? C.gy + 34 : C.yf }; }
     const n = CAMP_NPC.find(q => 'race_' + q[0] === id); if (n) return { x: C.cx + n[2], y: C.yf + n[3] - 8 };
     return { x: C.cx, y: C.yf };
   }
@@ -620,7 +622,7 @@ A.Scenes = (function () {
       let k = 0;
       st.pets.forEach((id, i) => {
         const P = A.PETS[id]; if (!P) return;
-        const owl = id === 'huhu', [dx, dy] = owl ? [1, -12] : spots[k++ % spots.length], x = h.x + dx, y = h.y + dy, ph = i * 1.7;
+        const owl = id === 'huhu', [dx, dy] = owl ? [1, -12] : spots[k++ % spots.length], x = Math.max(5, Math.min(C.bw - 5, h.x + dx)), y = h.y + dy, ph = i * 1.7;
         const hop = !owl && Math.sin(t * 1.3 + ph) > 0.93 ? -2 : 0, fr = owl ? (Math.sin(t * 0.8 + ph) > 0.85 ? 1 : 0) : (hop ? 1 : 0);
         D.push({ y: owl ? h.y + 1 : y, f: (b) => { if (!owl) shade(b, x, y, 4); blit(b, spr(P.spr, fr), x, y + 1 + hop, (i + Math.floor(t * 0.2 + ph)) % 2 === 1); } });
       });

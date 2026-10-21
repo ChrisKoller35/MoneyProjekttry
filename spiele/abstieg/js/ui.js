@@ -593,7 +593,7 @@ window.A = window.A || {};
     const P = A.PETS[id], res = A.Pets.free(id), lv = A.Pets.treue(id), have = A.Pets.withMe(), full = have.length >= A.Pets.slots();
     S.open(); if (res.first) S.level();
     const hut = G.campLevel('tier') > 0;
-    const news = res.first ? `<div class="msg legnew">${ic('u_paw', 18)}<span>${L(`<b>Neuer Begleiter</b> (${res.n}/${Object.keys(A.PETS).length}): +${res.sparks} Seelenfunken. Er wohnt jetzt für immer in deinem Lager.`, `<b>New pet</b> (${res.n}/${Object.keys(A.PETS).length}): +${res.sparks} soul sparks. It now lives in your camp for good.`)}</span></div>`
+    const news = res.first ? `<div class="msg legnew">${ic('u_paw', 18)}<span>${L(`<b>Neuer Begleiter</b> (${res.n}/${Object.keys(A.PETS).length}): +${res.sparks} Seelenfunken. ${esc(t(P.name))} wohnt jetzt für immer in deinem Lager.`, `<b>New pet</b> (${res.n}/${Object.keys(A.PETS).length}): +${res.sparks} soul sparks. ${esc(t(P.name))} now lives in your camp for good.`)}</span></div>`
       : `<div class="msg">${L('Ihr kennt euch schon! Es freut sich riesig: +10 Treue.', 'You already know each other! It is overjoyed: +10 loyalty.')}</div>`;
     const take = full ? have.map(o => `<button class="btn two" data-swap="${o}"><span class="bl">${petImg(o, 22)}${L(`Statt ${esc(A.Pets.name(o))} mitnehmen`, `Take instead of ${esc(A.Pets.name(o))}`)}</span><span class="bs">${L(`${esc(A.Pets.name(o))} geht ins Lager.`, `${esc(A.Pets.name(o))} goes to the camp.`)}</span></button>`).join('')
       : `<button class="btn primary" id="bTake">${L('Mitnehmen', 'Take along')}</button>`;
