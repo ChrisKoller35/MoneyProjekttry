@@ -10607,7 +10607,8 @@ window.A = window.A || {};
       if (!dungeonEl.classList.contains('on') || G.run !== r) return;
       if (overlay.classList.contains('on')) { setTimeout(say, 700); return; }
       const left = ids.filter(id => !(r.combos || []).includes(id)); if (!left.length) return;   // inzwischen schon am Schrein erwacht
-      A.FX.banner(L('Kombo bereit: ', 'Combo ready: ') + left.map(id => t(A.COMBOS[id].name)).join(' · '), L('Am nächsten Schrein erwacht sie.', 'It awakens at the next shrine.'), '#fee761', 3);
+      const many = left.length > 1;
+      A.FX.banner((many ? L('Kombos bereit: ', 'Combos ready: ') : L('Kombo bereit: ', 'Combo ready: ')) + left.map(id => t(A.COMBOS[id].name)).join(' · '), many ? L('Am nächsten Schrein erwachen sie.', 'They awaken at the next shrine.') : L('Am nächsten Schrein erwacht sie.', 'It awakens at the next shrine.'), '#fee761', 3);
       S.drop('epic');
     };
     setTimeout(say, 450);
