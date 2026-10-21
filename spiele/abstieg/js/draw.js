@@ -45,7 +45,7 @@ window.A = window.A || {};
       this.dpr = dpr; this.W = r.width; this.H = r.height;
       const dw = Math.max(2, Math.round(r.width * dpr)), dh = Math.max(2, Math.round(r.height * dpr));
       this.cv.width = dw; this.cv.height = dh; this.dw = dw; this.dh = dh;
-      this.s = Math.max(2, Math.round(Math.min(dw / 200, dh / 235)));
+      this.s = Math.max(2, Math.round(this.bigView ? Math.min(dw / 255, dh / 285) : Math.min(dw / 200, dh / 235)));   // grosse Räume: auf fast allen Geräten eine Stufe weiter weg
       this.bw = Math.ceil(dw / this.s); this.bh = Math.ceil(dh / this.s);
       for (const c of [this.buf, this.lt, this.gl]) { c.width = this.bw; c.height = this.bh; }
       for (const x of [this.b, this.l, this.g]) x.imageSmoothingEnabled = false;
@@ -397,6 +397,7 @@ window.A = window.A || {};
     draw(W, dt) {
       this.t += dt; this.dt = Math.min(0.05, dt || 0.016);
       if (!W) return;
+      if (!!W.big !== !!this.bigView) { this.bigView = !!W.big; this.resize(); }
       if (this.levelW !== W) this.buildLevel(W);
       this.applyDecals();
       const b = this.b, l = this.l, g = this.g, bw = this.bw, bh = this.bh, h = W.hero, t = this.t;
@@ -431,6 +432,7 @@ window.A = window.A || {};
       this.drawBoonsGround(W, cx, cy);
       A.Bosses.drawGround(this, W, cx, cy);
       A.Elites.drawGround(this, W, cx, cy);
+      A.Legends.drawGround(this, W, cx, cy);   // Tinte, Leerenloch, Amboss-Schatten, Quietsche-Ente
       const list = [];
       for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
@@ -475,6 +477,7 @@ window.A = window.A || {};
       this.drawBoonsTop(W, cx, cy);
       A.Bosses.drawTop(this, W, cx, cy);
       A.Elites.drawTop(this, W, cx, cy);
+      A.Legends.drawTop(this, W, cx, cy);   // fallender Amboss, Spiegelbild
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -578,7 +581,14 @@ window.A = window.A || {};
       let sx = 1, sy = 1;
       const gT = h.giantUntil - W.t; let gk = gT > 0 ? 1 + 0.35 * clamp(Math.min(8 - gT, gT) / 0.3, 0, 1) : 1;
       if (gk > 1 && gT < 1.5 && Math.floor(this.t * 12) % 2) gk = 1 + (gk - 1) * 0.5;   // läuft ab: flackert
+      if (h.legBig) gk *= 1.3;   // Riesenpilz-Hut
       sx = sy = gk;
+      if (h.fly) {   // fliegender Teppich: wellt sich unter den Füssen, der Held schwebt darüber
+        const cp = A.Art.sprite('carpet'), wv = Math.sin(this.t * 7) * 0.08;
+        this.blit(cp, x, y + 2 + Math.round(Math.sin(this.t * 3)), false, { sx: gk * (1 + wv), sy: gk * (1 - wv) });
+        y -= 4 + Math.round(Math.sin(this.t * 3));
+        if (A.FX && !A.FX.low && h.moving && Math.random() < 0.3) A.FX.part({ kind: 'px', add: true, x: h.x - h.fx * 16, y: h.y + 6, vx: -h.fx * 30, vy: 0, life: 0.35, color: Math.random() < 0.5 ? '#fee761' : '#e43b44', drag: 2 });
+      }
       if (h.swing > 0 && melee) { const p = 1 - h.swing / 0.2; const lunge = Math.sin(Math.min(1, p * 1.6) * Math.PI) * 3; x += h.fx * lunge; y += h.fy * lunge * 0.5; sx = 1 + 0.12 * Math.sin(p * Math.PI); sy = 1 - 0.1 * Math.sin(p * Math.PI); }
       if (h.flash > 0) { sx *= 1.15; sy *= 0.85; }
       this.tip = null;
@@ -722,8 +732,9 @@ window.A = window.A || {};
       if (m.ef && !(m.spawn > 0)) A.Elites.drawUnder(this, m, spr, cx, cy, sc, lift);   // Nachbilder (Flink)
       if ((m.elite || m.mirror) && !(m.spawn > 0)) this.outlineGlow(spr, dx, dy, flip, A.Elites.col(m, this.t), sc);
       if (m.boss) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
-      const frozen = m.frozenUntil > W.t;
+      const frozen = m.frozenUntil > W.t, sand = m.sandUntil > W.t;   // Zeitstopp der Totenmaske: golden und erstarrt
       if (frozen) this.outlineGlow(spr, dx, dy, flip, '#9be8ff', sc);
+      else if (sand) this.outlineGlow(spr, dx, dy, flip, '#feae34', sc);
       this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
       if (m.state === 'windup' && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
       if (m.ef && !(m.spawn > 0)) A.Elites.drawOver(this, m, spr, dx, dy, sx, sy, cx, cy);   // Schildblase, kreisende Klingen
@@ -732,6 +743,9 @@ window.A = window.A || {};
         const w2 = Math.round(spr.w * sx), h2 = Math.round(spr.h * sy), x2 = Math.round(dx - w2 / 2), y2 = Math.round(dy - h2);
         b.globalAlpha = 0.6; b.drawImage(spr[k], x2, y2, w2, h2); b.globalAlpha = 1;
         this.g.fillStyle = '#ffffff'; for (let i = 0; i < 4; i++) if ((Math.floor(this.t * 5) + i) % 2) this.g.fillRect(x2 + Math.floor((i * 37 + Math.abs(m.x)) % w2), y2 + Math.floor((i * 23 + 3) % h2), 1, 1);
+      } else if (sand) {
+        const k = flip ? 'sandF' : 'sand'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#e4a672');
+        const w2 = Math.round(spr.w * sx), h2 = Math.round(spr.h * sy); b.globalAlpha = 0.55; b.drawImage(spr[k], Math.round(dx - w2 / 2), Math.round(dy - h2), w2, h2); b.globalAlpha = 1;
       } else if (m.slowUntil > W.t && A.FX && !A.FX.low && Math.random() < (this.dt || 0.016) * 5) A.FX.part({ add: true, x: m.x + (Math.random() - 0.5) * m.r * 2, y: m.y - 20 - Math.random() * 14, vx: 0, vy: 0, z: 18, vz: -6, g: 0, life: 0.8, color: Math.random() < 0.5 ? '#9be8ff' : '#ffffff', drag: 0.5 });
       // Fernkämpfer laden sichtbar auf: Kugel wächst vor dem Körper, Funken werden angesaugt
       if (m.kind !== 'melee' && m.cd < 0.45 && !(m.stun > 0) && !(m.spawn > 0)) {
@@ -814,7 +828,7 @@ window.A = window.A || {};
         const s = A.Art.sprite('potion'); const bob = Math.round(Math.sin(this.t * 4 + p.x) * 1.5);
         this.shadow(x, y + 2, 3); b.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h - 2 + bob - z));
       } else {
-        const it = p.it, col = A.RARITY[it.rarity].color, s = A.Art.sprite(A.Art.itemIcon(it.base));
+        const it = p.it, col = A.RARITY[it.rarity].color, s = A.Art.sprite(A.Art.itemIcon(it));
         const bob = Math.round(Math.sin(this.t * 3 + p.x) * 2);
         const big = it.rarity !== 'common' && it.rarity !== 'good';
         // Lichtsäule
@@ -835,11 +849,12 @@ window.A = window.A || {};
           // Truhe: wackelt ab und zu, springt beim Öffnen auf und sprüht Gold und Licht
           if (p._seen == null) { p._seen = 1; p._openT = p.used ? -99 : null; }
           if (p.used && p._openT == null) { p._openT = t; if (A.FX) { A.FX.flash(p.x, p.y - 10, 110, '#feae34', 0.5); A.FX.burst(p.x, p.y - 12, 26, { color: ['#fee761', '#feae34', '#ffffff'], smin: 40, smax: 170, life: 0.7, add: true, kind: 'spark', drag: 3 }); A.FX.burst(p.x, p.y - 10, 10, { color: ['#fee761', '#feae34'], smin: 30, smax: 90, z: 10, vz: 220, g: 520, life: 1.1, size: 2 }); A.FX.part({ kind: 'ring', x: p.x, y: p.y - 6, life: 0.4, size: 50, color: '#fee761', add: true }); A.FX.shake(0.15); } }
-          spr = S('chest', p.used ? 1 : 0); let sx = 1, sy = 1, wob = 0;
+          spr = p.secret ? A.Art.sprite('chest', p.used ? 1 : 0, { m: '#68386c', M: '#b55088', N: '#3e2731', n: '#262b44' }, 'secret') : S('chest', p.used ? 1 : 0); let sx = 1, sy = 1, wob = 0;   // geheimer Raum: lila Truhe mit Goldbeschlag
           const oa = p._openT != null ? t - p._openT : 9;
           if (oa < 0.5) { const q = oa / 0.5; sx = 1 + Math.sin(q * Math.PI * 2) * 0.22 * (1 - q); sy = 1 - Math.sin(q * Math.PI * 2) * 0.18 * (1 - q); }
           else if (!p.used) { const c = (t + p.x * 0.01) % 3.2; if (c < 0.4) wob = Math.round(Math.sin(c * 40) * (1 - c / 0.4)); if (near) wob = Math.round(Math.sin(t * 18)); }
-          this.shadow(x, y + 4, 8); if (near && !p.used) this.outlineGlow(spr, x + wob, y + 5, false, '#fee761');
+          this.shadow(x, y + 4, 8); if ((near || p.secret) && !p.used) this.outlineGlow(spr, x + wob, y + 5, false, near ? '#fee761' : '#feae34');
+          if (p.secret && !p.used && A.FX && !A.FX.low && Math.random() < 0.2) A.FX.part({ kind: 'spark', add: true, x: p.x + (Math.random() - 0.5) * 30, y: p.y - 4 - Math.random() * 20, vx: 0, vy: -20, life: 0.5, color: Math.random() < 0.5 ? '#fee761' : '#ffffff', drag: 1 });
           const w = Math.round(spr.w * sx), hh = Math.round(spr.h * sy);
           b.drawImage(spr.img, Math.round(x + wob - w / 2), Math.round(y + 5 - hh), w, hh); top = y + 5 - hh;
           if (p.used && oa < 2.5) { const gl = this.g; gl.globalAlpha = Math.max(0, 0.6 * (1 - oa / 2.5)); gl.fillStyle = '#fee761'; gl.fillRect(Math.round(x - 5), Math.round(y - 30 + oa * 4), 10, Math.round(26 - oa * 4)); gl.globalAlpha = 1; } if (!p.used && Math.floor(t * 2 + p.x) % 4 === 0) { this.g.fillStyle = '#fff'; this.g.fillRect(Math.round(x + 3), Math.round(y - 5), 1, 1); } break; }
@@ -888,6 +903,13 @@ window.A = window.A || {};
           if (near) { b.strokeStyle = '#fee761'; b.lineWidth = 1; b.strokeRect(x0 - 3.5, y0 - 3.5, w + 7, hh + 7); }
           if (Math.random() < 0.2 && A.FX) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 40, y: p.y + 10, vx: 0, vy: -30 - Math.random() * 30, life: 1, color: '#b55088', drag: 0.3 });
           top = y0 - 4; break;
+        }
+        case 'rubble': {   // Geröll vor dem geheimen Raum: lose Steine, ab und zu rieselt Staub
+          if (p.used) return;
+          spr = S('geroell'); if (near) this.outlineGlow(spr, x, y + 9, false, '#fee761');
+          b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 9 - spr.h)); top = y + 9 - spr.h;
+          if (A.FX && !A.FX.low && Math.random() < 0.03) A.FX.part({ kind: 'px', x: p.x + (Math.random() - 0.5) * 40, y: p.y + 8, z: 26, vx: 0, vy: 0, vz: 0, g: 300, life: 0.6, color: '#8b9bb4', size: 1 });
+          break;
         }
         case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
@@ -964,7 +986,7 @@ window.A = window.A || {};
         else if (p.kind === 'statue') { L(p.x, p.y - 50, 26, '#b55088', 0.7); }
         else if (p.kind === 'shrine') { L(p.x, p.y - 26, p.used ? 30 : 64, '#2ce8f5', p.used ? 0.3 : 0.8 + Math.sin(t * 3) * 0.1); }
         else if (p.kind === 'forge') { L(p.x - 34, p.y - 8, 90, '#ff8a30', fl(p.x, 1.3)); L(p.x - 34, p.y - 2, 26, '#fee761', 0.55); const k = (t * 0.85 + p.x * 0.001) % 1; if (k > 0.72 && k < 0.9) L(p.x + 18, p.y - 6, 34, '#feae34', 0.7); }
-        else if (p.kind === 'chest' && !p.used) L(p.x, p.y, 22, '#feae34', 0.4);
+        else if (p.kind === 'chest' && !p.used) L(p.x, p.y, p.secret ? 44 : 22, p.secret ? '#fee761' : '#feae34', p.secret ? 0.55 + Math.sin(t * 3) * 0.1 : 0.4);
       }
       for (const p of W.picks) if (p.kind === 'item') L(p.x, p.y - 6, 28, A.RARITY[p.it.rarity].color, 0.7);
       for (const s of W.shots) L(s.x, s.y - 10, s.side === 'hero' ? 26 : 22, s.side === 'hero' ? (s.opts.kind === 'magic' ? s.color : '#ffe2b8') : (s.opts.kind === 'magic' ? '#b55088' : '#e43b44'), s.side === 'hero' && s.opts.kind !== 'magic' ? 0.25 : 0.8);
@@ -977,6 +999,7 @@ window.A = window.A || {};
       if (h.tal && h.tal.frost && h.alive) L(h.x, h.y, 60, '#9be8ff', 0.18);
       A.Bosses.lights(W, L);
       A.Elites.lights(W, L);
+      A.Legends.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -1040,6 +1063,7 @@ window.A = window.A || {};
     }
     // Geisterwolf: halb durchsichtig, leuchtender Umriss, kleine Funken
     drawAlly(a, cx, cy) {
+      if (A.Legends.drawAlly(this, a, cx, cy)) return;   // Pudding
       if (a.minion) { this.drawMinion(a, cx, cy); return; }
       const x = a.x / PX - cx, y = a.y / PX - cy + 7;
       const nf = A.Art.monFrames('geisterwolf'), frame = a.moving ? Math.floor(this.t * 10) % nf : 0;
@@ -1056,9 +1080,9 @@ window.A = window.A || {};
     // Grabeshände: lila Kreis, Knochenhände wachsen aus dem Boden, greifen zu und versinken wieder
     drawGrab(z, x, y, R, life) {
       const b = this.b, g = this.g, W = A.World.W, age = W.t - z.t0, out = clamp(Math.min(age / 0.25, (z.until - W.t) / 0.4), 0, 1);
-      b.globalAlpha = 0.3 * life; b.fillStyle = '#3e2731'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
+      b.globalAlpha = 0.3 * life; b.fillStyle = z.vine ? '#193c3e' : '#3e2731'; b.beginPath(); b.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); b.fill();
       g.globalAlpha = 0.55 * life; g.strokeStyle = z.col; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(x), Math.round(y), R, R * 0.55, 0, 0, TAU); g.stroke();
-      const hand = A.Art.sprite('grabhand', 0, { '5': '#cdbfe0', '4': '#7d6a96' }, 'grab');
+      const hand = z.vine ? A.Art.sprite('grabhand', 0, { '5': '#a2e05a', '4': '#3e8948' }, 'vine') : A.Art.sprite('grabhand', 0, { '5': '#cdbfe0', '4': '#7d6a96' }, 'grab');   // Strickjacke: grüne Ranken
       for (let i = 0; i < 9; i++) {
         const a = i * 2.39 + z.x * 0.01, rr = R * (0.15 + (i * 0.41 % 0.8)), px = Math.round(x + Math.cos(a) * rr), py = Math.round(y + Math.sin(a) * rr * 0.55);
         const hh = Math.round(hand.h * out * (0.8 + 0.2 * Math.sin(this.t * 9 + i))); if (hh < 1) continue;
@@ -1079,16 +1103,16 @@ window.A = window.A || {};
     }
     // Diener des Rufers: Skelett steigt aus dem Boden, Geist schwebt halb durchsichtig; lila Umriss, rosa bei Seelenband; zerfällt am Ende
     drawMinion(a, cx, cy) {
-      const b = this.b, W = A.World.W, ghost = a.look === 'geist', x = a.x / PX - cx, y0 = a.y / PX - cy + 7;
-      const spr = A.Art.monSprite(ghost ? 'diener_geist' : 'diener_skel', 0), flip = a.fx < 0, sc = 1;
+      const b = this.b, W = A.World.W, ghost = a.look === 'geist', rat = a.look === 'ratte', x = a.x / PX - cx, y0 = a.y / PX - cy + 7;   // Ratten: Flöte des Rattenfängers
+      const spr = rat ? A.Art.monSprite('ratte', a.moving ? Math.floor(this.t * 10 + a.x) % A.Art.monFrames('ratte') : 0) : A.Art.monSprite(ghost ? 'diener_geist' : 'diener_skel', 0), flip = a.fx < 0, sc = 1;
       const left = a.until - (W ? W.t : 0), rally = W && a.rallyUntil > W.t;
       let alpha = ghost ? 0.72 : 1, rise = 1;
-      if (a.spawn > 0) { const q = clamp(1 - a.spawn / 0.4, 0, 1); if (ghost) alpha *= q; else rise = q; }
+      if (a.spawn > 0) { const q = clamp(1 - a.spawn / 0.4, 0, 1); if (ghost || rat) alpha *= q; else rise = q; }
       if (left < 1.5) alpha *= 0.55 + Math.sin(this.t * 20) * 0.3;
       const bob = ghost ? Math.round(Math.sin(this.t * 4 + a.x * 0.1) * 1.5) - 3 : (a.moving && Math.floor(this.t * 10) % 2 ? -1 : 0);
       let ox = 0; if (a.swing > 0) ox = a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 3;
       this.shadow(x, y0, ghost ? 4 : 5);
-      const glow = rally ? '#f6757a' : '#b55088', y = y0 + bob;
+      const glow = rally ? '#f6757a' : rat ? '#c28569' : '#b55088', y = y0 + bob;
       if (rise < 1) { // aus dem Boden: nur der obere Teil ist schon zu sehen
         const hh = Math.max(1, Math.round(spr.h * sc * rise)), w = Math.round(spr.w * sc), img = flip ? A.Art.flipped(spr) : spr.img;
         b.drawImage(img, 0, 0, spr.w, Math.max(1, Math.round(spr.h * rise)), Math.round(x - w / 2), Math.round(y0 - hh), w, hh);
@@ -1097,7 +1121,7 @@ window.A = window.A || {};
       }
       this.outlineGlow(spr, x + ox, y, flip, glow, sc);
       this.blit(spr, x + ox, y, flip, { alpha, sx: sc, sy: sc });
-      if (A.FX && !A.FX.low && Math.random() < (ghost ? 0.2 : 0.06)) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 16, y: a.y, vx: 0, vy: -20, life: 0.5, color: rally ? '#f6757a' : '#e0a4ff', drag: 1 });
+      if (A.FX && !A.FX.low && Math.random() < (ghost ? 0.2 : 0.06)) A.FX.part({ add: true, x: a.x + (Math.random() - 0.5) * 16, y: a.y, vx: 0, vy: -20, life: 0.5, color: rally ? '#f6757a' : rat ? '#e4a672' : '#e0a4ff', drag: 1 });
     }
     // über den Figuren: kreisende Geister/Klingen, Blitze, Blitzschritt-Spur
     drawBoonsTop(W, cx, cy) {
@@ -1142,7 +1166,7 @@ window.A = window.A || {};
     // ---------- Oberfläche über dem Bild (volle Auflösung) ----------
     font(px, w) { return `${w || 700} ${Math.round(px)}px "Pixelify Sans", system-ui, sans-serif`; }
     overlay(W, cx, cy) { const s = this.s; this.overlayCore(W, (wx, wy, up) => [(wx / PX - cx) * s, ((wy - (up || 0)) / PX - cy) * s]); }
-    // toS(wx, wy, up): Weltpunkt (und Höhe darüber) -> Bildschirmpunkt; die 3D-Darstellung liefert ihre eigene Umrechnung
+    // toS(wx, wy, up): Weltpunkt (und Höhe darüber) -> Bildschirmpunkt
     overlayCore(W, toS) {
       const c = this.ctx, dw = this.dw, dh = this.dh, d = this.dpr, t = this.t;
       // Vignette
@@ -1155,6 +1179,7 @@ window.A = window.A || {};
       const h = W.hero, low = h.alive && h.hp / h.maxHp < 0.3;
       const hurt = (A.FX ? A.FX.hurt : 0) * 1.6 + (low ? 0.25 + Math.sin(t * 6) * 0.12 : 0);
       if (hurt > 0.01) { const gr = c.createRadialGradient(dw / 2, dh / 2, Math.min(dw, dh) * 0.25, dw / 2, dh / 2, Math.max(dw, dh) * 0.7); gr.addColorStop(0, 'rgba(228,59,68,0)'); gr.addColorStop(1, `rgba(228,59,68,${clamp(hurt, 0, 0.75)})`); c.fillStyle = gr; c.fillRect(0, 0, dw, dh); }
+      A.Legends.overlay(this, W);   // Zeitstopp: das Bild wird sandig
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
       // Schild am Start
       if (this.signAt && W.room && W.room.type === 'start') { c.font = this.font(this.signAt.px || 6.5 * this.s); c.fillStyle = this.signAt.color || '#3e2731'; c.fillText(this.signAt.text, this.signAt.sx, this.signAt.sy); this.signAt = null; }
@@ -1241,10 +1266,11 @@ window.A = window.A || {};
       if (this.mm.width !== w) { this.mm.width = w; this.mm.height = hh; }
       m.clearRect(0, 0, w, hh);
       m.fillStyle = 'rgba(24,20,37,0.78)'; m.fillRect(0, 0, w, hh); m.fillStyle = '#5a6988'; m.fillRect(0, 0, w, 1); m.fillRect(0, hh - 1, w, 1); m.fillRect(0, 0, 1, hh); m.fillRect(w - 1, 0, 1, hh);
-      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5', forge: '#c0cbdc' };
+      const COL = { start: '#63c74d', fight: '#8b9bb4', elite: '#f77622', boss: '#e43b44', treasure: '#feae34', shop: '#0099db', rest: '#f77622', event: '#b55088', stairs: '#ead4aa', shrine: '#2ce8f5', forge: '#c0cbdc', secret: '#fee761' };
       const pos = (r) => [3 + r.cx * (U + G), 3 + r.cy * (V + G)];
       m.fillStyle = '#3a4466';
       for (const [p, q] of W.edges) { const a = W.rooms.find(r => r.cx === p.x && r.cy === p.y), b = W.rooms.find(r => r.cx === q.x && r.cy === q.y); if (!a || !b || (!a.visited && !b.visited)) continue; const [ax, ay] = pos(a), [bx, by] = pos(b); if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }
+      for (const r of W.rooms) if (r.secret && r.visited) { const [ax, ay] = pos(r), [bx, by] = pos(W.rooms[r.secret.nb]); m.fillStyle = '#feae34'; if (ay === by) m.fillRect(Math.min(ax, bx) + U, ay + 3, G, 1); else m.fillRect(ax + 4, Math.min(ay, by) + V, 1, G); }   // geheimer Durchgang
       for (const r of W.rooms) {
         const [x, y] = pos(r); const known = r.visited || W.edges.some(([p, q]) => { const o = (p.x === r.cx && p.y === r.cy) ? q : (q.x === r.cx && q.y === r.cy) ? p : null; return o && W.rooms.some(z => z.cx === o.x && z.cy === o.y && z.visited); });
         if (!known) continue;

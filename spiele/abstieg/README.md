@@ -43,7 +43,6 @@ Waffe, Rüstung, Helm, Stiefel und zwei Schmuckstücke bekommen Zufalls-Eigensch
 Zwei neue Klassen, gleich von Anfang an spielbar, je mit eigener Figur, eigener Waffe und 6 eigenen Zaubern (2 zum Start, die anderen beim Aufsteigen). Regeln in `js/classes.js`, Zahlen in `A.SKILLS` und `A.CLASSES` (`js/data.js`):
 - **Rufer** (Kapuze, Schädelstab, lila Zauberkugeln): Knochenruf (2 Skelette), Seelenpfeil (Ziel steht als Geist auf, wenn es stirbt), Grabeshände (Hände aus dem Boden halten fest), Seelenband (heilt, Diener schneller und stärker, länger da), Opfergabe (alle Diener explodieren), Totenheer (5 Skelette). Höchstens 7 Diener gleichzeitig, die ältesten zerfallen zuerst. Jeder besiegte Gegner (ausser Bossen) steht mit 20 % Chance als Geist auf. Diener verteilen sich auf die Gegner und stellen sich rundherum.
 - **Braumeister** (Hut, Bart, Schürze): wirft Flaschen im Bogen, die beim Aufprall platzen (über Säulen und Gruben hinweg, an Wänden zerschellen sie); jede 4. Flasche ist eine Überraschung (Feuer, Gift oder Frost). Zauber: Brandflasche (Feuerlache), Heiltrunk, Giftflasche (Giftwolke), Frostflasche (friert ein), Sprengfass (Lunte, grosse Explosion), Wundertrank (zufällig Riesenwuchs, Feuerspucke, Glückssträhne oder Blubberblasen). Tränke heilen 60 % statt 40 % und geben «Rausch» (schneller laufen und werfen); startet mit einem Trank mehr.
-- Beide sehen auch im 3D-Look eigen aus (Kapuze mit Schädel, Hut mit Bart und Schürze, Diener, Fass, fliegende Flaschen).
 - Spielstand bleibt: laufende Durchläufe und Lager sind unverändert, die zwei Klassen sind in der Heldenwahl einfach frei.
 
 ## Das Lager (20.10.2026)
@@ -59,17 +58,34 @@ Aus der Liste mit 10 einmaligen Käufen wird ein Lager, das man über viele Durc
 Elite-Gegner sind keine stärkeren Zahlen mehr, sondern haben Eigenschaften, die man sieht und auf die man reagieren muss (Regeln und Bild in `js/elites.js`, Texte in `A.ELITE_TRAITS` in `js/data.js`):
 - **16 Eigenschaften:** Flink (Nachbilder), Gepanzert (Funken, kein Rückstoss), Giftig (Giftpfützen), Feurig (Feuerring mit Warnkreis), Frostig (Eiskreis unter dem Helden, friert fest), Explosiv (platzt kurz nach dem Tod, trifft auch Gegner), Beschwörer (ruft Helfer), Blinzelnd (springt durch den Raum), Schildträger (Lichtschild, lädt nach), Vampir (heilt sich mit Treffern), Riesig (doppelt so gross, Stampfer), Gewitter (drei markierte Blitze), Wütend (ab halbem Leben rasend), Spiegelnd (zwei Spiegelbilder bei halbem Leben), Klingenwirbel (drei kreisende Klingen), Heiler (heilt die anderen Gegner).
 - **Mehr Eigenschaften in der Tiefe:** 1 bis Ebene 4, 2 ab Ebene 5, 3 ab Ebene 15, 4 ab Welten II. Ab Ebene 3 hat ein Kampfraum manchmal einen «Champion» mit einer Eigenschaft weniger (13 % bis höchstens 30 %). Was nicht zusammenpasst, kommt nicht zusammen: höchstens eine Eigenschaft, die ihn am Leben hält (Schild, Vampir, Heiler), nie Flink und Riesig zugleich, kein Beschwörer bei Gegnern, die schon rufen.
-- **Anzeige:** farbige Aura und Name mit Symbolen über dem Gegner, oben ein eigener Balken mit allen Eigenschaften und einem kurzen Tipp, Warnkreise am Boden (auch im 3D-Look). Taucht eine Eigenschaft zum ersten Mal auf, erklärt ein Banner sie.
+- **Anzeige:** farbige Aura und Name mit Symbolen über dem Gegner, oben ein eigener Balken mit allen Eigenschaften und einem kurzen Tipp, Warnkreise am Boden. Taucht eine Eigenschaft zum ersten Mal auf, erklärt ein Banner sie.
 - **Belohnung je Eigenschaft:** mehr Gold und Erfahrung, bessere Beute (ab 3 Eigenschaften manchmal ein zweites Stück), am Ende 1 Seelenfunke pro besiegter Eigenschaft.
 - **Elite-Buch im Lager:** eine Seite pro Eigenschaft. Die erste besiegte Elite mit einer neuen Eigenschaft gibt sofort 10 Seelenfunken, jede Seite macht für immer 2 % mehr Schaden gegen Elite-Gegner (alle 16: +32 %). Das Buch zählt auch, wie oft man jede Eigenschaft besiegt hat.
-- Nebenbei: Boss-Warnkreise (Sprung, Ranken, Flut, Strahl) sind jetzt auch im 3D-Look zu sehen, Balken und Hinweise oben weichen am Handy der Minikarte aus, lange Einblendungen passen auf schmale Bildschirme. Behoben: wer während des Abstiegs noch einmal die Treppe benutzte, konnte zweimal «Tiefer» wählen und übersprang eine ganze Ebene (auch einen Boss).
+- Nebenbei: Balken und Hinweise oben weichen am Handy der Minikarte aus, lange Einblendungen passen auf schmale Bildschirme. Behoben: wer während des Abstiegs noch einmal die Treppe benutzte, konnte zweimal «Tiefer» wählen und übersprang eine ganze Ebene (auch einen Boss).
 - Spielstand bleibt: altes Lager und laufende Durchläufe laden normal, das Elite-Buch beginnt leer.
+
+## Legendäre Gegenstände (21.10.2026)
+20 Legenden (`js/legends.js`, Texte in `A.LEGENDS` in `js/data.js`), jede verändert die Spielweise und hat ein eigenes Bild:
+- **Von den 6 Weltenbossen:** Pudding, der Thronfolger (Schleim-Begleiter, verschluckt angeschlagene Gegner und wächst), Strickjacke der Dornenmutter (doppelte Dornen, Ranken halten Gegner fest), Totenmaske des Pharao (alle 15 Sekunden steht die Zeit 2 Sekunden still), Bademantel des Kraken (Tintenwolke, Gegner darin schlagen daneben), Amboss im Abo (alle 4 Sekunden ein Amboss auf den stärksten Gegner), Wächterauge am Stiel (jeder 4. besiegte Gegner reisst ein Leerenloch auf).
+- **Von Elite-Gegnern mit der passenden Eigenschaft:** Riesenpilz-Hut (Riesig: du wirst riesig), Spiegelscherbe (Spiegelnd: dein Spiegelbild zaubert mit), Gebiss des Grafen (Vampir: Überheilung wird Schild), Blitzableiter (Gewitter: Angriffe springen über), Grillschürze (Feurig: Gegner um dich brennen), Schneekugel (Frostig: einfrieren und zerspringen lassen), Quietsche-Latschen (Explosiv: Quietsche-Ente als Köder, die explodiert), Fliegender Teppich (Flink: schweben über schlechtem Boden).
+- **Aus geheimen Räumen** (eine Legende pro Welt): Flöte des Rattenfängers (Ratten kämpfen mit), Würfel des Gönners (Würfel zu Kampfbeginn), Prahlhans (jeder Sieg im Raum macht stärker), Rüstung aus Bratpfannen (jeder 3. Treffer prallt ab), Münzfresser (Angriffe kosten Gold und treffen härter), Voodoo-Puppe (andere Gegner spüren mit).
+- **Geheime Räume:** ab Ebene 2 manchmal am Ende eines Gangs, der ins Geröll führt. Geröll wegräumen (nicht mitten im Kampf), dahinter steht eine lila Truhe mit viel Gold, einem guten Stück und oft der Legende dieser Welt.
+- **Regeln:** jede Legende höchstens einmal pro Durchlauf, Waffen passen immer zur Klasse, Werte wachsen mit der Ebene wie bei den Boss-Trophäen. Die Schmiede lässt Legenden, wie sie sind; die volle Tasche verkauft sie nicht von selbst.
+- **Legenden-Sammlung im Lager:** gefundene mit Bild, Name und Wirkung, unbekannte als Schatten mit Fundort. Jede neue gibt sofort 20 Seelenfunken und für immer +1 % Schaden (alle 20: +20 %).
+- Spielstand bleibt: altes Lager lädt normal mit leerer Sammlung, laufende Durchläufe bauen ihre Ebene gleich wie vorher (geheime Räume erst in neuen Durchläufen).
+
+## Grössere Räume (21.10.2026)
+Wunsch: «die Räume sind bisschen eng, doppelt so viel Platz». Neue Ebenen bauen mit grösseren Zellen (24×18 statt 17×13 Kacheln, `A.Levels.BIG` in `js/levels.js`):
+- **Kampfräume etwa doppelt so gross** (Fläche im Mittel ×1.97, begehbarer Boden ×1.94), Start-, Truhen-, Laden-, Schmiede- und geheime Räume etwas grösser, Boss-Räume 21×15 statt 15×11. Die Formen wachsen mit (breitere Gänge im Ring, Säulen weiter auseinander, Graben der Insel weiter innen).
+- **Damit es nicht leer wirkt:** ein Gegner mehr pro Kampfraum (Abstand beim Erscheinen 160 statt 130), etwa doppelt so viele Hindernisse, Gruben und Flecken Gefahr-Boden.
+- **Überblick:** die Kamera zoomt auf fast allen Bildschirmen eine Stufe heraus (man sieht in jede Richtung etwa ein Viertel mehr), auf Handy und PC. Der Kraken setzt in grossen Räumen einen sicheren Kreis mehr.
+- Spielstand bleibt: eine laufende Ebene bleibt wie sie ist, ab der nächsten Ebene sind die Räume gross (`lvVer` 4 in `game.js`).
 
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
-## Zweiter Look «3D» (18.10.2026, abends)
-Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` in der Adresse; Retro bleibt Standard und wird gespeichert. Klötzchen-Figuren, Steinboden und Ziegelwände als echte Körper, Fackeln mit Lichtschein, Schatten, Nebel, Gitter an verriegelten Türen, leuchtende Beute; alle Texte, Balken, Minikarte und Joystick kommen aus dem gleichen Code wie im Retro-Look. Gebaut mit three.js (MIT-Lizenz, im Bündel `js/draw3.js` eingebettet). Kommt ein Gerät nicht mit, schaltet das Spiel die Schatten ab und zeichnet gröber. Bilder und Grenzen: `LOOK.md` im Projekt-Ordner (Abschnitt «Zweiter Look»).
+## Kein 3D mehr (21.10.2026)
+Den zweiten Look «3D» (three.js, 18.10.) gibt es nicht mehr: Christoph braucht ihn nicht, es gibt nur noch das Retro-Spiel. Weg sind der Knopf «Look» im Titel, die Taste L, `?look=3d`, `js/draw3.js`, `src3d/` und `build3d.js`; die Spiel-Datei ist dadurch nur noch gut halb so gross (rund 700 statt 1270 KB). Wer 3D gewählt hatte, spielt mit seinem Spielstand einfach im Retro-Look weiter.
 
 ## Dateien
 - `index.html` + `js/*.js` – Quelltext:
@@ -77,21 +93,19 @@ Umschaltbar im Titel (Knopf «Look»), im Spiel mit Taste L oder per `?look=3d` 
   - `boons` – Schrein: Zauber für alle, passive Talente, Verstärkungen.
   - `gear` – Ausrüstung: Element-Boni (2/4/6 Teile) und besondere Kräfte im Kampf, Build-Übersicht.
   - `classes` – eigene Spielweise von Rufer (Diener) und Braumeister (Flaschen im Bogen, Sprengfass, Tränke).
-  - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise in Retro und 3D).
+  - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise); `legends` – Wirkung der 20 Legenden (Haken für Treffer, Siege, Zauber, Kampfbeginn, Zeichnen).
   - `levels` – Ebenen-Bau: Raster, Raumformen, Gänge, Hindernisse, Erreichbarkeit.
   - `world` – Räume, Gegner, Treffer, Wegenetz, Gefahr-Boden, Zauber und Talente in der Welt.
   - `art` – alle Figuren, Gegner, Gegenstände und Symbole als Pixel-Raster mit Palette.
   - `draw` – Dungeon zeichnen, Licht und Schatten, Minikarte, Boss-Balken.
-  - `draw3` – 3D-Look (gebündelt aus `src3d/draw3.js` plus three.js; nicht von Hand ändern, sondern `src3d/draw3.js` ändern und `node build3d.js` laufen lassen).
   - `fx` – Effekte (Funken, Wackeln, Treffer-Pause, Zeitlupe, Banner, Flecken am Boden).
   - `sound` – Töne aus Code (Web Audio), keine Tondateien.
   - `scenes` – Titelbild (Tor in die Tiefe), Bühne der Heldenwahl und das Lager-Bild, das mit den Gebäuden wächst.
   - `input` – Tasten, Joystick, Knöpfe; `ui` – Menüs, Anzeige oben, Knöpfe.
 - `fonts/` – Pixelify Sans und Jacquard 24 (beide SIL Open Font License, Lizenztext in `fonts/OFL-*.txt`), werden beim Bauen in die Datei eingebettet.
-- `npm install` (einmal) und `node build3d.js` – bündelt den 3D-Look nach `js/draw3.js` (esbuild + three.js aus `package.json`).
 - `node build.js` – baut `dist/index.html` (eine Datei mit allem, auch den Schriften; für Artifact und Portal).
-- `node test-abstieg.js <ordner> [playwright-pfad] [chromium-pfad] [retro|3d] [klasse]` – steuert den Helden automatisch durch die Räume (läuft, schlägt, benutzt Truhen und Treppen), macht Bildschirmfotos, bricht bei Fehlern ab. Klasse z. B. `rufer` oder `brau` (sonst Klinge).
-- `node shots.js dist/index.html <ordner> [handy|pc|beide] [retro|3d]` – Vergleichsbilder aller wichtigen Bildschirme.
+- `node test-abstieg.js <ordner> [playwright-pfad] [chromium-pfad] [klasse]` – steuert den Helden automatisch durch die Räume (läuft, schlägt, benutzt Truhen und Treppen), macht Bildschirmfotos, bricht bei Fehlern ab. Klasse z. B. `rufer` oder `brau` (sonst Klinge).
+- `node shots.js dist/index.html <ordner> [handy|pc|beide]` – Vergleichsbilder aller wichtigen Bildschirme.
 
 ## Portal
 `Portal`-Objekt in `ui.js` ist ein Platzhalter; wird beim Einreichen durch das CrazyGames-SDK ersetzt.

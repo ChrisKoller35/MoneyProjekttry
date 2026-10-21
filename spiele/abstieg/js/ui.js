@@ -7,17 +7,6 @@ window.A = window.A || {};
   const $ = (s) => document.querySelector(s);
   const screen = $('#screen'), hud = $('#hud'), overlay = $('#overlay'), dungeonEl = $('#dungeon'), bgCv = $('#bg'), joyHint = $('#joyHint');
   const draw = new A.Draw($('#arena'));
-  // Darstellung: 'retro' (Pixel-Grafik) oder '3d' (Klötzchen-Welt mit Licht und Schatten); ?look=3d bzw. ?look=retro zum Ausprobieren
-  let draw3 = null, look3dBroken = false;
-  try { const q = new URLSearchParams(location.search).get('look'); if (q === '3d' || q === 'retro') G.meta.look = q; } catch (e) {}
-  function lookIs3d() { return G.meta.look === '3d' && !!A.Draw3 && !look3dBroken; }
-  function activeDraw() {
-    if (!lookIs3d()) return draw;
-    if (!draw3) { try { draw3 = new A.Draw3($('#arena3d'), draw); } catch (e) { console.warn('3D nicht möglich:', e); look3dBroken = true; return draw; } }
-    return draw3;
-  }
-  function applyLook() { const on = lookIs3d(); dungeonEl.classList.toggle('d3', on); if (on) activeDraw(); if (draw3) { draw3.topPad = draw.topPad; draw3.botPad = draw.botPad; } }
-  function toggleLook() { G.meta.look = G.meta.look === '3d' ? 'retro' : '3d'; G.saveMeta(); applyLook(); }
   const Wd = A.World;
   const de = A.LANG === 'de', L = (d, e) => de ? d : e;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -32,13 +21,13 @@ window.A = window.A || {};
   // ---------- Symbole ----------
   const WEAPON_ICON = { klinge: 'i_schwert', schuetze: 'i_bogen', weber: 'i_stab', rufer: 's_skel', brau: 's_wonder' };
   const SKILL_ICON = { hieb: 's_strike', rache: 's_strike', wirbel: 's_whirl', schild: 's_shield', gewebe: 's_shield', kampfschrei: 's_buff', rueckzug: 's_buff', hinrichtung: 'u_skull', zielschuss: 's_arrow', pfeilregen: 's_arrow', doppelschuss: 's_arrow', kopfschuss: 's_arrow', giftpfeil: 's_poison', funke: 's_bolt', flaeche: 's_nova', entladung: 's_nova', flicken: 's_heal', fesseln: 's_bind' };
-  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star', forge: 'anvil' };
+  const PROP_ICON = { chest: 'chest', fire: 'flame', merchant: 'u_bag', statue: 'u_quest', stairs: 'u_down', shrine: 'u_star', forge: 'anvil', rubble: 'u_hand' };
   const STAT_ICON = { str: 'i_axt', tou: 'u_heart', dex: 's_arrow', mind: 's_bolt', luck: 'u_star' };
   const SLOT_ICON = { weapon: 'i_schwert', armor: 'i_leder', helm: 'i_kappe', boots: 'i_stiefel', trinket: 'i_ring', trinket2: 'i_amulett' };
   const skIcon = (id, size) => ic(SKILL_ICON[id] || A.Boons.icon(id) || 's_strike', size || 26);
   const cdTxt = (id) => (Math.round(A.Boons.cd(id) * 10) / 10) + ' s';
   const talIcon = (id, size) => ic(A.TALENTS[id].icon || 'u_star', size || 26);
-  const itIcon = (it, size) => ic(Art.itemIcon(it.base), size || 36);
+  const itIcon = (it, size) => ic(Art.itemIcon(it), size || 36);   // Legenden haben ein eigenes Bild
   const rarCol = (r) => (A.RARITY[r] || A.RARITY.common).color;
   const portrait = (race, cls) => `<img class="px" src="${Art.heroPortrait(race, cls)}" width="36" height="26" alt="">`;
 
@@ -73,7 +62,7 @@ window.A = window.A || {};
   H.btn.addEventListener('click', () => { S.click(); showSheet(); });
 
   // ---------- Hilfen ----------
-  function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30 + (it.power ? 12 : 0) + (it.el ? 3 : 0); }
+  function scoreItem(it) { const s = it.stats; return (s.atk || 0) * 2 + (s.mag || 0) * 2 + (s.def || 0) * 2 + (s.hp || 0) * 0.3 + (s.spd || 0) * 3 + (s.crit || 0) * 0.8 + (s.dodge || 0) * 0.8 + (s.atkPct || 0) * 0.6 + (s.magPct || 0) * 0.6 + (s.lifesteal || 0) + (s.thorns || 0) * 0.3 + (s.regen || 0) * 3 + (s.startShield || 0) * 0.5 + (s.poisonOnHit || 0) * 2 + (s.goldPct || 0) * 0.1 + (s.xpPct || 0) * 0.2 + (s.revive || 0) * 30 + (it.power ? 12 : 0) + (it.el ? 3 : 0) + (it.legend ? 30 : 0); }
   function slotCurrent(it) { const r = G.run; if (it.slot === 'trinket') { if (!r.gear.trinket) return null; if (!r.gear.trinket2) return null; return scoreItem(r.gear.trinket) < scoreItem(r.gear.trinket2) ? r.gear.trinket : r.gear.trinket2; } return r.gear[it.slot] || null; }
   function cmpHtml(it, cmpWith) {
     if (cmpWith === undefined) return '';
@@ -84,6 +73,10 @@ window.A = window.A || {};
   // Element-Abzeichen und besondere Kraft (gear.js)
   function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
   function powerHtml(p) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }
+  // Legende (legends.js): ihr Effekt steht gross und golden unter den Werten
+  function legHtml(it) { const Lg = it.legend && A.LEGENDS[it.legend]; return Lg ? `<div class="lg">${ic('u_star', 14)}<span><b>${L('Legende', 'Legend')}:</b> ${esc(t(Lg.text))}</span></div>` : ''; }
+  // erste Legende ihrer Art: kommt in die Sammlung im Lager
+  function legNewHtml(lg) { return lg && lg.first ? `<div class="msg legnew">${ic('u_star', 18)}<span>${L(`<b>Neu in der Legenden-Sammlung</b> (${lg.n}/${Object.keys(A.LEGENDS).length}): +${lg.sparks} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `<b>New in the legend collection</b> (${lg.n}/${Object.keys(A.LEGENDS).length}): +${lg.sparks} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)}</span></div>` : ''; }
   // Was ändert sich an den Element-Boni, wenn it angelegt wird und old wegfällt?
   function elDelta(it, old) {
     const c = A.Gear.counts(G.run), n = Object.assign({}, c), out = [];
@@ -100,13 +93,13 @@ window.A = window.A || {};
   }
   function itemHtml(it, actions, cmpWith, cls) {
     const lines = G.itemLines(it);
-    return `<div class="item ${cls || ''}" style="--rc:${rarCol(it.rarity)}">
+    return `<div class="item ${it.legend ? 'leg' : ''} ${cls || ''}" style="--rc:${rarCol(it.rarity)}">
       <div class="ic">${itIcon(it, 36)}</div>
       <div class="bd">
         <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${cmpHtml(it, cmpWith)}</div>
         <div class="nm">${esc(G.itemName(it))}</div>
         <div class="ln">${lines.map(esc).join(' · ')}</div>
-        ${powerHtml(it.power)}
+        ${powerHtml(it.power)}${legHtml(it)}
         ${it.flavor ? `<div class="fl">${esc(t(it.flavor))}</div>` : ''}
       </div>
       ${actions ? `<div class="act">${actions}</div>` : ''}
@@ -153,7 +146,7 @@ window.A = window.A || {};
     const m = G.meta, r = G.load();
     const words = t(U.title).split(' ');
     show(`<div class="title-wrap fade-in">
-      <div class="topbar">${A.Draw3 ? `<button class="iconbtn look" id="bLook" aria-label="${L('Darstellung wechseln', 'Switch look')}">${L('Look', 'Look')}<b>${m.look === '3d' ? '3D' : 'Retro'}</b></button>` : ''}<button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
+      <div class="topbar"><button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
       <div class="logo">${words.length > 1 ? `<div class="pre">${esc(words[0])}</div>` : ''}<h1>${esc(words.slice(words.length > 1 ? 1 : 0).join(' '))}</h1></div>
       <div class="tag">${esc(t(U.tagline))}</div>
       <div class="menu">
@@ -169,7 +162,6 @@ window.A = window.A || {};
     $('#bNew').onclick = () => { S.click(); if (r) ask(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'), L('Aufgeben', 'Abandon'), () => { G.clearRun(); heroSelect(); }); else heroSelect(); };
     $('#bCamp').onclick = () => { S.click(); camp(); };
     $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); S.click(); if (!G.meta.sound) S.music(null); title(); };
-    if ($('#bLook')) $('#bLook').onclick = () => { S.click(); toggleLook(); title(); };
     $('#bReset').onclick = () => { S.click(); ask(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'), L('Alles löschen', 'Delete everything'), () => { G.resetAll(); title(); }); };
   }
 
@@ -268,6 +260,13 @@ window.A = window.A || {};
       return `<div class="page ${n ? 'have' : ''}"><div class="pi">${ic(T.icon, 27)}</div><div><b ${n ? `style="color:${T.col}"` : ''}>${esc(t(T.name))}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
         <div class="mini">${n ? esc(t(T.text)) : L('Noch nie besiegt', 'Never defeated yet')}</div></div></div>`;
     }).join('');
+    // Legenden-Sammlung: gefundene mit Bild, Name und Wirkung; unbekannte als Schatten mit Fundort
+    const NL = Object.keys(A.LEGENDS).length, legs = G.legCount();
+    const coll = Object.keys(A.LEGENDS).map(id => {
+      const Lg = A.LEGENDS[id], n = m.legFound[id] || 0;
+      return `<div class="page ${n ? 'have' : ''}"><div class="pi">${ic('i_' + Lg.ico, 27)}</div><div><b ${n ? 'class="goldc"' : ''}>${n ? esc(t(Lg.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
+        <div class="mini">${n ? esc(t(Lg.text)) : esc(A.Legends.hint(id))}</div></div></div>`;
+    }).join('');
     const note = m.campNote;
     show(`<div class="fade-in"><h2>${ic('u_tent', 42)}${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div>
       ${note ? `<div class="msg">${L('Das Lager ist gewachsen!', 'The camp has grown!')}${note.old ? ' ' + L('Was du früher gekauft hast, steckt jetzt in den Gebäuden, mit mindestens gleicher Wirkung.', 'What you bought before now lives in the buildings, at least as strong as before.') : ''}${note.bonus ? ' ' + L(`Für die Weltenbosse, die du schon besiegt hast, hängen Wimpel am Eingang: ${note.bonus} Seelenfunken obendrauf.`, `Pennants for the world bosses you already beat hang at the entrance: ${note.bonus} soul sparks on top.`) : ''}</div>` : ''}
@@ -279,6 +278,7 @@ window.A = window.A || {};
       <h3>${L('Neue Völker', 'New peoples')}</h3><div class="card folks"><div class="mini">${L('Jedes Volk zieht ins Lager und kann danach mit in die Tiefe.', 'Each people moves into the camp and can then join the descent.')}</div><div class="frow">${folks}</div></div>
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
+      <h3>${L('Legenden-Sammlung', 'Legend collection')} ${legs}/${NL}</h3><div class="card flags"><div class="mini">${L(`Legenden fallen bei Weltenbossen, bei Elite-Gegnern mit der passenden Eigenschaft und in geheimen Räumen (Geröll am Ende eines Gangs wegräumen). Jede neue bringt ${A.LEGEND_SPARKS} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `Legends drop from world bosses, from elites with the matching trait and in secret rooms (clear the rubble at the end of a corridor). Each new one gives ${A.LEGEND_SPARKS} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(legs * A.LEGEND_DMG * 100)} %</b></div><div class="fgrid one">${coll}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
     if (keep) screen.scrollTop = keep;
@@ -339,7 +339,7 @@ window.A = window.A || {};
     };
     Wd.enter(r.floor, r.floorSeed, fresh ? null : r.rooms, hooks);
     r.rooms = Wd.saveRooms();
-    buildControls(); pads(); applyLook(); fadeIn();
+    buildControls(); pads(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor), '#fee761', 2.6);
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); setTimeout(() => { if (Wd.W && !Wd.W.active) Wd.W.hint = ''; }, 7000); }
@@ -355,15 +355,14 @@ window.A = window.A || {};
     if (sdt > 0) Wd.step(sdt, inp);
     A.FX.update(sdt);
     if (G.run) G.run.rooms = Wd.saveRooms();
-    const dr = activeDraw(); if (dr !== draw) { dr.topPad = draw.topPad; dr.botPad = draw.botPad; }
-    dr.draw(Wd.W, dt);
+    draw.draw(Wd.W, dt);
     controlsTick();
     hudT += dt; if (hudT > 0.1) { hudT = 0; hudUpdate(); }
     joyHint.classList.toggle('hide', !!input.joy.on);
     // Bildrate beobachten: kommt das Gerät nicht mit, wird die Darstellung einfacher (weniger Licht-Feinheiten, weniger Teilchen)
-    if (dr.quality === 'hi' && !Wd.W.paused && raw < 0.25) {
+    if (draw.quality === 'hi' && !Wd.W.paused && raw < 0.25) {
       perf.n++; perf.sum += raw;
-      if (perf.n >= 120) { if (perf.sum / perf.n > 0.026) { dr.quality = 'lo'; A.FX.low = true; } perf.n = 0; perf.sum = 0; }
+      if (perf.n >= 120) { if (perf.sum / perf.n > 0.026) { draw.quality = 'lo'; A.FX.low = true; } perf.n = 0; perf.sum = 0; }
     }
   }
   // Freie Fläche fürs Bild: oben die Anzeige, unten die Knöpfe, wenn sie die Bildmitte verdecken (Handy hochkant)
@@ -410,7 +409,6 @@ window.A = window.A || {};
     if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3' || code === 'Digit4') { if (Wd.useSkill(+code.slice(-1) - 1)) S.click(); }
     if (code === 'KeyQ') { if (Wd.usePotion()) hudUpdate(); }
     if (code === 'KeyE' || code === 'Enter') Wd.interact();
-    if (code === 'KeyL') { toggleLook(); A.FX.banner(L('Look', 'Look') + ': ' + (G.meta.look === '3d' ? '3D' : 'Retro'), null, '#fee761', 1.2); }
     if (code === 'KeyI' || code === 'Tab' || code === 'Escape') { e.preventDefault(); S.click(); showSheet(); }
     if (code === 'Space') e.preventDefault();
   };
@@ -431,9 +429,10 @@ window.A = window.A || {};
     $('#bClose').onclick = () => { S.click(); back(); };
   }
   function foundItem(it) {
-    const cur = slotCurrent(it), ch = equipChoices(it);
-    ov(`<div class="bigicon" style="filter:drop-shadow(0 0 16px ${rarCol(it.rarity)})">${itIcon(it, 72)}</div>
-      <h2 class="mid">${L('Gefunden', 'Found')}</h2>${itemHtml(it, null, cur)}
+    const cur = slotCurrent(it), ch = equipChoices(it), lg = G.legendFound(it);
+    if (lg && lg.first) S.level();
+    ov(`<div class="bigicon ${it.legend ? 'legicon' : ''}" style="filter:drop-shadow(0 0 16px ${rarCol(it.rarity)})">${itIcon(it, 72)}</div>
+      <h2 class="mid ${it.legend ? 'goldc' : ''}">${it.legend ? L('Eine Legende!', 'A legend!') : L('Gefunden', 'Found')}</h2>${itemHtml(it, null, cur)}${legNewHtml(lg)}
       ${ch.map((c, i) => `${elDelta(it, c.old)}<button class="btn primary" ${i ? '' : 'id="bEq"'} data-eqs="${i}">${t(U.equip)}${c.old ? `<span class="mini" style="color:inherit;opacity:0.8">(${L('ersetzt', 'replaces')} ${esc(G.itemName(c.old))})</span>` : ''}</button>`).join('')}
       <button class="btn" id="bBag">${ic('u_bag', 22)}${t(U.bag)}</button>
       <button class="btn" id="bClose">${t(U.sell)} ${coin(G.sellValue(it))}</button>`);
@@ -451,7 +450,8 @@ window.A = window.A || {};
       $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
-    else if (p.kind === 'chest') { Wd.markUsed(p); treasure(); }
+    else if (p.kind === 'chest') { Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
+    else if (p.kind === 'rubble') Wd.openRubble(p);
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }
     else if (p.kind === 'statue') { Wd.markUsed(p); G.roomContent('statue'); eventScreen(); }
@@ -598,7 +598,7 @@ window.A = window.A || {};
     const worn = A.SLOTS.map(s => r.gear[s]).filter(Boolean);
     ov(`<div class="bigicon">${A.Art.img('smith', 56)}</div><h2 class="mid">${t(U.node.forge)}</h2>
       <div class="sub center">${L('«Ich schmiede alles. Ausser Ausreden.»', '"I forge anything. Except excuses."')}<br>${L('Dein Gold', 'Your gold')}: <b class="goldc">${coin(r.gold)}</b></div>
-      <div class="mini fhelp">${L('<b>Werte</b>: neue Zufallswerte. <b>Kraft</b>: eine neue besondere Kraft (ab selten). <b>Element</b>: du wählst eins von sechs. Einzelstücke und Trophäen bleiben, wie sie sind.', '<b>Stats</b>: new random stats. <b>Power</b>: a new special power (rare and up). <b>Element</b>: pick one of six. Uniques and trophies stay as they are.')}</div>
+      <div class="mini fhelp">${L('<b>Werte</b>: neue Zufallswerte. <b>Kraft</b>: eine neue besondere Kraft (ab selten). <b>Element</b>: du wählst eins von sechs. Einzelstücke, Trophäen und Legenden bleiben, wie sie sind.', '<b>Stats</b>: new random stats. <b>Power</b>: a new special power (rare and up). <b>Element</b>: pick one of six. Uniques, trophies and legends stay as they are.')}</div>
       <h3>${L('Angelegt', 'Equipped')}</h3>${worn.map(row).join('')}
       ${r.bag.length ? `<h3>${t(U.bag)}</h3>${r.bag.map(row).join('')}` : ''}
       <button class="btn primary" id="bClose">${t(U.leave)}</button>`, hl ? 'nopop' : '');
@@ -628,6 +628,14 @@ window.A = window.A || {};
     ov(`<div class="bigicon">${ic('chest', 72)}</div><h2 class="mid">${t(U.node.treasure)}</h2><div class="msg">${L('Eine Truhe. Unverschlossen. Verdächtig.', 'A chest. Unlocked. Suspicious.')} <b class="goldc">+${coin(res.gold)}</b></div>${res.items.map(it => itemHtml(it)).join('')}<div class="mini">${L('Liegt im Beutel. Anlegen über das Heldenbild oben links.', 'Now in your bag. Equip via the hero picture top left.')}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
+  // Truhe im geheimen Raum: viel Gold, ein gutes Stück und oft die Legende dieser Welt
+  function secretTreasure() {
+    const res = G.secretChest(); let fresh = null;
+    for (const it of res.items) { G.addToBag(it); const lg = G.legendFound(it); if (lg && lg.first) fresh = lg; }
+    S.loot(res.legend ? 'legendary' : 'epic'); if (fresh) S.level();
+    ov(`<div class="bigicon legicon">${Art.img('chest', 72, { m: '#68386c', M: '#b55088', N: '#3e2731', n: '#262b44' }, 'secret')}</div><h2 class="mid goldc">${L('Geheime Truhe', 'Secret chest')}</h2><div class="msg">${res.legend ? L('Jemand hat hier etwas versteckt. Jemand mit Geschmack.', 'Someone hid something here. Someone with taste.') : L('Jemand hat hier etwas versteckt. Nicht das Allerbeste, aber immerhin.', 'Someone hid something here. Not the very best, but still.')} <b class="goldc">+${coin(res.gold)}</b></div>${res.items.map(it => itemHtml(it)).join('')}${legNewHtml(fresh)}<div class="mini">${L('Liegt im Beutel. Anlegen über das Heldenbild oben links.', 'Now in your bag. Equip via the hero picture top left.')}</div><button class="btn primary" id="bClose">${t(U.leave)}</button>`);
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
+  }
 
   // ---------- Ende ----------
   function runOver() {
@@ -642,7 +650,7 @@ window.A = window.A || {};
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
     $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
@@ -650,6 +658,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get draw3() { return draw3; }, toggleLook, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, runOver, useProp, foundItem, forge, forgeElement } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, forge, forgeElement } };
   title();
 })();

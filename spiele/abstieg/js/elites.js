@@ -1,6 +1,6 @@
 // Der Abstieg – Elite-Gegner mit Eigenschaften (A.ELITE_TRAITS in data.js): je tiefer, desto mehr Eigenschaften,
 // jede mit eigener Wirkung, Warnkreis am Boden und eigenem Aussehen. game.js ruft make() beim Bauen des Gegners,
-// world.js ruft onAdd/step/onHurt/onDeal/onDeath und tick() einmal pro Bild; draw.js und der 3D-Look zeichnen.
+// world.js ruft onAdd/step/onHurt/onDeal/onDeath und tick() einmal pro Bild; draw.js zeichnet.
 'use strict';
 window.A = window.A || {};
 
@@ -179,7 +179,7 @@ A.Elites = (function () {
         if (w.t >= b.at) { b.done = true; fire(b); }
       } else if (b.kind === 'puddle') {
         if (w.t > b.until) { b.done = true; continue; }
-        if (h.alive && w.t >= b.tick && inEll(b, h, 0)) { b.tick = w.t + 0.5; if (b.pk === 'poison') api.addEffect(h, 'poison', b.dmg, 2); else { h.slowUntil = w.t + 0.6; h.slowPow = 0.5; } }
+        if (h.alive && !h.fly && w.t >= b.tick && inEll(b, h, 0)) { b.tick = w.t + 0.5; if (b.pk === 'poison') api.addEffect(h, 'poison', b.dmg, 2); else { h.slowUntil = w.t + 0.6; h.slowPow = 0.5; } }
       } else if (w.t > b.until) b.done = true;
     }
     w.efx = list.filter(b => !b.done);
@@ -203,7 +203,7 @@ A.Elites = (function () {
       if (me) api.hit(b.from, h, b.dmg, { kind: 'magic', color: '#7fd8ff' });
       w.bolts.push({ x0: b.x + (Math.random() - 0.5) * 60, y0: b.y - 300, x1: b.x, y1: b.y - 4, life: 0.3, max: 0.3, col: '#c8f5ff', seed: Math.random() * 99 });
       if (F) {
-        for (let k = 0; k < 10; k++) F.part({ add: true, x: b.x + (Math.random() - 0.5) * 6, y: b.y, z: k * 14, life: 0.25, color: k % 2 ? '#ffffff' : '#7fd8ff', size: 2, drag: 0 });   // Blitz als Säule (auch im 3D-Look)
+        for (let k = 0; k < 10; k++) F.part({ add: true, x: b.x + (Math.random() - 0.5) * 6, y: b.y, z: k * 14, life: 0.25, color: k % 2 ? '#ffffff' : '#7fd8ff', size: 2, drag: 0 });   // Blitz als Säule
         F.burst(b.x, b.y, 10, { color: ['#ffffff', '#7fd8ff'], smin: 60, smax: 200, life: 0.3, add: true, kind: 'spark', drag: 5 });
         F.flash(b.x, b.y, 90, '#c8f5ff', 0.25); F.shake(0.18); F.decal(b.x, b.y, 'splat', '#262b44', 4);
       }
@@ -310,26 +310,11 @@ A.Elites = (function () {
       if (m.ef.busy > w.t) Lt(m.x, m.y - 10, 50, has(m, 'feurig') ? '#f77622' : '#e4a672', 0.6);
     }
   }
-  // 3D-Look: Bodenkreise und Schild als Ringe, Klingen, Nachbilder und Heilstrahlen als Teilchen (src3d/draw3.js, jedes Bild)
-  function rings(w, ring, U) {
-    const F = A.FX;
-    for (const o of w.efx || []) {
-      if (o.kind === 'tele') { const p = clamp((w.t - o.t0) / (o.at - o.t0), 0, 1); ring(o.x * U, o.y * U, o.r * U, o.col, 0.75, 0.05, EY); ring(o.x * U, o.y * U, o.r * U * p, o.col, 0.4, 0.05, EY); }
-      else if (o.kind === 'puddle') ring(o.x * U, o.y * U, o.r * U, o.pk === 'ice' ? '#9be8ff' : '#63c74d', 0.45 * clamp((o.until - w.t) / 0.6, 0, 1), 0.04, EY);
-      else if (o.kind === 'beam' && F && !o.drawn3) { o.drawn3 = true; for (let k = 0; k <= 8; k++) { const q = k / 8; F.part({ add: true, x: o.x0 + (o.x1 - o.x0) * q, y: o.y0 + (o.y1 - o.y0) * q, z: 14, life: 0.4, color: k % 2 ? '#ffffff' : o.col, size: 2, drag: 0 }); } }
-    }
-    for (const m of w.mons) {
-      if (!m.alive || !m.ef || m.spawn > 0) continue;
-      if (m.shield > 0 && m.shieldCap) ring(m.x * U, m.y * U, (m.r + 12) * U, '#2ce8f5', 0.55, 0.6);
-      if (has(m, 'klingen')) for (let i = 0; i < 3; i++) { const p = blade(m, i); ring(p.x * U, p.y * U, 0.22, '#c0cbdc', 0.9, 0.4); if (F && Math.random() < 0.5) F.part({ add: true, x: p.x, y: p.y, z: 13, life: 0.1, color: '#ffffff', size: 3, drag: 0 }); }
-      if (has(m, 'flink') && F && m.ef.ghosts.length && w.t - m.ef.ghosts[m.ef.ghosts.length - 1].t < 0.1 && Math.random() < 0.5) F.part({ add: true, x: m.x + (Math.random() - 0.5) * 8, y: m.y, z: 6 + Math.random() * 20, life: 0.25, color: '#fee761', size: 2, drag: 0 });
-    }
-  }
 
-  // ---------- Oberfläche (beide Looks, volle Auflösung) ----------
+  // ---------- Oberfläche (volle Auflösung) ----------
   // Name und Bildchen der Eigenschaften über dem Kopf
   function label(dr, m, toS) {
-    const c = dr.ctx, d = dr.dpr; let [x, y] = toS(m.x, m.y, m._lblUp || (m.giant ? 80 : 46)); y -= m._lblDy || 0;   // Höhe setzt der jeweilige Look beim Zeichnen
+    const c = dr.ctx, d = dr.dpr; let [x, y] = toS(m.x, m.y, m._lblUp || (m.giant ? 80 : 46)); y -= m._lblDy || 0;   // Höhe setzt draw.js beim Zeichnen
     c.textAlign = 'center'; c.font = dr.font(11 * d); c.lineWidth = 3 * d; c.strokeStyle = '#181425'; c.strokeText(m.name, x, y); c.fillStyle = col(m, dr.t); c.fillText(m.name, x, y);
     if (!m.traits) return;
     const s = Math.max(1, Math.round(d)), n = m.traits.length, iw = 9 * s, gap = 2 * d, tot = n * iw + (n - 1) * gap;
@@ -374,5 +359,5 @@ A.Elites = (function () {
     c.strokeText(tip, tx, y1 + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(tip, tx, y1 + 14 * d);
   }
 
-  return { bind, count, make, onAdd, step, onHurt, onDeal, onDeath, tick, col, drawGround, drawTop, drawUnder, drawOver, lights, rings, label, bar, has };
+  return { bind, count, make, onAdd, step, onHurt, onDeal, onDeath, tick, col, drawGround, drawTop, drawUnder, drawOver, lights, label, bar, has };
 })();

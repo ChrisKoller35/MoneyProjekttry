@@ -3,8 +3,8 @@
 window.A = window.A || {};
 
 A.World = (function () {
-  const TS = 32, CW = A.Levels.CW, CH = A.Levels.CH, GX = A.Levels.GX, GY = A.Levels.GY;   // Kachelgrösse, Zellen-Grösse in Kacheln, Raster
-  const MW = GX * CW, MH = GY * CH;                     // Karte in Kacheln
+  const TS = 32, GX = A.Levels.GX, GY = A.Levels.GY;   // Kachelgrösse, Raster
+  let CW = A.Levels.CW, CH = A.Levels.CH, MW = GX * CW, MH = GY * CH;   // Zellen-Grösse und Karte in Kacheln (je Ebene: grosse Räume haben grössere Zellen)
   const G = () => A.Game;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -15,7 +15,9 @@ A.World = (function () {
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
   function genFloor(floor, seed, saved) {
     const wd = A.worldOf(floor);
-    const lv = A.Levels.gen(floor, seed, wd, { forge: (G().run.lvVer || 0) >= 2 });
+    const v = G().run.lvVer || 0;   // Ebenen-Bau: 2 Schmiede, 3 geheime Räume, 4 grosse Räume (ältere Spielstände bauen ihre laufende Ebene wie bisher)
+    const lv = A.Levels.gen(floor, seed, wd, { forge: v >= 2, secret: v >= 3, big: v >= 4 });
+    ({ CW, CH, MW, MH } = lv.dims);
     const { rooms, tiles, edges } = lv;
     // Gegenstände im Raum, auf dem Ankerpunkt (freier Boden nahe der Mitte)
     for (const r of rooms) {
@@ -24,10 +26,19 @@ A.World = (function () {
       if (kind) r.props.push({ kind, x: cx, y: cy, room: r.i, used: false });
       if (r.type === 'boss') r.props.push({ kind: 'stairs', x: cx, y: cy, room: r.i, used: false, hidden: true });
       if (r.type === 'start') r.props.push({ kind: 'sign', x: cx, y: cy - TS * 2, room: r.i, used: false, text: A.LANG === 'de' ? 'Ebene ' + floor : 'Floor ' + floor });
+      // geheimer Raum: Truhe mit Legenden-Chance; das Geröll im Durchgang gehört auch zu diesem Raum (sonst stimmt die Reihenfolge im Spielstand nicht)
+      if (r.type === 'secret') {
+        r.props.push({ kind: 'chest', secret: true, x: cx, y: cy, room: r.i, used: false });
+        const d = r.secret.door, gx = Math.min(...d.map(t => t[0])) + 1, gy = Math.min(...d.map(t => t[1])) + 1;
+        r.props.push({ kind: 'rubble', x: gx * TS, y: gy * TS, room: r.i, used: false, rad: 70, tiles: d });
+      }
     }
+    let reach = lv.reach;
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
-    return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach: lv.reach };
+    for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
+    return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach, big: lv.big };
   }
+  function reachFrom(tiles, sr) { return A.Levels.flood(tiles, sr.x + Math.floor(sr.w / 2), sr.y + Math.floor(sr.h / 2)); }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
 
   // ---------- Start einer Ebene ----------
@@ -125,14 +136,15 @@ A.World = (function () {
     if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
     else {
       const pool = A.monsterPool(f);
-      const n = r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > 130 && f >= 6 ? 1 : 0);
+      // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
+      const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0);
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
       const champ = r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
     }
     list.forEach((m, i) => {
       let x, y, tries = 0;
-      do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < 130 || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
+      do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < (W.big ? 160 : 130) || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
     });
     r.monsters = list.length;
@@ -189,6 +201,7 @@ A.World = (function () {
     if (m.stun > 0) { m.stun -= dt; return; }
     const d = dist(m, h) || 1, nx = (h.x - m.x) / d, ny = (h.y - m.y) / d;
     if (d < 420) { m.fx = nx; m.fy = ny; }
+    if (A.Legends.lure(m, dt)) return;   // Quietsche-Ente (legends.js)
     if (monSpecial(m, dt, d, nx, ny)) return;
     if (m.state === 'windup') { m.st -= dt; if (m.st <= 0) { m.state = 'chase'; m.cd = m.boss ? 1.1 : 1.3 - m.spd * 0.03; m.swing = 0.2; W.fx.push({ kind: 'claw', x: m.x, y: m.y, fx: m.fx, fy: m.fy, r: m.r + h.r + 22, life: 0.22, big: m.boss || m.elite }); fx('strike', { m }); if (d < m.r + h.r + 22) hit(m, h, m.atk, { kind: 'phys', slow: m.slowOnHit }); } return; }
     // Laufrichtung: direkt, wenn frei; sonst über das Wegenetz um Hindernisse herum
@@ -224,16 +237,18 @@ A.World = (function () {
     opts = opts || {};
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
+    const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
     if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) A.Gear.onDodge(to); return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
     const gp = A.Gear.pre(from, to, opts); if (gp) dmg *= gp.mul;   // Element-Stufen und Kräfte der Ausrüstung (gear.js)
     const cp = A.Classes.pre(from, to, opts); if (cp) dmg *= cp.mul;   // Riesenwuchs, Glückssträhne (classes.js)
+    const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
-    if ((gp && gp.force) || (cp && cp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0), 0, 90) / 100) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
+    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
     if (opts.execute && to.hp / to.maxHp < opts.execute && !to.boss) dmg = to.hp + 1;
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
@@ -242,11 +257,11 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) A.Gear.onHurt(to, from); }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
-      const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.kbImmune ? 0 : to.giant ? 0.25 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1);
+      const k = Math.hypot(to.x - from.x, to.y - from.y) || 1, pow = (crit ? 300 : 190) * (to.boss ? 0.12 : to.kbImmune ? 0 : to.giant ? 0.25 : to.mid === 'rostgolem' ? 0.35 : to.elite ? 0.6 : 1) * (from.legBig ? 1.6 : 1);
       to.kbx = (to.x - from.x) / k * pow; to.kby = (to.y - from.y) / k * pow; to.kbT = 0.12;
     }
     if (dmg > 0 && opts.kind !== 'poison' && opts.kind !== 'burn' && opts.kind !== 'thorns') {
@@ -261,9 +276,9 @@ A.World = (function () {
       if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); checkDeath(from); }
       if (to.healOnPhys && opts.kind !== 'magic') heal(to, Math.round(to.maxHp * to.healOnPhys));
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
-      if (to.side === 'hero' && from.side === 'enemy') { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
+      if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
-    if (from === W.hero && to.side === 'enemy') A.Gear.onHit(from, to, dmg, crit, opts);
+    if (from === W.hero && to.side === 'enemy') { A.Gear.onHit(from, to, dmg, crit, opts); A.Legends.onHit(from, to, dmg, crit, opts); }
     if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
     // Boss-Trophäen (data.js A.TROPHIES)
     if (to.side === 'hero' && to.tro && to.alive && to.hp > 0) {
@@ -276,8 +291,8 @@ A.World = (function () {
     checkDeath(to);
     return dmg;
   }
-  function heal(e, n, loud) { if (!e.alive || n <= 0) return; const b = e.hp; e.hp = Math.min(e.maxHp, e.hp + n); if (e.hp > b) { float(e.x, e.y - e.r - 10, '+' + (e.hp - b), '#63c74d', 14); fx('heal', { e, n: e.hp - b, loud }); } }
-  function addEffect(e, kind, dmg, sec) { const cur = e.effects.find(x => x.kind === kind); if (cur) { cur.dmg = Math.max(cur.dmg, dmg); cur.until = W.t + sec; } else e.effects.push({ kind, dmg, until: W.t + sec, tick: W.t + 1 }); }
+  function heal(e, n, loud) { if (!e.alive || n <= 0) return; const b = e.hp; e.hp = Math.min(e.maxHp, e.hp + n); if (e.hp > b) { float(e.x, e.y - e.r - 10, '+' + (e.hp - b), '#63c74d', 14); fx('heal', { e, n: e.hp - b, loud }); } if (e === W.hero) A.Legends.overheal(e, b + n - e.maxHp); }
+  function addEffect(e, kind, dmg, sec) { if (e.burnImmune && kind === 'burn') return; const cur = e.effects.find(x => x.kind === kind); if (cur) { cur.dmg = Math.max(cur.dmg, dmg); cur.until = W.t + sec; } else e.effects.push({ kind, dmg, until: W.t + sec, tick: W.t + 1 }); }
   function checkDeath(e) {
     if (e.hp > 0 || !e.alive) return;
     if (e.side === 'hero') {
@@ -296,6 +311,7 @@ A.World = (function () {
     fx('death', { e });
     A.Gear.onKill(e);
     A.Classes.onKill(e);
+    A.Legends.onKill(e);
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34' });
@@ -307,6 +323,8 @@ A.World = (function () {
     if (rw.book && rw.book.length && hooks.onBook) hooks.onBook(rw.book);   // neue Seite im Elite-Buch
   }
 
+  // Sofort besiegt (Pudding verschluckt, Schneekugel zerspringt): ohne Treffer-Rechnung, aber mit Beute
+  function kill(m, text, col) { if (!m.alive || m.hp <= 0) return; if (text) float(m.x, m.y - m.r - 18, text, col || '#fee761', 15); m.hp = 0; m.flash = 0.12; checkDeath(m); }
   // Beute fliegt im Bogen heraus und hüpft
   function drop(p, x, y, sp) {
     const a = Math.random() * Math.PI * 2;
@@ -336,16 +354,16 @@ A.World = (function () {
     const sp = opts.speed || 420;
     if (!opts.color) opts.color = opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0';
     fx('shoot', { from, magic: opts.kind === 'magic', color: opts.color, dx: (tx - from.x) / d, dy: (ty - from.y) / d });
-    W.shots.push({ x: from.x + (tx - from.x) / d * (from.r + 4), y: from.y + (ty - from.y) / d * (from.r + 4), vx: (tx - from.x) / d * sp, vy: (ty - from.y) / d * sp, r: opts.r || 5, side: from.side, from, dmg, opts, life: opts.life || 1.0, color: opts.color || (opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0') });
+    W.shots.push({ x: from.x + (tx - from.x) / d * (from.r + 4), y: from.y + (ty - from.y) / d * (from.r + 4), vx: (tx - from.x) / d * sp, vy: (ty - from.y) / d * sp, r: (opts.r || 5) * (from === W.hero && from.legBig ? 1.5 : 1), side: from.side, from, dmg, opts, life: opts.life || 1.0, color: opts.color || (opts.kind === 'magic' ? '#7fd8ff' : '#e8dcc0') });
   }
   function heroAttack() {
     const h = W.hero; if (!h.alive || h.atkCd > 0 || h.stun > 0) return false;
     if (!h.moving) faceTarget(h);
-    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h) * A.Classes.atkMul(h); h.swing = 0.2;
-    h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = big ? 2 : 1;   // Doppelte Wucht: jeder dritte Schlag
+    h.atkCd = h.atkRate * (h.rushUntil > W.t ? 0.6 : 1) * A.Gear.atkMul(h) * A.Classes.atkMul(h) * A.Legends.atkMul(h); h.swing = 0.2;
+    h.atkN = (h.atkN || 0) + 1; const big = h.tal.wucht && h.atkN % 3 === 0, mul = (big ? 2 : 1) * A.Legends.onAttack(h);   // Doppelte Wucht: jeder dritte Schlag; Münzfresser
     if (big) { float(h.x, h.y - 50, A.LANG === 'de' ? 'Wucht!' : 'Impact!', '#feae34', 13); if (A.FX) A.FX.shake(0.15); }
     if (h.tro && h.tro.tinte && h.atkN % 4 === 0) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + h.atkN; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, heroPower(h) * 0.45, { kind: 'magic', color: '#b55088', speed: 300, life: 0.9, r: 5 }); }   // Tintenfass des Kraken
-    if (h.melee) arc(h, h.tal.spalt ? 82 : 58, mul, { kind: 'phys', basic: true });
+    if (h.melee) arc(h, (h.tal.spalt ? 82 : 58) * (h.legBig ? 1.25 : 1), mul, { kind: 'phys', basic: true });
     else if (A.Classes.attack(h, mul, big)) { /* Braumeister: Flasche im Bogen (classes.js) */ }
     else {
       const m = nearestMon(h.x, h.y, 340); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100;
@@ -362,11 +380,19 @@ A.World = (function () {
   function useSkill(idx) {
     const h = W.hero, id = h.skills[idx]; if (!id || !h.alive || h.stun > 0) return false;
     if ((h.cds[id] || 0) > W.t) return false;
-    const sk = A.SKILLS[id], B = A.Boons, pw = B.pow(id), P = skPower(h, sk);
+    const B = A.Boons;
     h.cds[id] = W.t + B.cd(id); h.swing = 0.25;
     if (!h.moving) faceTarget(h);
     float(h.x, h.y - 44, B.skName(id), '#fee761', 12);
     if (h.tal.echo && Math.random() < 0.25) { h.cds[id] = W.t + 0.4; float(h.x, h.y - 58, 'Echo!', '#2ce8f5', 12); }
+    castSkill(h, id, 1);
+    A.Gear.onSkill(h);
+    A.Legends.onSkill(h, id);   // Spiegelscherbe: kurz danach noch einmal
+    return true;
+  }
+  // Wirkung eines Zaubers (mul < 1: Spiegelbild der Spiegelscherbe)
+  function castSkill(h, id, mul) {
+    const sk = A.SKILLS[id], B = A.Boons, pw = B.pow(id), P = skPower(h, sk) * mul;
     const magic = sk.kind === 'magic' || !!sk.any;
     if (A.Classes.skill(h, id, sk, P, pw)) { /* Rufer und Braumeister (classes.js) */ }
     else if (sk.kind === 'shield') { h.shield = Math.max(h.shield, Math.round(h.maxHp * pw)); float(h.x, h.y - 30, String(h.shield), '#2ce8f5', 15); fx('shield', { e: h }); }
@@ -380,7 +406,7 @@ A.World = (function () {
     }
     else if (sk.kind === 'meteor') { const p = nearestMon(h.x, h.y, 420) || frontPoint(h, 130); W.marks.push({ kind: 'meteor', x: p.x, y: p.y, r: sk.radius, t0: W.t, at: W.t + 0.85, dmg: P * pw, burn: sk.burn, col: sk.col }); fx('swing', { magic: true }); }
     else if (sk.kind === 'orbit') { for (let i = 0; i < sk.n; i++) W.orbs.push({ kind: 'ghost', a: i / sk.n * Math.PI * 2, R: 54, spin: 3.2, dmg: P * pw, until: W.t + sk.dur, col: sk.col, hits: new Map() }); fx('nova', { e: h, r: 60, color: sk.col, magic: true }); }
-    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
+    else if (sk.kind === 'ally') { W.allies = W.allies.filter(a => a.perm || a.minion || a.leg); W.allies.push(mkAlly(h, pw, W.t + sk.dur, false)); }
     else if (sk.kind === 'fan') { const a0 = Math.atan2(h.fy, h.fx); for (let i = 0; i < sk.n; i++) { const a = a0 + (i - (sk.n - 1) / 2) * 0.17; shoot(h, h.x + Math.cos(a) * 100, h.y + Math.sin(a) * 100, P * pw, { kind: 'magic', r: 5, speed: 520, life: 0.6, color: sk.col }); } }
     else if (sk.kind === 'multi' || sk.multi) {
       const R = sk.radius || 170;
@@ -397,8 +423,6 @@ A.World = (function () {
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
       else { const m = nearestMon(h.x, h.y, 360); const tx = m ? m.x : h.x + h.fx * 100, ty = m ? m.y : h.y + h.fy * 100; for (let i = 0; i < hits; i++) shoot(h, tx + (i ? (Math.random() - 0.5) * 30 : 0), ty + (i ? (Math.random() - 0.5) * 30 : 0), P * pow, Object.assign({ r: sk.blast ? 9 : 7, speed: sk.blast ? 380 : 460, color: sk.col || (magic ? '#c77dff' : '#ffe08a') }, opts)); }
     }
-    A.Gear.onSkill(h);
-    return true;
   }
   // ---------- Neue Zauber und Talente in der Welt ----------
   // Explosion: trifft alle Gegner im Umkreis
@@ -527,16 +551,18 @@ A.World = (function () {
     if (h.stun > 0) { h.stun -= dt; mx = my = 0; }
     if (h.rootUntil > W.t) mx = my = 0;   // von Ranken festgehalten
     h.moving = len > 0.15;
-    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h) * A.Gear.moveMul(h) * A.Classes.moveMul(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
+    if (h.moving) { mx /= Math.max(1, len); my /= Math.max(1, len); const sp = h.speed * slowMul(h) * hazardSlow(h) * A.Gear.moveMul(h) * A.Classes.moveMul(h) * A.Legends.moveMul(h); moveEnt(h, mx * sp * dt, my * sp * dt); h.fx = mx / (len > 1 ? 1 : len); h.fy = my / (len > 1 ? 1 : len); const l2 = Math.hypot(h.fx, h.fy) || 1; h.fx /= l2; h.fy /= l2; h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.24; fx('step', { e: h }); } }
     if (input.attack) heroAttack();
     // Gefahr-Boden unter dem Helden
     const hz = hazardAt(h); h.onHazard = hz;
-    if (hz && A.HAZARDS[hz].burn && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
+    if (hz && A.HAZARDS[hz].burn && !h.fly && (h.hzT = (h.hzT || 0) - dt) <= 0) { h.hzT = 1; addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.03)), 1.2); }
     if (W.active || W.allies.length) updateFlow();
     boonStep(dt);
-    A.Bosses.tick(dt);
-    A.Elites.tick(dt);
+    const ls = A.Legends.stopped();   // Zeitstopp der Totenmaske: Bosse kurz, Elite-Kreise ganz angehalten
+    if (ls < 2) A.Bosses.tick(dt);
+    if (!ls) A.Elites.tick(dt);
     A.Gear.tick(dt);
+    A.Legends.tick(dt);
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -546,6 +572,7 @@ A.World = (function () {
     // Geschosse
     for (const s of W.shots) {
       if (s.opts.lob) { A.Classes.lobStep(s, dt); continue; }   // Flasche im Bogen (classes.js)
+      if (s.side !== 'hero' && ls) continue;   // Zeitstopp: Geschosse der Gegner hängen in der Luft
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
       if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
       if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn }, s.color); } else hit(s.from, m, s.dmg, s.opts); s.life = 0; break; } } }
@@ -576,7 +603,7 @@ A.World = (function () {
     if (r && r !== W.room) { W.room = r; }
     if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
       if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
-      A.Gear.onRoomStart(h); } G().save(); }
+      A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -584,19 +611,33 @@ A.World = (function () {
       if (hooks.onCleared) hooks.onCleared(a); }
     // In der Nähe von etwas?
     W.near = null;
-    for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign') continue; if (dist(p, h) < 46) W.near = p; }
+    for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign') continue; if (dist(p, h) < (p.rad || 46)) W.near = p; }
+    if (W.near && W.near.kind === 'rubble' && !W.near.hinted) { W.near.hinted = true; float(W.near.x, W.near.y - 40, A.LANG === 'de' ? 'Hier zieht es. Wegräumen?' : 'There is a draft. Clear it?', '#fee761', 14); }
     G().run.hp = h.hp;
   }
   function interact() { if (!W.near) return false; const p = W.near; if (hooks.onProp) hooks.onProp(p); return true; }
   function markUsed(p) { p.used = true; const r = W.rooms[p.room]; r.used = true; G().save(); }
+  // Geröll wegräumen: der geheime Raum dahinter wird begehbar
+  function openRubble(p) {
+    const h = W.hero;
+    if (W.active) { float(h.x, h.y - 44, A.LANG === 'de' ? 'Nicht jetzt, hier wird gekämpft!' : 'Not now, there is a fight!', '#c0cbdc', 13); return false; }
+    for (const [x, y] of p.tiles) W.tiles[y][x] = 1;
+    W.reach = reachFrom(W.tiles, W.start); W.flowAt = -1;
+    p.used = true; G().save();   // nur das Geröll: der Raum selbst gilt erst mit der Truhe als benutzt
+    if (A.FX) { A.FX.shake(0.3); A.FX.rocks(p.x, p.y, 12, 80, ['#5a6988', '#8b9bb4', '#3a4466']); for (let i = 0; i < 6; i++) A.FX.part({ kind: 'smoke', x: p.x + (Math.random() - 0.5) * 50, y: p.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 30, vy: -10, life: 1.2, size: 5, grow: 10, color: '#8b9bb4', drag: 1 }); }
+    if (A.Sound.klong) A.Sound.klong(true);
+    float(p.x, p.y - 40, A.LANG === 'de' ? 'Geheimer Raum!' : 'Secret room!', '#fee761', 18);
+    return true;
+  }
 
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
   A.Elites.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon });
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
+  A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
 
   return {
-    get W() { return W; }, TS, CW, CH, MW, MH, enter, step, interact, markUsed, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon,
+    get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill,
     pause(v) { if (W) W.paused = v; },
   };
 })();
