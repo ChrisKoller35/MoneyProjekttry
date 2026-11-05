@@ -27,6 +27,8 @@ A.Achieve = (function () {
       cls5: A.CLASSES.filter(c => ((s.clsBest || {})[c.id] || 0) >= 5).length, races: A.RACES.filter(x => ((s.raceRuns || {})[x.id] || 0) > 0).length,
       pets: A.Pets.count(), treue5: Object.keys(A.PETS).filter(id => A.Pets.found(id) && A.Pets.treue(id) >= 5).length,
       death1: s.death1 || 0, nearDeath: s.nearDeath || 0,
+      // Hauptleute und Reaktionen (foes.js): besiegte Hauptleute, verschiedene Hauptleute, fliehende Gegner erwischt
+      captains: s.captains || 0, captKinds: A.Foes.count(), fleeKills: s.fleeKills || 0,
       // Dein Build (build.js): meiste Teile eines Elements, Kombos im laufenden Durchlauf, tiefste Ebene mit starkem Build
       elMax: r ? Math.max(0, ...Object.values(A.Gear.counts(r))) : 0, runCombos: r ? (r.combos || []).length : 0, buildBest: s.buildBest || 0,
     };
@@ -84,7 +86,7 @@ A.Achieve = (function () {
   function onHurt(h, from, dmg, st) {
     const r = G().run; if (r) r.floorDmg = (r.floorDmg || 0) + dmg;
     if (st && h.alive && h.hp > 0 && h.hp < h.maxHp * 0.05) st.low = true;
-    h.lastFrom = from ? { mid: from.mid || null, boss: !!from.boss, elite: !!(from.elite || from.traits), kind: from.side === 'enemy' ? 'mon' : (from.side || 'mon') } : null;
+    h.lastFrom = from ? { mid: from.mid || null, boss: !!from.boss, elite: !!(from.elite || from.traits), cap: from.captain || null, kind: from.side === 'enemy' ? 'mon' : (from.side || 'mon') } : null;
   }
   function onDeath(h) { const r = G().run; if (r) r.deathBy = h.lastFrom || null; }
   function onSecret() { add('secrets'); G().saveMeta(); }
@@ -119,7 +121,7 @@ A.Achieve = (function () {
     if (by && by.kind === 'burn') return L('in Flammen aufgegangen', 'went up in flames');
     if (by && by.kind === 'poison') return L('am Gift gestorben', 'died of poison');
     const B = by && by.mid && A.BOSSES[by.mid], M = by && by.mid && A.MONSTERS.find(x => x.id === by.mid);
-    const name = B ? A.t(B.name) : M ? (by.elite ? A.t(A.UI.elitePrefix) + '-' : '') + A.t(M.name) : null;
+    const name = by && by.cap ? A.Foes.nameOf(by.cap) : B ? A.t(B.name) : M ? (by.elite ? A.t(A.UI.elitePrefix) + '-' : '') + A.t(M.name) : null;
     return name ? L(`${name} hat dich erwischt`, `caught by ${name}`) : L('gefallen', 'fallen');
   }
   function timeText(sec) {
@@ -138,5 +140,5 @@ A.Achieve = (function () {
   }
 
   function bind(api) { ui = Object.assign(ui, api); }
-  return { bind, values, check, tick, progress, done, count, clearNew, news, onRun, onFloorDone, onFloor, onKill, onRoom, onHurt, onDeath, onSecret, onEnd, record, chron, life, causeText, timeText, whenText };
+  return { bind, add, values, check, tick, progress, done, count, clearNew, news, onRun, onFloorDone, onFloor, onKill, onRoom, onHurt, onDeath, onSecret, onEnd, record, chron, life, causeText, timeText, whenText };
 })();

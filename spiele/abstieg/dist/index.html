@@ -364,6 +364,7 @@
   .folk .btn.small { margin: 0; }
   .folk.have img { filter: drop-shadow(0 0 5px rgba(99,199,77,0.6)); }
   .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .caplist { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }   /* Hauptleute: eine Zeile je Offizier, Platz für die Masche */
   .flag { display: flex; gap: 8px; align-items: center; padding: 6px; background: rgba(24,20,37,0.45); font-size: 14px; line-height: 1.2; }
   .flag .fi { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
   .flag:not(.have) .fi img { filter: brightness(0) opacity(0.45); }
@@ -747,9 +748,9 @@ A.UNIQUES = [
 // stats bei Ebene 1: hp, atk, def, spd; row: front/back; kind: melee/ranged/magic; floors: ab Ebene
 A.MONSTERS = [
   { id: 'schleimer', name: { de: 'Schleimer', en: 'Slimer' }, hp: 22, atk: 5, def: 0, spd: 3, row: 'front', kind: 'melee', floors: [1, 4], color: '#6fdc7a', shape: 'blob' },
-  { id: 'ratte', name: { de: 'Höhlenratte', en: 'Cave Rat' }, hp: 16, atk: 6, def: 0, spd: 7, row: 'front', kind: 'melee', floors: [1, 5], color: '#8a6a4a', shape: 'rat', crit: 10 },
-  { id: 'fledermaus', name: { de: 'Fledermaus', en: 'Bat' }, hp: 12, atk: 5, def: 0, spd: 9, row: 'back', kind: 'ranged', floors: [1, 4], color: '#5a4a6a', shape: 'bat', dodge: 20 },
-  { id: 'pilzkrieger', name: { de: 'Pilzkrieger', en: 'Fungus Warrior' }, hp: 34, atk: 7, def: 2, spd: 3, row: 'front', kind: 'melee', floors: [2, 6], color: '#b86fa0', shape: 'mushroom', poisonOnHit: 2 },
+  { id: 'ratte', name: { de: 'Höhlenratte', en: 'Cave Rat' }, hp: 16, atk: 6, def: 0, spd: 7, row: 'front', kind: 'melee', floors: [1, 5], color: '#8a6a4a', shape: 'rat', crit: 10, flee: true },
+  { id: 'fledermaus', name: { de: 'Fledermaus', en: 'Bat' }, hp: 12, atk: 5, def: 0, spd: 9, row: 'back', kind: 'ranged', floors: [1, 4], color: '#5a4a6a', shape: 'bat', dodge: 20, flee: true },
+  { id: 'pilzkrieger', name: { de: 'Pilzkrieger', en: 'Fungus Warrior' }, hp: 34, atk: 7, def: 2, spd: 3, row: 'front', kind: 'melee', floors: [2, 6], color: '#b86fa0', shape: 'mushroom', poisonOnHit: 2, spores: true },
   { id: 'knochen', name: { de: 'Knochenwächter', en: 'Bone Warden' }, hp: 40, atk: 8, def: 4, spd: 4, row: 'front', kind: 'melee', floors: [3, 6], color: '#e8e2d0', shape: 'skeleton' },
   { id: 'glutmotte', name: { de: 'Glutmotte', en: 'Ember Moth' }, hp: 18, atk: 7, def: 0, spd: 8, row: 'back', kind: 'magic', floors: [3, 6], color: '#ff8a3d', shape: 'moth', burn: 0.4 },
   { id: 'spinne', name: { de: 'Fadenspinne', en: 'Thread Spider' }, hp: 26, atk: 7, def: 1, spd: 6, row: 'back', kind: 'ranged', floors: [2, 6], color: '#3a3a4a', shape: 'spider', poisonOnHit: 2 },
@@ -757,21 +758,23 @@ A.MONSTERS = [
   { id: 'schattenfaenger', name: { de: 'Schattenfänger', en: 'Shadow Catcher' }, hp: 30, atk: 11, def: 1, spd: 7, row: 'back', kind: 'magic', floors: [4, 6], color: '#2e2a4a', shape: 'ghost', dodge: 15 },
   { id: 'tunnelwurm', name: { de: 'Tunnelwurm', en: 'Tunnel Worm' }, hp: 55, atk: 9, def: 3, spd: 2, row: 'front', kind: 'melee', floors: [5, 6], color: '#c08a6a', shape: 'worm' },
   { id: 'spiegelgeist', name: { de: 'Spiegelgeist', en: 'Mirror Ghost' }, hp: 28, atk: 9, def: 0, spd: 6, row: 'back', kind: 'magic', floors: [5, 6], color: '#9fd8ff', shape: 'ghost', thorns: 30 },
-  { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1 },
+  { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1, flee: true },
 ];
 // Neue Gegner der Welten (Werte bei Ebene 1, sie wachsen mit der Tiefe)
 // Besonderes: leap (springt), rooted (steht fest), spread (Fächer aus Geschossen), slowOnHit (bremst), teleport (verschwindet und taucht neben dir auf), fly (schwebt über Gefahr-Boden)
 A.MONSTERS.push(
-  { id: 'frosch', name: { de: 'Giftfrosch', en: 'Poison Frog' }, hp: 24, atk: 7, def: 1, spd: 5, kind: 'melee', color: '#63c74d', shape: 'frog', leap: true, poisonOnHit: 2 },
+  { id: 'frosch', name: { de: 'Giftfrosch', en: 'Poison Frog' }, hp: 24, atk: 7, def: 1, spd: 5, kind: 'melee', color: '#63c74d', shape: 'frog', leap: true, poisonOnHit: 2, flee: true },
   { id: 'ranke', name: { de: 'Rankenschlinger', en: 'Vine Lasher' }, hp: 36, atk: 7, def: 2, spd: 0, kind: 'ranged', color: '#3e8948', shape: 'vine', rooted: true, spread: 3, shotCol: '#63c74d' },
   { id: 'skorpion', name: { de: 'Sandskorpion', en: 'Sand Scorpion' }, hp: 30, atk: 8, def: 4, spd: 6, kind: 'melee', color: '#d77643', shape: 'scorpion', poisonOnHit: 3 },
   { id: 'mumie', name: { de: 'Mumie', en: 'Mummy' }, hp: 50, atk: 9, def: 2, spd: 2, kind: 'melee', color: '#ead4aa', shape: 'mummy', slowOnHit: true },
-  { id: 'krabbe', name: { de: 'Panzerkrabbe', en: 'Shell Crab' }, hp: 38, atk: 8, def: 8, spd: 4, kind: 'melee', color: '#e43b44', shape: 'crab' },
+  { id: 'krabbe', name: { de: 'Panzerkrabbe', en: 'Shell Crab' }, hp: 38, atk: 8, def: 8, spd: 4, kind: 'melee', color: '#e43b44', shape: 'crab', shell: true },
   { id: 'qualle', name: { de: 'Blitzqualle', en: 'Shock Jelly' }, hp: 24, atk: 8, def: 0, spd: 5, kind: 'magic', color: '#2ce8f5', shape: 'jelly', fly: true, dodge: 10, shotCol: '#2ce8f5' },
   { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
   { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
 );
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
+// Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
+// Rache haben alle: fällt ein Kumpel daneben, werden sie kurz schneller und stärker
 // Elite-Eigenschaften (Regeln in js/elites.js): je tiefer, desto mehr davon. col = Farbe für Schein und Namen, tip = kurzer Hinweis im Kampf,
 // text = Erklärung im Elite-Buch, heal = hält sich am Leben (davon höchstens eine pro Elite)
 A.ELITE_TRAITS = {
@@ -792,6 +795,32 @@ A.ELITE_TRAITS = {
   klingen: { name: { de: 'Klingenwirbel', en: 'Bladestorm' }, col: '#8b9bb4', icon: 'ef_klingen', tip: { de: 'Klingen kreisen um ihn', en: 'blades circle around it' }, text: { de: 'Drei Klingen kreisen um ihn. Nicht zu lange danebenstehen.', en: 'Three blades circle around it. Do not stand next to it for long.' } },
   heiler: { name: { de: 'Heiler', en: 'Healer' }, col: '#c8f5a0', icon: 'ef_heil', heal: true, tip: { de: 'heilt andere Gegner: zuerst besiegen!', en: 'heals other enemies: defeat it first!' }, text: { de: 'Heilt die anderen Gegner im Raum. Am besten zuerst besiegen.', en: 'Heals the other enemies in the room. Best defeated first.' } },
 };
+// Hauptleute (js/foes.js): je Welt einer, auf der dritten Ebene der Welt im Elite-Raum (A.CAPTAIN_FLOOR). Gebaut aus einem Gegner (base) mit festen
+// Elite-Eigenschaften (traits) und einer eigenen Masche (sig): swarm (ruft Ratten, rennt bei halbem Leben weg), spores (Feuer macht Sporenwolke),
+// charge (Sturmangriff in gerader Linie, Panzer gegen dein Lieblings-Element), shell (Panzer bei 30 %), forge (Wut und Glutwichte bei 30 %), whisper (verlängert Abklingzeiten, Spott).
+// lines: Sprüche beim Auftauchen, bei halbem Leben, bei 30 % und beim Tod ({el} = Element des Helden, {build} = sein Build-Name)
+A.CAPTAIN_FLOOR = 2;      // dritte Ebene jeder Welt (0 = erste)
+A.CAPTAIN_SPARKS = 8;     // Seelenfunken je besiegtem Hauptmann (zählen zu den Elite-Funken)
+A.CAPTAINS = [
+  { id: 'ratz', world: 'stone', base: 'ratte', name: { de: 'Ratz, der Rattenkönig', en: 'Ratz the Rat King' }, col: '#c9a54a', traits: ['beschwoerer', 'flink'], hpMul: 2.4, sig: 'swarm', summon: 'ratte',
+    trick: { de: 'Ruft Ratten. Bei halbem Leben rennt er weg und holt den ganzen Schwarm.', en: 'Calls rats. At half health he runs off and brings the whole swarm.' },
+    lines: { enter: { de: 'Meine Kinder! Fresst!', en: 'My children! Feast!' }, half: { de: 'Nicht ins Gesicht!', en: 'Not the face!' }, die: { de: 'Sagt meiner Mutter... nichts.', en: 'Tell my mother... nothing.' } } },
+  { id: 'sporenmutter', world: 'jungle', base: 'pilzkrieger', name: { de: 'Sporenmutter', en: 'Spore Mother' }, col: '#d06bb0', traits: ['giftig', 'heiler'], hpMul: 2.6, sig: 'spores',
+    trick: { de: 'Zieht eine Giftspur und heilt ihre Brut. Feuer macht sie wütend: Sporenwolke!', en: 'Poison trail and heals her brood. Fire angers her: spore cloud!' },
+    lines: { enter: { de: 'Wer hat hier Fackeln dabei?', en: 'Who brought torches?' }, half: { de: 'Meine Sporen! Überall!', en: 'My spores! Everywhere!' }, die: { de: 'Ich komme als Schimmel wieder.', en: 'I shall return as mould.' } } },
+  { id: 'sandak', world: 'desert', base: 'skorpion', name: { de: 'Hauptmann Sandak', en: 'Captain Sandak' }, col: '#feae34', traits: ['gepanzert'], hpMul: 2.6, sig: 'charge', resist: true,
+    trick: { de: 'Rennt dich in gerader Linie um: zur Seite! Sein Panzer trotzt deinem Lieblings-Element.', en: 'Charges you in a straight line: step aside! His armor shrugs off your favorite element.' },
+    lines: { enter: { de: 'Du riechst nach {el}. Darauf bin ich vorbereitet.', en: 'You smell of {el}. I came prepared.' }, half: { de: 'Mehr! Mehr Sand!', en: 'More! More sand!' }, die: { de: 'Sand... in den... Stiefeln...', en: 'Sand... in my... boots...' } } },
+  { id: 'krabbenkaiser', world: 'water', base: 'krabbe', name: { de: 'Krabbenkaiser', en: 'Crab Emperor' }, col: '#e43b44', traits: ['schild', 'riese'], hpMul: 1.6, sig: 'shell',
+    trick: { de: 'Schild aus Licht. Bei 30 % Leben zieht er sich in den Panzer zurück und heilt sich.', en: 'Shield of light. At 30% health he retreats into his shell and heals.' },
+    lines: { enter: { de: 'Seitwärts ist auch eine Richtung.', en: 'Sideways is a direction too.' }, half: { de: 'Zwick zwack!', en: 'Snip snap!' }, low: { de: 'Pause! Ich bin im Panzer!', en: 'Time out! I am in my shell!' }, die: { de: 'Butter... bitte keine Butter.', en: 'Butter... please, no butter.' } } },
+  { id: 'brokk', world: 'volcano', base: 'rostgolem', name: { de: 'Glutschmied Brokk', en: 'Ember Smith Brokk' }, col: '#f77622', traits: ['feurig', 'riese'], hpMul: 1.5, sig: 'forge', summon: 'glutwicht',
+    trick: { de: 'Feuerring. Bei 30 % Leben: Wut und zwei Glutwichte aus der Esse.', en: 'Ring of fire. At 30% health: rage and two ember imps from the furnace.' },
+    lines: { enter: { de: 'Du bist das Rohmaterial.', en: 'You are the raw material.' }, half: { de: 'Noch nicht heiss genug!', en: 'Not hot enough yet!' }, low: { de: 'Jetzt wird geschmiedet!', en: 'Now we forge!' }, die: { de: 'Schlechte... Legierung...', en: 'Bad... alloy...' } } },
+  { id: 'fluesterer', world: 'abyss', base: 'schattenfaenger', name: { de: 'Der Flüsterer', en: 'The Whisperer' }, col: '#b55088', traits: ['blinzelnd', 'spiegel', 'vampir'], hpMul: 2.4, sig: 'whisper',
+    trick: { de: 'Verschwindet, spiegelt sich, heilt sich an dir. Sein Flüstern verlängert deine Abklingzeiten.', en: 'Vanishes, mirrors himself, heals off you. His whispers lengthen your cooldowns.' },
+    lines: { enter: { de: 'Ein «{build}»? Süss.', en: 'A “{build}”? Cute.' }, half: { de: 'Du hörst mich. Gut.', en: 'You hear me. Good.' }, die: { de: '...endlich... Ruhe...', en: '...finally... quiet...' } } },
+];
 A.ELITE_BOOK_SPARKS = 10;   // Seelenfunken, wenn man eine Eigenschaft zum ersten Mal besiegt (Elite-Buch im Lager)
 A.ELITE_BOOK_DMG = 0.02;    // jede Seite im Elite-Buch: +2 % Schaden gegen Elite-Gegner, für immer
 // Bosse, je einer am Ende jeder Welt (jede 4. Ebene)
@@ -1271,6 +1300,10 @@ A.ACHIEVEMENTS = [
   // Dein Build (Version 30)
   { id: 'einseitig', cat: 'helden', stat: 'elMax', n: 6, sparks: 60, icon: 'el_blitz', name: { de: 'Einseitig', en: 'One-sided' }, text: { de: 'Sechs Teile mit demselben Element tragen', en: 'Wear six pieces with the same element' } },
   { id: 'kombo3', cat: 'sammlung', stat: 'runCombos', n: 3, sparks: 80, icon: 'u_spark', name: { de: 'Kombo-Jäger', en: 'Combo hunter' }, text: { de: 'Drei Kombos in einem Durchlauf erwecken', en: 'Awaken three combos in one run' } },
+  // Hauptleute (Version 31)
+  { id: 'hauptmann1', cat: 'kampf', stat: 'captains', n: 1, sparks: 40, mon: 'ratte', name: { de: 'Offiziersjagd', en: 'Officer hunt' }, text: { de: 'Einen Hauptmann besiegen', en: 'Defeat a captain' } },
+  { id: 'hauptleute', cat: 'kampf', stat: 'captKinds', n: A.CAPTAINS.length, sparks: 120, mon: 'skorpion', name: { de: 'Alle Offiziere', en: 'All officers' }, text: { de: `Alle ${A.CAPTAINS.length} Hauptleute einmal besiegen`, en: `Defeat all ${A.CAPTAINS.length} captains once` } },
+  { id: 'hasenfuss', cat: 'verrueckt', stat: 'fleeKills', n: 20, sparks: 30, mon: 'kobolddieb', name: { de: 'Keine Flucht', en: 'No escape' }, text: { de: '20 fliehende Gegner erwischen', en: 'Catch 20 fleeing enemies' } },
   { id: 'prinzip', cat: 'helden', stat: 'buildBest', n: 12, sparks: 60, icon: 't_mind', name: { de: 'Prinzipientreu', en: 'Stickler' }, text: { de: 'Mit einem starken Build (Build-Wert 8) Ebene 12 erreichen', en: 'Reach floor 12 with a strong build (build score 8)' } },
 ];
 A.ACH_CHRON = 20;   // so viele Durchläufe merkt sich die Chronik
@@ -1793,7 +1826,7 @@ A.Game = (function () {
   // stats: Zähler fürs Auftragsbrett; ach: erreichte Erfolge (Zeit); achNew: noch nicht angeschaut; chron: die letzten Durchläufe (achieve.js)
   const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [] });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; meta.capt = meta.capt || {}; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -1985,6 +2018,7 @@ A.Game = (function () {
       boss: !!m.boss, elite: !!elite, split: !!m.split, healOnPhys: m.healOnPhys || 0, skills: [],
       leap: !!m.leap, rooted: !!m.rooted, spread: m.spread || 0, ring: m.ring || 0, ringCd: m.ringCd || 0, summon: m.summon || null, summonCd: m.summonCd || 0,
       teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
+      flee: !!m.flee, spores: !!m.spores, shell: !!m.shell,   // Reaktionen (foes.js)
     };
     e.hp = e.maxHp;
     if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
@@ -2138,8 +2172,9 @@ A.Game = (function () {
   }
   // Dein Build: ab Ebene 3 wird bis zu sechsmal gewürfelt, bis ein Stück passt (Element oder Kraft der stärksten Richtungen, oder Kombo-Magnet)
   function fittingItem(rarity) {
+    const w = run.floor >= 3 ? A.Build.wants(run) : null; let it = null;
     rarity = rarity || rollRarity();   // einmal würfeln: das Nachwürfeln darf die Seltenheit (und den Preis) nicht heben
-    const w = run.floor >= 3 && rarity !== 'common' ? A.Build.wants(run) : null; let it = null;
+    if (rarity === 'common' && w && w.any) rarity = 'good';   // gewöhnliche Stücke haben kein Element und keine Kraft: mindestens «gut», damit eins passen kann
     for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
     return it;
   }
@@ -2207,7 +2242,8 @@ A.Game = (function () {
       items.push(randomItem(rollRarity(nt)));
       const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
       if (nt >= 3 && run.rng.chance(0.25 + (nt - 3) * 0.25)) items.push(randomItem(rollRarity(1)));   // tiefe Elite: oft ein zweites Item
-      esparks = nt; run.eliteSparks = (run.eliteSparks || 0) + nt; run.eliteKills = (run.eliteKills || 0) + 1;
+      if (e.captain) { items.push(randomItem(rollRarity(2))); esparks += A.CAPTAIN_SPARKS; }   // Hauptmann (foes.js): ein Stück mehr und Funken obendrauf
+      esparks += nt; run.eliteSparks = (run.eliteSparks || 0) + esparks; run.eliteKills = (run.eliteKills || 0) + 1;
       book = bookKill(e);
       questEvent('elite');
     }
@@ -6769,6 +6805,7 @@ A.Elites = (function () {
   // Schein und Name wechseln langsam durch alle Eigenschaften; rasend: rot, Spiegelbild: weiss
   function col(m, t) {
     if (m.mirror) return '#ffffff';
+    if (m.captain) return m.raged ? '#e43b44' : m.color;   // Hauptmann (foes.js): seine eigene Farbe
     if (!m.traits || !m.traits.length) return '#fee761';
     if (m.raged) return '#e43b44';
     const n = m.traits.length;
@@ -6910,6 +6947,206 @@ A.Elites = (function () {
   }
 
   return { bind, count, make, onAdd, step, onHurt, onDeal, onDeath, tick, col, drawGround, drawTop, drawUnder, drawOver, lights, label, bar, has };
+})();
+
+</script>
+<script>
+// Der Abstieg – Hauptleute und schlauere Feinde. Hauptleute (A.CAPTAINS in data.js): je Welt ein Offizier mit Namen, festen Elite-Eigenschaften,
+// einer eigenen Masche und Sprüchen; er wartet auf der dritten Ebene jeder Welt im Elite-Raum. Reaktionen normaler Gegner: Flucht unter 30 % Leben
+// (flee), Rache, wenn ein Kumpel daneben fällt (alle), Sporenwolke, wenn ein Pilz brennt (spores), Panzer bei 30 % (shell).
+// world.js ruft captainRoom/makeCaptain beim Füllen des Raums, step/flee/speedMul im Gegner-Schritt, guard/pre/onHurt in der Treffer-Rechnung, onDeath beim Tod.
+'use strict';
+window.A = window.A || {};
+
+A.Foes = (function () {
+  const TAU = Math.PI * 2, EY = 0.6;
+  const L = (de, en) => (A.LANG === 'de' ? de : en);
+  let api = null;   // Werkzeuge aus world.js: hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon, clearLine
+  const W = () => api.W;
+  const G = () => A.Game;
+  function bind(a) { api = a; }
+  const CAP = (id) => A.CAPTAINS.find(c => c.id === id);
+  const say = (m, text, color, size) => api.float(m.x, m.y - (m.giant ? 90 : 62), text, color || m.color, size || 15);
+
+  // ---------- Hauptleute ----------
+  // Welcher Hauptmann wartet auf dieser Ebene? (dritte Ebene jeder Welt, auch in den Welten II, III ...)
+  function captainFor(floor) { return (Math.max(1, floor) - 1) % A.FLOORS_PER_WORLD === A.CAPTAIN_FLOOR ? A.CAPTAINS.find(c => c.world === A.worldOf(floor).id) || null : null; }
+  // Der erste Elite-Raum der Ebene gehört ihm
+  function captainRoom(w) { return captainFor(w.floor) && w.rooms.find(r => r.type === 'elite') || null; }
+  // Sprüche: {el} = Element, das der Held am meisten trägt, {build} = sein Build-Name
+  function line(cap, key) {
+    const tx = cap.lines && cap.lines[key]; if (!tx) return '';
+    const r = G().run, cnt = r ? A.Gear.counts(r) : {}, el = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+    return A.t(tx).replace('{el}', el ? A.t(A.ELEMENTS[el].name) : L('Angst', 'fear')).replace('{build}', r ? A.Build.name(A.Build.profile(r)) : '???');
+  }
+  // Bauen (world.js spawnRoom): Grund-Gegner mit festen Eigenschaften, mehr Leben, eigener Name und Farbe
+  function makeCaptain(cap, floor) {
+    const base = A.MONSTERS.find(m => m.id === cap.base) || A.MONSTERS[0];
+    const e = G().monsterEntity(base, floor, cap.traits.slice(), 1);
+    e.captain = cap.id; e.name = A.t(cap.name); e.color = cap.col;
+    e.maxHp = Math.round(e.maxHp * cap.hpMul); e.hp = e.maxHp;
+    if (e.shieldCap) e.shieldCap = Math.round(e.maxHp * 0.3);   // Schildträger: 30 % des echten Lebens
+    e.atk = Math.round(e.atk * 1.15); e.mag = Math.round(e.mag * 1.15);
+    if (cap.summon) { e.summon = cap.summon; e.summonCd = 6; }
+    if (cap.resist) { const r = G().run, cnt = r ? A.Gear.counts(r) : {}, el = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]; if (el && cnt[el] >= 2) e.resistEl = el; }
+    e.cs = { t: 3, half: false, low: false, phase: null, whisper: 5 };
+    return e;
+  }
+  // Auftritt (world.js spawnRoom): grosse Einblendung mit seiner Masche, dann der erste Spruch
+  function onSpawn(m) {
+    const cap = CAP(m.captain); if (!cap) return;
+    setTimeout(() => { const w = W(); if (!w || !m.alive || !A.FX) return; A.FX.banner(m.name, A.t(cap.trick), cap.col, 3.5); say(m, line(cap, 'enter'), cap.col, 16); if (A.Sound && A.Sound.roar) A.Sound.roar(); }, 900);
+  }
+
+  // Masche je Hauptmann (world.js monSpecial, nach den Elite-Eigenschaften): true = steht still oder bewegt sich selbst
+  function step(m, dt, d, nx, ny) {
+    if ((m.shell || m.shellT) && shellStep(m, dt)) return true;   // Panzer (Krabbe und Krabbenkaiser)
+    const w = W(), h = w.hero, s = m.cs, cap = CAP(m.captain); if (!s || !cap) return false;
+    s.t -= dt;
+    if (cap.sig === 'charge') {   // Sturmangriff: kurz ausholen, dann in gerader Linie auf die Stelle des Helden
+      if (s.phase === 'wind') {
+        s.pt -= dt; if (s.pt <= 0) { s.phase = 'dash'; s.pt = 0.42; s.hitDone = false; s.lx = m.x; s.ly = m.y; }
+        return true;
+      }
+      if (s.phase === 'dash') {
+        s.pt -= dt; api.moveEnt(m, s.dx * 640 * dt, s.dy * 640 * dt);
+        const moved = Math.hypot(m.x - s.lx, m.y - s.ly); s.lx = m.x; s.ly = m.y;
+        if (!s.hitDone && h.alive && Math.hypot(h.x - m.x, h.y - m.y) < m.r + h.r + 12) { s.hitDone = true; api.hit(m, h, m.atk * 1.6, { kind: 'phys', stun: 0.4 }); api.fx('strike', { m }); if (A.FX) A.FX.shake(0.4); }
+        if (s.pt <= 0 || moved < 1) { s.phase = null; s.t = 6; m.cd = 0.6; if (A.FX) A.FX.rocks(m.x, m.y, 4, 60); }
+        if (A.FX && !A.FX.low) A.FX.smoke(m.x, m.y + 8, 1, '#e4a672', 3);
+        return true;
+      }
+      if (s.t <= 0 && d > 90 && d < 440 && api.clearLine(m, h)) { s.phase = 'wind'; s.pt = 0.7; s.dx = nx; s.dy = ny; m.fx = nx; m.fy = ny; say(m, L('Sturmangriff!', 'Charge!'), cap.col, 16); api.fx('windup', { m }); return true; }
+    }
+    if (cap.sig === 'whisper' && (s.whisper -= dt) <= 0 && d < 420 && h.alive) {   // Flüstern: Abklingzeiten verlängern
+      s.whisper = 7; let n = 0; for (const k in h.cds) if (h.cds[k] > w.t) { h.cds[k] += 1.5; n++; }   // cds = Zeitpunkt, ab dem der Zauber wieder geht
+      api.float(h.x, h.y - 46, n ? L('Flüstern... langsamer...', 'Whispers... slower...') : L('Flüstern...', 'Whispers...'), cap.col, 14);
+      if (A.FX) { A.FX.flash(h.x, h.y, 70, cap.col, 0.3); A.FX.ev('nova', { e: m, r: 80, color: cap.col, magic: true }); }
+      return false;
+    }
+    return false;
+  }
+  // Panzer (Krabbe und Krabbenkaiser): solange er drin ist, steht er still; danach heilt er sich einmal
+  function shellStep(m, dt) {
+    if (!(m.shellT > W().t)) return false;
+    if (A.FX && !A.FX.low && Math.random() < dt * 8) A.FX.part({ kind: 'ring', x: m.x, y: m.y, life: 0.4, size: m.r * 2.4, color: '#2ce8f5', add: true });
+    return true;
+  }
+
+  // Treffer-Rechnung (world.js hit): Panzer fängt alles ab
+  function guard(from, to, opts) {
+    if (to.side !== 'enemy' || !(to.shellT > W().t)) return null;
+    api.float(to.x, to.y - to.r - 10, L('Panzer', 'Shell'), '#2ce8f5', 12); return 0;
+  }
+  // Sandak: Treffer mit dem Lieblings-Element des Helden halbiert (ein Spruch, nicht bei jedem Treffer)
+  function pre(from, to, opts) {
+    if (from.side === 'enemy' && from.revT > W().t && to.side === 'hero') return { mul: 1.25 };   // Rache: 25 % mehr Schaden
+    if (!to.resistEl || from !== W().hero || opts.kind === 'poison' || opts.kind === 'burn' || opts.kind === 'thorns') return null;
+    if (!(to.resistSaid > W().t)) { to.resistSaid = W().t + 3; say(to, L(`${A.t(A.ELEMENTS[to.resistEl].name)}? Kitzelt.`, `${A.t(A.ELEMENTS[to.resistEl].name)}? Tickles.`), '#c0cbdc', 13); }
+    return { mul: 0.55 };
+  }
+  // Getroffen (world.js hit, vor der Todes-Prüfung): Sprüche und Maschen bei halbem Leben und bei 30 %, Sporenwolke, Panzer
+  function onHurt(m, from, dmg, opts) {
+    const w = W(); if (!m.alive || m.hp <= 0) return;
+    const cap = m.captain ? CAP(m.captain) : null, s = m.cs;
+    if ((m.spores || (cap && cap.sig === 'spores')) && opts && opts.kind === 'burn' && !(m.sporeT > w.t)) spores(m, cap);
+    if ((m.shell || (cap && cap.sig === 'shell')) && !m.shelled && m.hp < m.maxHp * 0.3) {
+      m.shelled = true; m.shellT = w.t + (cap ? 2.5 : 1.2);
+      say(m, cap ? line(cap, 'low') : L('Panzer zu!', 'Shell shut!'), '#2ce8f5', 14); api.fx('shield', { e: m });
+    }
+    if (!cap || !s) return;
+    if (!s.half && m.hp < m.maxHp * 0.5) {
+      s.half = true; say(m, line(cap, 'half'), cap.col, 16);
+      if (cap.sig === 'swarm') { m.fleeUntil = w.t + 1.6; m.fleeing = true; m.state = 'chase'; summonPack(m, cap.summon || 'ratte', 3); }
+    }
+    if (!s.low && m.hp < m.maxHp * 0.3) {
+      s.low = true;
+      if (cap.sig === 'forge') { rage(m); say(m, line(cap, 'low'), '#e43b44', 16); summonPack(m, cap.summon || 'glutwicht', 2); }
+    }
+  }
+  function rage(m) {
+    m.raged = true; m.speed *= 1.3; m.atk = Math.round(m.atk * 1.3); m.mag = Math.round(m.mag * 1.3);
+    if (A.FX) { A.FX.ev('nova', { e: m, r: 100, color: '#e43b44', magic: true }); A.FX.shake(0.4); }
+    if (A.Sound && A.Sound.roar) A.Sound.roar();
+  }
+  function summonPack(m, mid, n) {
+    const base = A.MONSTERS.find(x => x.id === mid); if (!base) return;
+    for (let i = 0; i < n; i++) {
+      const c = G().monsterEntity(base, W().floor, false, 60 + i), a = Math.random() * TAU;
+      const mm = api.addMon(c, m.x + Math.cos(a) * 56, m.y + Math.sin(a) * 42); mm.summoned = true; mm.spawn = 0.4 + i * 0.1; api.fx('spawn', { m: mm });
+    }
+  }
+  // Sporenwolke: Giftpfütze um den Pilz (Elites.tick wertet sie aus) und sofort Gift, wer drinsteht
+  function spores(m, cap) {
+    const w = W(), h = w.hero, r = cap ? 80 : 60, dmg = Math.max(1, Math.round(m.atk * (cap ? 0.4 : 0.3)));
+    m.sporeT = w.t + 3;
+    (w.efx || (w.efx = [])).push({ kind: 'puddle', pk: 'poison', src: m, x: m.x, y: m.y + 6, r, t0: w.t, until: w.t + 3.5, tick: w.t + 0.2, dmg });
+    if (h.alive && ((h.x - m.x) / r) ** 2 + ((h.y - m.y) / (r * EY)) ** 2 < 1.2) api.addEffect(h, 'poison', dmg, 3);
+    say(m, L('Sporen!', 'Spores!'), '#63c74d', 14);
+    if (A.FX) { A.FX.burst(m.x, m.y - 8, 18, { color: ['#63c74d', '#b86fa0', '#d06bb0'], smin: 40, smax: 150, z: 3, vz: 90, g: 120, life: 0.8, add: true }); A.FX.ev('nova', { e: m, r, color: '#63c74d', magic: true }); }
+  }
+
+  // ---------- Reaktionen normaler Gegner ----------
+  // Flucht (world.js monSpecial): unter 30 % Leben rennt er 1,8 Sekunden vom Helden weg; wer ihn dabei erwischt, zählt für «Keine Flucht»
+  function flee(m, dt, d, nx, ny) {
+    const w = W();
+    if (m.flee && !m.fled && m.state !== 'leap' && m.hp > 0 && m.hp < m.maxHp * 0.3 && !m.captain) { m.fled = true; m.state = 'chase'; m.fleeUntil = w.t + 1.8; m.fleeing = true; say(m, m.mid === 'kobolddieb' ? L('Tschüss!', 'Bye!') : L('Hilfe!', 'Help!'), '#fee761', 13); }
+    if (!(m.fleeUntil > w.t)) { if (m.fleeing) { m.fleeing = false; m.fdir = null; m.cd = Math.min(m.cd, 0.3); } return false; }
+    if (!m.fdir) m.fdir = fleeDir(m, w.hero);
+    const sp = m.speed * 1.25 * dt, x0 = m.x, y0 = m.y;
+    api.moveEnt(m, m.fdir[0] * sp, m.fdir[1] * sp); m.fx = m.fdir[0]; m.fy = m.fdir[1];
+    if (Math.hypot(m.x - x0, m.y - y0) < sp * 0.4) m.fdir = fleeDir(m, w.hero, m.fdir);   // Wand: andere Richtung
+    return true;
+  }
+  // Richtung mit dem meisten freien Weg, möglichst weg vom Helden (8 Richtungen, bis 150 px weit geprüft)
+  function fleeDir(m, h, not) {
+    let best = null, bs = -1e9;
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * TAU, dx = Math.cos(a), dy = Math.sin(a);
+      if (not && dx * not[0] + dy * not[1] > 0.9) continue;
+      let free = 0; for (let d = 16; d <= 150; d += 16) { if (api.blocked(m.x + dx * d, m.y + dy * d, m.r) || !api.reachable(m.x + dx * d, m.y + dy * d)) break; free = d; }
+      const away = Math.hypot(m.x + dx * free - h.x, m.y + dy * free - h.y);
+      const score = free * 2 + away; if (score > bs) { bs = score; best = [dx, dy]; }
+    }
+    return best || [(m.x - h.x) / (Math.hypot(m.x - h.x, m.y - h.y) || 1), (m.y - h.y) / (Math.hypot(m.x - h.x, m.y - h.y) || 1)];
+  }
+  // Rache: schneller und stärker, solange sie dauert
+  function speedMul(m) { return m.revT > W().t ? 1.3 : 1; }
+  // Beim Tod (world.js checkDeath): Hauptmann zählt und spricht, Kumpels in der Nähe nehmen Rache, fliehende Opfer zählen
+  function onDeath(e) {
+    const w = W(), m = G().meta;
+    if (e.fleeUntil > w.t) { A.Achieve.add('fleeKills'); api.float(e.x, e.y - e.r - 44, L('Erwischt!', 'Caught!'), '#fee761', 13); }
+    if (e.captain) {
+      const cap = CAP(e.captain); if (cap) say(e, line(cap, 'die'), cap.col, 16);
+      m.capt = m.capt || {}; m.capt[e.captain] = (m.capt[e.captain] || 0) + 1; A.Achieve.add('captains');
+      if (A.FX) { A.FX.banner(L('Hauptmann besiegt!', 'Captain defeated!'), `${e.name} · +${A.CAPTAIN_SPARKS} ${A.t(A.UI.meta)}`, cap ? cap.col : '#fee761', 3); A.FX.shake(0.5); }
+      return;
+    }
+    if (e.summoned || e.mirror) return;
+    let n = 0;
+    for (const o of w.mons) {
+      if (o === e || !o.alive || o.boss || o.captain || o.revenged || o.spawn > 0 || Math.hypot(o.x - e.x, o.y - e.y) > 180) continue;
+      o.revenged = true; o.revT = w.t + 4;   // 4 s schneller (speedMul) und stärker (pre)
+      if (n++ < 2) say(o, L('Rache!', 'Revenge!'), '#e43b44', 13);
+      if (A.FX && !A.FX.low) A.FX.part({ kind: 'smoke', x: o.x, y: o.y - 20, vx: 0, vy: -24, life: 0.5, size: 2, grow: 5, color: '#e43b44', drag: 1 });
+    }
+  }
+  // Einmal pro Bild (world.js tick): Heilung nach dem Panzer, Rauch an Rächern
+  function tick(dt) {
+    const w = W(); if (!w) return;
+    for (const o of w.mons) {
+      if (!o.alive) continue;
+      // Panzer vorbei: einmal heilen (hier, damit es auch während einer Elite-Masche passiert)
+      if (o.shellT && !(o.shellT > w.t) && !o.shellHealed) { o.shellHealed = true; api.heal(o, Math.max(1, Math.round(o.maxHp * (o.captain ? 0.12 : 0.1))), true); say(o, L('Besser.', 'Better.'), '#63c74d', 13); }
+      if (A.FX && !A.FX.low && o.revT > w.t && Math.random() < dt * 6) A.FX.part({ kind: 'smoke', x: o.x + (Math.random() - 0.5) * o.r, y: o.y - 18, vx: 0, vy: -20, life: 0.45, size: 2, grow: 4, color: '#e43b44', drag: 1 });
+    }
+  }
+
+  // ---------- Texte (Lager, Chronik) ----------
+  const count = () => { const m = G().meta; return A.CAPTAINS.filter(c => ((m.capt || {})[c.id] || 0) > 0).length; };
+  function nameOf(id) { const c = CAP(id); return c ? A.t(c.name) : id; }
+
+  return { bind, captainFor, captainRoom, makeCaptain, onSpawn, step, guard, pre, onHurt, flee, speedMul, onDeath, tick, count, nameOf, line };
 })();
 
 </script>
@@ -8734,6 +8971,8 @@ A.Achieve = (function () {
       cls5: A.CLASSES.filter(c => ((s.clsBest || {})[c.id] || 0) >= 5).length, races: A.RACES.filter(x => ((s.raceRuns || {})[x.id] || 0) > 0).length,
       pets: A.Pets.count(), treue5: Object.keys(A.PETS).filter(id => A.Pets.found(id) && A.Pets.treue(id) >= 5).length,
       death1: s.death1 || 0, nearDeath: s.nearDeath || 0,
+      // Hauptleute und Reaktionen (foes.js): besiegte Hauptleute, verschiedene Hauptleute, fliehende Gegner erwischt
+      captains: s.captains || 0, captKinds: A.Foes.count(), fleeKills: s.fleeKills || 0,
       // Dein Build (build.js): meiste Teile eines Elements, Kombos im laufenden Durchlauf, tiefste Ebene mit starkem Build
       elMax: r ? Math.max(0, ...Object.values(A.Gear.counts(r))) : 0, runCombos: r ? (r.combos || []).length : 0, buildBest: s.buildBest || 0,
     };
@@ -8791,7 +9030,7 @@ A.Achieve = (function () {
   function onHurt(h, from, dmg, st) {
     const r = G().run; if (r) r.floorDmg = (r.floorDmg || 0) + dmg;
     if (st && h.alive && h.hp > 0 && h.hp < h.maxHp * 0.05) st.low = true;
-    h.lastFrom = from ? { mid: from.mid || null, boss: !!from.boss, elite: !!(from.elite || from.traits), kind: from.side === 'enemy' ? 'mon' : (from.side || 'mon') } : null;
+    h.lastFrom = from ? { mid: from.mid || null, boss: !!from.boss, elite: !!(from.elite || from.traits), cap: from.captain || null, kind: from.side === 'enemy' ? 'mon' : (from.side || 'mon') } : null;
   }
   function onDeath(h) { const r = G().run; if (r) r.deathBy = h.lastFrom || null; }
   function onSecret() { add('secrets'); G().saveMeta(); }
@@ -8826,7 +9065,7 @@ A.Achieve = (function () {
     if (by && by.kind === 'burn') return L('in Flammen aufgegangen', 'went up in flames');
     if (by && by.kind === 'poison') return L('am Gift gestorben', 'died of poison');
     const B = by && by.mid && A.BOSSES[by.mid], M = by && by.mid && A.MONSTERS.find(x => x.id === by.mid);
-    const name = B ? A.t(B.name) : M ? (by.elite ? A.t(A.UI.elitePrefix) + '-' : '') + A.t(M.name) : null;
+    const name = by && by.cap ? A.Foes.nameOf(by.cap) : B ? A.t(B.name) : M ? (by.elite ? A.t(A.UI.elitePrefix) + '-' : '') + A.t(M.name) : null;
     return name ? L(`${name} hat dich erwischt`, `caught by ${name}`) : L('gefallen', 'fallen');
   }
   function timeText(sec) {
@@ -8845,7 +9084,7 @@ A.Achieve = (function () {
   }
 
   function bind(api) { ui = Object.assign(ui, api); }
-  return { bind, values, check, tick, progress, done, count, clearNew, news, onRun, onFloorDone, onFloor, onKill, onRoom, onHurt, onDeath, onSecret, onEnd, record, chron, life, causeText, timeText, whenText };
+  return { bind, add, values, check, tick, progress, done, count, clearNew, news, onRun, onFloorDone, onFloor, onKill, onRoom, onHurt, onDeath, onSecret, onEnd, record, chron, life, causeText, timeText, whenText };
 })();
 
 </script>
@@ -9238,8 +9477,11 @@ A.World = (function () {
   function spawnRoom(r) {
     const run = G().run, rng = run.rng, f = run.floor;
     const list = [];
+    const cap = A.Foes.captainFor(f);
     if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
-    else {
+    else if (cap && r === A.Foes.captainRoom(W)) {   // Hauptmann der Welt (foes.js), ab der zweiten Runde mit einem Begleiter
+      list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f)), f, false, 2));
+    } else {
       const pool = A.monsterPool(f);
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
       const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0);
@@ -9253,7 +9495,8 @@ A.World = (function () {
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
     });
     r.monsters = list.length;
-    const el = list.filter(m => m.traits); if (el.length && hooks.onElite) hooks.onElite(el);   // neue Eigenschaften kurz vorstellen
+    const cm = list.find(m => m.captain); if (cm) A.Foes.onSpawn(cm);
+    const el = list.filter(m => m.traits && !m.captain); if (el.length && hooks.onElite) hooks.onElite(el);   // der Hauptmann hat seine eigene Einblendung (foes.js);   // neue Eigenschaften kurz vorstellen
   }
   function freeSpot(x, y, r) {
     if (!blocked(x, y, r) && reachable(x, y)) return [x, y];
@@ -9272,13 +9515,16 @@ A.World = (function () {
   function monSpecial(m, dt, d, nx, ny) {
     const h = W.hero;
     if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
+    if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
+    if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)
+    if (A.Foes.flee(m, dt, d, nx, ny)) return true;   // Flucht unter 30 % Leben (foes.js)
     m.skT -= dt;
     if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
     if (m.summon) {
       m.sumT -= dt;
       const alive = W.mons.filter(o => o.alive && o.summoned).length;
-      if (m.sumT <= 0 && alive < (m.boss ? 3 : 2)) {
+      if (m.sumT <= 0 && alive < (m.boss || m.captain ? 3 : 2)) {
         m.sumT = m.summonCd || 9; const base = A.MONSTERS.find(x => x.id === m.summon);
         if (base) for (let i = 0; i < (m.boss ? 2 : 1); i++) { const s = G().monsterEntity(base, W.floor, false, 80 + i); const a = Math.random() * Math.PI * 2; const mm = addMon(s, m.x + Math.cos(a) * 60, m.y + Math.sin(a) * 50); mm.summoned = true; mm.spawn = 0.5; fx('spawn', { m: mm }); }
         float(m.x, m.y - 60, A.LANG === 'de' ? 'Ruft Hilfe!' : 'Calls for help!', '#fee761', 14);
@@ -9312,7 +9558,7 @@ A.World = (function () {
     // Laufrichtung: direkt, wenn frei; sonst über das Wegenetz um Hindernisse herum
     let mx = nx, my = ny;
     if (!m.fly && !clearLine(m, h)) { const fd = flowDir(m); if (fd) { mx = fd[0]; my = fd[1]; } }
-    const sp = m.speed * slowMul(m) * hazardSlow(m);
+    const sp = m.speed * slowMul(m) * hazardSlow(m) * A.Foes.speedMul(m);
     if (m.kind === 'melee') {
       if (d > m.r + h.r + 4) moveEnt(m, mx * sp * dt, my * sp * dt);
       else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
@@ -9343,6 +9589,7 @@ A.World = (function () {
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
+    const fg = A.Foes.guard(from, to, opts); if (fg != null) return fg;   // Panzer (foes.js)
     if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
@@ -9351,6 +9598,7 @@ A.World = (function () {
     const cp = A.Classes.pre(from, to, opts); if (cp) dmg *= cp.mul;   // Riesenwuchs, Glückssträhne (classes.js)
     const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
     const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
+    const fp = A.Foes.pre(from, to, opts); if (fp) dmg *= fp.mul;   // Sandaks Panzer gegen dein Element (foes.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
@@ -9395,6 +9643,7 @@ A.World = (function () {
     if (opts.raise && to.side === 'enemy' && to.hp <= 0) to.raiseMe = true;   // Seelenpfeil: steht als Geist auf
     if (crit && to.side === 'enemy' && from.tro && from.tro.auge && !(from.augeT > W.t)) { from.augeT = W.t + 0.6; W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 64, at: W.t + 0.35, dmg: dmg * 0.6, col: '#b55088' }); fx('zap', { x: to.x, y: to.y, color: '#b55088' }); }
     if (to.traits) A.Elites.onHurt(to, dmg + absorbed);   // Schild-Pause, Wut, Spiegelbilder
+    if (to.side === 'enemy') A.Foes.onHurt(to, from, dmg + absorbed, opts);   // Sprüche und Maschen der Hauptleute, Sporen, Panzer (foes.js)
     checkDeath(to);
     return dmg;
   }
@@ -9416,6 +9665,7 @@ A.World = (function () {
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
     if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');   // Seelenfunken der Elite (am Ende des Durchlaufs)
     if (e.traits) A.Elites.onDeath(e);
+    A.Foes.onDeath(e);   // Hauptmann, Rache der Kumpels, fliehende Opfer (foes.js)
     fx('death', { e });
     A.Gear.onKill(e);
     A.Classes.onKill(e);
@@ -9679,7 +9929,7 @@ A.World = (function () {
     boonStep(dt);
     const ls = A.Legends.stopped();   // Zeitstopp der Totenmaske: Bosse kurz, Elite-Kreise ganz angehalten
     if (ls < 2) A.Bosses.tick(dt);
-    if (!ls) A.Elites.tick(dt);
+    if (!ls) { A.Elites.tick(dt); A.Foes.tick(dt); }
     A.Gear.tick(dt);
     A.Legends.tick(dt);
     A.Combos.tick(dt);
@@ -9756,6 +10006,7 @@ A.World = (function () {
 
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
   A.Elites.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon });
+  A.Foes.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon, clearLine, blocked, reachable });
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
@@ -9764,7 +10015,7 @@ A.World = (function () {
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
 
   return {
-    get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill,
+    get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill, hit, addEffect,
     pause(v) { if (W) W.paused = v; },
   };
 })();
@@ -12205,6 +12456,12 @@ window.A = window.A || {};
         <div class="mini">${esc(fxText(sumFx([A.BANNERS[id]], 1, Math.max(1, n))))}</div></div></div>`;
     }).join('');
     const pages = G.bookPages(), NT = Object.keys(A.ELITE_TRAITS).length;
+    // Hauptleute (foes.js): je Welt einer; besiegte mit Masche und Zähler
+    const capN = A.Foes.count(), capts = A.CAPTAINS.map(c => {
+      const n = (m.capt || {})[c.id] || 0, wd = A.WORLDS.find(w => w.id === c.world);
+      return `<div class="flag ${n ? 'have' : ''}"><div class="fi">${monImg(c.base, 34)}</div><div><b ${n ? `style="color:${c.col}"` : ''}>${esc(t(c.name))}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
+        <div class="mini">${esc(wd ? t(wd.name) : '')}${n ? ' · ' + esc(t(c.trick)) : ''}</div></div></div>`;
+    }).join('');
     const book = Object.keys(A.ELITE_TRAITS).map(id => {
       const T = A.ELITE_TRAITS[id], n = m.efBook[id] || 0;
       return `<div class="page ${n ? 'have' : ''}"><div class="pi">${ic(T.icon, 27)}</div><div><b ${n ? `style="color:${T.col}"` : ''}>${esc(t(T.name))}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
@@ -12277,6 +12534,7 @@ window.A = window.A || {};
       <h3>${L('Begleiter', 'Pets')} ${pn}/${PN}</h3><div class="card flags"><div class="mini">${petInfo} ${L(`Treue wächst mit jedem Sieg, den ein Tier miterlebt, und bleibt für immer. Treue 3 und 5 bringen neue Tricks. Jedes neue Tier bringt ${A.PET_SPARKS} Seelenfunken.`, `Loyalty grows with every win a pet sees and stays forever. Loyalty 3 and 5 bring new tricks. Every new pet gives ${A.PET_SPARKS} soul sparks.`)}</div><div class="fgrid one">${petCards}</div></div>
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
+      <h3>${L('Hauptleute', 'Captains')} ${capN}/${A.CAPTAINS.length}</h3><div class="card flags"><div class="mini">${L(`Auf der dritten Ebene jeder Welt wartet ihr Offizier im Elite-Raum: eigene Masche, grosse Klappe, ${A.CAPTAIN_SPARKS} Seelenfunken und ein Stück extra.`, `On the third floor of every world its officer waits in the elite room: own trick, big mouth, ${A.CAPTAIN_SPARKS} soul sparks and an extra item.`)}</div><div class="caplist">${capts}</div></div>
       <h3>${L('Legenden-Sammlung', 'Legend collection')} ${legs}/${NL}</h3><div class="card flags"><div class="mini">${L(`Legenden fallen bei Weltenbossen, bei Elite-Gegnern mit der passenden Eigenschaft und in geheimen Räumen (Geröll am Ende eines Gangs wegräumen). Die zehn verrückten Stücke können überall auftauchen, ab Welt 2 viel öfter. Jede neue bringt ${A.LEGEND_SPARKS} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `Legends drop from world bosses, from elites with the matching trait and in secret rooms (clear the rubble at the end of a corridor). The ten crazy pieces can turn up anywhere, much more often from world 2. Each new one gives ${A.LEGEND_SPARKS} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(legs * A.LEGEND_DMG * 100)} %</b></div><div class="fgrid one">${coll}</div></div>
       <h3>${L('Kombo-Buch', 'Combo book')} ${cbn}/${NCB}</h3><div class="card flags"><div class="mini">${L(`Zwei passende Teile wecken am Schrein eine Kombo: eine neue Kraft, die es nur zusammen gibt. Jede neue bringt ${A.COMBO_SPARKS} Seelenfunken. Manche gibt es nur mit einer bestimmten Klasse.`, `Two matching pieces awaken a combo at the shrine: a new power that only exists together. Each new one gives ${A.COMBO_SPARKS} soul sparks. Some only exist for a certain class.`)}</div><div class="fgrid one">${cbook}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });

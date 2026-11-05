@@ -219,6 +219,7 @@ A.Elites = (function () {
   // Schein und Name wechseln langsam durch alle Eigenschaften; rasend: rot, Spiegelbild: weiss
   function col(m, t) {
     if (m.mirror) return '#ffffff';
+    if (m.captain) return m.raged ? '#e43b44' : m.color;   // Hauptmann (foes.js): seine eigene Farbe
     if (!m.traits || !m.traits.length) return '#fee761';
     if (m.raged) return '#e43b44';
     const n = m.traits.length;
