@@ -359,8 +359,9 @@ A.Game = (function () {
   }
   // Dein Build: ab Ebene 3 wird bis zu sechsmal gewürfelt, bis ein Stück passt (Element oder Kraft der stärksten Richtungen, oder Kombo-Magnet)
   function fittingItem(rarity) {
+    const w = run.floor >= 3 ? A.Build.wants(run) : null; let it = null;
     rarity = rarity || rollRarity();   // einmal würfeln: das Nachwürfeln darf die Seltenheit (und den Preis) nicht heben
-    const w = run.floor >= 3 && rarity !== 'common' ? A.Build.wants(run) : null; let it = null;
+    if (rarity === 'common' && w && w.any) rarity = 'good';   // gewöhnliche Stücke haben kein Element und keine Kraft: mindestens «gut», damit eins passen kann
     for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
     return it;
   }
