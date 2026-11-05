@@ -13,7 +13,7 @@ A.Game = (function () {
   // stats: Zähler fürs Auftragsbrett; ach: erreichte Erfolge (Zeit); achNew: noch nicht angeschaut; chron: die letzten Durchläufe (achieve.js)
   const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [] });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; meta.capt = meta.capt || {}; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -205,6 +205,7 @@ A.Game = (function () {
       boss: !!m.boss, elite: !!elite, split: !!m.split, healOnPhys: m.healOnPhys || 0, skills: [],
       leap: !!m.leap, rooted: !!m.rooted, spread: m.spread || 0, ring: m.ring || 0, ringCd: m.ringCd || 0, summon: m.summon || null, summonCd: m.summonCd || 0,
       teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
+      flee: !!m.flee, spores: !!m.spores, shell: !!m.shell,   // Reaktionen (foes.js)
     };
     e.hp = e.maxHp;
     if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
@@ -427,7 +428,8 @@ A.Game = (function () {
       items.push(randomItem(rollRarity(nt)));
       const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
       if (nt >= 3 && run.rng.chance(0.25 + (nt - 3) * 0.25)) items.push(randomItem(rollRarity(1)));   // tiefe Elite: oft ein zweites Item
-      esparks = nt; run.eliteSparks = (run.eliteSparks || 0) + nt; run.eliteKills = (run.eliteKills || 0) + 1;
+      if (e.captain) { items.push(randomItem(rollRarity(2))); esparks += A.CAPTAIN_SPARKS; }   // Hauptmann (foes.js): ein Stück mehr und Funken obendrauf
+      esparks += nt; run.eliteSparks = (run.eliteSparks || 0) + esparks; run.eliteKills = (run.eliteKills || 0) + 1;
       book = bookKill(e);
       questEvent('elite');
     }

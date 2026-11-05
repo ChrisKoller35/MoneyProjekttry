@@ -267,9 +267,9 @@ A.UNIQUES = [
 // stats bei Ebene 1: hp, atk, def, spd; row: front/back; kind: melee/ranged/magic; floors: ab Ebene
 A.MONSTERS = [
   { id: 'schleimer', name: { de: 'Schleimer', en: 'Slimer' }, hp: 22, atk: 5, def: 0, spd: 3, row: 'front', kind: 'melee', floors: [1, 4], color: '#6fdc7a', shape: 'blob' },
-  { id: 'ratte', name: { de: 'Höhlenratte', en: 'Cave Rat' }, hp: 16, atk: 6, def: 0, spd: 7, row: 'front', kind: 'melee', floors: [1, 5], color: '#8a6a4a', shape: 'rat', crit: 10 },
-  { id: 'fledermaus', name: { de: 'Fledermaus', en: 'Bat' }, hp: 12, atk: 5, def: 0, spd: 9, row: 'back', kind: 'ranged', floors: [1, 4], color: '#5a4a6a', shape: 'bat', dodge: 20 },
-  { id: 'pilzkrieger', name: { de: 'Pilzkrieger', en: 'Fungus Warrior' }, hp: 34, atk: 7, def: 2, spd: 3, row: 'front', kind: 'melee', floors: [2, 6], color: '#b86fa0', shape: 'mushroom', poisonOnHit: 2 },
+  { id: 'ratte', name: { de: 'Höhlenratte', en: 'Cave Rat' }, hp: 16, atk: 6, def: 0, spd: 7, row: 'front', kind: 'melee', floors: [1, 5], color: '#8a6a4a', shape: 'rat', crit: 10, flee: true },
+  { id: 'fledermaus', name: { de: 'Fledermaus', en: 'Bat' }, hp: 12, atk: 5, def: 0, spd: 9, row: 'back', kind: 'ranged', floors: [1, 4], color: '#5a4a6a', shape: 'bat', dodge: 20, flee: true },
+  { id: 'pilzkrieger', name: { de: 'Pilzkrieger', en: 'Fungus Warrior' }, hp: 34, atk: 7, def: 2, spd: 3, row: 'front', kind: 'melee', floors: [2, 6], color: '#b86fa0', shape: 'mushroom', poisonOnHit: 2, spores: true },
   { id: 'knochen', name: { de: 'Knochenwächter', en: 'Bone Warden' }, hp: 40, atk: 8, def: 4, spd: 4, row: 'front', kind: 'melee', floors: [3, 6], color: '#e8e2d0', shape: 'skeleton' },
   { id: 'glutmotte', name: { de: 'Glutmotte', en: 'Ember Moth' }, hp: 18, atk: 7, def: 0, spd: 8, row: 'back', kind: 'magic', floors: [3, 6], color: '#ff8a3d', shape: 'moth', burn: 0.4 },
   { id: 'spinne', name: { de: 'Fadenspinne', en: 'Thread Spider' }, hp: 26, atk: 7, def: 1, spd: 6, row: 'back', kind: 'ranged', floors: [2, 6], color: '#3a3a4a', shape: 'spider', poisonOnHit: 2 },
@@ -277,21 +277,23 @@ A.MONSTERS = [
   { id: 'schattenfaenger', name: { de: 'Schattenfänger', en: 'Shadow Catcher' }, hp: 30, atk: 11, def: 1, spd: 7, row: 'back', kind: 'magic', floors: [4, 6], color: '#2e2a4a', shape: 'ghost', dodge: 15 },
   { id: 'tunnelwurm', name: { de: 'Tunnelwurm', en: 'Tunnel Worm' }, hp: 55, atk: 9, def: 3, spd: 2, row: 'front', kind: 'melee', floors: [5, 6], color: '#c08a6a', shape: 'worm' },
   { id: 'spiegelgeist', name: { de: 'Spiegelgeist', en: 'Mirror Ghost' }, hp: 28, atk: 9, def: 0, spd: 6, row: 'back', kind: 'magic', floors: [5, 6], color: '#9fd8ff', shape: 'ghost', thorns: 30 },
-  { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1 },
+  { id: 'kobolddieb', name: { de: 'Kobold-Dieb', en: 'Kobold Thief' }, hp: 24, atk: 6, def: 1, spd: 8, row: 'front', kind: 'melee', floors: [2, 5], color: '#c9a54a', shape: 'kobold', steal: 1, flee: true },
 ];
 // Neue Gegner der Welten (Werte bei Ebene 1, sie wachsen mit der Tiefe)
 // Besonderes: leap (springt), rooted (steht fest), spread (Fächer aus Geschossen), slowOnHit (bremst), teleport (verschwindet und taucht neben dir auf), fly (schwebt über Gefahr-Boden)
 A.MONSTERS.push(
-  { id: 'frosch', name: { de: 'Giftfrosch', en: 'Poison Frog' }, hp: 24, atk: 7, def: 1, spd: 5, kind: 'melee', color: '#63c74d', shape: 'frog', leap: true, poisonOnHit: 2 },
+  { id: 'frosch', name: { de: 'Giftfrosch', en: 'Poison Frog' }, hp: 24, atk: 7, def: 1, spd: 5, kind: 'melee', color: '#63c74d', shape: 'frog', leap: true, poisonOnHit: 2, flee: true },
   { id: 'ranke', name: { de: 'Rankenschlinger', en: 'Vine Lasher' }, hp: 36, atk: 7, def: 2, spd: 0, kind: 'ranged', color: '#3e8948', shape: 'vine', rooted: true, spread: 3, shotCol: '#63c74d' },
   { id: 'skorpion', name: { de: 'Sandskorpion', en: 'Sand Scorpion' }, hp: 30, atk: 8, def: 4, spd: 6, kind: 'melee', color: '#d77643', shape: 'scorpion', poisonOnHit: 3 },
   { id: 'mumie', name: { de: 'Mumie', en: 'Mummy' }, hp: 50, atk: 9, def: 2, spd: 2, kind: 'melee', color: '#ead4aa', shape: 'mummy', slowOnHit: true },
-  { id: 'krabbe', name: { de: 'Panzerkrabbe', en: 'Shell Crab' }, hp: 38, atk: 8, def: 8, spd: 4, kind: 'melee', color: '#e43b44', shape: 'crab' },
+  { id: 'krabbe', name: { de: 'Panzerkrabbe', en: 'Shell Crab' }, hp: 38, atk: 8, def: 8, spd: 4, kind: 'melee', color: '#e43b44', shape: 'crab', shell: true },
   { id: 'qualle', name: { de: 'Blitzqualle', en: 'Shock Jelly' }, hp: 24, atk: 8, def: 0, spd: 5, kind: 'magic', color: '#2ce8f5', shape: 'jelly', fly: true, dodge: 10, shotCol: '#2ce8f5' },
   { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
   { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
 );
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
+// Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
+// Rache haben alle: fällt ein Kumpel daneben, werden sie kurz schneller und stärker
 // Elite-Eigenschaften (Regeln in js/elites.js): je tiefer, desto mehr davon. col = Farbe für Schein und Namen, tip = kurzer Hinweis im Kampf,
 // text = Erklärung im Elite-Buch, heal = hält sich am Leben (davon höchstens eine pro Elite)
 A.ELITE_TRAITS = {
@@ -312,6 +314,32 @@ A.ELITE_TRAITS = {
   klingen: { name: { de: 'Klingenwirbel', en: 'Bladestorm' }, col: '#8b9bb4', icon: 'ef_klingen', tip: { de: 'Klingen kreisen um ihn', en: 'blades circle around it' }, text: { de: 'Drei Klingen kreisen um ihn. Nicht zu lange danebenstehen.', en: 'Three blades circle around it. Do not stand next to it for long.' } },
   heiler: { name: { de: 'Heiler', en: 'Healer' }, col: '#c8f5a0', icon: 'ef_heil', heal: true, tip: { de: 'heilt andere Gegner: zuerst besiegen!', en: 'heals other enemies: defeat it first!' }, text: { de: 'Heilt die anderen Gegner im Raum. Am besten zuerst besiegen.', en: 'Heals the other enemies in the room. Best defeated first.' } },
 };
+// Hauptleute (js/foes.js): je Welt einer, auf der dritten Ebene der Welt im Elite-Raum (A.CAPTAIN_FLOOR). Gebaut aus einem Gegner (base) mit festen
+// Elite-Eigenschaften (traits) und einer eigenen Masche (sig): swarm (ruft Ratten, rennt bei halbem Leben weg), spores (Feuer macht Sporenwolke),
+// charge (Sturmangriff in gerader Linie, Panzer gegen dein Lieblings-Element), shell (Panzer bei 30 %), forge (Wut und Glutwichte bei 30 %), whisper (verlängert Abklingzeiten, Spott).
+// lines: Sprüche beim Auftauchen, bei halbem Leben, bei 30 % und beim Tod ({el} = Element des Helden, {build} = sein Build-Name)
+A.CAPTAIN_FLOOR = 2;      // dritte Ebene jeder Welt (0 = erste)
+A.CAPTAIN_SPARKS = 8;     // Seelenfunken je besiegtem Hauptmann (zählen zu den Elite-Funken)
+A.CAPTAINS = [
+  { id: 'ratz', world: 'stone', base: 'ratte', name: { de: 'Ratz, der Rattenkönig', en: 'Ratz the Rat King' }, col: '#c9a54a', traits: ['beschwoerer', 'flink'], hpMul: 2.4, sig: 'swarm', summon: 'ratte',
+    trick: { de: 'Ruft Ratten. Bei halbem Leben rennt er weg und holt den ganzen Schwarm.', en: 'Calls rats. At half health he runs off and brings the whole swarm.' },
+    lines: { enter: { de: 'Meine Kinder! Fresst!', en: 'My children! Feast!' }, half: { de: 'Nicht ins Gesicht!', en: 'Not the face!' }, die: { de: 'Sagt meiner Mutter... nichts.', en: 'Tell my mother... nothing.' } } },
+  { id: 'sporenmutter', world: 'jungle', base: 'pilzkrieger', name: { de: 'Sporenmutter', en: 'Spore Mother' }, col: '#d06bb0', traits: ['giftig', 'heiler'], hpMul: 2.6, sig: 'spores',
+    trick: { de: 'Giftspur und heilt ihre Brut. Feuer macht sie wütend: Sporenwolke!', en: 'Poison trail and heals her brood. Fire angers her: spore cloud!' },
+    lines: { enter: { de: 'Wer hat hier Fackeln dabei?', en: 'Who brought torches?' }, half: { de: 'Meine Sporen! Überall!', en: 'My spores! Everywhere!' }, die: { de: 'Ich komme als Schimmel wieder.', en: 'I shall return as mould.' } } },
+  { id: 'sandak', world: 'desert', base: 'skorpion', name: { de: 'Hauptmann Sandak', en: 'Captain Sandak' }, col: '#feae34', traits: ['gepanzert'], hpMul: 2.6, sig: 'charge', resist: true,
+    trick: { de: 'Rennt dich in gerader Linie um: zur Seite! Sein Panzer trotzt deinem Lieblings-Element.', en: 'Charges you in a straight line: step aside! His armor shrugs off your favorite element.' },
+    lines: { enter: { de: 'Du riechst nach {el}. Darauf bin ich vorbereitet.', en: 'You smell of {el}. I came prepared.' }, half: { de: 'Mehr! Mehr Sand!', en: 'More! More sand!' }, die: { de: 'Sand... in den... Stiefeln...', en: 'Sand... in my... boots...' } } },
+  { id: 'krabbenkaiser', world: 'water', base: 'krabbe', name: { de: 'Krabbenkaiser', en: 'Crab Emperor' }, col: '#e43b44', traits: ['schild', 'riese'], hpMul: 1.6, sig: 'shell',
+    trick: { de: 'Schild aus Licht. Bei 30 % Leben zieht er sich in den Panzer zurück und heilt sich.', en: 'Shield of light. At 30% health he retreats into his shell and heals.' },
+    lines: { enter: { de: 'Seitwärts ist auch eine Richtung.', en: 'Sideways is a direction too.' }, half: { de: 'Zwick zwack!', en: 'Snip snap!' }, low: { de: 'Pause! Ich bin im Panzer!', en: 'Time out! I am in my shell!' }, die: { de: 'Butter... bitte keine Butter.', en: 'Butter... please, no butter.' } } },
+  { id: 'brokk', world: 'volcano', base: 'rostgolem', name: { de: 'Glutschmied Brokk', en: 'Ember Smith Brokk' }, col: '#f77622', traits: ['feurig', 'riese'], hpMul: 1.5, sig: 'forge', summon: 'glutwicht',
+    trick: { de: 'Feuerring. Bei 30 % Leben: Wut und zwei Glutwichte aus der Esse.', en: 'Ring of fire. At 30% health: rage and two ember imps from the furnace.' },
+    lines: { enter: { de: 'Du bist das Rohmaterial.', en: 'You are the raw material.' }, half: { de: 'Noch nicht heiss genug!', en: 'Not hot enough yet!' }, low: { de: 'Jetzt wird geschmiedet!', en: 'Now we forge!' }, die: { de: 'Schlechte... Legierung...', en: 'Bad... alloy...' } } },
+  { id: 'fluesterer', world: 'abyss', base: 'schattenfaenger', name: { de: 'Der Flüsterer', en: 'The Whisperer' }, col: '#b55088', traits: ['blinzelnd', 'spiegel', 'vampir'], hpMul: 2.4, sig: 'whisper',
+    trick: { de: 'Verschwindet, spiegelt sich, heilt sich an dir. Sein Flüstern verlängert deine Abklingzeiten.', en: 'Vanishes, mirrors himself, heals off you. His whispers lengthen your cooldowns.' },
+    lines: { enter: { de: 'Ein «{build}»? Süss.', en: 'A “{build}”? Cute.' }, half: { de: 'Du hörst mich. Gut.', en: 'You hear me. Good.' }, die: { de: '...endlich... Ruhe...', en: '...finally... quiet...' } } },
+];
 A.ELITE_BOOK_SPARKS = 10;   // Seelenfunken, wenn man eine Eigenschaft zum ersten Mal besiegt (Elite-Buch im Lager)
 A.ELITE_BOOK_DMG = 0.02;    // jede Seite im Elite-Buch: +2 % Schaden gegen Elite-Gegner, für immer
 // Bosse, je einer am Ende jeder Welt (jede 4. Ebene)
@@ -791,6 +819,10 @@ A.ACHIEVEMENTS = [
   // Dein Build (Version 30)
   { id: 'einseitig', cat: 'helden', stat: 'elMax', n: 6, sparks: 60, icon: 'el_blitz', name: { de: 'Einseitig', en: 'One-sided' }, text: { de: 'Sechs Teile mit demselben Element tragen', en: 'Wear six pieces with the same element' } },
   { id: 'kombo3', cat: 'sammlung', stat: 'runCombos', n: 3, sparks: 80, icon: 'u_spark', name: { de: 'Kombo-Jäger', en: 'Combo hunter' }, text: { de: 'Drei Kombos in einem Durchlauf erwecken', en: 'Awaken three combos in one run' } },
+  // Hauptleute (Version 31)
+  { id: 'hauptmann1', cat: 'kampf', stat: 'captains', n: 1, sparks: 40, mon: 'ratte', name: { de: 'Offiziersjagd', en: 'Officer hunt' }, text: { de: 'Einen Hauptmann besiegen', en: 'Defeat a captain' } },
+  { id: 'hauptleute', cat: 'kampf', stat: 'captKinds', n: A.CAPTAINS.length, sparks: 120, mon: 'skorpion', name: { de: 'Alle Offiziere', en: 'All officers' }, text: { de: `Alle ${A.CAPTAINS.length} Hauptleute einmal besiegen`, en: `Defeat all ${A.CAPTAINS.length} captains once` } },
+  { id: 'hasenfuss', cat: 'verrueckt', stat: 'fleeKills', n: 20, sparks: 30, mon: 'kobolddieb', name: { de: 'Keine Flucht', en: 'No escape' }, text: { de: '20 fliehende Gegner erwischen', en: 'Catch 20 fleeing enemies' } },
   { id: 'prinzip', cat: 'helden', stat: 'buildBest', n: 12, sparks: 60, icon: 't_mind', name: { de: 'Prinzipientreu', en: 'Stickler' }, text: { de: 'Mit einem starken Build (Build-Wert 8) Ebene 12 erreichen', en: 'Reach floor 12 with a strong build (build score 8)' } },
 ];
 A.ACH_CHRON = 20;   // so viele Durchläufe merkt sich die Chronik
