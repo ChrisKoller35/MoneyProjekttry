@@ -373,7 +373,7 @@ A.Scenes = (function () {
   layer(C, 'buf'); layer(C, 'lt'); layer(C, 'gl');
   // Platz je Gebäude: Abstand zur Mitte, Reihe (b = hinten beim Eingang, f = vorne beim Feuer)
   // b: hintere Reihe (beim Eingang), f: vordere Reihe (beim Feuer), m: dazwischen am Rand
-  const CAMP_POS = { schreib: [-62, 'b'], platz: [-37, 'b'], schmiede: [41, 'b'], zelt: [67, 'b'], brunnen: [-60, 'f'], kiste: [-37, 'f'], feuer: [0, 'f'], kessel: [37, 'f'], segen: [60, 'f'], tier: [-82, 'm'] };
+  const CAMP_POS = { schreib: [-62, 'b'], platz: [-37, 'b'], schmiede: [41, 'b'], zelt: [67, 'b'], brunnen: [-60, 'f'], kiste: [-37, 'f'], feuer: [0, 'f'], kessel: [37, 'f'], segen: [60, 'f'], tier: [-82, 'm'], brett: [82, 'm'] };   // brett: das Auftragsbrett (kein Gebäude, steht immer)
   // Völker am Feuer: Rasse, Kleidung, Abstand zum Feuer
   const CAMP_NPC = [['mensch', 'klinge', -13, 1], ['fels', 'brau', 13, 1], ['schatten', 'weber', -22, -4], ['pilz', 'rufer', 22, -4], ['kobold', 'schuetze', 5, -9]];
   const CAMP_FLAGS = ['schleimkoenig', 'dornenmutter', 'sandpharao', 'kraken', 'rostkoenig', 'waechter'];
@@ -383,8 +383,8 @@ A.Scenes = (function () {
   const campLv = (id) => (C.st && C.st.lv[id]) || 0;
   function campXY(id) {
     const p = CAMP_POS[id];
-    if (p) { let x = C.cx + p[0]; if (id === 'tier' && x < 18) x = C.cx - 48;   // schmal (Handy): die Tierhütte rückt zwischen die Gebäude
-      return { x: Math.max(12, x), y: p[1] === 'b' ? C.yb : p[1] === 'm' ? C.gy + 34 : C.yf }; }
+    if (p) { let x = C.cx + p[0]; if (id === 'tier' && x < 18) x = C.cx - 48; if (id === 'brett' && x > C.bw - 18) x = C.cx + 48;   // schmal (Handy): Tierhütte und Brett rücken zwischen die Gebäude
+      return { x: Math.max(12, Math.min(C.bw - 12, x)), y: p[1] === 'b' ? C.yb : p[1] === 'm' ? C.gy + 34 : C.yf }; }
     const n = CAMP_NPC.find(q => 'race_' + q[0] === id); if (n) return { x: C.cx + n[2], y: C.yf + n[3] - 8 };
     return { x: C.cx, y: C.yf };
   }
@@ -397,6 +397,7 @@ A.Scenes = (function () {
     const h = campXY('tier'), busy = [];
     for (const id of shown) { const p = campXY(id); busy.push(id === 'tier' ? [h.x - (lv >= 4 ? 15 : 8), h.y - 13, h.x + (lv >= 2 ? 15 : 8), h.y + 1] : [p.x - 10, p.y - 15, p.x + 10, p.y + 1]); }   // Hütte mit Strohballen und Napf
     busy.push([C.cx - 26, C.yb - 22, C.cx + 26, C.yf + 4]);   // Eingang, Laternen, Feuer und Völker
+    const bd = campXY('brett'); busy.push([bd.x - 10, bd.y - 17, bd.x + 10, bd.y + 1]);   // das Auftragsbrett
     const hits = (x, y) => busy.some(([a, b, c, d]) => x - 7 < c && x + 7 > a && y - 11 < d && y > b);
     const cand = [];
     for (const [y, pen] of [[h.y, 0], [C.yf - 1, 10], [C.yb + 1, 18]]) for (let x = 8; x <= C.bw - 8; x += 3) cand.push([x, y, Math.abs(x - h.x) + pen]);
@@ -634,6 +635,19 @@ A.Scenes = (function () {
       } });
       if (lv >= 5) lamp(L, x, y - 9, 12, '#feae34', 0.45);
     });
+    // Auftragsbrett: zwei Pfähle, Bretter, je erreichtem Erfolg ein Zettel (höchstens 12); solange etwas Neues dran hängt, leuchtet es
+    { const p = campXY('brett'), x = p.x, y = p.y, n = Math.min(12, st.ach || 0), fresh = !!st.achNew;
+      D.push({ y, f: (b, g) => {
+        shade(b, x, y, 8); const s = spr('c_board'); blit(b, s, x, y + 1);
+        const ox = Math.round(x - s.w / 2), oy = Math.round(y + 1 - s.h);
+        for (let i = 0; i < n; i++) {
+          const nx = ox + 2 + (i % 4) * 3 + (i % 3 === 1 ? 1 : 0), ny = oy + 2 + Math.floor(i / 4) * 3;
+          b.fillStyle = i % 5 === 2 ? '#fee761' : '#ead4aa'; b.fillRect(nx, ny, 3, 3); b.fillStyle = '#e43b44'; b.fillRect(nx + 1, ny, 1, 1); b.fillStyle = '#3a4466'; b.fillRect(nx, ny + 2, 2, 1);
+        }
+        if (fresh && Math.sin(t * 5) > 0) { g.fillStyle = '#ffffff'; g.fillRect(x + 6, y - 15, 1, 1); g.fillRect(x - 7, y - 9, 1, 1); }
+      } });
+      if (fresh) lamp(L, x, y - 9, 14 + Math.sin(t * 3) * 2, '#fee761', 0.5 + Math.sin(t * 3) * 0.15);
+    }
     // Gefundene Begleiter dösen bei der Hütte: die Eule auf dem Dach, die anderen auf freien Plätzen daneben; ab und zu hüpft eins
     if (st.pets && st.pets.length) {
       const h = campXY('tier'), lv = campLv('tier'), roof = (id) => id === 'huhu' && lv > 0;   // ohne Hütte sitzt auch die Eule am Boden
@@ -748,7 +762,7 @@ A.Scenes = (function () {
       if (changed) { St.poof = 0.2; for (let i = 0; i < 22; i++) { const a = rnd(0, TAU), sp = rnd(10, 34); St.parts.push({ x: St.cx + Math.cos(a) * 4, y: St.fy - 9 + Math.sin(a) * 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 12, life: rnd(0.3, 0.7), col: ['#fee761', '#ffffff', CLASS_GLOW[cls] || '#feae34'][i % 3] }); } }
       kick();
     },
-    // Lager zeigen; state = { lv, open, can, races, troph, rank, max }; opts.poof = Gebäude (oder race_…), das gerade gewachsen ist
+    // Lager zeigen; state = { lv, open, can, races, troph, rank, max, pets, ach, achNew }; opts.poof = Gebäude (oder race_…), das gerade gewachsen ist
     camp(canvas, state, opts) {
       if (!canvas) { if (C.cv) ro.unobserve(C.cv); C.on = false; C.cv = null; return; }
       const changed = JSON.stringify(state) !== JSON.stringify(C.st);

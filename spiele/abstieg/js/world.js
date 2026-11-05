@@ -263,7 +263,7 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -304,6 +304,7 @@ A.World = (function () {
     if (e.side === 'hero') {
       if (e === W.hero && A.Gear.phoenix(e)) return;
       if (e.revive > 0 && !G().run.reviveUsed) { G().run.reviveUsed = true; e.hp = Math.round(e.maxHp * 0.3); e.revive = 0; e.inv = 1.5; float(e.x, e.y - 40, A.LANG === 'de' ? 'Zweite Chance!' : 'Second chance!', '#f5c542', 18); return; }
+      if (e === W.hero) A.Achieve.onDeath(e);   // wer es war, für die Chronik
       e.alive = false; e.hp = 0; W.paused = true; if (hooks.onDeath) hooks.onDeath(); return;
     }
     e.alive = false; e.hp = 0;
@@ -645,6 +646,7 @@ A.World = (function () {
     for (const [x, y] of p.tiles) W.tiles[y][x] = 1;
     W.reach = reachFrom(W.tiles, W.start); W.flowAt = -1;
     p.used = true; G().save();   // nur das Geröll: der Raum selbst gilt erst mit der Truhe als benutzt
+    A.Achieve.onSecret();
     if (A.FX) { A.FX.shake(0.3); A.FX.rocks(p.x, p.y, 12, 80, ['#5a6988', '#8b9bb4', '#3a4466']); for (let i = 0; i < 6; i++) A.FX.part({ kind: 'smoke', x: p.x + (Math.random() - 0.5) * 50, y: p.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 30, vy: -10, life: 1.2, size: 5, grow: 10, color: '#8b9bb4', drag: 1 }); }
     if (A.Sound.klong) A.Sound.klong(true);
     float(p.x, p.y - 40, A.LANG === 'de' ? 'Geheimer Raum!' : 'Secret room!', '#fee761', 18);

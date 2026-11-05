@@ -745,3 +745,46 @@ A.QUESTS = [
 ];
 
 A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter
+
+// ---------- Auftragsbrett: 30 Erfolge über alle Durchläufe (Regeln in achieve.js) ----------
+// stat: welcher Zähler zählt (A.Achieve.values()); n: Ziel; sparks: Seelenfunken beim Erreichen; icon, mon oder hero: Bild auf dem Zettel
+A.ACH_CATS = { tiefe: { de: 'Tiefe', en: 'Depth' }, kampf: { de: 'Kampf', en: 'Combat' }, sammlung: { de: 'Sammlung', en: 'Collection' }, helden: { de: 'Helden', en: 'Heroes' }, tiere: { de: 'Tiere', en: 'Pets' }, verrueckt: { de: 'Verrückte Momente', en: 'Crazy moments' } };
+A.ACHIEVEMENTS = [
+  // Tiefe
+  { id: 'tiefe5', cat: 'tiefe', stat: 'best', n: 5, sparks: 20, icon: 'u_down', name: { de: 'Erster Keller', en: 'First cellar' }, text: { de: 'Ebene 5 erreichen', en: 'Reach floor 5' } },
+  { id: 'tiefe10', cat: 'tiefe', stat: 'best', n: 10, sparks: 40, icon: 'u_down', name: { de: 'Tief unten', en: 'Deep down' }, text: { de: 'Ebene 10 erreichen', en: 'Reach floor 10' } },
+  { id: 'welten', cat: 'tiefe', stat: 'won', n: 1, sparks: 120, icon: 'crown', name: { de: 'Unten ist der Ausgang', en: 'The exit is down there' }, text: { de: 'Alle sechs Welten bezwingen', en: 'Conquer all six worlds' } },
+  { id: 'tiefe30', cat: 'tiefe', stat: 'best', n: 30, sparks: 150, icon: 'crown', name: { de: 'Und weiter', en: 'And onward' }, text: { de: 'Ebene 30 erreichen (die Welten kommen wieder, nur härter)', en: 'Reach floor 30 (the worlds return, only harder)' } },
+  // Kampf
+  { id: 'kills100', cat: 'kampf', stat: 'kills', n: 100, sparks: 20, icon: 'u_skull', name: { de: 'Hundert Nasen', en: 'A hundred noses' }, text: { de: '100 Gegner besiegen', en: 'Defeat 100 enemies' } },
+  { id: 'kills1000', cat: 'kampf', stat: 'kills', n: 1000, sparks: 60, icon: 'u_skull', name: { de: 'Tausendsassa', en: 'One thousand' }, text: { de: '1000 Gegner besiegen', en: 'Defeat 1000 enemies' } },
+  { id: 'kills5000', cat: 'kampf', stat: 'kills', n: 5000, sparks: 150, icon: 'u_skull', name: { de: 'Schrecken der Tiefe', en: 'Terror of the deep' }, text: { de: '5000 Gegner besiegen', en: 'Defeat 5000 enemies' } },
+  { id: 'boss1', cat: 'kampf', stat: 'bosses', n: 1, sparks: 30, mon: 'schleimkoenig', name: { de: 'Bosskiller', en: 'Boss killer' }, text: { de: 'Einen Weltenboss besiegen', en: 'Defeat a world boss' } },
+  { id: 'boss6', cat: 'kampf', stat: 'pennants', n: 6, sparks: 100, mon: 'waechter', name: { de: 'Sechs Wimpel', en: 'Six pennants' }, text: { de: 'Alle sechs Weltenbosse besiegen', en: 'Defeat all six world bosses' } },
+  { id: 'elite50', cat: 'kampf', stat: 'elites', n: 50, sparks: 50, icon: 'ef_flink', name: { de: 'Elitejäger', en: 'Elite hunter' }, text: { de: '50 Elite-Gegner besiegen', en: 'Defeat 50 elite enemies' } },
+  { id: 'clean25', cat: 'kampf', stat: 'cleanRooms', n: 25, sparks: 40, icon: 'u_heart', name: { de: 'Unberührt', en: 'Untouched' }, text: { de: '25 Kampfräume ohne einen Kratzer säubern', en: 'Clear 25 battle rooms without a scratch' } },
+  // Sammlung
+  { id: 'secret10', cat: 'sammlung', stat: 'secrets', n: 10, sparks: 50, icon: 'u_hand', name: { de: 'Hier zieht es', en: 'There is a draft' }, text: { de: '10 geheime Räume freilegen', en: 'Uncover 10 secret rooms' } },
+  { id: 'leg1', cat: 'sammlung', stat: 'legs', n: 1, sparks: 20, icon: 'u_star', name: { de: 'Legendär', en: 'Legendary' }, text: { de: 'Die erste Legende finden', en: 'Find your first legend' } },
+  { id: 'leg15', cat: 'sammlung', stat: 'legs', n: 15, sparks: 80, icon: 'u_star', name: { de: 'Sammler', en: 'Collector' }, text: { de: '15 Legenden in der Sammlung', en: '15 legends in the collection' } },
+  { id: 'leg30', cat: 'sammlung', stat: 'legs', n: 30, sparks: 200, icon: 'crown', name: { de: 'Alles meins', en: 'All mine' }, text: { de: 'Alle 30 Legenden in der Sammlung', en: 'All 30 legends in the collection' } },
+  { id: 'combo10', cat: 'sammlung', stat: 'combos', n: 10, sparks: 80, icon: 'u_spark', name: { de: 'Kombo-Meister', en: 'Combo master' }, text: { de: '10 Kombos im Kombo-Buch', en: '10 combos in the combo book' } },
+  { id: 'book16', cat: 'sammlung', stat: 'bookPages', n: 16, sparks: 100, icon: 'u_scroll', name: { de: 'Elite-Kenner', en: 'Elite expert' }, text: { de: 'Das Elite-Buch füllen (alle 16 Eigenschaften)', en: 'Fill the elite book (all 16 traits)' } },
+  { id: 'gold5000', cat: 'sammlung', stat: 'gold', n: 5000, sparks: 50, icon: 'coin', name: { de: 'Goldrausch', en: 'Gold rush' }, text: { de: '5000 Gold verdienen (über alle Durchläufe)', en: 'Earn 5000 gold (across all runs)' } },
+  { id: 'lager30', cat: 'sammlung', stat: 'campRank', n: 30, sparks: 100, icon: 'u_tent', name: { de: 'Baumeister', en: 'Master builder' }, text: { de: 'Lager-Stufe 30 erreichen', en: 'Reach camp level 30' } },
+  // Helden
+  { id: 'cls5', cat: 'helden', stat: 'cls5', n: 5, sparks: 80, hero: ['mensch', 'weber'], name: { de: 'Allrounder', en: 'All-rounder' }, text: { de: 'Mit jeder der 5 Klassen Ebene 5 erreichen', en: 'Reach floor 5 with each of the 5 classes' } },
+  { id: 'race5', cat: 'helden', stat: 'races', n: 5, sparks: 60, hero: ['pilz', 'rufer'], name: { de: 'Ganzes Lager', en: 'Whole camp' }, text: { de: 'Mit jedem der 5 Völker einen Abstieg wagen', en: 'Brave a descent with each of the 5 peoples' } },
+  // Tiere
+  { id: 'pet1', cat: 'tiere', stat: 'pets', n: 1, sparks: 20, icon: 'cage', name: { de: 'Freigelassen', en: 'Set free' }, text: { de: 'Das erste Tier aus einem Käfig befreien', en: 'Free your first pet from a cage' } },
+  { id: 'pet6', cat: 'tiere', stat: 'pets', n: 6, sparks: 100, icon: 'u_paw', name: { de: 'Ganzer Zoo', en: 'Whole zoo' }, text: { de: 'Alle 6 Tiere im Lager', en: 'All 6 pets in the camp' } },
+  { id: 'treue5', cat: 'tiere', stat: 'treue5', n: 1, sparks: 80, icon: 'u_paw', name: { de: 'Beste Freunde', en: 'Best friends' }, text: { de: 'Ein Tier auf Treue 5 bringen', en: 'Bring a pet to loyalty 5' } },
+  // Verrückte Momente
+  { id: 'cleanboss', cat: 'verrueckt', stat: 'cleanBoss', n: 1, sparks: 80, mon: 'sandpharao', name: { de: 'Kein Kratzer', en: 'Not a scratch' }, text: { de: 'Einen Weltenboss besiegen, ohne Schaden zu nehmen', en: 'Defeat a world boss without taking damage' } },
+  { id: 'cleanfloor', cat: 'verrueckt', stat: 'cleanFloors', n: 1, sparks: 60, icon: 'u_heart', name: { de: 'Tänzer', en: 'Dancer' }, text: { de: 'Eine ganze Ebene (ab Ebene 3) ohne Schaden schaffen', en: 'Finish a whole floor (from floor 3) without taking damage' } },
+  { id: 'goldrun', cat: 'verrueckt', stat: 'goldRun', n: 1000, sparks: 60, icon: 'coin', name: { de: 'Dagobert', en: 'Moneybags' }, text: { de: '1000 Gold auf einmal in der Tasche', en: '1000 gold in your pocket at once' } },
+  { id: 'wild5', cat: 'verrueckt', stat: 'wild', n: 5, sparks: 60, icon: 'i_bienen', name: { de: 'Verrückt', en: 'Crazy' }, text: { de: '5 der 10 verrückten Stücke finden', en: 'Find 5 of the 10 crazy pieces' } },
+  { id: 'death1', cat: 'verrueckt', stat: 'death1', n: 1, sparks: 10, mon: 'ratte', name: { de: 'Anfängerpech', en: 'Beginner\'s luck' }, text: { de: 'Auf Ebene 1 fallen. Passiert den Besten.', en: 'Fall on floor 1. Happens to the best.' } },
+  { id: 'neardeath', cat: 'verrueckt', stat: 'nearDeath', n: 1, sparks: 40, icon: 'potion', name: { de: 'Überlebenskünstler', en: 'Survivor' }, text: { de: 'Einen Raum mit weniger als 5 % Leben überstehen', en: 'Survive a room with less than 5% health' } },
+];
+A.ACH_CHRON = 20;   // so viele Durchläufe merkt sich die Chronik
