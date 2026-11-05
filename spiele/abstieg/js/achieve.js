@@ -27,6 +27,8 @@ A.Achieve = (function () {
       cls5: A.CLASSES.filter(c => ((s.clsBest || {})[c.id] || 0) >= 5).length, races: A.RACES.filter(x => ((s.raceRuns || {})[x.id] || 0) > 0).length,
       pets: A.Pets.count(), treue5: Object.keys(A.PETS).filter(id => A.Pets.found(id) && A.Pets.treue(id) >= 5).length,
       death1: s.death1 || 0, nearDeath: s.nearDeath || 0,
+      // Dein Build (build.js): meiste Teile eines Elements, Kombos im laufenden Durchlauf, tiefste Ebene mit starkem Build
+      elMax: r ? Math.max(0, ...Object.values(A.Gear.counts(r))) : 0, runCombos: r ? (r.combos || []).length : 0, buildBest: s.buildBest || 0,
     };
   }
   const done = (id) => !!(G().meta.ach || {})[id];
@@ -53,7 +55,7 @@ A.Achieve = (function () {
     if (r.goldSeen == null) r.goldSeen = r.gold;
     if (r.gold > r.goldSeen) add('gold', r.gold - r.goldSeen);
     r.goldSeen = r.gold; most('goldRun', r.gold);
-    if ((acc += dt) >= 0.5) { acc = 0; check(); }
+    if ((acc += dt) >= 0.5) { acc = 0; if (A.Build.strong(A.Build.profile(r))) most('buildBest', r.floor); check(); }
     if (news.length && !paused && A.FX && !A.FX.banners.length && !ui.overlayOpen()) {
       const a = news.shift();
       A.FX.banner(L('Erfolg: ', 'Achievement: ') + A.t(a.name), `${A.t(a.text)} · +${a.sparks} ${A.t(A.UI.meta)}`, '#fee761', 3.2);
@@ -97,7 +99,7 @@ A.Achieve = (function () {
   function record(r, quit) {
     const m = G().meta;
     const e = { t: Date.now(), race: r.race, cls: r.cls, floor: r.floor, level: r.level, kills: r.kills, gold: r.gold, won: !!r.won, by: quit ? null : (r.deathBy || null), quit: !!quit,
-      sparks: quit ? 0 : (r.sparksEarned || 0), dur: Math.round(r.playT || 0), pets: (r.pets || []).slice(0, 2), ach: (r.achIds || []).slice() };
+      sparks: quit ? 0 : (r.sparksEarned || 0), dur: Math.round(r.playT || 0), pets: (r.pets || []).slice(0, 2), ach: (r.achIds || []).slice(), bd: A.Build.ids(A.Build.profile(r)) };
     m.chron = m.chron || []; m.chron.unshift(e); if (m.chron.length > A.ACH_CHRON) m.chron.length = A.ACH_CHRON;
     return e;
   }

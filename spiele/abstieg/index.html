@@ -159,6 +159,13 @@
   /* Vergleich: neues Stück gegen das angelegte (ui.js compareView, Rechnung in compare.js) */
   .vchip { --vc: #8b9bb4; display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px 2px 5px; border: 2px solid color-mix(in srgb, var(--vc) 70%, #181425); background: color-mix(in srgb, var(--vc) 18%, #181425); color: var(--vc); font-size: 12px; font-weight: 700; line-height: 14px; letter-spacing: 0; text-transform: none; white-space: nowrap; }
   .vchip::before { content: ''; flex: none; }
+  .vchip.fit { --vc: #c77dff; } .vchip.combo { --vc: #feae34; }
+  .fitline { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 7px 10px; font-size: 15px; border-left: 4px solid #c77dff; background: rgba(199,125,255,0.1); }
+  .fitline.combo { border-left-color: #feae34; background: rgba(254,174,52,0.12); color: var(--gold2); }
+  .fitline > img { flex: none; }
+  .sheethead .bld { margin-top: 3px; } .sheethead .bld span { color: var(--mist); }
+  .sheethead .bld button { font: inherit; font-size: 12px; margin-left: 6px; padding: 1px 7px 2px; background: #181425; color: var(--gold2); border: 2px solid #3a4466; cursor: pointer; }
+  .runrow .bdn { color: #c77dff; }
   .vchip.better { --vc: #63c74d; } .vchip.worse { --vc: #f6757a; } .vchip.mixed { --vc: #fee761; } .vchip.same, .vchip.sold { --vc: #8b9bb4; } .vchip.worn { --vc: #2ce8f5; }
   .vchip.better::before, .verdict.better b::before { border: 5px solid transparent; border-bottom: 7px solid currentColor; border-top-width: 0; }
   .vchip.worse::before, .verdict.worse b::before { border: 5px solid transparent; border-top: 7px solid currentColor; border-bottom-width: 0; }
@@ -471,6 +478,7 @@
 <script src="js/pets.js"></script>
 <script src="js/wild.js"></script>
 <script src="js/achieve.js"></script>
+<script src="js/build.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>
