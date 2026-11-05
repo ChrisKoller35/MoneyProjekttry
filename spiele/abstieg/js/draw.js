@@ -432,6 +432,7 @@ window.A = window.A || {};
       this.drawBoonsGround(W, cx, cy);
       A.Bosses.drawGround(this, W, cx, cy);
       A.Elites.drawGround(this, W, cx, cy);
+      A.Weather.drawGround(this, W, cx, cy);   // Warnungen (Steinschlag, Lava), Strömung, Treibsand-Wirbel
       A.Legends.drawGround(this, W, cx, cy);   // Tinte, Leerenloch, Amboss-Schatten, Quietsche-Ente
       A.Combos.drawGround(this, W, cx, cy);    // Giftpilze
       A.Pets.drawGround(this, W, cx, cy);      // Eier, Zunge, Schrei
@@ -483,6 +484,7 @@ window.A = window.A || {};
       A.Legends.drawTop(this, W, cx, cy);   // fallender Amboss, Spiegelbild
       A.Combos.drawTop(this, W, cx, cy);    // Raketen, Blutkugeln, Wirbelwind
       A.Wild.drawTop(this, W, cx, cy);      // Seifenblasen, Fliegenklatsche, Gewitterwolke, Bienen, Sparschwein
+      A.Weather.drawTop(this, W, cx, cy);   // fallende Steine und Lava, Regen, Sandsturm, rote Augen im Dunkeln
       // Leuchtende Teilchen
       if (A.FX) for (const p of A.FX.P) {
         if (p.kind === 'smoke' || (p.kind === 'px' && !p.add)) continue;
@@ -975,7 +977,7 @@ window.A = window.A || {};
 
     drawLights(W, cx, cy) {
       const l = this.l, bw = this.bw, bh = this.bh, t = this.t;
-      l.globalCompositeOperation = 'source-over'; l.globalAlpha = 1; l.fillStyle = this.theme.ambient; l.fillRect(0, 0, bw, bh);
+      l.globalCompositeOperation = 'source-over'; l.globalAlpha = 1; l.fillStyle = A.Weather.ambient(this.theme.ambient); l.fillRect(0, 0, bw, bh);   // Finsternis, Regen, Sandsturm (weather.js)
       l.globalCompositeOperation = 'lighter';
       const L = (wx, wy, r, color, a) => { const x = wx / PX - cx, y = wy / PX - cy; if (x + r < 0 || y + r < 0 || x - r > bw || y - r > bh) return; l.globalAlpha = clamp(a, 0, 1); l.drawImage(this.lightImg(color), x - r, y - r, r * 2, r * 2); };
       const fl = (ph, k) => 0.86 + Math.sin(t * 9 * (k || 1) + ph) * 0.07 + Math.sin(t * 23 + ph * 2) * 0.05;
@@ -1022,6 +1024,7 @@ window.A = window.A || {};
       A.Combos.lights(W, L);
       A.Pets.lights(W, L);
       A.Wild.lights(W, L);
+      A.Weather.lights(W, L);
       for (const m of W.mons) {
         if (!m.alive) continue;
         if (m.mid === 'glutmotte') L(m.x, m.y - 16, 36, '#ff8a30', fl(m.x, 2) * 0.7);
@@ -1260,11 +1263,19 @@ window.A = window.A || {};
       // Hinweis
       if (W.hint && !boss) {
         c.font = this.font(13 * d, 600); let tw = c.measureText(W.hint).width; const y = (this.topPad + 22) * d;
-        const [, , HL, HR] = this.topBox(dw); if (tw + 24 * d > HR - HL) { c.font = this.font(13 * d * (HR - HL - 24 * d) / tw, 600); tw = c.measureText(W.hint).width; }   // am Handy neben der Minikarte
+        const [, , HL, HR] = this.topBox(dw), maxW = HR - HL - 24 * d; let lines = [W.hint];
+        if (tw > maxW && tw / maxW < 1.6) { c.font = this.font(13 * d * maxW / tw, 600); tw = c.measureText(W.hint).width; }   // am Handy neben der Minikarte
+        else if (tw > maxW) {   // langer Hinweis (neue Welt): auf mehrere Zeilen umbrechen
+          c.font = this.font(12 * d, 600); lines = []; let cur = '';
+          for (const wd of W.hint.split(' ')) { const nx = cur ? cur + ' ' + wd : wd; if (cur && c.measureText(nx).width > maxW) { lines.push(cur); cur = wd; } else cur = nx; }
+          if (cur) lines.push(cur); tw = Math.min(maxW, Math.max(...lines.map(s => c.measureText(s).width)));
+        }
+        const lh = 16 * d, bh2 = lines.length > 1 ? lines.length * lh + 10 * d : 26 * d, top = y - 13 * d;
         const hx = clamp(dw / 2, HL + tw / 2 + 12 * d, HR - tw / 2 - 12 * d);
-        c.fillStyle = 'rgba(24,20,37,0.82)'; c.fillRect(hx - tw / 2 - 12 * d, y - 13 * d, tw + 24 * d, 26 * d);
-        c.fillStyle = '#feae34'; c.fillRect(hx - tw / 2 - 12 * d, y + 12 * d, tw + 24 * d, 1 * d);
-        c.fillStyle = '#fee761'; c.fillText(W.hint, hx, y + d);
+        c.fillStyle = 'rgba(24,20,37,0.82)'; c.fillRect(hx - tw / 2 - 12 * d, top, tw + 24 * d, bh2);
+        c.fillStyle = '#feae34'; c.fillRect(hx - tw / 2 - 12 * d, top + bh2 - d, tw + 24 * d, 1 * d);
+        c.fillStyle = '#fee761';
+        if (lines.length === 1) c.fillText(W.hint, hx, y + d); else lines.forEach((s, i) => c.fillText(s, hx, top + 5 * d + lh * (i + 0.5) + d));
       }
       // Einblendungen
       if (A.FX) for (const bn of A.FX.banners) {

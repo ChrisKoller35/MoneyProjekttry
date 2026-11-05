@@ -134,6 +134,16 @@ Jede Welt hat einen Offizier, und die Gegner reagieren auf das, was passiert. Re
 - **Reaktionen normaler Gegner:** Ratten, Fledermäuse, Kobold-Diebe und Giftfrösche **fliehen** unter 30 % Leben für knapp zwei Sekunden («Hilfe!», der Kobold «Tschüss!») in die Richtung mit dem meisten freien Weg, dann kämpfen sie weiter. **Rache:** fällt ein Gegner, werden Kumpels im Umkreis von 180 Pixeln vier Sekunden lang 30 % schneller und 25 % stärker (roter Rauch, «Rache!»), jeder nur einmal; Beschworene und Spiegelbilder lösen keine Rache aus, Bosse und Hauptleute nehmen keine. **Sporen:** ein brennender Pilzkrieger stösst eine Giftwolke aus (alle 3 Sekunden). **Panzer:** eine Panzerkrabbe geht bei 30 % Leben einmal für 1,2 Sekunden zu (nichts geht durch) und heilt sich danach um 10 %.
 - **Spielstand:** neu nur `meta.capt` (besiegte Hauptleute je Art) und die Zähler `meta.stats.captains` und `fleeKills`; eine laufende Ebene aus einem alten Spielstand baut sich gleich, der Hauptmann steht dann im noch nicht gesäuberten Elite-Raum.
 
+## Welten mit Eigenheiten (05.11.2026)
+Jede Welt spielt sich jetzt anders, nicht nur farbig. Regeln in `js/weather.js`, Namen und Hinweise `A.WORLD_FX` in `js/data.js`. Beim ersten Betreten einer Welt sagt ein Hinweis oben, was hier anders ist; die Einblendung nennt Welt und Eigenheit.
+- **Graue Gewölbe – Steinschlag** (ab Ebene 2): im Kampf wächst alle paar Sekunden ein Schatten am Boden, gut eine Sekunde später kracht ein Stein runter. Trifft den Helden (etwa 10 % Leben) und Gegner (28 %, Elite 12 %, Boss 5 %, kurz betäubt). Gegner in den Schatten locken lohnt sich.
+- **Dschungel-Ruinen – Wolkenbruch**: Regen kommt und geht (9 Sekunden). Im Regen erlischt jedes Brennen, Kettenblitze treffen 30 % härter, Schlamm bremst stärker, das Licht wird dunkler.
+- **Wüstengrab – Treibsand und Sandsturm**: Treibsand zieht zur Mitte des Flecks. Im Sandsturm (7 Sekunden) schiebt der Wind Held, Gegner und alle Geschosse zur Seite.
+- **Versunkene Stadt – Strömung**: seichtes Wasser fliesst je Raum in eine Richtung und trägt alle mit; im Wasser erlischt Brennen.
+- **Vulkanschmiede – Ausbruch**: im Kampf leuchten drei Kreise auf (einer beim Helden), dann schlägt Lava ein: Schaden und Brennen für Held und Gegner.
+- **Der Abgrund – Finsternis**: viel dunkler, der Held trägt ein grösseres Licht, Gegner im Dunkeln verraten sich durch rote Augen. Der Boss-Raum ist etwas heller.
+In späteren Durchgängen (Welten II, III …) kommt alles öfter. Wer an Steinschlag oder Lava stirbt, steht so in der Chronik. Nichts davon steht im Spielstand.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -150,6 +160,7 @@ Den zweiten Look «3D» (three.js, 18.10.) gibt es nicht mehr: Christoph braucht
   - `compare` – Vergleich: Heldenwerte mit dem alten und dem neuen Stück, Urteil besser/schlechter/anders/gleich.
   - `pets` – Begleiter: Käfige, Treue, Tricks, Tierhütte, Verhalten im Kampf, Eier, Zunge, Käfig zeichnen; `wild` – die 10 verrückten Stücke (Bienen, Bananenschalen, Gartenzwerge, Seifenblasen, Kisti, Gewitterwolke, Piñata, Sparschwein, Tröte, Fliegenklatsche).
   - `achieve` – Auftragsbrett (33 Erfolge mit Zählern und Einblendung) und Chronik (letzte 20 Durchläufe, Zahlen fürs ganze Spielerleben).
+  - `weather` – Eigenheiten der Welten: Steinschlag, Wolkenbruch, Treibsand und Sandsturm, Strömung, Ausbruch, Finsternis.
   - `foes` – Hauptleute (je Welt einer, Maschen, Sprüche, Belohnung) und Reaktionen normaler Gegner (Flucht, Rache, Sporen, Panzer).
   - `build` – Dein Build: Richtungen erkennen, Name, Fokus, passende Beute und Kombo-Magnet (Gewichte fürs Würfeln, Zeichen an Stücken).
   - `combos` – Kombos: Teile prüfen, bereit/erwacht/ruht, Wirkung im Kampf (Haken aus world, classes, legends, gear), Raketen, Blutkugeln, Giftpilze, Baby-Schleime und Schattenklone zeichnen.

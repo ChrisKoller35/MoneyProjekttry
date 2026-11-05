@@ -130,7 +130,7 @@ A.World = (function () {
   }
   // Gefahr-Boden unter einer Figur: bremst (Treibsand, Schlamm, seichtes Wasser, Schatten) oder brennt (Glut)
   function hazardAt(e) { return tile(e.x, e.y + (e.r || 0) * 0.5) === 5 ? W.world.hazard : null; }
-  function hazardSlow(e) { const hz = hazardAt(e); if (!hz || e.fly) return 1; const H = A.HAZARDS[hz]; return H && H.slow ? H.slow : 1; }
+  function hazardSlow(e) { const hz = hazardAt(e); if (!hz || e.fly) return 1; const H = A.HAZARDS[hz]; return H && H.slow ? A.Weather.slow(hz, H.slow) : 1; }   // im Regen wird Schlamm zäher (weather.js)
 
   // ---------- Gegner ----------
   function reachable(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return !W.reach || !!W.reach[ty * MW + tx]; }
@@ -259,6 +259,7 @@ A.World = (function () {
     const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
     const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     const fp = A.Foes.pre(from, to, opts); if (fp) dmg *= fp.mul;   // Sandaks Panzer gegen dein Element (foes.js)
+    const wp = A.Weather.pre(from, to, opts); if (wp) dmg *= wp.mul;   // Wolkenbruch: Blitze treffen härter (weather.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
@@ -463,7 +464,7 @@ A.World = (function () {
       for (const m of W.mons) { if (!m.alive || m.spawn > 0 || done.has(m)) continue; const d = dist(from, m); if (d < bd) { bd = d; best = m; } }
       if (!best) break; done.add(best);
       W.bolts.push({ x0: from.x, y0: from.y - 12, x1: best.x, y1: best.y - 10, life: 0.28, max: 0.28, col, seed: Math.random() * 99 });
-      hit(h, best, dmg * (i ? 0.85 : 1), { kind: 'magic', color: col }); from = best;
+      hit(h, best, dmg * (i ? 0.85 : 1), { kind: 'magic', color: col, zap: true }); from = best;
       A.Combos.onChainHit(best, dmg * (i ? 0.85 : 1));   // Plasmaball: kleine Explosion
     }
     if (!done.size) W.bolts.push({ x0: h.x, y0: h.y - 12, x1: h.x + h.fx * 90, y1: h.y + h.fy * 90 - 12, life: 0.2, max: 0.2, col, seed: 1 });
@@ -589,7 +590,7 @@ A.World = (function () {
     boonStep(dt);
     const ls = A.Legends.stopped();   // Zeitstopp der Totenmaske: Bosse kurz, Elite-Kreise ganz angehalten
     if (ls < 2) A.Bosses.tick(dt);
-    if (!ls) { A.Elites.tick(dt); A.Foes.tick(dt); }
+    if (!ls) { A.Elites.tick(dt); A.Foes.tick(dt); A.Weather.tick(dt); }   // Welt-Eigenheiten: Steinschlag, Regen, Sandsturm, Strömung, Ausbruch
     A.Gear.tick(dt);
     A.Legends.tick(dt);
     A.Combos.tick(dt);
@@ -667,6 +668,7 @@ A.World = (function () {
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
   A.Elites.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon });
   A.Foes.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon, clearLine, blocked, reachable });
+  A.Weather.bind({ get W() { return W; }, hit, addEffect, float, moveEnt, freeSpot });
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
