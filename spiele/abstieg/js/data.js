@@ -667,6 +667,21 @@ A.HAZARDS = {
   embers: { burn: true, name: { de: 'Glut', en: 'Embers' } },
   shadow: { slow: 0.6, name: { de: 'Schattenpfütze', en: 'Shadow pool' } },
 };
+// Eigenheiten der Welten (weather.js): jede Welt spielt sich ein bisschen anders. from: ab welcher Ebene (die allererste Ebene bleibt ruhig)
+A.WORLD_FX = {
+  stone: { id: 'steinschlag', from: 2, col: '#c0cbdc', name: { de: 'Steinschlag', en: 'Rockfall' },
+    tip: { de: 'Steinschlag! Wo ein Schatten wächst, kracht gleich ein Stein runter. Trifft auch Gegner.', en: 'Rockfall! Where a shadow grows, a rock is about to drop. Hits enemies too.' } },
+  jungle: { id: 'regen', col: '#7fd8ff', name: { de: 'Wolkenbruch', en: 'Downpour' },
+    tip: { de: 'Wolkenbruch! Im Regen erlischt Feuer, Blitze treffen härter und der Schlamm wird zäh.', en: 'Downpour! Rain puts out fire, lightning hits harder and mud gets sticky.' } },
+  desert: { id: 'sturm', col: '#ead4aa', name: { de: 'Sandsturm', en: 'Sandstorm' },
+    tip: { de: 'Treibsand zieht dich zur Mitte. Im Sandsturm weht der Wind dich, die Gegner und alle Geschosse weg.', en: 'Quicksand drags you to its middle. In a sandstorm the wind pushes you, the enemies and every shot.' } },
+  water: { id: 'stroemung', col: '#2ce8f5', name: { de: 'Strömung', en: 'Current' },
+    tip: { de: 'Strömung! Seichtes Wasser trägt dich mit und löscht Feuer.', en: 'Current! Shallow water carries you along and puts out fire.' } },
+  volcano: { id: 'ausbruch', col: '#f77622', name: { de: 'Ausbruch', en: 'Eruption' },
+    tip: { de: 'Der Vulkan spuckt! In glühende Kreise schlägt gleich Lava ein. Trifft auch Gegner.', en: 'The volcano spits! Lava lands in the glowing circles. Hits enemies too.' } },
+  abyss: { id: 'finsternis', col: '#b55088', name: { de: 'Finsternis', en: 'Darkness' },
+    tip: { de: 'Finsternis! Du siehst nur, was dein Licht trifft. Rote Augen im Dunkeln sind keine Glühwürmchen.', en: 'Darkness! You only see what your light reaches. Red eyes in the dark are not fireflies.' } },
+};
 A.FLOORS_PER_WORLD = 4;
 A.worldIndex = (f) => Math.floor((Math.max(1, f) - 1) / A.FLOORS_PER_WORLD);
 A.worldOf = (f) => A.WORLDS[A.worldIndex(f) % A.WORLDS.length];

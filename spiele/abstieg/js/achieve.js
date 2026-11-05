@@ -120,6 +120,8 @@ A.Achieve = (function () {
     const by = e.by;
     if (by && by.kind === 'burn') return L('in Flammen aufgegangen', 'went up in flames');
     if (by && by.kind === 'poison') return L('am Gift gestorben', 'died of poison');
+    if (by && by.kind === 'rock') return L('vom Steinschlag erwischt', 'hit by falling rocks');
+    if (by && by.kind === 'lava') return L('vom Vulkan geröstet', 'roasted by the volcano');
     const B = by && by.mid && A.BOSSES[by.mid], M = by && by.mid && A.MONSTERS.find(x => x.id === by.mid);
     const name = by && by.cap ? A.Foes.nameOf(by.cap) : B ? A.t(B.name) : M ? (by.elite ? A.t(A.UI.elitePrefix) + '-' : '') + A.t(M.name) : null;
     return name ? L(`${name} hat dich erwischt`, `caught by ${name}`) : L('gefallen', 'fallen');

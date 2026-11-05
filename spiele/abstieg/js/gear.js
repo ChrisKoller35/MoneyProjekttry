@@ -103,7 +103,7 @@ A.Gear = (function () {
       for (const m of w.mons) { if (!live(m) || done.has(m)) continue; const d = Math.hypot(m.x - from.x, m.y - from.y); if (d < bd) { bd = d; best = m; } }
       if (!best) break; done.add(best);
       w.bolts.push({ x0: from.x, y0: from.y - 12, x1: best.x, y1: best.y - 10, life: 0.28, max: 0.28, col, seed: Math.random() * 99 });
-      api.hit(h, best, dmg, { kind: 'magic', proc: true, color: col }); from = best;
+      api.hit(h, best, dmg, { kind: 'magic', proc: true, color: col, zap: true }); from = best;
     }
     if (done.size) api.fx('zap', { x: h.x, y: h.y, color: col });
   }
