@@ -796,8 +796,8 @@ A.ELITE_TRAITS = {
   heiler: { name: { de: 'Heiler', en: 'Healer' }, col: '#c8f5a0', icon: 'ef_heil', heal: true, tip: { de: 'heilt andere Gegner: zuerst besiegen!', en: 'heals other enemies: defeat it first!' }, text: { de: 'Heilt die anderen Gegner im Raum. Am besten zuerst besiegen.', en: 'Heals the other enemies in the room. Best defeated first.' } },
   magnetisch: { name: { de: 'Magnetisch', en: 'Magnetic' }, col: '#e43b44', icon: 'ef_magnet', tip: { de: 'zieht dich an: dagegen laufen!', en: 'pulls you in: walk away!' }, text: { de: 'Zieht dich langsam zu sich heran. Fernkämpfer hassen ihn.', en: 'Slowly pulls you towards it. Ranged fighters hate it.' } },
   bombenleger: { name: { de: 'Bombenleger', en: 'Bomber' }, col: '#feae34', icon: 'ef_lunte', tip: { de: 'legt Bomben: weg da!', en: 'drops bombs: run!' }, text: { de: 'Legt immer wieder eine Bombe hinter sich. Die trifft auch seine Freunde.', en: 'Keeps dropping bombs behind it. They hit its friends too.' } },
-  dornig: { name: { de: 'Dornenpanzer', en: 'Thorn Armor' }, col: '#63c74d', icon: 'ef_dorn', tip: { de: 'Nahkampf sticht zurück', en: 'melee hits sting back' }, text: { de: 'Ein Drittel deines Nahkampf-Schadens sticht zurück. Zauber gehen durch.', en: 'A third of your melee damage stings back. Spells get through.' } },
-  zaeh: { name: { de: 'Zäh', en: 'Stubborn' }, col: '#c0cbdc', icon: 'ef_zaeh', tip: { de: 'steht einmal wieder auf', en: 'gets up once more' }, text: { de: 'Fällt er, steht er einmal mit einem Drittel Leben wieder auf. «Noch nicht!»', en: 'When it falls, it gets up once more with a third of its health. "Not yet!"' } },
+  dornig: { name: { de: 'Dornenpanzer', en: 'Thorn Armor' }, col: '#63c74d', icon: 'ef_dorn', tip: { de: 'Waffen-Treffer stechen zurück', en: 'weapon hits sting back' }, text: { de: 'Ein Drittel deines Waffen-Schadens sticht zurück, auch bei Pfeilen. Zauber gehen durch.', en: 'A third of your weapon damage stings back, arrows included. Spells get through.' } },
+  zaeh: { name: { de: 'Zäh', en: 'Stubborn' }, col: '#c0cbdc', icon: 'ef_zaeh', heal: true, tip: { de: 'steht einmal wieder auf', en: 'gets up once more' }, text: { de: 'Fällt er, steht er einmal mit einem Drittel Leben wieder auf. «Noch nicht!»', en: 'When it falls, it gets up once more with a third of its health. "Not yet!"' } },
 };
 // Hauptleute (js/foes.js): je Welt einer, auf der dritten Ebene der Welt im Elite-Raum (A.CAPTAIN_FLOOR). Gebaut aus einem Gegner (base) mit festen
 // Elite-Eigenschaften (traits) und einer eigenen Masche (sig): swarm (ruft Ratten, rennt bei halbem Leben weg), spores (Feuer macht Sporenwolke),
@@ -6581,7 +6581,7 @@ A.Bosses = (function () {
       } else if (b.kind === 'wind') {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
         const dx = b.from.x - h.x, dy = b.from.y - h.y, dd = Math.hypot(dx, dy) || 1;
-        if (h.alive && dd > b.from.r + h.r + 6) api.moveEnt(h, dx / dd * b.pow * dt, dy / dd * b.pow * dt);
+        if (h.alive && dd > b.from.r + h.r + 6 && !(b.water && w.bfx.some(o => o.kind === 'flood' && !o.fired))) api.moveEnt(h, dx / dd * b.pow * dt, dy / dd * b.pow * dt);
         if (A.FX && !A.FX.low && Math.random() < dt * 40) { const a = Math.random() * TAU, rr = 160 + Math.random() * 200; A.FX.part({ kind: 'spark', add: false, x: b.from.x + Math.cos(a) * rr, y: b.from.y + Math.sin(a) * rr * 0.7, vx: -Math.cos(a) * 260, vy: -Math.sin(a) * 180, life: 0.6, color: b.water ? (Math.random() < 0.5 ? '#2ce8f5' : '#c0f8ff') : Math.random() < 0.5 ? '#e4a672' : '#ead4aa', drag: 0.5 }); }
       } else if (b.kind === 'beam') {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
@@ -6796,7 +6796,7 @@ A.Elites = (function () {
     s.hurtT = w.t;
     if (dmg > 0 && has(m, 'gepanzert') && A.FX && Math.random() < 0.6) { A.FX.burst(m.x, m.y - 12, 5, { color: ['#ffffff', '#c0cbdc', '#fee761'], smin: 70, smax: 180, life: 0.22, add: true, kind: 'spark', drag: 5 }); if (A.Sound && Math.random() < 0.35) A.Sound.clink(); }
     if (m.hp <= 0 && has(m, 'zaeh') && !m.toughUsed) {   // Zäh: steht einmal wieder auf
-      m.toughUsed = true; m.hp = Math.max(1, Math.round(m.maxHp * 0.33)); m.stun = 0;
+      m.toughUsed = true; m.hp = Math.max(1, Math.round(m.maxHp * 0.33)); m.stun = 0; delete m.raiseMe;
       say(m, L('Noch nicht!', 'Not yet!'), '#c0cbdc');
       if (A.FX) { A.FX.ev('nova', { e: m, r: 80, color: '#c0cbdc', magic: true }); A.FX.flash(m.x, m.y, 80, '#ffffff', 0.25); }
       return;
@@ -6838,7 +6838,7 @@ A.Elites = (function () {
 
   // ---------- Ablauf (einmal pro Bild) ----------
   function tick(dt) {
-    const w = W(); if (!w) return; const h = w.hero;
+    const w = W(); if (!w) return; const h = w.hero, mag = { x: 0, y: 0, n: 0 };
     for (const m of w.mons) {
       const s = m.ef; if (!s || !m.alive || m.spawn > 0) continue;
       // Schild lädt nach, wenn er eine Weile nicht getroffen wurde
@@ -6847,10 +6847,10 @@ A.Elites = (function () {
         s.spin += dt * (m.stun > 0 ? 1.5 : 3.4);
         if (h.alive && w.t >= s.bladeT) for (let i = 0; i < 3; i++) { const p = blade(m, i); if (Math.hypot(h.x - p.x, h.y - p.y) < h.r + 9) { s.bladeT = w.t + 0.55; api.hit(m, h, m.atk * 0.45, { kind: 'phys' }); api.fx('wallhit', { x: p.x, y: p.y, color: '#ffffff' }); break; } }
       }
-      // Magnetisch: zieht den Helden langsam heran (nicht im Boss-Raum, nicht wenn er schon dran ist)
+      // Magnetisch: zieht den Helden langsam heran (nicht im Boss-Raum, nicht bis in die Klingen); mehrere zusammen ziehen nicht stärker
       if (has(m, 'magnetisch') && h.alive && !(w.active && w.active.type === 'boss')) {
         const dx = m.x - h.x, dy = m.y - h.y, dd = Math.hypot(dx, dy) || 1;
-        if (dd < 330 && dd > m.r + h.r + 24) { api.moveEnt(h, dx / dd * 40 * dt, dy / dd * 40 * dt); if (A.FX && !A.FX.low && Math.random() < dt * 12) { const q = Math.random(); A.FX.part({ add: true, x: h.x + dx * q, y: h.y + dy * q - 10, vx: dx / dd * 120, vy: dy / dd * 120, life: 0.3, color: Math.random() < 0.5 ? '#e43b44' : '#c0cbdc', drag: 0 }); } }
+        if (dd < 330 && dd > (has(m, 'klingen') ? bladeR(m) + h.r + 14 : m.r + h.r + 24)) { mag.x += dx / dd; mag.y += dy / dd; mag.n++; if (A.FX && !A.FX.low && Math.random() < dt * 12) { const q = Math.random(); A.FX.part({ add: true, x: h.x + dx * q, y: h.y + dy * q - 10, vx: dx / dd * 120, vy: dy / dd * 120, life: 0.3, color: Math.random() < 0.5 ? '#e43b44' : '#c0cbdc', drag: 0 }); } }
       }
       // Giftspur und Nachbilder nur, wenn er sich bewegt
       const mv = Math.hypot(m.x - s.lx, m.y - s.ly); s.lx = m.x; s.ly = m.y;
@@ -6858,6 +6858,10 @@ A.Elites = (function () {
       if (has(m, 'flink') && (s.gT -= dt) <= 0 && mv > 0.3) { s.gT = 0.06; s.ghosts.push({ x: m.x, y: m.y, t: w.t, flip: m.fx < 0 }); if (s.ghosts.length > 5) s.ghosts.shift(); }
       if (m.raged && A.FX && !A.FX.low && Math.random() < dt * 10) A.FX.part({ kind: 'smoke', x: m.x + (Math.random() - 0.5) * m.r, y: m.y - 22, vx: 0, vy: -20, life: 0.5, size: 2, grow: 5, color: '#e43b44', drag: 1 });
       if (s.busy > w.t && A.FX && !A.FX.low && Math.random() < dt * 30) { const c = has(m, 'feurig') ? '#feae34' : '#e4a672', a = Math.random() * TAU; A.FX.part({ add: true, x: m.x + Math.cos(a) * m.r * 1.6, y: m.y + Math.sin(a) * m.r, vx: -Math.cos(a) * 40, vy: -Math.sin(a) * 30, z: 4, vz: 30, life: 0.4, color: c, drag: 1 }); }
+    }
+    if (mag.n) {   // höchstens 40 px/s, festgehalten, betäubt oder verlangsamt nur ein Drittel
+      const k = Math.hypot(mag.x, mag.y) || 1, held = h.rootUntil > w.t || h.stun > 0 || (h.slowUntil && h.slowUntil > w.t);
+      api.moveEnt(h, mag.x / k * 40 * (held ? 0.3 : 1) * dt, mag.y / k * 40 * (held ? 0.3 : 1) * dt);
     }
     const list = w.efx; if (!list || !list.length) return;
     for (const b of list) {

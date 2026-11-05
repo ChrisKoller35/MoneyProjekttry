@@ -126,7 +126,7 @@ A.Elites = (function () {
     s.hurtT = w.t;
     if (dmg > 0 && has(m, 'gepanzert') && A.FX && Math.random() < 0.6) { A.FX.burst(m.x, m.y - 12, 5, { color: ['#ffffff', '#c0cbdc', '#fee761'], smin: 70, smax: 180, life: 0.22, add: true, kind: 'spark', drag: 5 }); if (A.Sound && Math.random() < 0.35) A.Sound.clink(); }
     if (m.hp <= 0 && has(m, 'zaeh') && !m.toughUsed) {   // Zäh: steht einmal wieder auf
-      m.toughUsed = true; m.hp = Math.max(1, Math.round(m.maxHp * 0.33)); m.stun = 0;
+      m.toughUsed = true; m.hp = Math.max(1, Math.round(m.maxHp * 0.33)); m.stun = 0; delete m.raiseMe;
       say(m, L('Noch nicht!', 'Not yet!'), '#c0cbdc');
       if (A.FX) { A.FX.ev('nova', { e: m, r: 80, color: '#c0cbdc', magic: true }); A.FX.flash(m.x, m.y, 80, '#ffffff', 0.25); }
       return;
@@ -168,7 +168,7 @@ A.Elites = (function () {
 
   // ---------- Ablauf (einmal pro Bild) ----------
   function tick(dt) {
-    const w = W(); if (!w) return; const h = w.hero;
+    const w = W(); if (!w) return; const h = w.hero, mag = { x: 0, y: 0, n: 0 };
     for (const m of w.mons) {
       const s = m.ef; if (!s || !m.alive || m.spawn > 0) continue;
       // Schild lädt nach, wenn er eine Weile nicht getroffen wurde
@@ -177,10 +177,10 @@ A.Elites = (function () {
         s.spin += dt * (m.stun > 0 ? 1.5 : 3.4);
         if (h.alive && w.t >= s.bladeT) for (let i = 0; i < 3; i++) { const p = blade(m, i); if (Math.hypot(h.x - p.x, h.y - p.y) < h.r + 9) { s.bladeT = w.t + 0.55; api.hit(m, h, m.atk * 0.45, { kind: 'phys' }); api.fx('wallhit', { x: p.x, y: p.y, color: '#ffffff' }); break; } }
       }
-      // Magnetisch: zieht den Helden langsam heran (nicht im Boss-Raum, nicht wenn er schon dran ist)
+      // Magnetisch: zieht den Helden langsam heran (nicht im Boss-Raum, nicht bis in die Klingen); mehrere zusammen ziehen nicht stärker
       if (has(m, 'magnetisch') && h.alive && !(w.active && w.active.type === 'boss')) {
         const dx = m.x - h.x, dy = m.y - h.y, dd = Math.hypot(dx, dy) || 1;
-        if (dd < 330 && dd > m.r + h.r + 24) { api.moveEnt(h, dx / dd * 40 * dt, dy / dd * 40 * dt); if (A.FX && !A.FX.low && Math.random() < dt * 12) { const q = Math.random(); A.FX.part({ add: true, x: h.x + dx * q, y: h.y + dy * q - 10, vx: dx / dd * 120, vy: dy / dd * 120, life: 0.3, color: Math.random() < 0.5 ? '#e43b44' : '#c0cbdc', drag: 0 }); } }
+        if (dd < 330 && dd > (has(m, 'klingen') ? bladeR(m) + h.r + 14 : m.r + h.r + 24)) { mag.x += dx / dd; mag.y += dy / dd; mag.n++; if (A.FX && !A.FX.low && Math.random() < dt * 12) { const q = Math.random(); A.FX.part({ add: true, x: h.x + dx * q, y: h.y + dy * q - 10, vx: dx / dd * 120, vy: dy / dd * 120, life: 0.3, color: Math.random() < 0.5 ? '#e43b44' : '#c0cbdc', drag: 0 }); } }
       }
       // Giftspur und Nachbilder nur, wenn er sich bewegt
       const mv = Math.hypot(m.x - s.lx, m.y - s.ly); s.lx = m.x; s.ly = m.y;
@@ -188,6 +188,10 @@ A.Elites = (function () {
       if (has(m, 'flink') && (s.gT -= dt) <= 0 && mv > 0.3) { s.gT = 0.06; s.ghosts.push({ x: m.x, y: m.y, t: w.t, flip: m.fx < 0 }); if (s.ghosts.length > 5) s.ghosts.shift(); }
       if (m.raged && A.FX && !A.FX.low && Math.random() < dt * 10) A.FX.part({ kind: 'smoke', x: m.x + (Math.random() - 0.5) * m.r, y: m.y - 22, vx: 0, vy: -20, life: 0.5, size: 2, grow: 5, color: '#e43b44', drag: 1 });
       if (s.busy > w.t && A.FX && !A.FX.low && Math.random() < dt * 30) { const c = has(m, 'feurig') ? '#feae34' : '#e4a672', a = Math.random() * TAU; A.FX.part({ add: true, x: m.x + Math.cos(a) * m.r * 1.6, y: m.y + Math.sin(a) * m.r, vx: -Math.cos(a) * 40, vy: -Math.sin(a) * 30, z: 4, vz: 30, life: 0.4, color: c, drag: 1 }); }
+    }
+    if (mag.n) {   // höchstens 40 px/s, festgehalten, betäubt oder verlangsamt nur ein Drittel
+      const k = Math.hypot(mag.x, mag.y) || 1, held = h.rootUntil > w.t || h.stun > 0 || (h.slowUntil && h.slowUntil > w.t);
+      api.moveEnt(h, mag.x / k * 40 * (held ? 0.3 : 1) * dt, mag.y / k * 40 * (held ? 0.3 : 1) * dt);
     }
     const list = w.efx; if (!list || !list.length) return;
     for (const b of list) {

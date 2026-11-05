@@ -221,7 +221,7 @@ A.Bosses = (function () {
       } else if (b.kind === 'wind') {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
         const dx = b.from.x - h.x, dy = b.from.y - h.y, dd = Math.hypot(dx, dy) || 1;
-        if (h.alive && dd > b.from.r + h.r + 6) api.moveEnt(h, dx / dd * b.pow * dt, dy / dd * b.pow * dt);
+        if (h.alive && dd > b.from.r + h.r + 6 && !(b.water && w.bfx.some(o => o.kind === 'flood' && !o.fired))) api.moveEnt(h, dx / dd * b.pow * dt, dy / dd * b.pow * dt);
         if (A.FX && !A.FX.low && Math.random() < dt * 40) { const a = Math.random() * TAU, rr = 160 + Math.random() * 200; A.FX.part({ kind: 'spark', add: false, x: b.from.x + Math.cos(a) * rr, y: b.from.y + Math.sin(a) * rr * 0.7, vx: -Math.cos(a) * 260, vy: -Math.sin(a) * 180, life: 0.6, color: b.water ? (Math.random() < 0.5 ? '#2ce8f5' : '#c0f8ff') : Math.random() < 0.5 ? '#e4a672' : '#ead4aa', drag: 0.5 }); }
       } else if (b.kind === 'beam') {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
