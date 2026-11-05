@@ -509,7 +509,7 @@ A.LEGEND_DMG = 0.01;     // jede Legende in der Sammlung: +1 % Schaden, für imm
 
 // Kombos (Regeln in js/combos.js): zwei passende Teile wecken am Schrein eine neue Kraft, die es nur zusammen gibt.
 // need: die zwei Teile. tal = passiver Segen, el = mindestens 2 Ausrüstungs-Teile dieses Elements, spell = Zauber (im Zauberbuch reicht),
-// leg = getragene Legende, tro = getragene Trophäe dieses Bosses, cls = Klasse. col: Farbe der Kombo
+// leg = getragene Legende, tro = getragene Trophäe dieses Bosses, cls = Klasse, pet = Begleiter ist dabei. col: Farbe der Kombo
 A.COMBOS = {
   feuerwerk: { need: [{ tal: 'kette' }, { el: 'feuer' }], col: '#f77622',
     name: { de: 'Feuerwerk', en: 'Fireworks' },
@@ -591,6 +591,38 @@ A.COMBOS = {
     name: { de: 'Todesmut', en: 'Death Wish' },
     text: { de: 'Unter 35 % Leben ist jeder deiner Treffer ein Volltreffer.', en: 'Below 35% health, every hit you land is a critical hit.' },
     flavor: { de: 'Glas bricht. Du nicht. Noch nicht.', en: 'Glass breaks. You don\'t. Not yet.' } },
+  eissplitter: { need: [{ tal: 'wucht' }, { el: 'eis' }], col: '#9be8ff',
+    name: { de: 'Eissplitter', en: 'Ice Shards' },
+    text: { de: 'Triffst du einen gebremsten oder eingefrorenen Gegner, zerspringt der Frost in 6 Splitter rundum (je 35 % Stärke, bremsen 2 Sekunden, höchstens alle 1,2 Sekunden).', en: 'Hitting a slowed or frozen enemy shatters the frost into 6 shards all around (35% power each, slow for 2 seconds, at most every 1.2 seconds).' },
+    flavor: { de: 'Kalt erwischt. In sechs Richtungen.', en: 'Caught cold. In six directions.' } },
+  magnetsturm: { need: [{ tal: 'gold' }, { el: 'blitz' }], col: '#fee761',
+    name: { de: 'Magnetsturm', en: 'Magnet Storm' },
+    text: { de: 'Jede Münze, die du aufhebst, schlägt als kleiner Blitz in den nächsten Gegner ein (30 % Stärke, bis 8 Blitze pro Sekunde).', en: 'Every coin you pick up strikes the nearest enemy as a small bolt of lightning (30% power, up to 8 bolts per second).' },
+    flavor: { de: 'Geld regiert die Welt. Jetzt auch das Wetter.', en: 'Money rules the world. Now the weather too.' } },
+  schattenschritt: { need: [{ spell: 'blitzschritt' }, { el: 'schatten' }], col: '#b55088',
+    name: { de: 'Schattenschritt', en: 'Shadow Step' },
+    text: { de: 'Nach einem Blitzschritt bist du 1,5 Sekunden ein Schatten: Gegner treffen dich nicht, und dein nächster Treffer ist ein Volltreffer mit doppeltem Schaden.', en: 'After a flash step you are a shadow for 1.5 seconds: enemies cannot hit you, and your next hit is a critical hit for double damage.' },
+    flavor: { de: 'Du warst nie hier. Die Delle im Gegner schon.', en: 'You were never here. The dent in the enemy was.' } },
+  blitzpanzer: { need: [{ tal: 'eisen' }, { el: 'blitz' }], col: '#7fd8ff',
+    name: { de: 'Blitzpanzer', en: 'Storm Plate' },
+    text: { de: 'Wirst du getroffen, schlägt ein Blitz in den Angreifer (150 % Stärke) und springt auf bis zu 2 weitere Gegner (je 100 %, höchstens alle 1,5 Sekunden).', en: 'When you are hit, lightning strikes the attacker (150% power) and jumps to up to 2 more enemies (100% each, at most every 1.5 seconds).' },
+    flavor: { de: 'Bitte nicht berühren. Steht auch auf dem Schild. Das du nicht gelesen hast.', en: 'Please do not touch. It says so on the sign. The one you did not read.' } },
+  amok: { need: [{ tal: 'berserker' }, { tal: 'rausch' }], col: '#e43b44',
+    name: { de: 'Amok', en: 'Amok' },
+    text: { de: 'Unter 50 % Leben hält der Blutrausch doppelt so lang, und jeder Sieg im Rausch heilt 2 % deines Lebens.', en: 'Below 50% health, bloodlust lasts twice as long, and every kill while in the frenzy heals 2% of your health.' },
+    flavor: { de: 'Therapie ist teuer. Das hier ist gratis.', en: 'Therapy is expensive. This is free.' } },
+  dampfkessel: { need: [{ spell: 'feuerball' }, { spell: 'eisnova' }], col: '#c0f8ff',
+    name: { de: 'Dampfkessel', en: 'Steam Boiler' },
+    text: { de: 'Trifft ein Feuerball gebremste oder eingefrorene Gegner, zischt Dampf: +50 % Schaden, und sie stehen 1 Sekunde betäubt in einer weissen Wolke.', en: 'When a fireball hits slowed or frozen enemies, steam hisses: +50% damage, and they stand stunned for 1 second in a white cloud.' },
+    flavor: { de: 'Physik, Kapitel 1: heiss plus kalt gleich aua.', en: 'Physics, chapter 1: hot plus cold equals ouch.' } },
+  drachenfeuer: { need: [{ pet: 'glut' }, { spell: 'feuerball' }], col: '#f77622',
+    name: { de: 'Drachenfeuer', en: 'Dragonfire' },
+    text: { de: 'Ist Glut dabei, sind deine Feuerball-Explosionen 40 % grösser und hinterlassen 3 Sekunden eine Glutlache, in der Gegner brennen.', en: 'With Ember at your side, your fireball blasts are 40% bigger and leave a pool of embers for 3 seconds that sets enemies on fire.' },
+    flavor: { de: 'Glut hat dir zugeschaut. Glut hat Notizen gemacht.', en: 'Ember watched you. Ember took notes.' } },
+  sprengmeister: { need: [{ tal: 'pulver' }, { spell: 'meteor' }], col: '#feae34',
+    name: { de: 'Sprengmeister', en: 'Demolition Expert' },
+    text: { de: 'Jeder Meteor zündet kurz danach 3 kleine Nachschläge rundum (je 80 % Stärke).', en: 'Every meteor sets off 3 small aftershocks around it shortly after (80% power each).' },
+    flavor: { de: 'Ein Meteor ist gut. Ein Meteor mit Zugabe ist Kunst.', en: 'One meteor is good. A meteor with an encore is art.' } },
 };
 A.COMBO_SPARKS = 15;   // Seelenfunken für jede Kombo, die zum ersten Mal ins Kombo-Buch kommt
 
