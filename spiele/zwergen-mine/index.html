@@ -92,6 +92,23 @@
   @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
   #soundBtn { position: absolute; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 10px; border: 0; background: rgba(255,255,255,0.08); display: grid; place-items: center; cursor: pointer; }
   #soundBtn svg { width: 22px; height: 22px; }
+  #crownPill { color: #ffd447; cursor: pointer; position: relative; display: none; }
+  #crownPill .dot { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); display: none; }
+  #crownPill .dot.show { display: block; }
+  #blockBtn { position: absolute; left: 12px; top: 12px; display: none; background: var(--gold); color: #3a2a00; border: 0; border-radius: 12px; padding: 9px 14px; font-weight: 900; font-size: 15px; cursor: pointer; animation: glow 1.2s infinite; z-index: 3; }
+  #toast.tall { top: 8px; max-height: calc(100dvh - 80px); overflow-y: auto; }
+  #toast button:disabled { background: #4a3f60; color: var(--muted); cursor: default; }
+  #toast .realm { text-align: left; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  #toast .bk { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 12px; padding: 8px 10px; border: 1px solid transparent; }
+  #toast .bk .e { font-size: 26px; flex: none; }
+  #toast .bk .i { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); line-height: 1.3; }
+  #toast .bk .i b { color: var(--text); font-size: 15px; display: block; }
+  #toast .bk button { margin: 0; padding: 8px 10px; font-size: 13px; flex: none; }
+  #toast .bk.soon { opacity: 0.5; }
+  #toast .bk.here { border-color: var(--gold); }
+  #toast .tw { background: rgba(255,215,90,0.08); border: 1px solid rgba(255,215,90,0.35); border-radius: 12px; padding: 10px; margin-top: 10px; font-size: 14px; }
+  #toast .tw .bar { height: 8px; margin: 8px 0 2px; }
+  #toast .tw button { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -99,11 +116,13 @@
   <div id="hud">
     <div class="pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#f5c542"/><circle cx="12" cy="12" r="6" fill="none" stroke="#c9961b" stroke-width="2"/></svg><span id="gold">0</span></div>
     <div class="pill"><svg viewBox="0 0 24 24"><path d="M6 4h12l4 6-10 11L2 10z" fill="#57d2ff"/><path d="M2 10h20M8 4l4 6 4-6M12 10v11" stroke="#1d8db6" stroke-width="1.4" fill="none"/></svg><span id="gems">0</span></div>
+    <div class="pill" id="crownPill">👑<span id="crowns">0</span><i class="dot"></i></div>
     <div class="pill" id="depthPill"><svg viewBox="0 0 24 24"><path d="M12 3v14M6 11l6 6 6-6" stroke="#f3ead8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 21h16" stroke="#a99bbd" stroke-width="2.4" stroke-linecap="round"/></svg><span id="depth">1</span><span id="best"></span></div>
   </div>
   <div id="stage">
     <canvas id="scene"></canvas>
     <button id="bossBtn"></button>
+    <button id="blockBtn"></button>
     <button id="soundBtn" aria-label="Ton"></button>
     <div id="skills"><button class="skill" id="dynBtn">🧨<span class="cd"></span><span class="lbl"></span></button><button class="skill" id="beerBtn">🍺<span class="cd"></span><span class="lbl"></span></button></div>
     <div id="tip"><span class="txt"></span><button id="tipOk">OK</button></div>
@@ -127,7 +146,7 @@
 const Portal = window.ZwergenMinePortal || {
   gameplayStart() {}, gameplayStop() {}, happytime() {},
   showRewardedAd(onReward) { onReward(); },   // freiwillige Werbung gegen Belohnung
-  submitScore(depth) {},                       // Rangliste des Portals (tiefster Punkt), später anschliessen
+  submitScore(points) {},                      // Rangliste des Portals (Punktestand = alle Kronen je), später anschliessen
 };
 
 // ---------- Texte (Deutsch / Englisch) ----------
@@ -152,16 +171,30 @@ const T = DE ? {
     magnet: ['Erz-Magnet', 'Truhen geben doppelt'], gluck: ['Glücksbringer', 'Volltreffer ×6 statt ×5'], lied: ['Zwergenlied', 'Zwerge +30 %'],
     bohrer: ['Diamantbohrer', 'Hacke ×2'], schicht: ['Doppelschicht', 'Zwerge +50 %'], kugel: ['Kristallkugel', 'Bosse geben doppelt Steine'],
   },
-  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine', heir: 'Sammle {n} Erbstücke' },
-  goals1: { boss: 'Besiege deinen ersten Boss', prest: 'Zieh zum ersten Mal in eine neue Mine' },
+  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine', heir: 'Sammle {n} Erbstücke', blocks: 'Schaffe {n} Blöcke', crowns: 'Sammle {n} Kronen' },
+  goals1: { boss: 'Besiege deinen ersten Boss', prest: 'Zieh zum ersten Mal in eine neue Mine', blocks: 'Schaffe deinen ersten Block' },
   records: 'Rekorde', bestDepth: 'Tiefster Punkt', thisMine: 'Diese Mine', mines: 'Minen', mine: 'Mine', show: 'Ansehen', close: 'Schliessen',
   record: 'Neuer Rekord!', recordSub: 'Dein alter Rekord war Tiefe {n}', ringNew: 'Ring {r} erreicht!', ringSub: 'Neue Farben, leuchtendes Erz',
   noRuns: 'Noch kein Umzug. Ab Tiefe 51 kannst du in eine neue Mine ziehen.', playTime: 'Spielzeit',
   reset: 'Ganz neu anfangen', resetAsk: 'Wirklich ganz von vorne anfangen? Alles wird gelöscht: Gold, Steine, Zwerge, Erbstücke, Ziele und Rekorde.', resetYes: 'Alles löschen', resetDone: 'Neues Spiel!', resetSub: 'Viel Spass beim Graben',
-  tips: { tap: 'Tippe auf den Felsen! Jeder Felsen gibt Gold.', dwarf: 'Kauf deinen ersten Zwerg. Zwerge graben von allein weiter, auch wenn du nicht tippst.', boss: 'Ein Boss! Schlag ihn kaputt, bevor der gelbe Zeitbalken leer ist. Bosse geben Steine.', gem: 'Mit Steinen kaufst du Verbesserungen, die für immer bleiben.', move: 'Hier geht es nur noch zäh weiter. Zieh in eine neue Mine: Du fängst oben an, bist aber für immer stärker.' },
+  tips: { tap: 'Tippe auf den Felsen! Jeder Felsen gibt Gold.', dwarf: 'Kauf deinen ersten Zwerg. Zwerge graben von allein weiter, auch wenn du nicht tippst.', boss: 'Ein Boss! Schlag ihn kaputt, bevor der gelbe Zeitbalken leer ist. Bosse geben Steine.', gem: 'Mit Steinen kaufst du Verbesserungen, die für immer bleiben.', move: 'Hier geht es nur noch zäh weiter. Zieh in eine neue Mine: Du fängst oben an, bist aber für immer stärker.', end: 'Auf Tiefe 150 wartet das Herz des Berges. Besiegst du es, ist der Block geschafft und du bekommst Kronen.' },
   bossFail: 'Zeit um!', bossFailSub: 'Kauf Stärkeres, dann nochmal', stuckName: 'Boss auf Tiefe {n} zu stark', retryShort: 'Nochmal',
   stuckEff: 'Deine Zwerge allein schaffen <b>{p}&nbsp;%</b>. Kauf Zwerge oder eine bessere Hacke. Ab 100&nbsp;% greifen sie von selbst an.', stuckMove: 'Oder zieh um: Eine neue Mine macht dich für immer <b>+{p}&nbsp;%</b> stärker.',
   autoRetry: 'Jetzt schaffen sie es!', autoRetrySub: 'Deine Zwerge greifen den Boss an', stronger: 'danach für immer +{p}&nbsp;% Gold und Graben.', worthNow: 'Lohnt sich jetzt!', moves: 'Umzüge', min: 'min', depthW: 'Tiefe',
+  endBoss: 'Endboss!', blockWin: 'Block geschafft!', crowns: 'Kronen', crown1: '1 Krone', crownN: '{n} Kronen', score: 'Punktestand', realm: 'Dein Reich', map: 'Karte', toMap: 'Zur Karte', later: 'Später',
+  towers: 'Fördertürme', perHour: 'pro Stunde', store: 'Lager', full: 'voll', nextIn: 'nächste Krone in {m} min', collectN: 'Abholen 👑 +{n}', storeEmpty: 'Lager noch leer', collected: 'Kronen abgeholt!',
+  noTower: 'Noch kein Förderturm. Besiege das Herz des Berges auf Tiefe 150, dann fördert hier ein Turm Kronen, auch wenn du weg bist.',
+  blocksT: 'Blöcke', soon: 'Bald', here: 'Hier bist du', hereD: 'Du bist hier auf Tiefe {d}', start: 'Start', again: 'Nochmal',
+  blk: { stein: 'Alter Berg', vulkan: 'Vulkan', eis: 'Gletscher', wasser: 'Grotte' },
+  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis, das nur Dynamit schmilzt. Kommt bald.', wasser: 'Das Wasser steigt, dafür mehr Truhen. Kommt bald.' },
+  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans' },
+  vulkanLayers: ['Asche', 'Bimsstein', 'Basalt', 'Schwefel', 'Glutkupfer', 'Schmiedeeisen', 'Feuergold', 'Rubin', 'Magma', 'Glutschlund', 'Obsidian', 'Drachenglas', 'Feuerkern', 'Höllenschlot'],
+  blkDoneTitle: '{b} geschafft!', blkDoneText: 'Dein Förderturm fördert ab jetzt {r} pro Stunde, auch wenn du weg bist. Das Lager fasst 12 Stunden. Mit Kronen schaltest du neue Blöcke frei. Dein Punktestand zählt alle Kronen, auch die ausgegebenen.',
+  blockDoneName: 'Block geschafft!', blockDoneEff: 'Tiefer geht es hier nicht. Wähle auf der Karte deinen nächsten Block.', nextBlock: 'Nächster Block',
+  switchAsk: 'Wirklich zum Block «{b}» wechseln? Dein jetziger Block fängt dann von vorne an (du bist auf Tiefe {d}). Kronen, Steine und Ziele bleiben.', switchYes: 'Wechseln',
+  blkStart: 'Neuer Block · Ziel Tiefe 150', unlocked: 'Freigeschaltet!', lavaOn: 'Lava-Ausbruch!', lavaSub: '10 s: Tipps ×3, Zwerge in Deckung', lastLayer: 'Letzte Schicht!',
+  migTitle: 'Neu: Blöcke und Kronen!', migText: 'Du hast den Alten Berg schon geschafft (Rekord Tiefe {d}). Dafür bekommst du 👑 10 Kronen und einen Förderturm, der jede Stunde 1 Krone fördert. Auf der Karte wartet der Vulkan.',
+  migGoOn: 'Du kannst hier weitergraben und den Berg nochmal schaffen, oder auf der Karte einen neuen Block wählen.', blocksDone: 'Blöcke geschafft', inStore: '👑 {n} Kronen warten im Lager',
 } : {
   pick: 'Pickaxe', dwarf: 'Dwarves', gem: 'Gems', perTap: 'per tap', perSec: 'per sec',
   pickName: 'Pickaxe', boss: 'Boss', retry: 'Retry boss', welcome: 'Welcome back!', away: 'Your dwarves kept digging',
@@ -182,16 +215,30 @@ const T = DE ? {
     magnet: ['Ore Magnet', 'Chests give double'], gluck: ['Lucky Charm', 'Crits ×6 instead of ×5'], lied: ['Dwarf Song', 'Dwarves +30%'],
     bohrer: ['Diamond Drill', 'Pickaxe ×2'], schicht: ['Double Shift', 'Dwarves +50%'], kugel: ['Crystal Ball', 'Bosses give double gems'],
   },
-  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times', heir: 'Collect {n} heirlooms' },
-  goals1: { boss: 'Beat your first boss', prest: 'Move to a new mine for the first time' },
+  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times', heir: 'Collect {n} heirlooms', blocks: 'Clear {n} blocks', crowns: 'Collect {n} crowns' },
+  goals1: { boss: 'Beat your first boss', prest: 'Move to a new mine for the first time', blocks: 'Clear your first block' },
   records: 'Records', bestDepth: 'Deepest point', thisMine: 'This mine', mines: 'Mines', mine: 'Mine', show: 'View', close: 'Close',
   record: 'New record!', recordSub: 'Your old record was depth {n}', ringNew: 'Ring {r} reached!', ringSub: 'New colors, glowing ore',
   noRuns: 'No move yet. From depth 51 you can move to a new mine.', playTime: 'Play time',
   reset: 'Start over', resetAsk: 'Really start over from scratch? Everything will be deleted: gold, gems, dwarves, heirlooms, goals and records.', resetYes: 'Delete everything', resetDone: 'New game!', resetSub: 'Happy digging',
-  tips: { tap: 'Tap the rock! Every rock gives gold.', dwarf: 'Buy your first dwarf. Dwarves keep digging on their own, even when you don’t tap.', boss: 'A boss! Smash it before the yellow time bar runs out. Bosses give gems.', gem: 'Gems buy upgrades that stay forever.', move: 'Progress is slow here. Move to a new mine: you start at the top, but stay stronger forever.' },
+  tips: { tap: 'Tap the rock! Every rock gives gold.', dwarf: 'Buy your first dwarf. Dwarves keep digging on their own, even when you don’t tap.', boss: 'A boss! Smash it before the yellow time bar runs out. Bosses give gems.', gem: 'Gems buy upgrades that stay forever.', move: 'Progress is slow here. Move to a new mine: you start at the top, but stay stronger forever.', end: 'At depth 150 the Heart of the Mountain awaits. Beat it to clear the block and earn crowns.' },
   bossFail: 'Time’s up!', bossFailSub: 'Buy upgrades, then retry', stuckName: 'Boss at depth {n} too strong', retryShort: 'Retry',
   stuckEff: 'Your dwarves alone manage <b>{p}%</b>. Buy dwarves or a better pickaxe. At 100% they attack on their own.', stuckMove: 'Or move: a new mine makes you <b>+{p}%</b> stronger forever.',
   autoRetry: 'Now they can do it!', autoRetrySub: 'Your dwarves attack the boss', stronger: 'then +{p}% gold and digging forever.', worthNow: 'Worth it now!', moves: 'Moves', min: 'min', depthW: 'Depth',
+  endBoss: 'Final boss!', blockWin: 'Block cleared!', crowns: 'Crowns', crown1: '1 crown', crownN: '{n} crowns', score: 'Score', realm: 'Your Realm', map: 'Map', toMap: 'To the map', later: 'Later',
+  towers: 'Mine towers', perHour: 'per hour', store: 'Storage', full: 'full', nextIn: 'next crown in {m} min', collectN: 'Collect 👑 +{n}', storeEmpty: 'Storage still empty', collected: 'Crowns collected!',
+  noTower: 'No mine tower yet. Beat the Heart of the Mountain at depth 150 and a tower will mine crowns here, even while you are away.',
+  blocksT: 'Blocks', soon: 'Soon', here: 'You are here', hereD: 'You are at depth {d}', start: 'Start', again: 'Again',
+  blk: { stein: 'Old Mountain', vulkan: 'Volcano', eis: 'Glacier', wasser: 'Grotto' },
+  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice only dynamite can melt. Coming soon.', wasser: 'The water rises, but more chests. Coming soon.' },
+  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano' },
+  vulkanLayers: ['Ash', 'Pumice', 'Basalt', 'Sulfur', 'Ember Copper', 'Forge Iron', 'Fire Gold', 'Ruby', 'Magma', 'Ember Throat', 'Obsidian', 'Dragonglass', 'Fire Core', 'Hell Vent'],
+  blkDoneTitle: '{b} cleared!', blkDoneText: 'Your mine tower now mines {r} per hour, even while you are away. Its storage holds 12 hours. Crowns unlock new blocks. Your score counts every crown, spent ones too.',
+  blockDoneName: 'Block cleared!', blockDoneEff: 'You can’t dig deeper here. Pick your next block on the map.', nextBlock: 'Next block',
+  switchAsk: 'Really switch to «{b}»? Your current block starts over (you are at depth {d}). Crowns, gems and goals stay.', switchYes: 'Switch',
+  blkStart: 'New block · goal depth 150', unlocked: 'Unlocked!', lavaOn: 'Lava eruption!', lavaSub: '10 s: taps ×3, dwarves take cover', lastLayer: 'Last layer!',
+  migTitle: 'New: blocks and crowns!', migText: 'You already cleared the Old Mountain (record depth {d}). You get 👑 10 crowns and a mine tower that mines 1 crown every hour. The Volcano awaits on the map.',
+  migGoOn: 'You can keep digging here and clear the mountain again, or pick a new block on the map.', blocksDone: 'Blocks cleared', inStore: '👑 {n} crowns waiting in storage',
 };
 const DWARF_NAMES = DE
   ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
@@ -253,8 +300,8 @@ const GOALS = [
   { id: 'p10', type: 'pick', n: 10, gems: 1 }, { id: 'p30', type: 'pick', n: 30, gems: 2 }, { id: 'p60', type: 'pick', n: 60, gems: 5 },
   { id: 'u5', type: 'up', n: 5, gems: 1 }, { id: 'u15', type: 'up', n: 15, gems: 6 },
   { id: 'n1', type: 'prest', n: 1, gems: 3 }, { id: 'n3', type: 'prest', n: 3, gems: 8 },
-  // Ziele für lange Spieler (Endlos-Tiefe)
-  { id: 'd200', type: 'depth', n: 200, gems: 25 }, { id: 'd250', type: 'depth', n: 250, gems: 35 }, { id: 'd300', type: 'depth', n: 300, gems: 50 }, { id: 'd400', type: 'depth', n: 400, gems: 80 }, { id: 'd500', type: 'depth', n: 500, gems: 120 },
+  // Ziele für lange Spieler (Blöcke und Kronen)
+  { id: 'k1', type: 'blocks', n: 1, gems: 25 }, { id: 'k3', type: 'blocks', n: 3, gems: 35 }, { id: 'k6', type: 'blocks', n: 6, gems: 60 }, { id: 'r50', type: 'crowns', n: 50, gems: 50 }, { id: 'r200', type: 'crowns', n: 200, gems: 120 },
   { id: 't30000', type: 'taps', n: 30000, gems: 8 }, { id: 't100000', type: 'taps', n: 100000, gems: 15 }, { id: 'w800', type: 'dw', n: 800, gems: 10 },
   { id: 'b30', type: 'boss', n: 30, gems: 8 }, { id: 'b60', type: 'boss', n: 60, gems: 12 }, { id: 'b100', type: 'boss', n: 100, gems: 20 },
   { id: 'c100', type: 'chest', n: 100, gems: 8 }, { id: 'c200', type: 'chest', n: 200, gems: 12 }, { id: 'p100', type: 'pick', n: 100, gems: 8 }, { id: 'p150', type: 'pick', n: 150, gems: 12 },
@@ -268,7 +315,17 @@ const GEM_UPS = [
   { key: 'offline', base: 3,  grow: 1.5,  max: 10 },
   { key: 'chest',   base: 4,  grow: 1.7,  max: 8 },
 ];
+// Blöcke: jeder endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen
+const BLOCKS = [
+  { k: 'stein',  rate: 1, cost: 0,  icon: '⛰️', color: '#c9c9d2' },
+  { k: 'vulkan', rate: 2, cost: 10, icon: '🌋', color: '#ff8a3d' },
+  { k: 'eis',    rate: 2, cost: 25, icon: '🧊', color: '#7fe7ff', soon: true },
+  { k: 'wasser', rate: 3, cost: 50, icon: '🌊', color: '#57a8ff', soon: true },
+];
 const F = {
+  blockEnd: 150, blockCrowns: 10, towerMaxH: 12,
+  towerRate: (k) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate,
+  lavaEvery: () => 45 + Math.random() * 15, lavaSec: 10, lavaTap: 3,
   isBoss: (d) => d % 10 === 0,
   isBigBoss: (d) => d % 50 === 0,
   layerOf: (d) => Math.floor((d - 1) / 10) % LAYERS.length,
@@ -299,9 +356,9 @@ const F = {
   chestLife: (s) => s.up.laterne ? 18 : 9,
   chestMult: (s) => s.up.magnet ? 2 : 1,
   dynCd: 90, dynTaps: 30, beerCd: 180, beerSec: 20, beerMult: 3,
-  canPrestige: (s) => s.maxDepth > 50,
+  canPrestige: (s) => s.maxDepth > 50 && !s.blockDone,
   heirGain: (s) => s.maxDepth > 50 ? Math.floor(Math.pow((s.maxDepth - 30) / 10, 2)) : 0,
-  goalProgress: (g, s) => ({ depth: Math.max(s.maxDepth, s.best || 1), taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest, heir: s.heir || 0 })[g.type],
+  goalProgress: (g, s) => ({ depth: Math.max(s.maxDepth, s.best || 1), taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest, heir: s.heir || 0, blocks: (s.towers || []).length, crowns: s.crownsAll || 0 })[g.type],
 };
 // FORMELN_ENDE
 
@@ -323,18 +380,30 @@ function hslToHex(h, s, l) {
   return '#' + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 const layerCache = {};
+// Letzte Schicht jedes Blocks (Tiefe 141 bis 150): das Herz, leuchtend
+const HEARTS = {
+  stein:  { rock: '#8a6a2a', dark: '#4a3510', ore: '#fff2a8', bg: '#1a1205' },
+  vulkan: { rock: '#8a1f0f', dark: '#4a0a04', ore: '#ffdd55', bg: '#220500' },
+};
 function layerAt(d) {
-  const i = F.layerOf(d), r = F.ringOf(d), key = i + ':' + r;
+  const kind = S.blk || 'stein', heart = d > 140 && d <= F.blockEnd;
+  const i = F.layerOf(d), r = heart ? 0 : F.ringOf(d), key = kind + ':' + (heart ? 'h' : i + ':' + r);
   if (layerCache[key]) return layerCache[key];
   const base = LAYERS[i];
   let L;
-  if (r === 0) L = Object.assign({ glow: false }, base);
+  if (heart) L = Object.assign({ glow: true }, HEARTS[kind] || HEARTS.stein);
+  else if (r === 0) L = Object.assign({ glow: false }, base);
   else {
     const shift = (r * 137.5) % 360;
     const tint = (hex, dl, ds, minL = 0) => { const [h, s, l] = hexToHsl(hex); return hslToHex((h + shift) % 360, Math.min(1, s * 1.1 + ds), Math.min(0.9, Math.max(minL, l + dl))); };
     L = { rock: tint(base.rock, 0.02, 0.12), dark: tint(base.dark, 0, 0.12), ore: tint(base.ore, 0.08, 0.3, 0.6), bg: tint(base.bg, 0, 0.15), glow: true };
   }
-  L.name = T.layers[i] + (r ? ' ' + ringName(r) : '');
+  if (kind === 'vulkan' && !heart) {   // Vulkan: alles zieht ins Rot, Glut in der Luft
+    const hot = (hex, k, ds, dl = 0) => { const [h, s, l] = hexToHsl(hex), dh = ((14 - h + 540) % 360) - 180; return hslToHex((h + dh * k + 360) % 360, Math.min(1, s + ds), Math.min(0.9, l + dl)); };
+    L = { rock: hot(L.rock, 0.6, 0.18), dark: hot(L.dark, 0.6, 0.18), ore: hot(L.ore, 0.25, 0.1, 0.05), bg: hot(L.bg, 0.7, 0.25), glow: L.glow };
+  }
+  const names = kind === 'vulkan' ? T.vulkanLayers : T.layers;
+  L.name = heart ? T.heart[kind] || T.heart.stein : names[i] + (r ? ' ' + ringName(r) : '');
   return (layerCache[key] = L);
 }
 
@@ -344,9 +413,10 @@ function freshState() {
   return { gold: 0, gems: 0, depth: 1, maxDepth: 1, farm: false, pick: 0, dw: DWARVES.map(() => 0),
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0 }, cdDyn: 0, cdBeer: 0,
-    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {} };
+    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {},
+    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {} };
 }
-let S = freshState();
+let S = freshState(), migrated = 0;
 function load() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -360,6 +430,16 @@ function load() {
     if (!Array.isArray(S.runs)) S.runs = [];
     if (d.lastMaxAt == null) S.lastMaxAt = S.runTime;                     // Spielstand von vor den Tipps
     if (!S.tips || typeof S.tips !== 'object') S.tips = {};
+    if (!Array.isArray(S.towers)) S.towers = [];
+    S.unl = Object.assign({}, d.unl || {});
+    if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
+    if (d.towers == null) {   // Spielstand von vor den Blöcken
+      if (S.best > F.blockEnd) {   // Herz des Berges schon besiegt: Alter Berg zählt als geschafft
+        S.towers = [{ k: 'stein', since: Date.now() }]; S.crowns = S.crownsAll = F.blockCrowns; migrated = S.best;
+        if (S.maxDepth > F.blockEnd) { S.blockDone = true; S.depth = S.maxDepth = F.blockEnd; S.farm = false; }
+        S.blkBest = S.maxDepth; S.recBase = 0;
+      } else S.blkBest = Math.max(S.maxDepth, Math.min(F.blockEnd, S.best));
+    }
     return d.saved || null;
   } catch (e) { return null; }
 }
@@ -404,6 +484,9 @@ const sfx = {
   bossIn: () => { beep(110, 0.18, 'sawtooth', 0.06); setTimeout(() => beep(82, 0.28, 'sawtooth', 0.06), 170); },
   tick: () => beep(1250, 0.03, 'square', 0.025),
   fail: () => { [440, 330, 220].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.05), i * 110)); },
+  win: () => { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.06), i * 120)); },
+  lava: () => { beep(70, 0.5, 'sawtooth', 0.07); setTimeout(() => beep(55, 0.7, 'sawtooth', 0.06), 220); },
+  crown: () => { [880, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'sine', 0.06), i * 70)); },
 };
 
 // ---------- Szene ----------
@@ -429,12 +512,14 @@ function showBanner(b) {
   if (banner && banner.life > 0.9) { bannerQ.push(b); if (bannerQ.length > 4) bannerQ.shift(); }
   else banner = b;
 }
-let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0;
+let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0, lava = 0, lavaTimer = 50;
+const isEnd = () => S.depth === F.blockEnd;
+const tapMult = () => (rage > 0 ? 3 : 1) * (lava > 0 ? F.lavaTap : 1);
 
 function rockCenter() { return { x: CW / 2, y: CH * 0.52, r: Math.min(CW * 0.27, CH * 0.3) * (bossActive ? 1.15 : 1) }; }
 
 function spawnRock() {
-  bossActive = F.isBoss(S.depth) && !S.farm;
+  bossActive = F.isBoss(S.depth) && !S.farm && !S.blockDone;
   hpMax = F.rockHp(S.depth);
   S.hp = hpMax;
   bossTimer = F.bossTime(S.depth, S);
@@ -444,7 +529,8 @@ function spawnRock() {
     if (layerShown !== -1) { const ly = layerAt(S.depth); showBanner({ text: T.newLayer, sub: ly.name + ' · ' + S.depth, life: 2.4, color: ly.ore }); }
     layerShown = LK;
   }
-  if (bossActive && F.isBigBoss(S.depth)) showBanner({ text: T.bigBoss, sub: '💎 ×' + F.bossGems(S.depth, S), life: 2.4, color: '#ff6b6b' });
+  if (bossActive && isEnd()) showBanner({ text: T.endBoss, sub: layerAt(S.depth).name + ' · 👑 +' + F.blockCrowns, life: 2.8, color: '#ffd447' });
+  else if (bossActive && F.isBigBoss(S.depth)) showBanner({ text: T.bigBoss, sub: '💎 ×' + F.bossGems(S.depth, S), life: 2.4, color: '#ff6b6b' });
   if (bossActive) { bossFlash = 1; lastTick = 0; sfx.bossIn(); }
   updateBossBtn();
 }
@@ -487,7 +573,8 @@ function breakRock() {
     shake = 1;
     for (let i = 0; i < 40; i++) { const p = chip(c.x, c.y - c.r * 0.3, CONFETTI[i % CONFETTI.length]); p.vx *= 1.7; p.vy -= 4; p.size = 5 + Math.random() * 4; chips.push(p); }
   }
-  if (!S.farm) {
+  if (bossActive && isEnd()) finishBlock();
+  else if (!S.farm && !S.blockDone) {
     S.depth++;
     if (S.depth > S.maxDepth) { S.maxDepth = S.depth; onNewMax(); }
   }
@@ -495,15 +582,87 @@ function breakRock() {
   refreshPanel(true);
 }
 
+// ---------- Block geschafft: Förderturm, Kronen ----------
+const blkOf = (k) => BLOCKS.find(b => b.k === k) || BLOCKS[0];
+const crownStr = (n) => n === 1 ? T.crown1 : T.crownN.replace('{n}', n);
+function finishBlock() {
+  S.blockDone = true; S.farm = false;
+  S.towers.push({ k: S.blk, since: Date.now() });
+  S.crowns += F.blockCrowns; S.crownsAll += F.blockCrowns;
+  S.runs.unshift({ n: S.st.prest + 1, d: F.blockEnd, h: 0, t: Math.round(S.runTime), k: S.blk }); if (S.runs.length > 30) S.runs.length = 30;
+  Portal.submitScore(S.crownsAll); Portal.happytime();
+  sfx.win(); shake = 1;
+  for (let i = 0; i < 150; i++) { const p = chip(Math.random() * CW, CH * 0.15, CONFETTI[i % CONFETTI.length]); p.vy = -2 - Math.random() * 6; p.vx *= 1.4; p.size = 5 + Math.random() * 5; chips.push(p); }
+  bannerQ.length = 0; banner = null;
+  showBanner({ text: T.blockWin, sub: '👑 +' + F.blockCrowns, life: 2.2, color: '#ffd447' });
+  updateBossBtn(); buildPanel(); save();
+  const b = blkOf(S.blk);
+  setTimeout(() => afterToast(() => {
+    popup(`<div class="big">👑 +${F.blockCrowns}</div><div style="font-weight:900;font-size:20px;margin-top:4px">${b.icon} ${T.blkDoneTitle.replace('{b}', T.blk[b.k])}</div>
+      <div class="small" style="font-size:14px;max-width:290px;margin:8px auto 0">${T.blkDoneText.replace('{r}', crownStr(b.rate))}</div>
+      <button id="tMap">${T.toMap}</button><div><button id="tLater" class="ghost">${T.later}</button></div>`);
+    document.getElementById('tMap').onclick = () => { toast.style.display = 'none'; showRealm(); };
+    document.getElementById('tLater').onclick = () => { toast.style.display = 'none'; };
+  }), 1600);
+}
+// Lager eines Turms: Kronen seit dem letzten Abholen, höchstens 12 Stunden
+function towerStore(tw, now) {
+  const max = F.towerMaxH * 3600e3;
+  if (!(tw.since <= now)) tw.since = now;   // Uhr zurückgestellt: nichts schenken
+  const el = Math.min(max, now - tw.since);
+  return { n: Math.floor(el / 3600e3 * F.towerRate(tw.k) + 1e-9), full: el >= max, el };
+}
+function storeInfo() {
+  const now = Date.now(); let n = 0, rate = 0, cap = 0, next = Infinity;
+  for (const tw of S.towers) {
+    const st = towerStore(tw, now), r = F.towerRate(tw.k), per = 3600e3 / r;
+    n += st.n; rate += r; cap += F.towerMaxH * r;
+    if (!st.full) next = Math.min(next, per - (st.el % per));
+  }
+  return { n, rate, cap, next };
+}
+function collectAll() {
+  const now = Date.now(); let n = 0;
+  for (const tw of S.towers) {
+    const st = towerStore(tw, now);
+    if (st.n <= 0) continue;
+    n += st.n; tw.since = st.full ? now : tw.since + st.n * 3600e3 / F.towerRate(tw.k);
+  }
+  if (!n) return 0;
+  S.crowns += n; S.crownsAll += n;
+  Portal.submitScore(S.crownsAll); sfx.crown();
+  showBanner({ text: T.collected, sub: '👑 +' + n, life: 2.2, color: '#ffd447' });
+  checkGoals(); refreshPanel(true); save();
+  return n;
+}
+// Neuen Block beginnen: alles ausser Kronen, Steinen, Zielen und Rekorden fängt neu an
+function startBlock(k) {
+  toast.style.display = 'none';
+  S.blk = k; S.blockDone = false;
+  S.heir = 0; S.runTime = 0; S.lastMaxAt = 0; S.recBase = 0; S.blkBest = 1;
+  S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
+  rage = 0; beer = 0; lava = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  spawnRock(); buildPanel(); updateSkillBtns(); updateBossBtn();
+  const b = blkOf(k);
+  bannerQ.length = 0; banner = null; showBanner({ text: b.icon + ' ' + T.blk[k], sub: T.blkStart, life: 3, color: b.color });
+  sfx.boss(); save();
+}
+// Vulkan: Lava-Ausbruch
+function startLava() {
+  lava = F.lavaSec; lavaTimer = F.lavaEvery(); shake = 1;
+  showBanner({ text: T.lavaOn, sub: T.lavaSub, life: 2.2, color: '#ff8a3d' });
+  sfx.lava();
+}
+
 // Neue Bestmarke in dieser Mine: Rekord, Ring-Belohnung, Rangliste
 function onNewMax() {
   S.lastMaxAt = S.runTime;
-  if (S.st.prest > 0 && S.maxDepth === S.recBase + 1) { showBanner({ text: T.record, sub: T.recordSub.replace('{n}', S.recBase), life: 2.6, color: '#ffd447' }); sfx.chest(); }
+  if (S.st.prest > 0 && S.recBase > 0 && S.maxDepth === S.recBase + 1) { showBanner({ text: T.record, sub: T.recordSub.replace('{n}', S.recBase), life: 2.6, color: '#ffd447' }); sfx.chest(); }
+  S.blkBest = Math.max(S.blkBest || 1, S.maxDepth);
   if (S.maxDepth > S.best) {
-    const r = F.ringOf(S.maxDepth);
-    if (r > F.ringOf(S.best)) { const g = F.ringGems(r); S.gems += g; showBanner({ text: T.ringNew.replace('{r}', ringName(r)), sub: T.ringSub + '  💎 +' + g, life: 3.2, color: layerAt(S.maxDepth).ore }); sfx.boss(); layerShown = Math.floor((S.maxDepth - 1) / 10); }   // ersetzt die Schicht-Meldung
+    // Erstes Mal in der letzten Schicht (ab 141): einmal Steine, ersetzt die Schicht-Meldung
+    if (F.ringOf(S.maxDepth) > F.ringOf(S.best)) { const g = F.ringGems(1); S.gems += g; showBanner({ text: T.lastLayer, sub: layerAt(S.maxDepth).name + '  💎 +' + g, life: 3.2, color: layerAt(S.maxDepth).ore }); sfx.boss(); layerShown = Math.floor((S.maxDepth - 1) / 10); }
     S.best = S.maxDepth;
-    if (S.best % 10 === 0) Portal.submitScore(S.best);
   }
 }
 
@@ -539,12 +698,12 @@ cv.addEventListener('pointerdown', (e) => {
   lastTap = now;
   S.taps++;
   swingT = 1;
-  damage(F.pickDmg(S.pick, S) * (rage > 0 ? 3 : 1) * (Math.random() < F.doubleChance(S) ? 2 : 1), true, x, y);
+  damage(F.pickDmg(S.pick, S) * tapMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, x, y);
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') {
     e.preventDefault(); const c = rockCenter(); swingT = 1; S.taps++;
-    damage(F.pickDmg(S.pick, S) * (rage > 0 ? 3 : 1) * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
+    damage(F.pickDmg(S.pick, S) * tapMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
   }
   if (e.code === 'KeyD') useDyn();
   if (e.code === 'KeyB') useBeer();
@@ -556,7 +715,7 @@ function useDyn() {
   if (!S.up.dyn || S.cdDyn > 0 || S.hp <= 0) return;
   S.cdDyn = F.dynCd; const c = rockCenter(); swingT = 1; shake = 1;
   for (let i = 0; i < 18; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, '#ff8a3d'));
-  damage(F.pickDmg(S.pick, S) * F.dynTaps * (rage > 0 ? 3 : 1), true, c.x, c.y - 10);
+  damage(F.pickDmg(S.pick, S) * F.dynTaps * tapMult(), true, c.x, c.y - 10);
   sfx.boss(); updateSkillBtns();
 }
 function useBeer() {
@@ -663,6 +822,7 @@ function drawRock(t) {
     ctx.strokeStyle = '#1a0e08'; ctx.lineWidth = 5;
     for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(c.x + sx + s * ex * 1.6, c.y + sy + ey - c.r * 0.14); ctx.lineTo(c.x + sx + s * ex * 0.5, c.y + sy + ey - c.r * 0.06); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(c.x + sx, c.y + sy + c.r * 0.32, c.r * 0.2, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+    if (isEnd()) drawCrown(c.x + sx, c.y + sy - c.r * 0.8, c.r * 0.62, t);
   }
   // Lebensbalken
   const bw = Math.min(CW * 0.6, 260), bx = CW / 2 - bw / 2, by = c.y + c.r * 1.12 + 6;
@@ -676,6 +836,14 @@ function drawRock(t) {
   }
 }
 
+function drawCrown(x, y, w, t) {
+  ctx.save(); ctx.translate(x, y + Math.sin(t * 3) * 3);
+  ctx.shadowColor = '#ffd447'; ctx.shadowBlur = 18; ctx.fillStyle = '#f5c542';
+  ctx.beginPath(); ctx.moveTo(-w / 2, 0); ctx.lineTo(-w / 2, -w * 0.45); ctx.lineTo(-w / 4, -w * 0.18); ctx.lineTo(0, -w * 0.58); ctx.lineTo(w / 4, -w * 0.18); ctx.lineTo(w / 2, -w * 0.45); ctx.lineTo(w / 2, 0); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0; ctx.fillStyle = '#c9961b'; ctx.fillRect(-w / 2, -w * 0.09, w, w * 0.09);
+  for (const [px, col] of [[-w / 4, '#ff6b6b'], [0, '#57d2ff'], [w / 4, '#6fdc7a']]) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, -w * 0.2, w * 0.055, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
 function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   const r = Math.min(255, (n >> 16) + amt), g = Math.min(255, ((n >> 8) & 255) + amt), b = Math.min(255, (n & 255) + amt);
@@ -708,10 +876,22 @@ function drawBackground(t) {
     ctx.fillStyle = lg; ctx.fillRect(lx - 90, CH * 0.2 - 90, 180, 180);
     ctx.fillStyle = '#ffcf6b'; ctx.beginPath(); ctx.arc(lx, CH * 0.2, 5, 0, Math.PI * 2); ctx.fill();
   }
-  // Name der Schicht
+  // Vulkan: Glut steigt auf
+  if (S.blk === 'vulkan') {
+    const E = rng(77);
+    for (let i = 0; i < 18; i++) {
+      const sp = 20 + E() * 40, x = E() * CW + Math.sin(t * 1.5 + i) * 8, y = CH - ((t * sp + E() * CH) % CH);
+      ctx.fillStyle = `rgba(255,${120 + Math.floor(E() * 80)},40,${0.35 + 0.3 * Math.sin(t * 4 + i) ** 2})`;
+      ctx.beginPath(); ctx.arc(x, y, 1.5 + E() * 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // Name der Schicht, darunter Block und Ziel
   ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '800 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if (banner) return;
   ctx.fillText(L.name + ' · ' + T.layer + ' ' + (Math.floor((S.depth - 1) / 10) + 1), CW / 2, CH * 0.08 + 30);
+  const b = blkOf(S.blk);
+  ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '700 11.5px system-ui, sans-serif';
+  ctx.fillText(b.icon + ' ' + T.blk[b.k] + ' · ' + (S.blockDone ? '✓' : Math.min(S.depth, F.blockEnd) + ' / ' + F.blockEnd), CW / 2, CH * 0.08 + 48);
   if (S.heir > 0) { ctx.fillStyle = '#c77dff'; ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText('⚱ ' + S.heir + '  +' + Math.round((F.heirMult(S) - 1) * 100) + '%', CW - 14, CH * 0.08 + 30); }
 }
 
@@ -754,6 +934,7 @@ function drawDwarves(t) {
     const x = c.x + side * (c.r + 18 + row * 10);
     const y = c.y + c.r * 0.55 - row * 20;
     const speed = 5 + type * 0.6;
+    if (lava > 0) { ctx.globalAlpha = 0.55; drawDwarf(x, y + 14, 1.15 - row * 0.05, DWARVES[type].hat, 0, side > 0); ctx.globalAlpha = 1; return; }   // in Deckung
     drawDwarf(x, y, 1.25 - row * 0.05, DWARVES[type].hat, t * speed + idx * 1.3, side > 0);
   });
 }
@@ -809,7 +990,7 @@ function drawFx(dt) {
   if (banner && toast.style.display !== 'block') {
     const a = Math.min(1, banner.life * 1.5);
     ctx.globalAlpha = a;
-    const by = CH * 0.06 + (S.farm ? 44 : 0); // unter dem Knopf «Boss nochmal»
+    const by = CH * 0.06 + (S.farm || S.blockDone ? 44 : 0); // unter dem Knopf «Boss nochmal» / «Nächster Block»
     ctx.fillStyle = 'rgba(14,10,22,0.82)'; roundRect(CW / 2 - 140, by, 280, 62, 14); ctx.fill();
     ctx.fillStyle = banner.color; ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(banner.text, CW / 2, by + 22);
@@ -818,6 +999,13 @@ function drawFx(dt) {
     ctx.globalAlpha = 1;
   }
   if (bossFlash > 0) { ctx.fillStyle = `rgba(255,50,50,${bossFlash * 0.28})`; ctx.fillRect(0, 0, CW, CH); }
+  if (lava > 0) {
+    const lg = ctx.createLinearGradient(0, CH, 0, CH * 0.35);
+    lg.addColorStop(0, `rgba(255,80,10,${0.45 + Math.sin(performance.now() / 90) * 0.1})`); lg.addColorStop(1, 'rgba(255,80,10,0)');
+    ctx.fillStyle = lg; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = '#ffb347'; ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle'; ctx.fillText('🌋 ⛏ ×' + F.lavaTap + '  ' + Math.ceil(lava) + 's', CW - 14, CH - 100);
+  }
   if (rage > 0) {
     ctx.fillStyle = `rgba(255,120,40,${0.08 + Math.sin(performance.now() / 120) * 0.04})`; ctx.fillRect(0, 0, CW, CH);
     ctx.fillStyle = '#ff8a3d'; ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'left';
@@ -862,7 +1050,7 @@ function dwarfIcon(i) {
 }
 const GEM_ICON_COLORS = { power: '#ff8a3d', gold: '#f5c542', crit: '#ff6b6b', offline: '#7f8cff', chest: '#6fdc7a' };
 const UP_EMOJI = { spitze: '⛏️', doppel: '✌️', band: '🛤️', laterne: '🏮', dyn: '🧨', zeit: '⏳', bier: '🍺', waage: '⚖️', kurs: '🎓', magnet: '🧲', gluck: '🍀', lied: '🎵', bohrer: '💎', schicht: '🌙', kugel: '🔮' };
-const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️', heir: '💜' };
+const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️', heir: '💜', blocks: '🏔️', crowns: '👑' };
 function emojiIcon(e) { return (g) => { g.font = '26px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, 20, 22); }; }
 function heirIcon(g) { g.translate(20, 20); g.fillStyle = '#c77dff'; g.beginPath(); g.moveTo(-8, -12); g.lineTo(8, -12); g.lineTo(11, 0); g.lineTo(6, 14); g.lineTo(-6, 14); g.lineTo(-11, 0); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(-5, -8, 3, 14); }
 function gemIcon(key) {
@@ -887,7 +1075,8 @@ function buildPanel() {
   } else if (tab === 'gem') {
     GEM_UPS.forEach((u) => rows.push(makeRow({ icon: iconCanvas(gemIcon(u.key)), kind: 'gem', key: u.key })));
   } else {
-    rows.push(makeRow({ icon: iconCanvas(heirIcon), kind: 'prest' }));
+    rows.push(makeRow({ icon: S.blockDone ? iconCanvas(emojiIcon('🏔️')) : iconCanvas(heirIcon), kind: 'prest' }));
+    if (S.towers.length || S.blkBest >= 100) rows.push(makeRow({ icon: iconCanvas(emojiIcon('👑')), kind: 'realm' }));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🏆')), kind: 'rec' }));
     const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
     gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
@@ -933,6 +1122,11 @@ function rowData(r) {
   if (r.kind === 'rec') {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
   }
+  if (r.kind === 'realm') {
+    const st = storeInfo();
+    return { name: T.realm, lvl: '', eff: `${T.crowns} <b>${S.crowns}</b> · ${T.score} <b>${S.crownsAll}</b>` + (st.n ? ` · <b style="color:#ffd447">${T.inStore.replace('{n}', st.n)}</b>` : ''), cost: 0, cur: 'rec', locked: false, realm: true };
+  }
+  if (r.kind === 'prest' && S.blockDone) return { name: T.blockDoneName, lvl: '', eff: T.blockDoneEff, cost: 0, cur: 'prest', locked: false, prest: true, can: true, map: true };
   if (r.kind === 'prest') {
     const can = F.canPrestige(S), gain = F.heirGain(S);
     return { name: T.newMine, lvl: S.heir > 0 ? '⚱ ' + S.heir : '', eff: can ? `${moveWorth() ? `<b style="color:#d9a6ff">${T.worthNow}</b> ` : ''}<b>+${gain} ${T.heir}</b>: ${T.stronger.replace('{p}', movePct())} ${T.deeper} ${T.newMineInfo}` : `${T.moveFrom} (${T.heirEff}).`, cost: 0, cur: 'prest', locked: false, prest: true, can };
@@ -957,7 +1151,8 @@ function refreshPanel(force) {
     r.last = key;
     r.nm.textContent = d.name; r.lvl.textContent = d.lvl; r.eff.innerHTML = d.eff;
     r.el.classList.toggle('locked', d.locked); r.el.classList.toggle('done', !!d.done); r.el.classList.toggle('prest', !!d.prest);
-    if (d.prest) { r.btn.innerHTML = T.move; r.btn.className = 'buy' + (can ? ' prestcan' : ''); }
+    if (d.prest) { r.btn.innerHTML = d.map ? '🗺 ' + T.map : T.move; r.btn.className = 'buy' + (d.map ? ' can' : can ? ' prestcan' : ''); }
+    else if (d.realm) { r.btn.innerHTML = '🗺 ' + T.map; r.btn.className = 'buy can'; }
     else if (d.rec) { r.btn.innerHTML = T.show; r.btn.className = 'buy gemcan'; }
     else if (d.stuck) { r.btn.innerHTML = '⚔ ' + T.retryShort; r.btn.className = 'buy stuckbtn'; r.el.classList.add('stuck'); }
     else if (d.reward) { r.btn.innerHTML = d.done ? '✓' : GEM_SVG + '+' + d.cost; r.btn.className = 'buy ' + (d.done ? 'ok' : 'rew'); }
@@ -974,14 +1169,15 @@ function updateTabDots() {
   const canPick = S.gold >= F.pickCost(S.pick) || UPGRADES.some(u => !S.up[u.key] && S.maxDepth >= u.unlock && S.gold >= u.cost);
   const canDwarf = DWARVES.some((d, i) => S.maxDepth >= d.unlock && S.gold >= F.dwarfCost(i, S.dw[i]));
   const canGem = GEM_UPS.some(u => S.gu[u.key] < u.max && S.gems >= F.gemCost(u.key, S.gu[u.key]));
-  const dots = { pick: canPick, dwarf: canDwarf, gem: canGem, goal: (F.canPrestige(S) && !seenPrest) || moveWorth() };
+  const dots = { pick: canPick, dwarf: canDwarf, gem: canGem, goal: ((F.canPrestige(S) || S.blockDone) && !seenPrest) || moveWorth() };
   document.querySelectorAll('.tab').forEach(b => b.querySelector('.dot').classList.toggle('show', dots[b.dataset.tab] && b.dataset.tab !== tab));
 }
 let seenPrest = false;
 function buy(r) {
   const d = rowData(r);
   if (r.kind === 'goal') return;
-  if (r.kind === 'prest') { newMine(); return; }
+  if (r.kind === 'prest') { if (S.blockDone) showRealm(); else newMine(); return; }
+  if (r.kind === 'realm') { showRealm(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
   if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
@@ -1018,6 +1214,7 @@ const TIPS = [
   { id: 'boss', at: 'rock', when: () => S.st.prest === 0 && S.st.bosses === 0 && bossActive, done: () => !bossActive },
   { id: 'gem', at: 'gem', when: () => tab !== 'gem' && S.st.prest === 0 && S.gems >= F.gemCost('power', 0) && GEM_UPS.every(u => !S.gu[u.key]), done: () => tab === 'gem' || GEM_UPS.some(u => S.gu[u.key]) },
   { id: 'move', at: 'goal', when: () => tab !== 'goal' && moveWorth(), done: () => tab === 'goal' || !F.canPrestige(S) },
+  { id: 'end', at: 'rock', when: () => S.blkBest >= 100 && !S.towers.length && !S.blockDone && !S.farm && !bossActive, done: () => bossActive || S.blockDone || S.towers.length > 0 },
 ];
 const stageEl = document.getElementById('stage'), tipEl = document.getElementById('tip');
 let tipNow = null, tipAt = 0;
@@ -1070,9 +1267,11 @@ function newMine() {
   const gain = F.heirGain(S);
   askConfirm(T.confirmMove.replace('{n}', gain), () => doNewMine(gain));
 }
+// Ein Fenster im Spiel (gemeinsamer Platz für alle Rückfragen und Übersichten)
+function popup(html, tall) { if (tipNow) hideTip(); toast.innerHTML = html; toast.classList.toggle('tall', !!tall); toast.style.display = 'block'; }
+function afterToast(fn) { const go = () => (toast.style.display === 'block' ? setTimeout(go, 400) : fn()); go(); }
 function askConfirm(text, onYes, yes = T.move, yesBg = '#c77dff') {
-  toast.innerHTML = `<div style="font-weight:800;max-width:260px">${text}</div><div style="display:flex;gap:8px;justify-content:center"><button id="tNo" style="background:#4a3f60;color:#f3ead8">${T.no}</button><button id="tYes" style="background:${yesBg};color:#2a0a40">${yes}</button></div>`;
-  toast.style.display = 'block';
+  popup(`<div style="font-weight:800;max-width:260px">${text}</div><div style="display:flex;gap:8px;justify-content:center"><button id="tNo" style="background:#4a3f60;color:#f3ead8">${T.no}</button><button id="tYes" style="background:${yesBg};color:#2a0a40">${yes}</button></div>`);
   document.getElementById('tNo').onclick = () => { toast.style.display = 'none'; };
   document.getElementById('tYes').onclick = () => { toast.style.display = 'none'; onYes(); };
 }
@@ -1080,31 +1279,71 @@ function showRecords() {
   if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Offline-Gold oder Rückfrage nicht überdecken
   const dur = (t) => { const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60); return h ? h + ':' + String(m).padStart(2, '0') + ' h' : Math.max(1, Math.round(t / 60)) + ' ' + T.min; };
   const row = (a, d, h, t, cls) => [a, `${T.depthW} <b>${d}</b>`, h, t].map(x => `<span class="${cls}">${x}</span>`).join('');
-  const list = S.runs.slice().sort((a, b) => b.d - a.d).slice(0, 8).map((m) => row(`${T.mine} ${m.n}`, m.d, '⚱ +' + m.h, m.t ? dur(m.t) : '', '')).join('');
-  toast.innerHTML = `<div style="font-weight:900;font-size:18px">🏆 ${T.records}</div>
-    <div class="small">${T.bestDepth}</div><div class="big">${S.best}</div>
+  const list = S.runs.slice().sort((a, b) => b.d - a.d).slice(0, 8).map((m) => row(m.k ? blkOf(m.k).icon + ' ' + T.blk[m.k] : `${T.mine} ${m.n}`, m.d, m.k ? '👑 +' + F.blockCrowns : '⚱ +' + m.h, m.t ? dur(m.t) : '', '')).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🏆 ${T.records}</div>
+    <div class="small">${T.score}</div><div class="big">👑 ${S.crownsAll}</div>
+    <div class="small">${T.blocksDone} <b>${S.towers.length}</b> · ${T.bestDepth} <b>${S.best}</b></div>
     <div class="runs">${row(`${T.thisMine} (${S.st.prest + 1})`, S.maxDepth, '', dur(S.runTime), 'cur')}${list || `<span class="note">${T.noRuns}</span>`}</div>
     <div class="small">${T.moves} ${S.st.prest} · ⚱ ${S.heir} ${T.heir} · ${T.playTime} ${dur(S.st.time)}</div>
     <button id="tClose">${T.close}</button>
-    <div><button id="tReset" class="ghost">${T.reset}</button></div>`;
-  toast.style.display = 'block';
+    <div><button id="tReset" class="ghost">${T.reset}</button></div>`);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
   document.getElementById('tReset').onclick = () => askConfirm(T.resetAsk, startOver, T.resetYes, '#ff6b6b');
+}
+// ---------- Dein Reich: Fördertürme, Kronen, Karte der Blöcke ----------
+function showRealm() {
+  if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
+  renderRealm();
+}
+function renderRealm() {
+  const st = storeInfo();
+  const towers = S.towers.length
+    ? `<div class="tw"><div>🏭 ${T.towers} <b>${S.towers.length}</b> · 👑 ${st.rate} ${T.perHour}</div><div class="bar"><i style="width:${Math.round(st.n / st.cap * 100)}%"></i></div>
+       <div class="small">${T.store} <b>${st.n} / ${st.cap}</b> · ${st.n >= st.cap ? T.full : T.nextIn.replace('{m}', Math.max(1, Math.ceil(st.next / 60000)))}</div>
+       <button id="tTake"${st.n ? '' : ' disabled'}>${st.n ? T.collectN.replace('{n}', st.n) : T.storeEmpty}</button></div>`
+    : `<div class="tw small" style="font-size:13px">${T.noTower}</div>`;
+  const blocks = BLOCKS.map((b) => {
+    const here = S.blk === b.k, doneN = S.towers.filter(x => x.k === b.k).length, open = !b.cost || S.unl[b.k];
+    let btn;
+    if (b.soon) btn = `<button disabled>${T.soon}</button>`;
+    else if (here && !S.blockDone) btn = `<button disabled>${T.here}</button>`;
+    else if (!open) btn = `<button data-unl="${b.k}"${S.crowns >= b.cost ? '' : ' disabled'}>🔓 ${b.cost} 👑</button>`;
+    else btn = `<button data-go="${b.k}">${doneN ? T.again : T.start}</button>`;
+    const info = here && !S.blockDone ? T.hereD.replace('{d}', S.depth) : T.blkInfo[b.k];
+    return `<div class="bk${here ? ' here' : ''}${b.soon ? ' soon' : ''}"><span class="e">${b.icon}</span><span class="i"><b>${T.blk[b.k]}${doneN ? ' ✓' + (doneN > 1 ? '×' + doneN : '') : ''}</b>${info} · 👑 ${b.rate}/h</span>${btn}</div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">👑 ${T.realm}</div>
+    <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.score} <b style="color:#ffd447">${S.crownsAll}</b></div>
+    ${towers}<div class="small" style="margin-top:10px;text-align:left;font-weight:800">🗺 ${T.blocksT}</div><div class="realm" style="margin-top:4px">${blocks}</div>
+    <button id="tClose">${T.close}</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+  const take = document.getElementById('tTake'); if (take) take.onclick = () => { collectAll(); renderRealm(); };
+  toast.querySelectorAll('[data-unl]').forEach((el) => el.onclick = () => {
+    const b = blkOf(el.dataset.unl); if (S.crowns < b.cost) return;
+    S.crowns -= b.cost; S.unl[b.k] = true; sfx.buy(); save();
+    showBanner({ text: T.unlocked, sub: b.icon + ' ' + T.blk[b.k], life: 2.2, color: b.color });
+    renderRealm();
+  });
+  toast.querySelectorAll('[data-go]').forEach((el) => el.onclick = () => {
+    const k = el.dataset.go;
+    if (!S.blockDone && S.maxDepth > 1) askConfirm(T.switchAsk.replace('{b}', T.blk[k]).replace('{d}', S.depth), () => startBlock(k), T.switchYes, '#ffd447');
+    else startBlock(k);
+  });
 }
 // Ganz von vorne: alles löschen, nur die Ton-Einstellung bleibt
 function startOver() {
   const sound = S.sound;
   S = freshState(); S.sound = sound;
-  rage = 0; beer = 0; chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  rage = 0; beer = 0; lava = 0; chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
   floats = []; chips = []; coins = []; bannerQ.length = 0; banner = null;
-  spawnRock(); buildPanel(); updateSkillBtns(); save();
+  spawnRock(); buildPanel(); updateSkillBtns(); updateBossBtn(); save();
   showBanner({ text: T.resetDone, sub: T.resetSub, life: 2.6, color: '#f5c542' });
 }
 function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
-  S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.best;
+  S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.blkBest;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
-  rage = 0; beer = 0; chest = null; chestTimer = 25; layerShown = -1;
+  rage = 0; beer = 0; lava = 0; chest = null; chestTimer = 25; layerShown = -1;
   spawnRock(); buildPanel(); updateSkillBtns(); seenPrest = false;
   bannerQ.length = 0; banner = null; showBanner({ text: T.newMine, sub: '⚱ +' + gain + ' ' + T.heir, life: 3, color: '#c77dff' });
   sfx.boss(); Portal.happytime();
@@ -1114,11 +1353,23 @@ function doNewMine(gain) {
 // ---------- HUD ----------
 const goldEl = document.getElementById('gold'), gemsEl = document.getElementById('gems'), depthEl = document.getElementById('depth'), bestEl = document.getElementById('best');
 document.getElementById('depthPill').addEventListener('click', () => showRecords());
-const bossBtn = document.getElementById('bossBtn');
+const crownPill = document.getElementById('crownPill'), crownsEl = document.getElementById('crowns'), crownDot = crownPill.querySelector('.dot');
+crownPill.addEventListener('click', () => showRealm());
+const bossBtn = document.getElementById('bossBtn'), blockBtn = document.getElementById('blockBtn');
 bossBtn.addEventListener('click', () => { retryBoss(); });
+blockBtn.addEventListener('click', (e) => { e.stopPropagation(); showRealm(); });
 function updateBossBtn() {
   bossBtn.style.display = S.farm ? 'block' : 'none';
   bossBtn.textContent = '⚔ ' + T.retry + ' (' + S.maxDepth + ')';
+  blockBtn.style.display = S.blockDone ? 'block' : 'none';
+  blockBtn.textContent = '🗺 ' + T.nextBlock;
+}
+function updateCrowns() {
+  const show = S.towers.length > 0 || S.blkBest >= 100;
+  crownPill.style.display = show ? 'flex' : 'none';
+  if (!show) return;
+  crownsEl.textContent = fmt(S.crowns);
+  crownDot.classList.toggle('show', storeInfo().n > 0);
 }
 const soundBtn = document.getElementById('soundBtn');
 function drawSoundIcon() {
@@ -1135,14 +1386,14 @@ function offlineReward(since) {
   const sec = Math.min(F.offlineMaxSec, (Date.now() - since) / 1000);
   const dps = F.totalDps(S);
   if (sec < 60 || dps <= 0) return;
+  const inStore = storeInfo().n;
   const perHp = F.rockGold(S.depth, S) / F.rockHp(S.depth);
   const gold = Math.ceil(dps * sec * perHp * F.offlineRate(S));
   if (gold <= 0) return;
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
-  toast.innerHTML = `<div style="font-weight:800">${T.welcome}</div><div class="small">${T.away} ${h ? h + 'h ' : ''}${m}min</div>
-    <div class="big">${COIN_SVG}+${fmt(gold)}</div><button id="tCollect">${T.collect}</button>
-    <div><button id="tDouble" style="background:#57d2ff;color:#003449;margin-top:6px">${T.double}</button></div>`;
-  toast.style.display = 'block';
+  popup(`<div style="font-weight:800">${T.welcome}</div><div class="small">${T.away} ${h ? h + 'h ' : ''}${m}min</div>
+    <div class="big">${COIN_SVG}+${fmt(gold)}</div>${inStore ? `<div class="small" style="color:#ffd447;font-weight:800">${T.inStore.replace('{n}', inStore)}</div>` : ''}<button id="tCollect">${T.collect}</button>
+    <div><button id="tDouble" style="background:#57d2ff;color:#003449;margin-top:6px">${T.double}</button></div>`);
   const done = (mult) => { S.gold += gold * mult; toast.style.display = 'none'; for (let i = 0; i < 10; i++) coins.push({ x: CW / 2, y: CH * 0.3, t: -i * 0.04, sx: 0, sy: 0 }); refreshPanel(true); save(); };
   document.getElementById('tCollect').onclick = () => done(1);
   document.getElementById('tDouble').onclick = () => Portal.showRewardedAd(() => done(2));
@@ -1160,7 +1411,7 @@ function frame(now) {
   S.runTime += dt; S.st.time += dt;
 
   // Zwerge graben
-  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1);
+  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1) * (lava > 0 ? 0 : 1);   // bei Lava in Deckung
   if (dps > 0 && S.hp > 0) damage(dps * dt, false);
   if (bossActive) {
     bossTimer -= dt;
@@ -1170,9 +1421,11 @@ function frame(now) {
   bossFlash = Math.max(0, bossFlash - dt * 2.5);
   if (rage > 0) rage -= dt;
   if (beer > 0) beer -= dt;
+  if (lava > 0) { lava -= dt; if (Math.random() < 0.6) { const p = chip(Math.random() * CW, CH + 4, Math.random() < 0.5 ? '#ff8a3d' : '#ffd23f'); p.vy = -7 - Math.random() * 6; p.vx *= 0.3; chips.push(p); } }
+  else if (S.blk === 'vulkan' && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) startLava(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
-    goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip();
+    goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip(); updateCrowns();
     if (S.farm && bossPower() >= 1) { retryBoss(); showBanner({ text: T.autoRetry, sub: T.autoRetrySub, life: 2.2, color: '#6fdc7a' }); }
   }
 
@@ -1202,7 +1455,7 @@ function frame(now) {
 
   // HUD
   goldEl.textContent = fmt(S.gold); gemsEl.textContent = fmt(S.gems); depthEl.textContent = S.depth;
-  const bt = S.best > S.depth ? '🏆' + S.best : ''; if (bestEl.textContent !== bt) bestEl.textContent = bt;
+  const bt = S.blkBest > S.depth ? '🏆' + S.blkBest : ''; if (bestEl.textContent !== bt) bestEl.textContent = bt;
   panelTimer -= dt; if (panelTimer <= 0) { panelTimer = 0.25; refreshPanel(false); }
   saveTimer -= dt; if (saveTimer <= 0) { saveTimer = 5; save(); }
 }
@@ -1217,12 +1470,20 @@ buildPanel();
 updateBossBtn();
 updateSkillBtns();
 resize();
+updateCrowns();
 setTimeout(() => offlineReward(since), 300);
+// Alter Spielstand mit besiegtem Herz des Berges: Erklärung, danach zur Karte
+if (migrated) setTimeout(() => afterToast(() => {
+  popup(`<div style="font-weight:900;font-size:20px">👑 ${T.migTitle}</div><div class="small" style="font-size:14px;max-width:290px;margin:8px auto 0">${T.migText.replace('{d}', migrated)}${S.blockDone ? '' : ' ' + T.migGoOn}</div>
+    <button id="tMap">${T.toMap}</button>`);
+  document.getElementById('tMap').onclick = () => { toast.style.display = 'none'; showRealm(); };
+}), 700);
 Portal.gameplayStart();
 requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
-window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct };
+window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
+  showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; } };
 </script>
 </body>
 </html>
