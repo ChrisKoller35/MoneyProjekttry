@@ -673,17 +673,17 @@ A.HAZARDS = {
 };
 // Eigenheiten der Welten (weather.js): jede Welt spielt sich ein bisschen anders. from: ab welcher Ebene (die allererste Ebene bleibt ruhig)
 A.WORLD_FX = {
-  stone: { id: 'steinschlag', from: 2, col: '#c0cbdc', name: { de: 'Steinschlag', en: 'Rockfall' },
+  stone: { tool: { de: 'Morscher Pfeiler', en: 'Cracked Pillar' }, toolTip: { de: 'Stoss ihn an: Steine regnen auf die Gegner.', en: 'Bump it: rocks rain on the enemies.' }, id: 'steinschlag', from: 2, col: '#c0cbdc', name: { de: 'Steinschlag', en: 'Rockfall' },
     tip: { de: 'Steinschlag! Wo ein Schatten wächst, kracht gleich ein Stein runter. Trifft auch Gegner.', en: 'Rockfall! Where a shadow grows, a rock is about to drop. Hits enemies too.' } },
-  jungle: { id: 'regen', col: '#7fd8ff', name: { de: 'Wolkenbruch', en: 'Downpour' },
+  jungle: { tool: { de: 'Blitzstein', en: 'Lightning Stone' }, toolTip: { de: 'Berühre ihn: Blitze in die Gegner, im Regen mehr.', en: 'Touch it: lightning strikes the enemies, more in the rain.' }, id: 'regen', col: '#7fd8ff', name: { de: 'Wolkenbruch', en: 'Downpour' },
     tip: { de: 'Wolkenbruch! Im Regen erlischt Feuer, Blitze treffen härter und der Schlamm wird zäh.', en: 'Downpour! Rain puts out fire, lightning hits harder and mud gets sticky.' } },
-  desert: { id: 'sturm', col: '#ead4aa', name: { de: 'Sandsturm', en: 'Sandstorm' },
+  desert: { tool: { de: 'Sandhorn', en: 'Sand Horn' }, toolTip: { de: 'Blas hinein: eine Sandböe fegt die Gegner weg.', en: 'Blow it: a gust of sand sweeps the enemies away.' }, id: 'sturm', col: '#ead4aa', name: { de: 'Sandsturm', en: 'Sandstorm' },
     tip: { de: 'Treibsand zieht dich zur Mitte. Im Sandsturm weht der Wind dich, die Gegner und alle Geschosse weg.', en: 'Quicksand drags you to its middle. In a sandstorm the wind pushes you, the enemies and every shot.' } },
-  water: { id: 'stroemung', col: '#2ce8f5', name: { de: 'Strömung', en: 'Current' },
+  water: { tool: { de: 'Schleuse', en: 'Floodgate' }, toolTip: { de: 'Öffne sie: eine Welle wirft die Gegner um und heilt dich.', en: 'Open it: a wave knocks the enemies down and heals you.' }, id: 'stroemung', col: '#2ce8f5', name: { de: 'Strömung', en: 'Current' },
     tip: { de: 'Strömung! Seichtes Wasser trägt dich mit und löscht Feuer.', en: 'Current! Shallow water carries you along and puts out fire.' } },
-  volcano: { id: 'ausbruch', col: '#f77622', name: { de: 'Ausbruch', en: 'Eruption' },
+  volcano: { tool: { de: 'Lavafass', en: 'Lava Barrel' }, toolTip: { de: 'Stoss es an: Lava regnet auf die Gegner.', en: 'Bump it: lava rains on the enemies.' }, id: 'ausbruch', col: '#f77622', name: { de: 'Ausbruch', en: 'Eruption' },
     tip: { de: 'Der Vulkan spuckt! In glühende Kreise schlägt gleich Lava ein. Trifft auch Gegner.', en: 'The volcano spits! Lava lands in the glowing circles. Hits enemies too.' } },
-  abyss: { id: 'finsternis', col: '#b55088', name: { de: 'Finsternis', en: 'Darkness' },
+  abyss: { tool: { de: 'Seelenlaterne', en: 'Soul Lantern' }, toolTip: { de: 'Zünde sie an: grelles Licht blendet die Gegner, sie nehmen mehr Schaden.', en: 'Light it: a glare blinds the enemies, they take more damage.' }, id: 'finsternis', col: '#b55088', name: { de: 'Finsternis', en: 'Darkness' },
     tip: { de: 'Finsternis! Du siehst nur, was dein Licht trifft. Rote Augen im Dunkeln sind keine Glühwürmchen.', en: 'Darkness! You only see what your light reaches. Red eyes in the dark are not fireflies.' } },
 };
 A.FLOORS_PER_WORLD = 4;

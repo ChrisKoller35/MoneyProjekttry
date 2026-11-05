@@ -669,7 +669,7 @@ A.World = (function () {
   A.Bosses.bind({ get W() { return W; }, hit, moveEnt, blocked, reachable, inside, float, addEffect, shoot, ringShot, freeSpot });
   A.Elites.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon });
   A.Foes.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, moveEnt, freeSpot, addMon, clearLine, blocked, reachable });
-  A.Weather.bind({ get W() { return W; }, hit, addEffect, float, moveEnt, freeSpot });
+  A.Weather.bind({ get W() { return W; }, hit, addEffect, float, moveEnt, freeSpot, heal });
   A.Gear.bind({ get W() { return W; }, hit, heal, addEffect, float, fx, shoot, mkAlly, statOf });
   A.Classes.bind({ get W() { return W; }, hit, heal, boom, shoot, float, fx, nearestMon, frontPoint, freeSpot, tile, heroPower });
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });

@@ -148,6 +148,16 @@ In späteren Durchgängen (Welten II, III …) kommt alles öfter. Wer an Steins
 - **Bosse rufen ihre Welt:** fällt ein Welt-Boss unter ein Viertel Leben, kommt nach der Wut eine **letzte Phase** mit der Eigenheit seiner Welt (Einblendung «Letzte Phase!», Regeln in `js/bosses.js`, Wetter in `js/weather.js`). **Schleimkönig:** «Die Decke stürzt ein!», alle 3 Sekunden Steine auf dich und in den Raum (treffen auch ihn). **Dornenmutter:** «Ruft das Gewitter!», Dauerregen und Blitze in markierte Kreise. **Sandpharao:** «Ewiger Sandsturm!», der Wind dreht alle 3 Sekunden und trägt alle Geschosse mit, dazu Treibsand-Pfützen. **Tiefenkraken:** «Der Strudel erwacht!», ein Sog zieht dich zu ihm, die Flut kommt öfter. **Rostkönig:** «Der Vulkan bricht aus!», Lava schlägt ein. **Wächter der Tiefe:** «Das Licht geht aus!», alle 9 Sekunden 3,5 Sekunden fast völlige Dunkelheit, nur deine Lampe und rote Augen. Fällt der Boss, hört alles auf.
 - **Vier neue Elite-Eigenschaften (jetzt 20):** **Magnetisch** zieht dich langsam heran (nicht im Boss-Raum), **Bombenleger** legt alle 5 Sekunden eine Bombe, die dich und seine Freunde trifft, **Dornenpanzer** sticht ein Drittel deines Nahkampf-Schadens zurück (Zauber gehen durch), **Zäh** steht einmal mit einem Drittel Leben wieder auf («Noch nicht!»). Das Elite-Buch hat damit 20 Seiten (bis +40 % Schaden gegen Elite), der Erfolg «Elite-Kenner» verlangt alle 20; wer ihn schon hat, behält ihn.
 
+## Welt-Dinge (05.11.2026)
+In jedem Kampfraum (nicht im Boss-Raum, nicht auf Ebene 1) steht ein Ding, das die Eigenheit der Welt gegen die Gegner dreht. Hinlaufen und berühren, einmal je Raum. Beim ersten Mal auf der Ebene steht oben, was es tut.
+- **Graue Gewölbe, Morscher Pfeiler:** Steine fallen auf die fünf nächsten Gegner, nie auf dich.
+- **Dschungel, Blitzstein:** Blitze in drei Gegner, im Regen in fünf. Betäubt kurz.
+- **Wüstengrab, Sandhorn:** Eine Sandböe fegt alle in der Nähe weg und macht sie langsam.
+- **Versunkene Stadt, Schleuse:** Eine Welle wirft alle im Raum um, löscht dein Feuer und heilt dich um ein Zehntel.
+- **Vulkanschmiede, Lavafass:** Lava auf die fünf nächsten Gegner, nie auf dich.
+- **Abgrund, Seelenlaterne:** Grelles Licht blendet alle in der Nähe (2 Sekunden betäubt, 8 Sekunden 25 % mehr Schaden), der Raum bleibt hell.
+Code: `weather.js` (placeTool, useTool, drawTool), Namen in `data.js` A.WORLD_FX (tool, toolTip). Nicht im Spielstand.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
