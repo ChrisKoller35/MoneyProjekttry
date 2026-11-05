@@ -73,6 +73,8 @@ window.A = window.A || {};
     return `<span class="vchip ${c.verdict}">${t(VERD[c.verdict])}</span>`;
   }
   // Element-Abzeichen und besondere Kraft (gear.js)
+  // Dein Build: kleines Zeichen an Stücken, die passen oder einer Kombo das letzte Element bringen (nicht an angelegten)
+  function fitChip(it) { const r = G.run; if (!r || A.SLOTS.some(s => r.gear[s] === it)) return ''; const f = A.Build.fits(it, r); return f ? `<span class="vchip ${f.kind === 'combo' ? 'combo' : 'fit'}">${f.kind === 'combo' ? L('Kombo-Teil', 'Combo part') : L('Passt', 'Fits')}</span> ` : ''; }
   function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
   function powerHtml(p, n) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}${n > 1 ? ` ×${n}` : ''}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }   // n: auf so vielen Stücken (sie stapeln)
   // Legende (legends.js): ihr Effekt steht gross und golden unter den Werten
@@ -105,7 +107,7 @@ window.A = window.A || {};
     return `<div class="item ${it.legend ? 'leg' : ''} ${cls || ''}" style="--rc:${rarCol(it.rarity)}" ${attrs || ''}>
       <div class="ic">${itIcon(it, 36)}</div>
       <div class="bd">
-        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${badge || ''}</div>
+        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${fitChip(it)}${badge || ''}</div>
         <div class="nm">${esc(G.itemName(it))}</div>
         <div class="ln">${lines.map(esc).join(' · ')}</div>
         ${powerHtml(it.power)}${legHtml(it)}
@@ -322,7 +324,7 @@ window.A = window.A || {};
     const rows = AC.chron().map(e => {
       const R = A.RACES.find(x => x.id === e.race), Cl = A.CLASSES.find(x => x.id === e.cls);
       const achs = (e.ach || []).map(id => A.ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).map(a => t(a.name));
-      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}</div>
+      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
         <div class="mini">${esc(AC.causeText(e))} · ${e.kills} ${L('Gegner', 'enemies')} · ${e.gold} ${t(U.gold)} · ${esc(AC.timeText(e.dur))}${achs.length ? ` · ${L('Erfolg', 'Achievement')}: ${esc(achs.join(', '))}` : ''}</div></div>
         <div class="rs">${e.quit ? '' : spark('+' + e.sparks, 14)}<div class="mini">${esc(AC.whenText(e.t))}</div></div></div>`;
     }).join('');
@@ -537,9 +539,10 @@ window.A = window.A || {};
     const found = o.ctx === 'found', inShop = o.ctx === 'shop';
     const head = found ? `<div class="foundhead"><div class="bigicon ${it.legend ? 'legicon' : ''}" style="filter:drop-shadow(0 0 14px ${rarCol(it.rarity)})">${itIcon(it, 54)}</div><h2 class="${it.legend ? 'goldc' : ''}">${it.legend ? L('Eine Legende!', 'A legend!') : L('Gefunden', 'Found')}</h2></div>${legNewHtml(o.lg)}`
       : `<h2 class="mid">${L('Vergleich', 'Comparison')}</h2>`;
+    const fit = A.Build.fits(it, r), fitHtml = fit ? `<div class="fitline ${fit.kind}">${ic(fit.kind === 'combo' ? 'u_spark' : A.BUILD_DIRS[fit.dir].icon, 18)}<span>${esc(A.Build.fitText(fit))}</span></div>` : '';
     const pick = list.length > 1 ? `<div class="cmppick"><div class="mini">${L('Beide Schmuck-Plätze sind belegt. Welcher Schmuck soll weichen?', 'Both trinket slots are taken. Which trinket should go?')}</div>${list.map(x => `<button data-slot="${x.slot}" class="${x === c ? 'on' : ''}">${itIcon(x.old, 22)}<span>${esc(G.itemName(x.old))}</span><span class="vchip ${x.verdict}">${t(VERD[x.verdict])}</span></button>`).join('')}</div>` : '';
     const tag = inShop ? L('Zu kaufen', 'For sale') : o.ctx === 'bag' ? L('Im Beutel', 'In your bag') : L('Neu', 'New');
-    const cards = `<div class="cmpcards">${cmpCard(it, tag, true)}${c.old ? cmpCard(c.old, L('Angelegt', 'Equipped')) : cmpEmpty(c.slot)}</div>`;
+    const cards = `${fitHtml}<div class="cmpcards">${cmpCard(it, tag, true)}${c.old ? cmpCard(c.old, L('Angelegt', 'Equipped')) : cmpEmpty(c.slot)}</div>`;
     const lean = c.lean === 'up' ? L(' Unterm Strich eher stärker.', ' Overall rather stronger.') : c.lean === 'down' ? L(' Unterm Strich eher schwächer.', ' Overall rather weaker.') : c.lean === 'even' ? L(' Geschmackssache.', ' A matter of taste.') : '';
     const verdict = `<div class="verdict ${c.verdict}"><b>${t(VERD[c.verdict])}</b><span>${esc(c.why + lean)}</span></div>`;
     const changes = `<div class="drows">${c.rows.map(cmpRow).join('')}</div>${c.fx.map(cmpFx).join('')}`;
@@ -640,7 +643,7 @@ window.A = window.A || {};
     const r = G.run, d = G.derived();
     tab = tab || 'stats';
     const race = A.RACES.find(x => x.id === r.race), cls = A.CLASSES.find(x => x.id === r.cls);
-    const head = `<div class="sheethead"><img class="px" src="${Art.heroUrl(r.race, r.cls, 3)}" width="54" height="54" alt=""><div><div class="nm">${esc(t(cls.name))}</div><div class="mini">${esc(t(race.name))} · ${t(U.level)} ${r.level} · ${t(U.floor)} ${r.floor}</div></div></div>`;
+    const head = `<div class="sheethead"><img class="px" src="${Art.heroUrl(r.race, r.cls, 3)}" width="54" height="54" alt=""><div><div class="nm">${esc(t(cls.name))}</div><div class="mini">${esc(t(race.name))} · ${t(U.level)} ${r.level} · ${t(U.floor)} ${r.floor}</div>${buildLine(r, d)}</div></div>`;
     const statsHtml = ['str', 'tou', 'dex', 'mind', 'luck'].map(k => `<div class="stat"><span>${ic(STAT_ICON[k], 22)}${t(U.stat[k])}</span><span><b>${r.stats[k]}</b>${r.points > 0 ? `<button data-sp="${k}" aria-label="+">+</button>` : ''}</span></div>`).join('');
     const kv = `<div class="kv" style="margin-top:12px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
@@ -671,7 +674,23 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
+    const bf = $('#bFocus'); if (bf) bf.onclick = () => { S.click(); focusPick(tab); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
+  }
+  // Dein Build (build.js): Name, die stärksten Richtungen und der Fokus-Knopf
+  function buildLine(r, d) {
+    const p = A.Build.profile(r, d), col = p.first ? A.BUILD_DIRS[p.first].col : 'var(--mist)';
+    return `<div class="mini bld">${L('Build', 'Build')}: <b style="color:${col}">${esc(A.Build.name(p))}</b>${p.top.length ? ` <span>(${esc(A.Build.summary(p))})</span>` : ''}<button id="bFocus">${r.focus ? L('Fokus: ', 'Focus: ') + esc(A.Build.dirName(r.focus)) : L('Fokus', 'Focus')} ▾</button></div>`;
+  }
+  // Fokus wählen: eine Richtung, die ab jetzt mehr zählt (Beute, Händler, Truhen, Schrein), oder automatisch
+  function focusPick(tab) {
+    const r = G.run, p = A.Build.profile(r);
+    const rows = Object.keys(A.BUILD_DIRS).map(k => { const D = A.BUILD_DIRS[k], sc = p.score[k] || 0; return `<div class="skill ${r.focus === k ? 'on' : ''}" data-focus="${k}"><div class="si">${ic(D.icon, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${D.col}">${esc(t(D.name))}${sc ? ` <span class="mini">${Math.round(sc * 10) / 10}</span>` : ''}</div><div class="ds">${esc(t(D.noun))}</div></div></div>`; }).join('');
+    ov(`<h2 class="mid">${L('Fokus', 'Focus')}</h2><div class="sub">${L('Welche Richtung soll dein Build nehmen? Beute, Händler, Truhen und Schrein-Segen richten sich danach (zählt wie 3 Punkte). Ohne Fokus entscheidet, was du trägst und kannst.', 'Which direction should your build take? Loot, merchants, chests and shrine blessings follow it (counts as 3 points). Without a focus, what you wear and know decides.')}</div>
+      <div class="skill ${r.focus ? '' : 'on'}" data-focus=""><div class="si">${ic('u_star', 30)}</div><div><div class="nm">${L('Automatisch', 'Automatic')}</div><div class="ds">${L('Das Spiel schaut, was du spielst.', 'The game looks at what you play.')}</div></div></div>${rows}
+      <button class="btn" id="bClose" data-esc>${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-focus]').forEach(el => el.onclick = () => { G.setFocus(el.dataset.focus || null); S.click(); showSheet(tab); });
+    $('#bClose').onclick = () => { S.click(); showSheet(tab); };
   }
   // Build-Übersicht: wie viele Teile je Element, welche Boni laufen, welche Kräfte wirken
   function buildHtml(r) {
@@ -885,6 +904,7 @@ window.A = window.A || {};
       <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
+      ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}

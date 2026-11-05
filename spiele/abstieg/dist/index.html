@@ -159,6 +159,13 @@
   /* Vergleich: neues Stück gegen das angelegte (ui.js compareView, Rechnung in compare.js) */
   .vchip { --vc: #8b9bb4; display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px 2px 5px; border: 2px solid color-mix(in srgb, var(--vc) 70%, #181425); background: color-mix(in srgb, var(--vc) 18%, #181425); color: var(--vc); font-size: 12px; font-weight: 700; line-height: 14px; letter-spacing: 0; text-transform: none; white-space: nowrap; }
   .vchip::before { content: ''; flex: none; }
+  .vchip.fit { --vc: #c77dff; } .vchip.combo { --vc: #feae34; }
+  .fitline { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 7px 10px; font-size: 15px; border-left: 4px solid #c77dff; background: rgba(199,125,255,0.1); }
+  .fitline.combo { border-left-color: #feae34; background: rgba(254,174,52,0.12); color: var(--gold2); }
+  .fitline > img { flex: none; }
+  .sheethead .bld { margin-top: 3px; } .sheethead .bld span { color: var(--mist); }
+  .sheethead .bld button { font: inherit; font-size: 12px; margin-left: 6px; padding: 1px 7px 2px; background: #181425; color: var(--gold2); border: 2px solid #3a4466; cursor: pointer; }
+  .runrow .bdn { color: #c77dff; }
   .vchip.better { --vc: #63c74d; } .vchip.worse { --vc: #f6757a; } .vchip.mixed { --vc: #fee761; } .vchip.same, .vchip.sold { --vc: #8b9bb4; } .vchip.worn { --vc: #2ce8f5; }
   .vchip.better::before, .verdict.better b::before { border: 5px solid transparent; border-bottom: 7px solid currentColor; border-top-width: 0; }
   .vchip.worse::before, .verdict.worse b::before { border: 5px solid transparent; border-top: 7px solid currentColor; border-bottom-width: 0; }
@@ -1261,8 +1268,35 @@ A.ACHIEVEMENTS = [
   { id: 'wild5', cat: 'verrueckt', stat: 'wild', n: 5, sparks: 60, icon: 'i_bienen', name: { de: 'Verrückt', en: 'Crazy' }, text: { de: '5 der 10 verrückten Stücke finden', en: 'Find 5 of the 10 crazy pieces' } },
   { id: 'death1', cat: 'verrueckt', stat: 'death1', n: 1, sparks: 10, mon: 'ratte', name: { de: 'Anfängerpech', en: 'Beginner\'s luck' }, text: { de: 'Auf Ebene 1 fallen. Passiert den Besten.', en: 'Fall on floor 1. Happens to the best.' } },
   { id: 'neardeath', cat: 'verrueckt', stat: 'nearDeath', n: 1, sparks: 40, icon: 'potion', name: { de: 'Überlebenskünstler', en: 'Survivor' }, text: { de: 'Einen Raum mit weniger als 5 % Leben überstehen', en: 'Survive a room with less than 5% health' } },
+  // Dein Build (Version 30)
+  { id: 'einseitig', cat: 'helden', stat: 'elMax', n: 6, sparks: 60, icon: 'el_blitz', name: { de: 'Einseitig', en: 'One-sided' }, text: { de: 'Sechs Teile mit demselben Element tragen', en: 'Wear six pieces with the same element' } },
+  { id: 'kombo3', cat: 'sammlung', stat: 'runCombos', n: 3, sparks: 80, icon: 'u_spark', name: { de: 'Kombo-Jäger', en: 'Combo hunter' }, text: { de: 'Drei Kombos in einem Durchlauf erwecken', en: 'Awaken three combos in one run' } },
+  { id: 'prinzip', cat: 'helden', stat: 'buildBest', n: 12, sparks: 60, icon: 't_mind', name: { de: 'Prinzipientreu', en: 'Stickler' }, text: { de: 'Mit einem starken Build (Build-Wert 8) Ebene 12 erreichen', en: 'Reach floor 12 with a strong build (build score 8)' } },
 ];
 A.ACH_CHRON = 20;   // so viele Durchläufe merkt sich die Chronik
+
+// ---------- Dein Build: Richtungen, die das Spiel am Helden erkennt (Regeln in build.js) ----------
+// Punkte: Element auf der Ausrüstung 1 je Stück, Kraft 1, Zauber 1, Talent 1.5, Legende 1.5, Klasse 1, Fokus des Spielers +3.
+// noun/adj: der Name des Builds setzt sich aus der stärksten (noun) und der zweitstärksten Richtung (adj) zusammen, z. B. «Brennender Igel».
+A.BUILD_MIN = 3;   // ab so vielen Punkten hat der Held einen Build (und die Beute lehnt sich an)
+A.BUILD_STRONG = 8;   // ab so vielen Punkten in der stärksten Richtung gilt der Build als stark (Erfolg «Prinzipientreu»)
+A.BUILD_DIRS = {
+  feuer: { name: { de: 'Feuer', en: 'Fire' }, noun: { de: 'Pyromane', en: 'Pyromaniac' }, adj: { de: 'Brennender', en: 'Burning' }, col: '#f77622', icon: 'el_feuer', el: ['feuer'], sp: ['feuerball', 'meteor', 'flaeche', 'brandflasche', 'sprengfass'], leg: ['grillschuerze'], tro: ['rostkoenig'] },
+  eis: { name: { de: 'Eis', en: 'Ice' }, noun: { de: 'Eisblock', en: 'Ice Block' }, adj: { de: 'Eisiger', en: 'Icy' }, col: '#9be8ff', icon: 'el_eis', el: ['eis'], tal: ['frost'], sp: ['eisnova', 'frostflasche'], leg: ['schneekugel'] },
+  blitz: { name: { de: 'Blitz', en: 'Lightning' }, noun: { de: 'Blitzableiter', en: 'Lightning Rod' }, adj: { de: 'Elektrischer', en: 'Electric' }, col: '#fee761', icon: 'el_blitz', el: ['blitz'], sp: ['kettenblitz', 'entladung', 'funke'], leg: ['blitzableiter', 'wolke'] },
+  gift: { name: { de: 'Gift', en: 'Poison' }, noun: { de: 'Giftmischer', en: 'Poisoner' }, adj: { de: 'Giftiger', en: 'Toxic' }, col: '#63c74d', icon: 'el_gift', el: ['gift'], tal: ['giftspur'], sp: ['giftpfeil', 'giftwolke', 'giftflasche'] },
+  schatten: { name: { de: 'Schatten', en: 'Shadow' }, noun: { de: 'Schleicher', en: 'Sneak' }, adj: { de: 'Finsterer', en: 'Shady' }, col: '#8b6fc4', icon: 'el_schatten', el: ['schatten'], tal: ['flink'], sp: ['rueckzug', 'blitzschritt'], leg: ['bademantel'], tro: ['kraken'] },
+  stein: { name: { de: 'Stein', en: 'Stone' }, noun: { de: 'Felsbrocken', en: 'Boulder' }, adj: { de: 'Steinharter', en: 'Rock-hard' }, col: '#d77643', icon: 'el_stein', el: ['stein'], tal: ['eisen', 'zaeh', 'engel'], sp: ['erdstoss', 'schild', 'gewebe'], pw: ['nachbeben'], leg: ['pfannen'] },
+  krit: { name: { de: 'Volltreffer', en: 'Crits' }, noun: { de: 'Scharfschütze', en: 'Sharpshooter' }, adj: { de: 'Treffsicherer', en: 'Precise' }, col: '#fee761', icon: 'u_star', tal: ['glueck', 'wucht'], sp: ['zielschuss', 'kopfschuss', 'doppelschuss'], pw: ['vampirkuss'], leg: ['klatsche'], cls: ['schuetze'] },
+  dornen: { name: { de: 'Dornen', en: 'Thorns' }, noun: { de: 'Igel', en: 'Hedgehog' }, adj: { de: 'Stacheliger', en: 'Spiky' }, col: '#63c74d', icon: 't_thorn', tal: ['dornen'], leg: ['strickjacke'], tro: ['dornenmutter'] },
+  diener: { name: { de: 'Diener', en: 'Minions' }, noun: { de: 'Zoodirektor', en: 'Zookeeper' }, adj: { de: 'Tierischer', en: 'Beastly' }, col: '#2ce8f5', icon: 's_wolf', tal: ['begleiter'], sp: ['geisterwolf', 'geisterschwarm', 'knochenruf', 'totenheer', 'seelenpfeil', 'seelenband', 'opfergabe'], pw: ['schattenwolf', 'wirbelklingen'], leg: ['pudding', 'floete', 'zwerg', 'bienen', 'kisti'], cls: ['rufer'], tro: ['schleimkoenig'] },
+  heil: { name: { de: 'Heilung', en: 'Healing' }, noun: { de: 'Blutegel', en: 'Leech' }, adj: { de: 'Zäher', en: 'Tough' }, col: '#f6757a', icon: 't_fang', tal: ['vampir', 'seele', 'zaeh'], sp: ['flicken', 'heiltrunk', 'heilquelle'], pw: ['vampirkuss', 'zweiterwind', 'phoenix'], leg: ['gebiss'] },
+  tempo: { name: { de: 'Tempo', en: 'Speed' }, noun: { de: 'Wirbelwind', en: 'Whirlwind' }, adj: { de: 'Flinker', en: 'Nimble' }, col: '#2ce8f5', icon: 't_boots', tal: ['flink', 'rausch'], sp: ['blitzschritt', 'heiltrunk'], pw: ['raserei', 'sturmlauf'], leg: ['latschen', 'banane'] },
+  bombe: { name: { de: 'Explosionen', en: 'Explosions' }, noun: { de: 'Sprengmeister', en: 'Demolitionist' }, adj: { de: 'Explosiver', en: 'Explosive' }, col: '#feae34', icon: 't_boom', tal: ['kette', 'pulver'], sp: ['feuerball', 'sprengfass', 'meteor'], pw: ['nachbeben'], leg: ['pinata', 'amboss'], cls: ['brau'] },
+  magie: { name: { de: 'Zauber', en: 'Spells' }, noun: { de: 'Zauberlehrling', en: 'Apprentice' }, adj: { de: 'Magischer', en: 'Magical' }, col: '#c77dff', icon: 't_mind', tal: ['geist', 'echo', 'strom'], sp: ['funke', 'flaeche', 'fesseln', 'entladung', 'feuerball', 'eisnova', 'kettenblitz', 'erdstoss'], pw: ['zauberklinge', 'funkenflug'], leg: ['spiegelscherbe'], cls: ['weber'] },
+  gold: { name: { de: 'Gold', en: 'Gold' }, noun: { de: 'Dagobert', en: 'Scrooge' }, adj: { de: 'Goldgieriger', en: 'Greedy' }, col: '#feae34', icon: 'coin', tal: ['gold'], pw: ['goldmagnet', 'glueckspilz'], leg: ['muenzfresser', 'sparschwein', 'wuerfel'] },
+  wucht: { name: { de: 'Wucht', en: 'Heavy hits' }, noun: { de: 'Holzfäller', en: 'Lumberjack' }, adj: { de: 'Wuchtiger', en: 'Hefty' }, col: '#e43b44', icon: 't_double', tal: ['glaskanone', 'berserker', 'wucht'], sp: ['hieb', 'rache', 'hinrichtung', 'wirbel'], pw: ['riesentoeter', 'panzerbrecher', 'seelensammler'], leg: ['riesenpilz', 'prahlhans', 'klatsche'], cls: ['klinge'] },
+};
 
 </script>
 <script>
@@ -1347,9 +1381,16 @@ A.Boons = (function () {
     const rest = rng.shuffle(spells.concat(tals, ups));
     while (out.length < 3 && rest.length) out.push(rest.shift());
     const d = A.Game.derived(r), whole = (b) => A.Combos.completes(b, r, d).length > 0;
+    let baited = false;
     if (out.length && !out.some(whole) && rng.chance(Math.min(0.85, 0.25 + 0.05 * (r.floor || 1)))) {
       const bait = pool.filter(whole);
-      if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; }   // ersetzt das Angebot gleicher Art
+      if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; baited = true; }   // ersetzt das Angebot gleicher Art
+    }
+    // Dein Build (build.js): passt keine Karte zum Build, passt ab Ebene 3 mit 50 % eine (nie statt des Kombo-Köders)
+    const p = A.Build.profile(r, d);
+    if (!baited && p.first && (r.floor || 1) >= 3 && out.length && !out.some(b => A.Build.boonFits(b, p)) && rng.chance(0.5)) {
+      const fit = pool.filter(b => A.Build.boonFits(b, p));
+      if (fit.length) { const b = rng.pick(fit), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; }
     }
     return rng.shuffle(out);
   }
@@ -2002,8 +2043,8 @@ A.Game = (function () {
   // Element: gute Items oft, seltene und bessere immer; bevorzugt Elemente, die der Held schon trägt (damit Sets zusammenkommen)
   function rollElement(rarity, rng) {
     if (rarity === 'common' || (rarity === 'good' && !rng.chance(0.7))) return null;
-    const c = run ? A.Gear.counts(run) : {};
-    return rng.weighted(Object.keys(A.ELEMENTS), k => 1 + 1.5 * (c[k] || 0));
+    const c = run ? A.Gear.counts(run) : {}, w = run ? A.Build.wants(run) : null;   // Dein Build: passende Elemente und Kombo-Magnet (build.js)
+    return rng.weighted(Object.keys(A.ELEMENTS), k => (1 + 1.5 * (c[k] || 0)) * A.Build.elMul(k, run, w));
   }
   // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht.
   // Kräfte, die der Held schon trägt, kommen je tiefer desto öfter (sie stapeln, gear.js): ab Ebene 7 doppelt so oft, ab Ebene 20 viermal
@@ -2011,8 +2052,8 @@ A.Game = (function () {
   function rollPower(rarity, rng, force, not) {
     if (!POWER_CHANCE[rarity] || (!force && !rng.chance(POWER_CHANCE[rarity]))) return null;
     const ids = Object.keys(A.POWERS).filter(id => id !== not && (!A.POWERS[id].legendary || rarity === 'legendary' || rarity === 'cursed'));
-    const worn = run ? A.Gear.summary(run).pw : {}, boost = run ? 1 + Math.min(3, 0.15 * run.floor) : 1;
-    const id = rng.weighted(ids, k => worn[k] != null ? boost : 1), P = A.POWERS[id];
+    const worn = run ? A.Gear.summary(run).pw : {}, boost = run ? 1 + Math.min(3, 0.15 * run.floor) : 1, w = run ? A.Build.wants(run) : null;
+    const id = rng.weighted(ids, k => (worn[k] != null ? boost : 1) * A.Build.pwMul(k, run, w)), P = A.POWERS[id];
     return { id, v: rng.int(P.min, P.max) };
   }
   // Boss-Trophäe: einmal pro Durchgang und Boss, Werte wachsen mit der Ebene
@@ -2095,6 +2136,13 @@ A.Game = (function () {
     if (slotPref) bases = bases.filter(b => b.slot === slotPref);
     return makeItem(rng.pick(bases), rarity || rollRarity(), run.floor);
   }
+  // Dein Build: ab Ebene 3 wird bis zu sechsmal gewürfelt, bis ein Stück passt (Element oder Kraft der stärksten Richtungen, oder Kombo-Magnet)
+  function fittingItem(rarity) {
+    const w = run.floor >= 3 ? A.Build.wants(run) : null; let it = null;
+    for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
+    return it;
+  }
+  function setFocus(dir) { run.focus = dir && A.BUILD_DIRS[dir] ? dir : null; save(); }
   // slotIn: bei zwei vollen Schmuck-Plätzen wählt die Oberfläche, welcher ersetzt wird
   function equip(it, slotIn) {
     let slot = slotIn || it.slot;
@@ -2132,7 +2180,7 @@ A.Game = (function () {
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
-    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
+    if (kind === 'merchant' && !run.shopItems) run.shopItems = [fittingItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
@@ -2255,7 +2303,7 @@ A.Game = (function () {
     const d = derived(); if (run.hp > d.maxHp) run.hp = d.maxHp;
     save(); return true;
   }
-  function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const wl = wildLegend('chest'); if (wl) items.unshift(wl); const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
+  function treasure() { const items = [fittingItem(rollRarity(1)), randomItem(rollRarity(1))]; const wl = wildLegend('chest'); if (wl) items.unshift(wl); const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
   // slot: gleich anlegen statt in den Beutel (Vergleich beim Händler)
   function buy(idx, slot) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; if (slot) equip(s.it, slot); else addToBag(s.it); return true; }
   function buyPotion() { const p = potionPrice(); if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
@@ -2292,7 +2340,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
@@ -8685,6 +8733,8 @@ A.Achieve = (function () {
       cls5: A.CLASSES.filter(c => ((s.clsBest || {})[c.id] || 0) >= 5).length, races: A.RACES.filter(x => ((s.raceRuns || {})[x.id] || 0) > 0).length,
       pets: A.Pets.count(), treue5: Object.keys(A.PETS).filter(id => A.Pets.found(id) && A.Pets.treue(id) >= 5).length,
       death1: s.death1 || 0, nearDeath: s.nearDeath || 0,
+      // Dein Build (build.js): meiste Teile eines Elements, Kombos im laufenden Durchlauf, tiefste Ebene mit starkem Build
+      elMax: r ? Math.max(0, ...Object.values(A.Gear.counts(r))) : 0, runCombos: r ? (r.combos || []).length : 0, buildBest: s.buildBest || 0,
     };
   }
   const done = (id) => !!(G().meta.ach || {})[id];
@@ -8711,7 +8761,7 @@ A.Achieve = (function () {
     if (r.goldSeen == null) r.goldSeen = r.gold;
     if (r.gold > r.goldSeen) add('gold', r.gold - r.goldSeen);
     r.goldSeen = r.gold; most('goldRun', r.gold);
-    if ((acc += dt) >= 0.5) { acc = 0; check(); }
+    if ((acc += dt) >= 0.5) { acc = 0; if (A.Build.strong(A.Build.profile(r))) most('buildBest', r.floor); check(); }
     if (news.length && !paused && A.FX && !A.FX.banners.length && !ui.overlayOpen()) {
       const a = news.shift();
       A.FX.banner(L('Erfolg: ', 'Achievement: ') + A.t(a.name), `${A.t(a.text)} · +${a.sparks} ${A.t(A.UI.meta)}`, '#fee761', 3.2);
@@ -8755,7 +8805,7 @@ A.Achieve = (function () {
   function record(r, quit) {
     const m = G().meta;
     const e = { t: Date.now(), race: r.race, cls: r.cls, floor: r.floor, level: r.level, kills: r.kills, gold: r.gold, won: !!r.won, by: quit ? null : (r.deathBy || null), quit: !!quit,
-      sparks: quit ? 0 : (r.sparksEarned || 0), dur: Math.round(r.playT || 0), pets: (r.pets || []).slice(0, 2), ach: (r.achIds || []).slice() };
+      sparks: quit ? 0 : (r.sparksEarned || 0), dur: Math.round(r.playT || 0), pets: (r.pets || []).slice(0, 2), ach: (r.achIds || []).slice(), bd: A.Build.ids(A.Build.profile(r)) };
     m.chron = m.chron || []; m.chron.unshift(e); if (m.chron.length > A.ACH_CHRON) m.chron.length = A.ACH_CHRON;
     return e;
   }
@@ -8795,6 +8845,96 @@ A.Achieve = (function () {
 
   function bind(api) { ui = Object.assign(ui, api); }
   return { bind, values, check, tick, progress, done, count, clearNew, news, onRun, onFloorDone, onFloor, onKill, onRoom, onHurt, onDeath, onSecret, onEnd, record, chron, life, causeText, timeText, whenText };
+})();
+
+</script>
+<script>
+// Der Abstieg – Dein Build: das Spiel erkennt, was der Held spielt (Richtungen wie Feuer, Gift, Dornen, Diener …), gibt dem Build
+// einen frechen Namen («Brennender Igel») und lehnt Beute, Händler, Truhen und Schrein daran an. Fehlt einer Kombo nur noch ein
+// Element, zieht der Kombo-Magnet: das Element fällt öfter. Richtungen und Zuordnungen in data.js (A.BUILD_DIRS), Gewichte hier.
+'use strict';
+window.A = window.A || {};
+
+A.Build = (function () {
+  const L = (de, en) => (A.LANG === 'de' ? de : en);
+  const D = () => A.BUILD_DIRS;
+  // Punkte je Fund: Element auf der Ausrüstung je Stück, Kraft, Zauber, Talent, Legende, Trophäe, Klasse; Fokus des Spielers obendrauf
+  const W = { el: 1, pw: 1, sp: 1, tal: 1.5, leg: 1.5, tro: 1.5, cls: 1, focus: 3 };
+
+  // Zu welchen Richtungen gehört ein Ding (kind: el, pw, sp, tal, leg, tro, cls)?
+  function dirsOf(kind, id) { const out = []; for (const k in D()) if ((D()[k][kind] || []).includes(id)) out.push(k); return out; }
+
+  // ---------- Profil: Punkte je Richtung, die stärksten zwei, Name ----------
+  function profile(r, d) {
+    r = r || A.Game.run;
+    const empty = { score: {}, top: [], total: 0, first: null, second: null };
+    if (!r) return empty;
+    d = d || A.Game.derived(r);
+    const sc = {}, add = (kind, id, w) => { for (const k of dirsOf(kind, id)) sc[k] = (sc[k] || 0) + w; };
+    const cnt = (d.gear && d.gear.count) || A.Gear.counts(r);
+    for (const el in cnt) add('el', el, W.el * cnt[el]);
+    for (const id in ((d.gear && d.gear.pw) || {})) add('pw', id, W.pw);
+    for (const id of r.known || []) add('sp', id, W.sp);
+    for (const id of r.talents || []) add('tal', id, W.tal);
+    for (const id in (d.leg || {})) add('leg', id, W.leg);
+    for (const boss in A.TROPHIES) if (d.tro && d.tro[A.TROPHIES[boss].power]) add('tro', boss, W.tro);
+    add('cls', r.cls, W.cls);
+    if (r.focus && D()[r.focus]) sc[r.focus] = (sc[r.focus] || 0) + W.focus;
+    const top = Object.keys(sc).filter(k => sc[k] > 0).sort((a, b) => sc[b] - sc[a] || a.localeCompare(b));
+    const first = top[0] && sc[top[0]] >= A.BUILD_MIN ? top[0] : null;
+    const second = first && top[1] && sc[top[1]] >= A.BUILD_MIN && sc[top[1]] >= sc[first] * 0.5 ? top[1] : null;
+    return { score: sc, top, total: top.reduce((s, k) => s + sc[k], 0), first, second, focus: r.focus || null };
+  }
+  // Die Richtungen des Builds als Ids (für die Chronik) und der Name daraus
+  function ids(p) { return [p.first, p.second].filter(Boolean); }
+  function nameOf(list) {
+    const a = list && D()[list[0]], b = list && D()[list[1]];
+    if (!a) return L('Noch kein Build', 'No build yet');
+    return b ? `${A.t(b.adj)} ${A.t(a.noun)}` : A.t(a.noun);
+  }
+  function name(p) { return nameOf(ids(p)); }
+  function dirName(k) { return D()[k] ? A.t(D()[k].name) : k; }
+  function strong(p) { return !!p.first && p.score[p.first] >= A.BUILD_STRONG; }
+  // «Feuer 5 · Dornen 3»: die stärksten drei Richtungen mit Punkten
+  function summary(p) { return p.top.slice(0, 3).map(k => `${dirName(k)} ${Math.round(p.score[k] * 10) / 10}`).join(' · '); }
+
+  // ---------- Wünsche: welche Elemente und Kräfte passen, und wo der Kombo-Magnet zieht ----------
+  // els/pws: Element bzw. Kraft -> Punkte der Richtung; magnet: Element -> Kombo, der nur noch dieses Element fehlt
+  function wants(r, d) {
+    r = r || A.Game.run; if (!r) return null;
+    d = d || A.Game.derived(r);
+    const p = profile(r, d), els = {}, pws = {}, magnet = {};
+    for (const k of ids(p)) { const dir = D()[k]; for (const el of dir.el || []) els[el] = (els[el] || 0) + p.score[k]; for (const id of dir.pw || []) pws[id] = (pws[id] || 0) + p.score[k]; }
+    for (const x of A.Combos.list(r, d)) if (x.st === 'near' && x.miss[0] && x.miss[0].el) magnet[x.miss[0].el] = x.id;
+    return { p, els, pws, magnet, any: !!p.first || Object.keys(magnet).length > 0 };
+  }
+  // Gewichte beim Würfeln (game.js rollElement / rollPower): passende Elemente bis dreimal, Magnet-Elemente sechsmal so oft; passende Kräfte bis dreimal
+  function elMul(el, r, w) { w = w || wants(r); if (!w) return 1; return (1 + 0.25 * Math.min(w.els[el] || 0, 8)) * (w.magnet[el] ? 3 : 1); }
+  function pwMul(id, r, w) { w = w || wants(r); if (!w) return 1; return 1 + 0.25 * Math.min(w.pws[id] || 0, 8); }
+
+  // Passt ein Stück? { kind: 'combo', el, combo } (Kombo-Magnet), { kind: 'build', dir } (Element oder Kraft der stärksten Richtungen) oder null
+  function fits(it, r, w) {
+    if (!it || it.legend || it.trophy) return null;
+    w = w || wants(r); if (!w) return null;
+    if (it.el && w.magnet[it.el]) return { kind: 'combo', el: it.el, combo: w.magnet[it.el] };
+    if (!w.p.first) return null;
+    for (const k of ids(w.p)) { const dir = D()[k]; if ((it.el && (dir.el || []).includes(it.el)) || (it.power && (dir.pw || []).includes(it.power.id))) return { kind: 'build', dir: k }; }
+    return null;
+  }
+  // Passt ein Segen (Talent oder Zauber) zum Build?
+  function boonFits(b, p) {
+    if (!b || !p || !p.first) return false;
+    const kind = b.type === 'talent' ? 'tal' : b.type === 'spell' ? 'sp' : null; if (!kind) return false;
+    return dirsOf(kind, b.id).some(k => k === p.first || k === p.second);
+  }
+  // Text zum Fund (Fund-Fenster, Händler)
+  function fitText(f) {
+    if (!f) return '';
+    if (f.kind === 'combo') return L(`Kombo-Teil: ${A.t(A.ELEMENTS[f.el].name)} für «${A.t(A.COMBOS[f.combo].name)}»`, `Combo part: ${A.t(A.ELEMENTS[f.el].name)} for “${A.t(A.COMBOS[f.combo].name)}”`);
+    return L(`Passt zu deinem Build (${dirName(f.dir)})`, `Fits your build (${dirName(f.dir)})`);
+  }
+
+  return { W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };
 })();
 
 </script>
@@ -11853,6 +11993,8 @@ window.A = window.A || {};
     return `<span class="vchip ${c.verdict}">${t(VERD[c.verdict])}</span>`;
   }
   // Element-Abzeichen und besondere Kraft (gear.js)
+  // Dein Build: kleines Zeichen an Stücken, die passen oder einer Kombo das letzte Element bringen (nicht an angelegten)
+  function fitChip(it) { const r = G.run; if (!r || A.SLOTS.some(s => r.gear[s] === it)) return ''; const f = A.Build.fits(it, r); return f ? `<span class="vchip ${f.kind === 'combo' ? 'combo' : 'fit'}">${f.kind === 'combo' ? L('Kombo-Teil', 'Combo part') : L('Passt', 'Fits')}</span> ` : ''; }
   function elBadge(el) { const E = A.ELEMENTS[el]; return E ? `<span class="elb" style="--ec:${E.col}">${ic(E.icon, 14)}${esc(t(E.name))}</span>` : ''; }
   function powerHtml(p, n) { const P = p && A.POWERS[p.id]; return P ? `<div class="pw">${ic('u_spark', 14)}<span><b>${esc(t(P.name))}${n > 1 ? ` ×${n}` : ''}:</b> ${esc(A.Gear.powerText(p))}</span></div>` : ''; }   // n: auf so vielen Stücken (sie stapeln)
   // Legende (legends.js): ihr Effekt steht gross und golden unter den Werten
@@ -11885,7 +12027,7 @@ window.A = window.A || {};
     return `<div class="item ${it.legend ? 'leg' : ''} ${cls || ''}" style="--rc:${rarCol(it.rarity)}" ${attrs || ''}>
       <div class="ic">${itIcon(it, 36)}</div>
       <div class="bd">
-        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${badge || ''}</div>
+        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${fitChip(it)}${badge || ''}</div>
         <div class="nm">${esc(G.itemName(it))}</div>
         <div class="ln">${lines.map(esc).join(' · ')}</div>
         ${powerHtml(it.power)}${legHtml(it)}
@@ -12102,7 +12244,7 @@ window.A = window.A || {};
     const rows = AC.chron().map(e => {
       const R = A.RACES.find(x => x.id === e.race), Cl = A.CLASSES.find(x => x.id === e.cls);
       const achs = (e.ach || []).map(id => A.ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).map(a => t(a.name));
-      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}</div>
+      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
         <div class="mini">${esc(AC.causeText(e))} · ${e.kills} ${L('Gegner', 'enemies')} · ${e.gold} ${t(U.gold)} · ${esc(AC.timeText(e.dur))}${achs.length ? ` · ${L('Erfolg', 'Achievement')}: ${esc(achs.join(', '))}` : ''}</div></div>
         <div class="rs">${e.quit ? '' : spark('+' + e.sparks, 14)}<div class="mini">${esc(AC.whenText(e.t))}</div></div></div>`;
     }).join('');
@@ -12317,9 +12459,10 @@ window.A = window.A || {};
     const found = o.ctx === 'found', inShop = o.ctx === 'shop';
     const head = found ? `<div class="foundhead"><div class="bigicon ${it.legend ? 'legicon' : ''}" style="filter:drop-shadow(0 0 14px ${rarCol(it.rarity)})">${itIcon(it, 54)}</div><h2 class="${it.legend ? 'goldc' : ''}">${it.legend ? L('Eine Legende!', 'A legend!') : L('Gefunden', 'Found')}</h2></div>${legNewHtml(o.lg)}`
       : `<h2 class="mid">${L('Vergleich', 'Comparison')}</h2>`;
+    const fit = A.Build.fits(it, r), fitHtml = fit ? `<div class="fitline ${fit.kind}">${ic(fit.kind === 'combo' ? 'u_spark' : A.BUILD_DIRS[fit.dir].icon, 18)}<span>${esc(A.Build.fitText(fit))}</span></div>` : '';
     const pick = list.length > 1 ? `<div class="cmppick"><div class="mini">${L('Beide Schmuck-Plätze sind belegt. Welcher Schmuck soll weichen?', 'Both trinket slots are taken. Which trinket should go?')}</div>${list.map(x => `<button data-slot="${x.slot}" class="${x === c ? 'on' : ''}">${itIcon(x.old, 22)}<span>${esc(G.itemName(x.old))}</span><span class="vchip ${x.verdict}">${t(VERD[x.verdict])}</span></button>`).join('')}</div>` : '';
     const tag = inShop ? L('Zu kaufen', 'For sale') : o.ctx === 'bag' ? L('Im Beutel', 'In your bag') : L('Neu', 'New');
-    const cards = `<div class="cmpcards">${cmpCard(it, tag, true)}${c.old ? cmpCard(c.old, L('Angelegt', 'Equipped')) : cmpEmpty(c.slot)}</div>`;
+    const cards = `${fitHtml}<div class="cmpcards">${cmpCard(it, tag, true)}${c.old ? cmpCard(c.old, L('Angelegt', 'Equipped')) : cmpEmpty(c.slot)}</div>`;
     const lean = c.lean === 'up' ? L(' Unterm Strich eher stärker.', ' Overall rather stronger.') : c.lean === 'down' ? L(' Unterm Strich eher schwächer.', ' Overall rather weaker.') : c.lean === 'even' ? L(' Geschmackssache.', ' A matter of taste.') : '';
     const verdict = `<div class="verdict ${c.verdict}"><b>${t(VERD[c.verdict])}</b><span>${esc(c.why + lean)}</span></div>`;
     const changes = `<div class="drows">${c.rows.map(cmpRow).join('')}</div>${c.fx.map(cmpFx).join('')}`;
@@ -12420,7 +12563,7 @@ window.A = window.A || {};
     const r = G.run, d = G.derived();
     tab = tab || 'stats';
     const race = A.RACES.find(x => x.id === r.race), cls = A.CLASSES.find(x => x.id === r.cls);
-    const head = `<div class="sheethead"><img class="px" src="${Art.heroUrl(r.race, r.cls, 3)}" width="54" height="54" alt=""><div><div class="nm">${esc(t(cls.name))}</div><div class="mini">${esc(t(race.name))} · ${t(U.level)} ${r.level} · ${t(U.floor)} ${r.floor}</div></div></div>`;
+    const head = `<div class="sheethead"><img class="px" src="${Art.heroUrl(r.race, r.cls, 3)}" width="54" height="54" alt=""><div><div class="nm">${esc(t(cls.name))}</div><div class="mini">${esc(t(race.name))} · ${t(U.level)} ${r.level} · ${t(U.floor)} ${r.floor}</div>${buildLine(r, d)}</div></div>`;
     const statsHtml = ['str', 'tou', 'dex', 'mind', 'luck'].map(k => `<div class="stat"><span>${ic(STAT_ICON[k], 22)}${t(U.stat[k])}</span><span><b>${r.stats[k]}</b>${r.points > 0 ? `<button data-sp="${k}" aria-label="+">+</button>` : ''}</span></div>`).join('');
     const kv = `<div class="kv" style="margin-top:12px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
@@ -12451,7 +12594,23 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
+    const bf = $('#bFocus'); if (bf) bf.onclick = () => { S.click(); focusPick(tab); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
+  }
+  // Dein Build (build.js): Name, die stärksten Richtungen und der Fokus-Knopf
+  function buildLine(r, d) {
+    const p = A.Build.profile(r, d), col = p.first ? A.BUILD_DIRS[p.first].col : 'var(--mist)';
+    return `<div class="mini bld">${L('Build', 'Build')}: <b style="color:${col}">${esc(A.Build.name(p))}</b>${p.top.length ? ` <span>(${esc(A.Build.summary(p))})</span>` : ''}<button id="bFocus">${r.focus ? L('Fokus: ', 'Focus: ') + esc(A.Build.dirName(r.focus)) : L('Fokus', 'Focus')} ▾</button></div>`;
+  }
+  // Fokus wählen: eine Richtung, die ab jetzt mehr zählt (Beute, Händler, Truhen, Schrein), oder automatisch
+  function focusPick(tab) {
+    const r = G.run, p = A.Build.profile(r);
+    const rows = Object.keys(A.BUILD_DIRS).map(k => { const D = A.BUILD_DIRS[k], sc = p.score[k] || 0; return `<div class="skill ${r.focus === k ? 'on' : ''}" data-focus="${k}"><div class="si">${ic(D.icon, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${D.col}">${esc(t(D.name))}${sc ? ` <span class="mini">${Math.round(sc * 10) / 10}</span>` : ''}</div><div class="ds">${esc(t(D.noun))}</div></div></div>`; }).join('');
+    ov(`<h2 class="mid">${L('Fokus', 'Focus')}</h2><div class="sub">${L('Welche Richtung soll dein Build nehmen? Beute, Händler, Truhen und Schrein-Segen richten sich danach (zählt wie 3 Punkte). Ohne Fokus entscheidet, was du trägst und kannst.', 'Which direction should your build take? Loot, merchants, chests and shrine blessings follow it (counts as 3 points). Without a focus, what you wear and know decides.')}</div>
+      <div class="skill ${r.focus ? '' : 'on'}" data-focus=""><div class="si">${ic('u_star', 30)}</div><div><div class="nm">${L('Automatisch', 'Automatic')}</div><div class="ds">${L('Das Spiel schaut, was du spielst.', 'The game looks at what you play.')}</div></div></div>${rows}
+      <button class="btn" id="bClose" data-esc>${t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-focus]').forEach(el => el.onclick = () => { G.setFocus(el.dataset.focus || null); S.click(); showSheet(tab); });
+    $('#bClose').onclick = () => { S.click(); showSheet(tab); };
   }
   // Build-Übersicht: wie viele Teile je Element, welche Boni laufen, welche Kräfte wirken
   function buildHtml(r) {
@@ -12665,6 +12824,7 @@ window.A = window.A || {};
       <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
+      ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}

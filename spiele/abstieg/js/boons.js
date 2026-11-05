@@ -79,9 +79,16 @@ A.Boons = (function () {
     const rest = rng.shuffle(spells.concat(tals, ups));
     while (out.length < 3 && rest.length) out.push(rest.shift());
     const d = A.Game.derived(r), whole = (b) => A.Combos.completes(b, r, d).length > 0;
+    let baited = false;
     if (out.length && !out.some(whole) && rng.chance(Math.min(0.85, 0.25 + 0.05 * (r.floor || 1)))) {
       const bait = pool.filter(whole);
-      if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; }   // ersetzt das Angebot gleicher Art
+      if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; baited = true; }   // ersetzt das Angebot gleicher Art
+    }
+    // Dein Build (build.js): passt keine Karte zum Build, passt ab Ebene 3 mit 50 % eine (nie statt des Kombo-Köders)
+    const p = A.Build.profile(r, d);
+    if (!baited && p.first && (r.floor || 1) >= 3 && out.length && !out.some(b => A.Build.boonFits(b, p)) && rng.chance(0.5)) {
+      const fit = pool.filter(b => A.Build.boonFits(b, p));
+      if (fit.length) { const b = rng.pick(fit), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; }
     }
     return rng.shuffle(out);
   }

@@ -263,8 +263,8 @@ A.Game = (function () {
   // Element: gute Items oft, seltene und bessere immer; bevorzugt Elemente, die der Held schon trägt (damit Sets zusammenkommen)
   function rollElement(rarity, rng) {
     if (rarity === 'common' || (rarity === 'good' && !rng.chance(0.7))) return null;
-    const c = run ? A.Gear.counts(run) : {};
-    return rng.weighted(Object.keys(A.ELEMENTS), k => 1 + 1.5 * (c[k] || 0));
+    const c = run ? A.Gear.counts(run) : {}, w = run ? A.Build.wants(run) : null;   // Dein Build: passende Elemente und Kombo-Magnet (build.js)
+    return rng.weighted(Object.keys(A.ELEMENTS), k => (1 + 1.5 * (c[k] || 0)) * A.Build.elMul(k, run, w));
   }
   // Besondere Kraft: selten 30 %, episch und legendär immer, verflucht 60 %; Phönix nur legendär oder verflucht.
   // Kräfte, die der Held schon trägt, kommen je tiefer desto öfter (sie stapeln, gear.js): ab Ebene 7 doppelt so oft, ab Ebene 20 viermal
@@ -272,8 +272,8 @@ A.Game = (function () {
   function rollPower(rarity, rng, force, not) {
     if (!POWER_CHANCE[rarity] || (!force && !rng.chance(POWER_CHANCE[rarity]))) return null;
     const ids = Object.keys(A.POWERS).filter(id => id !== not && (!A.POWERS[id].legendary || rarity === 'legendary' || rarity === 'cursed'));
-    const worn = run ? A.Gear.summary(run).pw : {}, boost = run ? 1 + Math.min(3, 0.15 * run.floor) : 1;
-    const id = rng.weighted(ids, k => worn[k] != null ? boost : 1), P = A.POWERS[id];
+    const worn = run ? A.Gear.summary(run).pw : {}, boost = run ? 1 + Math.min(3, 0.15 * run.floor) : 1, w = run ? A.Build.wants(run) : null;
+    const id = rng.weighted(ids, k => (worn[k] != null ? boost : 1) * A.Build.pwMul(k, run, w)), P = A.POWERS[id];
     return { id, v: rng.int(P.min, P.max) };
   }
   // Boss-Trophäe: einmal pro Durchgang und Boss, Werte wachsen mit der Ebene
@@ -356,6 +356,13 @@ A.Game = (function () {
     if (slotPref) bases = bases.filter(b => b.slot === slotPref);
     return makeItem(rng.pick(bases), rarity || rollRarity(), run.floor);
   }
+  // Dein Build: ab Ebene 3 wird bis zu sechsmal gewürfelt, bis ein Stück passt (Element oder Kraft der stärksten Richtungen, oder Kombo-Magnet)
+  function fittingItem(rarity) {
+    const w = run.floor >= 3 ? A.Build.wants(run) : null; let it = null;
+    for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
+    return it;
+  }
+  function setFocus(dir) { run.focus = dir && A.BUILD_DIRS[dir] ? dir : null; save(); }
   // slotIn: bei zwei vollen Schmuck-Plätzen wählt die Oberfläche, welcher ersetzt wird
   function equip(it, slotIn) {
     let slot = slotIn || it.slot;
@@ -393,7 +400,7 @@ A.Game = (function () {
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
-    if (kind === 'merchant' && !run.shopItems) run.shopItems = [randomItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
+    if (kind === 'merchant' && !run.shopItems) run.shopItems = [fittingItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
@@ -516,7 +523,7 @@ A.Game = (function () {
     const d = derived(); if (run.hp > d.maxHp) run.hp = d.maxHp;
     save(); return true;
   }
-  function treasure() { const items = [randomItem(rollRarity(1)), randomItem(rollRarity(1))]; const wl = wildLegend('chest'); if (wl) items.unshift(wl); const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
+  function treasure() { const items = [fittingItem(rollRarity(1)), randomItem(rollRarity(1))]; const wl = wildLegend('chest'); if (wl) items.unshift(wl); const gold = Math.round(run.rng.int(15, 30) * (1 + 0.3 * (run.floor - 1))); run.gold += gold; save(); return { items, gold }; }
   // slot: gleich anlegen statt in den Beutel (Vergleich beim Händler)
   function buy(idx, slot) { const s = run.shopItems[idx]; if (!s || run.gold < s.price) return false; run.gold -= s.price; run.shopItems[idx] = null; if (slot) equip(s.it, slot); else addToBag(s.it); return true; }
   function buyPotion() { const p = potionPrice(); if (run.gold < p) return false; run.gold -= p; run.potions++; save(); return true; }
@@ -553,7 +560,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
