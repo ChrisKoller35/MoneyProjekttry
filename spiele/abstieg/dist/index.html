@@ -397,6 +397,7 @@
   .jcat { grid-column: 1 / -1; font-size: 12px; color: var(--mist); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
   .job { min-width: 0; display: flex; gap: 8px; align-items: center; padding: 6px; background: rgba(24,20,37,0.45); font-size: 14px; line-height: 1.2; }
   .job .ji { width: 34px; height: 34px; flex: none; display: grid; place-items: center; }
+  .job .ji img { max-width: 100%; height: auto; }
   .job:not(.done) .ji img { filter: grayscale(0.7) opacity(0.6); }
   .job .jb { flex: 1; min-width: 0; }
   .job .jt { display: flex; align-items: baseline; gap: 6px; }
@@ -1255,7 +1256,7 @@ A.ACHIEVEMENTS = [
   { id: 'treue5', cat: 'tiere', stat: 'treue5', n: 1, sparks: 80, icon: 'u_paw', name: { de: 'Beste Freunde', en: 'Best friends' }, text: { de: 'Ein Tier auf Treue 5 bringen', en: 'Bring a pet to loyalty 5' } },
   // Verrückte Momente
   { id: 'cleanboss', cat: 'verrueckt', stat: 'cleanBoss', n: 1, sparks: 80, mon: 'sandpharao', name: { de: 'Kein Kratzer', en: 'Not a scratch' }, text: { de: 'Einen Weltenboss besiegen, ohne Schaden zu nehmen', en: 'Defeat a world boss without taking damage' } },
-  { id: 'cleanfloor', cat: 'verrueckt', stat: 'cleanFloors', n: 1, sparks: 60, icon: 'u_heart', name: { de: 'Tänzer', en: 'Dancer' }, text: { de: 'Eine ganze Ebene (ab Ebene 3) ohne Schaden schaffen', en: 'Finish a whole floor (from floor 3) without taking damage' } },
+  { id: 'cleanfloor', cat: 'verrueckt', stat: 'cleanFloors', n: 1, sparks: 60, icon: 'u_heart', name: { de: 'Tänzer', en: 'Dancer' }, text: { de: 'Eine ganze Ebene (ab Ebene 3, mindestens 5 Gegner) ohne Schaden schaffen', en: 'Finish a whole floor (from floor 3, at least 5 enemies) without taking damage' } },
   { id: 'goldrun', cat: 'verrueckt', stat: 'goldRun', n: 1000, sparks: 60, icon: 'coin', name: { de: 'Dagobert', en: 'Moneybags' }, text: { de: '1000 Gold auf einmal in der Tasche', en: '1000 gold in your pocket at once' } },
   { id: 'wild5', cat: 'verrueckt', stat: 'wild', n: 5, sparks: 60, icon: 'i_bienen', name: { de: 'Verrückt', en: 'Crazy' }, text: { de: '5 der 10 verrückten Stücke finden', en: 'Find 5 of the 10 crazy pieces' } },
   { id: 'death1', cat: 'verrueckt', stat: 'death1', n: 1, sparks: 10, mon: 'ratte', name: { de: 'Anfängerpech', en: 'Beginner\'s luck' }, text: { de: 'Auf Ebene 1 fallen. Passiert den Besten.', en: 'Fall on floor 1. Happens to the best.' } },
@@ -8691,14 +8692,15 @@ A.Achieve = (function () {
   function progress(a, v) { v = v || values(); return [Math.min(a.n, v[a.stat] || 0), a.n]; }   // [ist, soll]
 
   // Prüfen: neu erreichte Erfolge gutschreiben (Seelenfunken sofort), merken und zum Einblenden vormerken
-  function check() {
+  // quiet (Titel, Lager): nur dem Lager gutschreiben, keine Einblendung und nichts dem laufenden Durchlauf anrechnen
+  function check(quiet) {
     const Gm = G(), m = Gm.meta, v = values(), out = [];
     m.ach = m.ach || {};
     for (const a of A.ACHIEVEMENTS) if (!m.ach[a.id] && (v[a.stat] || 0) >= a.n) { m.ach[a.id] = Date.now(); m.sparks += a.sparks; out.push(a); }
     if (!out.length) return out;
     m.achNew = (m.achNew || []).concat(out.map(a => a.id));
     const r = Gm.run;
-    if (r) { r.achSparks = (r.achSparks || 0) + out.reduce((s, a) => s + a.sparks, 0); r.achIds = (r.achIds || []).concat(out.map(a => a.id)); if (!r.over) { news.push(...out); Gm.save(); } }
+    if (r && !quiet) { r.achSparks = (r.achSparks || 0) + out.reduce((s, a) => s + a.sparks, 0); r.achIds = (r.achIds || []).concat(out.map(a => a.id)); if (!r.over) { news.push(...out); Gm.save(); } }
     Gm.saveMeta();
     return out;
   }
@@ -8737,7 +8739,7 @@ A.Achieve = (function () {
   // Der Held wurde getroffen: Schaden auf dieser Ebene, fast tot?, und wer es war (für die Chronik)
   function onHurt(h, from, dmg, st) {
     const r = G().run; if (r) r.floorDmg = (r.floorDmg || 0) + dmg;
-    if (st && h.alive && h.hp > 0 && h.hp <= h.maxHp * 0.05) st.low = true;
+    if (st && h.alive && h.hp > 0 && h.hp < h.maxHp * 0.05) st.low = true;
     h.lastFrom = from ? { mid: from.mid || null, boss: !!from.boss, elite: !!(from.elite || from.traits), kind: from.side === 'enemy' ? 'mon' : (from.side || 'mon') } : null;
   }
   function onDeath(h) { const r = G().run; if (r) r.deathBy = h.lastFrom || null; }
@@ -8779,7 +8781,7 @@ A.Achieve = (function () {
   function timeText(sec) {
     sec = Math.round(sec || 0);
     if (sec < 60) return L('unter 1 min', 'under 1 min');
-    const h = Math.floor(sec / 3600), mi = Math.round((sec % 3600) / 60);
+    const m = Math.round(sec / 60), h = Math.floor(m / 60), mi = m % 60;
     return h ? `${h} h ${mi} min` : `${mi} min`;
   }
   // Wann: heute als Uhrzeit, sonst Datum
@@ -9225,7 +9227,7 @@ A.World = (function () {
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
       if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
-      if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); checkDeath(from); }
+      if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
       if (to.healOnPhys && opts.kind !== 'magic') heal(to, Math.round(to.maxHp * to.healOnPhys));
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
@@ -9569,7 +9571,7 @@ A.World = (function () {
     // Raum-Logik
     const r = roomOf(h.x, h.y);
     if (r && r !== W.room) { W.room = r; }
-    if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
+    if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; W.stats.low = false; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
       if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
       A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
@@ -11931,7 +11933,7 @@ window.A = window.A || {};
   function title() {
     S.music(null);
     const m = G.meta, r = G.load();
-    A.Achieve.check();   // Erfolge, die schon erreicht sind (nach dem Update: alte Zähler zählen gleich)
+    A.Achieve.check(true);   // Erfolge, die schon erreicht sind (nach dem Update: alte Zähler zählen gleich); still, ohne Einblendung
     const words = t(U.title).split(' ');
     show(`<div class="title-wrap fade-in">
       <div class="topbar"><button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
@@ -12021,7 +12023,7 @@ window.A = window.A || {};
   }
   // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
   function camp(poof) {
-    A.Achieve.check();   // z. B. Lager-Stufe 30 oder alte Zähler nach dem Update
+    A.Achieve.check(true);   // z. B. Lager-Stufe 30 oder alte Zähler nach dem Update; still, ohne Einblendung
     const m = G.meta, rank = G.campRank(), keep = poof ? screen.scrollTop : 0;
     const next = A.CAMP.filter(b => !G.campOpen(b.id)).sort((a, b) => a.rank - b.rank)[0];
     const bld = A.CAMP.map(b => {
@@ -12122,9 +12124,9 @@ window.A = window.A || {};
       <h3>${L('Kombo-Buch', 'Combo book')} ${cbn}/${NCB}</h3><div class="card flags"><div class="mini">${L(`Zwei passende Teile wecken am Schrein eine Kombo: eine neue Kraft, die es nur zusammen gibt. Jede neue bringt ${A.COMBO_SPARKS} Seelenfunken. Manche gibt es nur mit einer bestimmten Klasse.`, `Two matching pieces awaken a combo at the shrine: a new power that only exists together. Each new one gives ${A.COMBO_SPARKS} soul sparks. Some only exist for a certain class.`)}</div><div class="fgrid one">${cbook}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
-    A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     if (keep) screen.scrollTop = keep;
-    A.Scenes.camp($('#campCv'), campState(), { poof });
+    A.Scenes.camp($('#campCv'), campState(), { poof });   // das Bild zeigt noch, was neu ist (Brett leuchtet)
+    A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id)) return; A.Pets.choose(id); camp('tier'); });

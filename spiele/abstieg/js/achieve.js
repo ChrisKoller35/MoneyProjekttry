@@ -34,14 +34,15 @@ A.Achieve = (function () {
   function progress(a, v) { v = v || values(); return [Math.min(a.n, v[a.stat] || 0), a.n]; }   // [ist, soll]
 
   // Prüfen: neu erreichte Erfolge gutschreiben (Seelenfunken sofort), merken und zum Einblenden vormerken
-  function check() {
+  // quiet (Titel, Lager): nur dem Lager gutschreiben, keine Einblendung und nichts dem laufenden Durchlauf anrechnen
+  function check(quiet) {
     const Gm = G(), m = Gm.meta, v = values(), out = [];
     m.ach = m.ach || {};
     for (const a of A.ACHIEVEMENTS) if (!m.ach[a.id] && (v[a.stat] || 0) >= a.n) { m.ach[a.id] = Date.now(); m.sparks += a.sparks; out.push(a); }
     if (!out.length) return out;
     m.achNew = (m.achNew || []).concat(out.map(a => a.id));
     const r = Gm.run;
-    if (r) { r.achSparks = (r.achSparks || 0) + out.reduce((s, a) => s + a.sparks, 0); r.achIds = (r.achIds || []).concat(out.map(a => a.id)); if (!r.over) { news.push(...out); Gm.save(); } }
+    if (r && !quiet) { r.achSparks = (r.achSparks || 0) + out.reduce((s, a) => s + a.sparks, 0); r.achIds = (r.achIds || []).concat(out.map(a => a.id)); if (!r.over) { news.push(...out); Gm.save(); } }
     Gm.saveMeta();
     return out;
   }
@@ -80,7 +81,7 @@ A.Achieve = (function () {
   // Der Held wurde getroffen: Schaden auf dieser Ebene, fast tot?, und wer es war (für die Chronik)
   function onHurt(h, from, dmg, st) {
     const r = G().run; if (r) r.floorDmg = (r.floorDmg || 0) + dmg;
-    if (st && h.alive && h.hp > 0 && h.hp <= h.maxHp * 0.05) st.low = true;
+    if (st && h.alive && h.hp > 0 && h.hp < h.maxHp * 0.05) st.low = true;
     h.lastFrom = from ? { mid: from.mid || null, boss: !!from.boss, elite: !!(from.elite || from.traits), kind: from.side === 'enemy' ? 'mon' : (from.side || 'mon') } : null;
   }
   function onDeath(h) { const r = G().run; if (r) r.deathBy = h.lastFrom || null; }
@@ -122,7 +123,7 @@ A.Achieve = (function () {
   function timeText(sec) {
     sec = Math.round(sec || 0);
     if (sec < 60) return L('unter 1 min', 'under 1 min');
-    const h = Math.floor(sec / 3600), mi = Math.round((sec % 3600) / 60);
+    const m = Math.round(sec / 60), h = Math.floor(m / 60), mi = m % 60;
     return h ? `${h} h ${mi} min` : `${mi} min`;
   }
   // Wann: heute als Uhrzeit, sonst Datum

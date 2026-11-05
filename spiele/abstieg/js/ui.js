@@ -153,7 +153,7 @@ window.A = window.A || {};
   function title() {
     S.music(null);
     const m = G.meta, r = G.load();
-    A.Achieve.check();   // Erfolge, die schon erreicht sind (nach dem Update: alte Zähler zählen gleich)
+    A.Achieve.check(true);   // Erfolge, die schon erreicht sind (nach dem Update: alte Zähler zählen gleich); still, ohne Einblendung
     const words = t(U.title).split(' ');
     show(`<div class="title-wrap fade-in">
       <div class="topbar"><button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
@@ -243,7 +243,7 @@ window.A = window.A || {};
   }
   // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
   function camp(poof) {
-    A.Achieve.check();   // z. B. Lager-Stufe 30 oder alte Zähler nach dem Update
+    A.Achieve.check(true);   // z. B. Lager-Stufe 30 oder alte Zähler nach dem Update; still, ohne Einblendung
     const m = G.meta, rank = G.campRank(), keep = poof ? screen.scrollTop : 0;
     const next = A.CAMP.filter(b => !G.campOpen(b.id)).sort((a, b) => a.rank - b.rank)[0];
     const bld = A.CAMP.map(b => {
@@ -344,9 +344,9 @@ window.A = window.A || {};
       <h3>${L('Kombo-Buch', 'Combo book')} ${cbn}/${NCB}</h3><div class="card flags"><div class="mini">${L(`Zwei passende Teile wecken am Schrein eine Kombo: eine neue Kraft, die es nur zusammen gibt. Jede neue bringt ${A.COMBO_SPARKS} Seelenfunken. Manche gibt es nur mit einer bestimmten Klasse.`, `Two matching pieces awaken a combo at the shrine: a new power that only exists together. Each new one gives ${A.COMBO_SPARKS} soul sparks. Some only exist for a certain class.`)}</div><div class="fgrid one">${cbook}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
-    A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     if (keep) screen.scrollTop = keep;
-    A.Scenes.camp($('#campCv'), campState(), { poof });
+    A.Scenes.camp($('#campCv'), campState(), { poof });   // das Bild zeigt noch, was neu ist (Brett leuchtet)
+    A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id)) return; A.Pets.choose(id); camp('tier'); });
