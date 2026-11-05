@@ -1,6 +1,6 @@
 // Der Abstieg – Dein Build: das Spiel erkennt, was der Held spielt (Richtungen wie Feuer, Gift, Dornen, Diener …), gibt dem Build
 // einen frechen Namen («Brennender Igel») und lehnt Beute, Händler, Truhen und Schrein daran an. Fehlt einer Kombo nur noch ein
-// Element, zieht der Kombo-Magnet: das Element fällt öfter. Richtungen und Zuordnungen in data.js (A.BUILD_DIRS), Gewichte hier.
+// Element (oder ging eines verloren), zieht der Kombo-Magnet: das Element fällt öfter. Richtungen und Zuordnungen in data.js (A.BUILD_DIRS), Gewichte hier.
 'use strict';
 window.A = window.A || {};
 
@@ -49,23 +49,35 @@ A.Build = (function () {
 
   // ---------- Wünsche: welche Elemente und Kräfte passen, und wo der Kombo-Magnet zieht ----------
   // els/pws: Element bzw. Kraft -> Punkte der Richtung; magnet: Element -> Kombo, der nur noch dieses Element fehlt
+  // Merkzettel: derived() ist nicht billig, und Listen (Beutel, Händler) fragen je Stück; solange sich am Helden nichts ändert, gilt die letzte Antwort
+  let memo = { r: null, sig: '', w: null };
+  function sig(r) { return [r.cls, r.focus || '', (r.known || []).join(), (r.talents || []).join(), (r.combos || []).join(), A.SLOTS.map(s => { const it = r.gear[s]; return it ? `${it.uid}:${it.el || ''}:${it.power ? it.power.id : ''}` : ''; }).join()].join('|'); }
   function wants(r, d) {
     r = r || A.Game.run; if (!r) return null;
+    if (!d) { const g = sig(r); if (memo.r === r && memo.sig === g) return memo.w; memo = { r, sig: g, w: null }; }
     d = d || A.Game.derived(r);
     const p = profile(r, d), els = {}, pws = {}, magnet = {};
     for (const k of ids(p)) { const dir = D()[k]; for (const el of dir.el || []) els[el] = (els[el] || 0) + p.score[k]; for (const id of dir.pw || []) pws[id] = (pws[id] || 0) + p.score[k]; }
-    for (const x of A.Combos.list(r, d)) if (x.st === 'near' && x.miss[0] && x.miss[0].el) magnet[x.miss[0].el] = x.id;
-    return { p, els, pws, magnet, any: !!p.first || Object.keys(magnet).length > 0 };
+    for (const x of A.Combos.list(r, d)) if ((x.st === 'near' || x.st === 'rest') && x.miss.length === 1 && x.miss[0].el) magnet[x.miss[0].el] = x.id;   // near: fast da; rest: war erweckt, ein Teil ging verloren
+    const w = { p, els, pws, magnet, any: !!p.first || Object.keys(magnet).length > 0 };
+    if (memo.r === r && !memo.w) memo.w = w;
+    return w;
   }
-  // Gewichte beim Würfeln (game.js rollElement / rollPower): passende Elemente bis dreimal, Magnet-Elemente sechsmal so oft; passende Kräfte bis dreimal
+  // Gewichte beim Würfeln (game.js rollElement / rollPower): passende Elemente bis dreimal, Magnet-Elemente dreimal so oft; passende Kräfte bis dreimal
   function elMul(el, r, w) { w = w || wants(r); if (!w) return 1; return (1 + 0.25 * Math.min(w.els[el] || 0, 8)) * (w.magnet[el] ? 3 : 1); }
   function pwMul(id, r, w) { w = w || wants(r); if (!w) return 1; return 1 + 0.25 * Math.min(w.pws[id] || 0, 8); }
 
+  // Trägt der Held auf dem Platz des Stücks schon dieses Element? Dann bringt das Stück der Kombo nichts (Schmuck: beide Plätze)
+  function heldThere(it, r) {
+    if (!r || !r.gear) return false;
+    const has = (s) => !!(r.gear[s] && r.gear[s].el === it.el);
+    return it.slot === 'trinket' || it.slot === 'trinket2' ? has('trinket') && has('trinket2') : has(it.slot);
+  }
   // Passt ein Stück? { kind: 'combo', el, combo } (Kombo-Magnet), { kind: 'build', dir } (Element oder Kraft der stärksten Richtungen) oder null
   function fits(it, r, w) {
     if (!it || it.legend || it.trophy) return null;
     w = w || wants(r); if (!w) return null;
-    if (it.el && w.magnet[it.el]) return { kind: 'combo', el: it.el, combo: w.magnet[it.el] };
+    if (it.el && w.magnet[it.el] && !heldThere(it, r || A.Game.run)) return { kind: 'combo', el: it.el, combo: w.magnet[it.el] };
     if (!w.p.first) return null;
     for (const k of ids(w.p)) { const dir = D()[k]; if ((it.el && (dir.el || []).includes(it.el)) || (it.power && (dir.pw || []).includes(it.power.id))) return { kind: 'build', dir: k }; }
     return null;

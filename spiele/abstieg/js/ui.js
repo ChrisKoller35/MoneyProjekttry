@@ -102,12 +102,12 @@ window.A = window.A || {};
     return out.join('');
   }
   // badge: Urteil-Abzeichen (vChip); attrs: z. B. data-cmp, damit Antippen den Vergleich öffnet
-  function itemHtml(it, actions, badge, cls, attrs) {
+  function itemHtml(it, actions, badge, cls, attrs, noFit) {
     const lines = G.itemLines(it);
     return `<div class="item ${it.legend ? 'leg' : ''} ${cls || ''}" style="--rc:${rarCol(it.rarity)}" ${attrs || ''}>
       <div class="ic">${itIcon(it, 36)}</div>
       <div class="bd">
-        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${fitChip(it)}${badge || ''}</div>
+        <div class="slotlbl">${t(U.slot[it.slot === 'trinket2' ? 'trinket' : it.slot])} · ${t(U.rarity[it.rarity])} ${elBadge(it.el)} ${noFit ? '' : fitChip(it)}${badge || ''}</div>
         <div class="nm">${esc(G.itemName(it))}</div>
         <div class="ln">${lines.map(esc).join(' · ')}</div>
         ${powerHtml(it.power)}${legHtml(it)}
@@ -306,11 +306,13 @@ window.A = window.A || {};
       return `<div class="page cb ${n ? 'have' : ''}"><div class="pi cbp">${cbIcon(id, 20)}</div><div><b ${n ? `style="color:${Cb.col}"` : ''}>${n ? esc(t(Cb.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
         <div class="rc">${esc(A.Combos.recipe(id))}</div>${n ? `<div class="mini">${esc(t(Cb.text))}</div>` : ''}</div></div>`;
     }).join('');
-    // Auftragsbrett: alle 30 Erfolge mit Fortschritt, erreichte golden mit Haken, neue mit «Neu!»
+    // Auftragsbrett: alle Erfolge mit Fortschritt, erreichte golden mit Haken, neue mit «Neu!»
     const v = A.Achieve.values(), achNew = m.achNew || [], achN = A.Achieve.count(), achMax = A.ACHIEVEMENTS.length;
     const jobIcon = (a) => a.mon ? monImg(a.mon, 30) : a.hero ? portrait(a.hero[0], a.hero[1]) : ic(a.icon, 28);
+    // nach Gruppe sortiert (Reihenfolge von A.ACH_CATS), damit angehängte Erfolge bei ihrer Gruppe landen
+    const catOrder = Object.keys(A.ACH_CATS), sorted = A.ACHIEVEMENTS.map((a, i) => [a, i]).sort((x, y) => (catOrder.indexOf(x[0].cat) - catOrder.indexOf(y[0].cat)) || (x[1] - y[1])).map(x => x[0]);
     let lastCat = null;
-    const jobs = A.ACHIEVEMENTS.map(a => {
+    const jobs = sorted.map(a => {
       const dn = A.Achieve.done(a.id), [p, n] = A.Achieve.progress(a, v), isNew = achNew.includes(a.id);
       const cat = a.cat !== lastCat ? `<div class="jcat">${esc(t(A.ACH_CATS[a.cat]))}</div>` : ''; lastCat = a.cat;
       return `${cat}<div class="job ${dn ? 'done' : ''} ${isNew ? 'new' : ''}"><div class="ji">${jobIcon(a)}</div><div class="jb"><div class="jt"><b>${esc(t(a.name))}</b>${dn ? '<span class="stamp">✓</span>' : ''}${isNew ? `<span class="newb">${L('Neu!', 'New!')}</span>` : ''}</div>
@@ -324,7 +326,7 @@ window.A = window.A || {};
     const rows = AC.chron().map(e => {
       const R = A.RACES.find(x => x.id === e.race), Cl = A.CLASSES.find(x => x.id === e.cls);
       const achs = (e.ach || []).map(id => A.ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).map(a => t(a.name));
-      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
+      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length && A.BUILD_DIRS[e.bd[0]] ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
         <div class="mini">${esc(AC.causeText(e))} · ${e.kills} ${L('Gegner', 'enemies')} · ${e.gold} ${t(U.gold)} · ${esc(AC.timeText(e.dur))}${achs.length ? ` · ${L('Erfolg', 'Achievement')}: ${esc(achs.join(', '))}` : ''}</div></div>
         <div class="rs">${e.quit ? '' : spark('+' + e.sparks, 14)}<div class="mini">${esc(AC.whenText(e.t))}</div></div></div>`;
     }).join('');
@@ -597,7 +599,7 @@ window.A = window.A || {};
   // Beute, die schon im Beutel liegt (Truhen, Ereignisse): mit Urteil; inzwischen angelegt oder verkauft steht dabei
   function lootRow(it) {
     const r = G.run, inBag = r.bag.includes(it), worn = A.SLOTS.some(s => r.gear[s] === it);
-    return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '');
+    return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '', !inBag && !worn);
   }
   // Dinge im Raum
   function useProp(p) {

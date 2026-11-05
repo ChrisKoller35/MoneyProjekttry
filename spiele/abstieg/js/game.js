@@ -328,7 +328,7 @@ A.Game = (function () {
     let lg = null;
     if (id && !legSeen(id) && run.rng.chance(meta.legFound[id] ? 0.4 : 0.7)) lg = makeLegend(id);
     if (!lg) lg = wildLegend('chest');
-    const items = [lg || randomItem('epic'), randomItem(run.rng.chance(0.5) ? 'epic' : 'rare')];
+    const items = [lg || randomItem('epic'), fittingItem(run.rng.chance(0.5) ? 'epic' : 'rare')];
     const gold = Math.round(run.rng.int(25, 45) * (1 + 0.3 * (run.floor - 1))); run.gold += gold;
     save(); return { items, gold, legend: !!lg };
   }
@@ -358,7 +358,8 @@ A.Game = (function () {
   }
   // Dein Build: ab Ebene 3 wird bis zu sechsmal gewürfelt, bis ein Stück passt (Element oder Kraft der stärksten Richtungen, oder Kombo-Magnet)
   function fittingItem(rarity) {
-    const w = run.floor >= 3 ? A.Build.wants(run) : null; let it = null;
+    rarity = rarity || rollRarity();   // einmal würfeln: das Nachwürfeln darf die Seltenheit (und den Preis) nicht heben
+    const w = run.floor >= 3 && rarity !== 'common' ? A.Build.wants(run) : null; let it = null;
     for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
     return it;
   }

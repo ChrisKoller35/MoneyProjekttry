@@ -796,7 +796,7 @@ A.ACHIEVEMENTS = [
 A.ACH_CHRON = 20;   // so viele Durchläufe merkt sich die Chronik
 
 // ---------- Dein Build: Richtungen, die das Spiel am Helden erkennt (Regeln in build.js) ----------
-// Punkte: Element auf der Ausrüstung 1 je Stück, Kraft 1, Zauber 1, Talent 1.5, Legende 1.5, Klasse 1, Fokus des Spielers +3.
+// Punkte: Element auf der Ausrüstung 1 je Stück, Kraft 1, Zauber 1, Talent 1.5, Legende 1.5, Trophäe 1.5, Klasse 1, Fokus des Spielers +3.
 // noun/adj: der Name des Builds setzt sich aus der stärksten (noun) und der zweitstärksten Richtung (adj) zusammen, z. B. «Brennender Igel».
 A.BUILD_MIN = 3;   // ab so vielen Punkten hat der Held einen Build (und die Beute lehnt sich an)
 A.BUILD_STRONG = 8;   // ab so vielen Punkten in der stärksten Richtung gilt der Build als stark (Erfolg «Prinzipientreu»)

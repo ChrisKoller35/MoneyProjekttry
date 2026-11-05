@@ -79,7 +79,7 @@ A.Boons = (function () {
     const rest = rng.shuffle(spells.concat(tals, ups));
     while (out.length < 3 && rest.length) out.push(rest.shift());
     const d = A.Game.derived(r), whole = (b) => A.Combos.completes(b, r, d).length > 0;
-    let baited = false;
+    let baited = out.some(whole);   // liegt schon eine Kombo-Karte im Angebot, bleibt sie (Build-Karte darf sie nicht ersetzen)
     if (out.length && !out.some(whole) && rng.chance(Math.min(0.85, 0.25 + 0.05 * (r.floor || 1)))) {
       const bait = pool.filter(whole);
       if (bait.length) { const b = rng.pick(bait), i = out.findIndex(x => x.type === b.type); out[i >= 0 ? i : rng.int(0, out.length - 1)] = b; baited = true; }   // ersetzt das Angebot gleicher Art
