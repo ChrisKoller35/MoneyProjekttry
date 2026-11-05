@@ -45,10 +45,10 @@ A.Weather = (function () {
     const s = st(w), h = w.hero, live = w.mons.filter(m => m.alive);
     if (!w.active) s.marks = s.marks.filter(o => o.done);   // Raum gesäubert: nichts schlägt mehr ein
     if (stopped) { for (const o of s.marks) if (!o.done) { o.t0 += dt; o.at += dt; } return; }   // Zeitstopp der Totenmaske: Steine und Lava hängen in der Luft
-    if (w.active !== s.room) { s.room = w.active; s.dropT = 2.5; s.lamp = null; s.tool = w.active && w.active.type !== 'boss' ? placeTool(w, s) : null; }   // neuer Kampf: erst durchatmen
+    if (w.active !== s.room) { s.room = w.active; s.dropT = 2.5; s.lamp = null; if (s.teach) { s.teach = null; s.taught = false; } s.tool = w.active && w.active.type !== 'boss' ? placeTool(w, s) : null; }   // neuer Kampf: erst durchatmen
     const tl = s.tool;
     if (tl && !tl.used && w.t >= tl.at && h.alive && Math.hypot(h.x - tl.x, (h.y - tl.y) / EY) < h.r + 18) useTool(w, s, tl);
-    if (s.teach && w.t >= s.teach.at) { const f = A.WORLD_FX[w.world.id]; s.teachText = A.t(f.tool) + ': ' + A.t(f.toolTip); w.hint = s.teachText; s.teachUntil = w.t + 7; s.teach = null; }   // erstes Welt-Ding der Ebene erklären
+    if (s.teach && w.t >= s.teach.at && !s.teach.used && !w.mons.some(m => m.alive && m.traits)) { const f = A.WORLD_FX[w.world.id]; s.teachText = A.t(f.tool) + ': ' + A.t(f.toolTip); w.hint = s.teachText; s.teachUntil = w.t + 7; s.teach = null; }   // erstes Welt-Ding der Ebene erklären (nicht über dem Leben einer Elite: dann im nächsten Raum)
     if (s.teachText && (w.t >= s.teachUntil || (tl && tl.used)) && w.hint === s.teachText) { w.hint = ''; s.teachText = null; }
     // Wetter, das kommt und geht: Wolkenbruch und Sandsturm
     // Endphase eines Bosses (bosses.js): Wetter bleibt, bis der Boss fällt
@@ -153,13 +153,13 @@ A.Weather = (function () {
   function useTool(w, s, o) {
     o.used = true; o.usedT = w.t;
     const h = w.hero, k = o.kind, f = A.WORLD_FX[w.world.id], live = w.mons.filter(m => m.alive && !(m.spawn > 0));
-    const near = (n, rmax) => live.filter(m => !rmax || Math.hypot(m.x - o.x, m.y - o.y) < rmax).sort((p, q) => Math.hypot(p.x - o.x, p.y - o.y) - Math.hypot(q.x - o.x, q.y - o.y)).slice(0, n);
+    const near = (n, rmax, ground) => live.filter(m => (!rmax || Math.hypot(m.x - o.x, m.y - o.y) < rmax) && !(ground && m.fly)).sort((p, q) => Math.hypot(p.x - o.x, p.y - o.y) - Math.hypot(q.x - o.x, q.y - o.y)).slice(0, n);
     const src = { side: 'tool', crit: 0, alive: false, atk: 0, mag: 0, x: o.x, y: o.y };
     api.float(o.x, o.y - 44, A.t(f.tool) + '!', f.col, 16);
     if (A.FX) A.FX.flash(o.x, o.y, 120, f.col, 0.35);
     if (k === 'steinschlag' || k === 'ausbruch') {   // Steine oder Lava auf die nächsten Gegner, dich treffen sie nicht
       const rock = k === 'steinschlag';
-      for (const m of near(5)) s.marks.push({ kind: rock ? 'rock' : 'lava', x: m.x, y: m.y, r: rock ? 48 : 54, t0: w.t, at: w.t + 0.75, mine: true, pow: 1.3 });
+      for (const m of near(5, 0, true)) { s.marks.push({ kind: rock ? 'rock' : 'lava', x: m.x, y: m.y, r: rock ? 48 : 54, t0: w.t, at: w.t + 0.75, mine: true, pow: 1.3 }); if (!m.boss) m.stun = Math.max(m.stun || 0, 0.8); }   // kurz festgenagelt, damit es trifft
       if (A.FX) { A.FX.shake(0.25); if (rock) A.FX.rocks(o.x, o.y, 8, 20, ['#8b9bb4', '#5a6988', '#c0cbdc']); else A.FX.ev('boom', { x: o.x, y: o.y, r: 40, color: '#f77622' }); }
       if (A.Sound && A.Sound.stomp) A.Sound.stomp();
     } else if (k === 'regen') {   // Blitze in die nächsten Gegner, im Regen mehr
@@ -172,8 +172,8 @@ A.Weather = (function () {
       if (A.FX) A.FX.shake(0.3); if (A.Sound && A.Sound.thunder) A.Sound.thunder();
     } else if (k === 'sturm') {   // Sandböe: alle in der Nähe fliegen weg und sind eine Weile langsam
       for (const m of near(99, 340)) {
-        const dx = m.x - o.x, dy = m.y - o.y, d = Math.hypot(dx, dy) || 1, pw = m.boss ? 0 : m.giant ? 0.4 : m.elite ? 0.7 : 1;
-        m.kbx = dx / d * 950 * pw; m.kby = dy / d * 950 * pw; m.kbT = 0.15; m.slowUntil = w.t + 3.5; m.slowPow = 0.5;
+        const dx = m.x - o.x, dy = m.y - o.y, d = Math.hypot(dx, dy) || 1, pw = m.boss || m.kbImmune ? 0 : m.giant ? 0.4 : m.elite ? 0.7 : 1;
+        m.kbx = dx / d * 950 * pw; m.kby = dy / d * 950 * pw; m.kbT = 0.15; m.slowUntil = Math.max(m.slowUntil || 0, w.t + 3.5); m.slowPow = Math.min(m.slowPow || 1, 0.5);
         api.hit(src, m, m.maxHp * pct(m) * 0.4, { kind: 'phys', noCrit: true, noKb: true, color: '#ead4aa' });
       }
       if (A.FX) { for (let i = 0; i < 40; i++) { const an = Math.random() * TAU, sp = 200 + Math.random() * 260; A.FX.part({ add: false, x: o.x, y: o.y - 8, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp * 0.7, life: 0.7, color: i % 3 ? '#ead4aa' : '#c8945a', drag: 2 }); } A.FX.shake(0.3); }
@@ -224,10 +224,10 @@ A.Weather = (function () {
       const q = clamp((w.t - o.t0) / (o.at - o.t0), 0, 1), x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy), R = o.r / PX;
       if (o.kind === 'rock') {
         b.globalAlpha = 0.25 + 0.45 * q; b.fillStyle = '#08060e'; b.beginPath(); b.ellipse(x, y, R * (0.35 + 0.65 * q), R * EY * (0.35 + 0.65 * q), 0, 0, TAU); b.fill();
-        g.globalAlpha = 0.25 + 0.4 * q; g.strokeStyle = '#c0cbdc'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * EY, 0, 0, TAU); g.stroke();
+        g.globalAlpha = 0.25 + 0.4 * q; g.strokeStyle = o.mine ? '#63c74d' : '#c0cbdc'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * EY, 0, 0, TAU); g.stroke();
       } else {
         b.globalAlpha = 0.18 + 0.3 * q; b.fillStyle = '#be4a2f'; b.beginPath(); b.ellipse(x, y, R * q, R * EY * q, 0, 0, TAU); b.fill();
-        g.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * (6 + q * 14))); g.strokeStyle = q > 0.7 ? '#fee761' : '#f77622'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * EY, 0, 0, TAU); g.stroke();
+        g.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * (6 + q * 14))); g.strokeStyle = o.mine ? '#63c74d' : q > 0.7 ? '#fee761' : '#f77622'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * EY, 0, 0, TAU); g.stroke();
       }
     }
     // Strömung und Treibsand: bewegte Striche und Wirbel auf dem Gefahr-Boden
@@ -326,7 +326,7 @@ A.Weather = (function () {
     if (k === 'finsternis') {
       const h = w.hero;
       for (const m of w.mons) {
-        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < (s.blackUntil > w.t ? 70 : 200) || (s.lamp && Math.hypot(m.x - s.lamp.x, m.y - s.lamp.y) < 280)) continue;   // ausserhalb des eigenen Lichts und der Laterne
+        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < (s.blackUntil > w.t ? 70 : 200) || (s.lamp && Math.hypot(m.x - s.lamp.x, m.y - s.lamp.y) < 300)) continue;   // ausserhalb des eigenen Lichts und der Laterne
         const x = Math.round(m.x / PX - cx), y = Math.round(m.y / PX - cy - m.r / PX * 1.6), blink = Math.sin(t * 1.7 + m.x) > 0.95;
         if (blink) continue;
         g.globalAlpha = 0.95; g.fillStyle = '#ff0044'; g.fillRect(x - 3, y, 2, 1); g.fillRect(x + 2, y, 2, 1);
@@ -348,5 +348,5 @@ A.Weather = (function () {
   function tip(w) { const f = info(w); return f ? A.t(f.tip) : ''; }
   function nameOf(w) { const f = info(w); return f ? A.t(f.name) : ''; }
 
-  return { bind, kind, info, tick, drop, useTool, force, blackout, pre, slow, ambient, drawGround, drawTop, lights, tip, nameOf, raining, storm, flow, sandMid };
+  return { bind, kind, info, tick, drop, force, blackout, pre, slow, ambient, drawGround, drawTop, lights, tip, nameOf, raining, storm, flow, sandMid };
 })();
