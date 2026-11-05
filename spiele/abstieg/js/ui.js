@@ -8,6 +8,7 @@ window.A = window.A || {};
   const screen = $('#screen'), hud = $('#hud'), overlay = $('#overlay'), dungeonEl = $('#dungeon'), bgCv = $('#bg'), joyHint = $('#joyHint');
   const draw = new A.Draw($('#arena'));
   const Wd = A.World;
+  A.Achieve.bind({ overlayOpen: () => overlay.classList.contains('on') });   // Erfolge erst einblenden, wenn kein Fenster offen ist
   const de = A.LANG === 'de', L = (d, e) => de ? d : e;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -152,6 +153,7 @@ window.A = window.A || {};
   function title() {
     S.music(null);
     const m = G.meta, r = G.load();
+    A.Achieve.check(true);   // Erfolge, die schon erreicht sind (nach dem Update: alte Zähler zählen gleich); still, ohne Einblendung
     const words = t(U.title).split(' ');
     show(`<div class="title-wrap fade-in">
       <div class="topbar"><button class="iconbtn" id="bSound" aria-label="${esc(t(U.sound))}">${ic(m.sound ? 'u_sound' : 'u_mute', 22)}</button></div>
@@ -161,13 +163,13 @@ window.A = window.A || {};
         ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} · ${t(U.floor)} ${r.floor}</button>` : ''}
         <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
         <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() ? `<i class="dot" title="${L('Ausbau möglich', 'Upgrade available')}"></i>` : ''}</button>
-        <div class="stats">${L('Durchläufe', 'Runs')} <b>${m.runs}</b> · ${L('Tiefste Ebene', 'Deepest floor')} <b>${m.best}</b></div>
+        <div class="stats">${L('Durchläufe', 'Runs')} <b>${m.runs}</b> · ${L('Tiefste Ebene', 'Deepest floor')} <b>${m.best}</b> · ${L('Erfolge', 'Achievements')} <b>${A.Achieve.count()}/${A.ACHIEVEMENTS.length}</b>${m.achNew && m.achNew.length ? ` <b class="goldc">${L('Neu!', 'New!')}</b>` : ''}</div>
         <div class="howto pc">${t(U.howto)}</div>
         <button class="link" id="bReset">${t(U.reset)}</button>
       </div>
     </div>`, { title: true });
     if (r) $('#bCont').onclick = () => { S.click(); resume(); };
-    $('#bNew').onclick = () => { S.click(); if (r) ask(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'), L('Aufgeben', 'Abandon'), () => { G.clearRun(); heroSelect(); }); else heroSelect(); };
+    $('#bNew').onclick = () => { S.click(); if (r) ask(L('Laufenden Durchlauf aufgeben?', 'Abandon the current run?'), L('Aufgeben', 'Abandon'), () => { G.abandonRun(); heroSelect(); }); else heroSelect(); };
     $('#bCamp').onclick = () => { S.click(); camp(); };
     $('#bSound').onclick = () => { G.meta.sound = !G.meta.sound; G.saveMeta(); S.click(); if (!G.meta.sound) S.music(null); title(); };
     $('#bReset').onclick = () => { S.click(); ask(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'), L('Alles löschen', 'Delete everything'), () => { G.resetAll(); title(); }); };
@@ -237,10 +239,11 @@ window.A = window.A || {};
   function campState() {
     const lv = {}, open = {}, can = {}, rank = G.campRank();
     for (const b of A.CAMP) { lv[b.id] = G.campLevel(b.id); open[b.id] = G.campOpen(b.id); const c = G.campCost(b.id); can[b.id] = open[b.id] && c != null && c <= G.meta.sparks; }
-    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX, pets: Object.keys(A.PETS).filter(A.Pets.found) };
+    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX, pets: Object.keys(A.PETS).filter(A.Pets.found), ach: A.Achieve.count(), achNew: !!(G.meta.achNew && G.meta.achNew.length) };
   }
   // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
   function camp(poof) {
+    A.Achieve.check(true);   // z. B. Lager-Stufe 30 oder alte Zähler nach dem Update; still, ohne Einblendung
     const m = G.meta, rank = G.campRank(), keep = poof ? screen.scrollTop : 0;
     const next = A.CAMP.filter(b => !G.campOpen(b.id)).sort((a, b) => a.rank - b.rank)[0];
     const bld = A.CAMP.map(b => {
@@ -301,6 +304,28 @@ window.A = window.A || {};
       return `<div class="page cb ${n ? 'have' : ''}"><div class="pi cbp">${cbIcon(id, 20)}</div><div><b ${n ? `style="color:${Cb.col}"` : ''}>${n ? esc(t(Cb.name)) : '???'}</b>${n ? `<span class="cnt">${n}×</span>` : ''}
         <div class="rc">${esc(A.Combos.recipe(id))}</div>${n ? `<div class="mini">${esc(t(Cb.text))}</div>` : ''}</div></div>`;
     }).join('');
+    // Auftragsbrett: alle 30 Erfolge mit Fortschritt, erreichte golden mit Haken, neue mit «Neu!»
+    const v = A.Achieve.values(), achNew = m.achNew || [], achN = A.Achieve.count(), achMax = A.ACHIEVEMENTS.length;
+    const jobIcon = (a) => a.mon ? monImg(a.mon, 30) : a.hero ? portrait(a.hero[0], a.hero[1]) : ic(a.icon, 28);
+    let lastCat = null;
+    const jobs = A.ACHIEVEMENTS.map(a => {
+      const dn = A.Achieve.done(a.id), [p, n] = A.Achieve.progress(a, v), isNew = achNew.includes(a.id);
+      const cat = a.cat !== lastCat ? `<div class="jcat">${esc(t(A.ACH_CATS[a.cat]))}</div>` : ''; lastCat = a.cat;
+      return `${cat}<div class="job ${dn ? 'done' : ''} ${isNew ? 'new' : ''}"><div class="ji">${jobIcon(a)}</div><div class="jb"><div class="jt"><b>${esc(t(a.name))}</b>${dn ? '<span class="stamp">✓</span>' : ''}${isNew ? `<span class="newb">${L('Neu!', 'New!')}</span>` : ''}</div>
+        <div class="mini">${esc(t(a.text))}</div>
+        <div class="bar"><i style="width:${Math.round(p / n * 100)}%"></i></div><div class="jr"><span>${dn ? L('Erreicht', 'Done') : `${p} / ${n}`}</span>${spark((dn ? '' : '+') + a.sparks, 13)}</div></div></div>`;
+    }).join('');
+    // Chronik: Zahlen fürs ganze Spielerleben und die letzten Durchläufe
+    const AC = A.Achieve, lf = AC.life();
+    const lifeHtml = [[L('Durchläufe', 'Runs'), lf.runs], [L('Siege', 'Victories'), lf.won], [L('Tiefste Ebene', 'Deepest floor'), lf.best], [L('Gegner', 'Enemies'), lf.kills], [L('Weltenbosse', 'World bosses'), lf.bosses], [L('Elite-Gegner', 'Elites'), lf.elites],
+      [L('Gold verdient', 'Gold earned'), lf.gold], [L('Geheime Räume', 'Secret rooms'), lf.secrets], [L('Spielzeit', 'Play time'), AC.timeText(lf.time)], [L('Lieblingsklasse', 'Favourite class'), lf.fav ? t(lf.fav.name) : '–']].map(([k, x]) => `<div>${esc(k)}<b>${esc(String(x))}</b></div>`).join('');
+    const rows = AC.chron().map(e => {
+      const R = A.RACES.find(x => x.id === e.race), Cl = A.CLASSES.find(x => x.id === e.cls);
+      const achs = (e.ach || []).map(id => A.ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).map(a => t(a.name));
+      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}</div>
+        <div class="mini">${esc(AC.causeText(e))} · ${e.kills} ${L('Gegner', 'enemies')} · ${e.gold} ${t(U.gold)} · ${esc(AC.timeText(e.dur))}${achs.length ? ` · ${L('Erfolg', 'Achievement')}: ${esc(achs.join(', '))}` : ''}</div></div>
+        <div class="rs">${e.quit ? '' : spark('+' + e.sparks, 14)}<div class="mini">${esc(AC.whenText(e.t))}</div></div></div>`;
+    }).join('');
     const note = m.campNote;
     show(`<div class="fade-in"><h2>${ic('u_tent', 42)}${t(U.camp)}</h2><div class="sub">${t(U.campInfo)}</div>
       ${note ? `<div class="msg">${L('Das Lager ist gewachsen!', 'The camp has grown!')}${note.old ? ' ' + L('Was du früher gekauft hast, steckt jetzt in den Gebäuden, mit mindestens gleicher Wirkung.', 'What you bought before now lives in the buildings, at least as strong as before.') : ''}${note.bonus ? ' ' + L(`Für die Weltenbosse, die du schon besiegt hast, hängen Wimpel am Eingang: ${note.bonus} Seelenfunken obendrauf.`, `Pennants for the world bosses you already beat hang at the entrance: ${note.bonus} soul sparks on top.`) : ''}</div>` : ''}
@@ -309,6 +334,8 @@ window.A = window.A || {};
         <div class="mini">${next ? L(`Ab Lager-Stufe ${next.rank}: ${t(next.name)}`, `From camp level ${next.rank}: ${t(next.name)}`) : (rank >= A.CAMP_MAX ? L('Alles ausgebaut. Das Lager ist eine Legende.', 'Everything built. The camp is a legend.') : L('Alle Gebäude stehen. Jetzt nur noch höher bauen.', 'All buildings stand. Now build them higher.'))}</div></div>
       <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>
       <h3>${L('Gebäude', 'Buildings')}</h3>${bld}
+      <h3>${L('Auftragsbrett', 'Quest board')} ${achN}/${achMax}</h3><div class="card flags"><div class="mini">${L('Erfolge über alle Durchläufe hinweg. Jeder bringt Seelenfunken, sobald er erreicht ist, und ein Zettel mehr hängt am Brett.', 'Achievements across all runs. Each one gives soul sparks as soon as it is reached, and one more note hangs on the board.')}</div><div class="jobs">${jobs}</div></div>
+      <h3>${L('Chronik', 'Chronicle')}</h3><div class="card flags"><div class="life">${lifeHtml}</div>${rows ? `<div class="runs">${rows}</div>` : `<div class="mini" style="margin-top:8px">${L('Noch kein Durchlauf. Die Chronik füllt sich mit jedem Abstieg.', 'No run yet. The chronicle fills up with every descent.')}</div>`}</div>
       <h3>${L('Neue Völker', 'New peoples')}</h3><div class="card folks"><div class="mini">${L('Jedes Volk zieht ins Lager und kann danach mit in die Tiefe.', 'Each people moves into the camp and can then join the descent.')}</div><div class="frow">${folks}</div></div>
       <h3>${L('Begleiter', 'Pets')} ${pn}/${PN}</h3><div class="card flags"><div class="mini">${petInfo} ${L(`Treue wächst mit jedem Sieg, den ein Tier miterlebt, und bleibt für immer. Treue 3 und 5 bringen neue Tricks. Jedes neue Tier bringt ${A.PET_SPARKS} Seelenfunken.`, `Loyalty grows with every win a pet sees and stays forever. Loyalty 3 and 5 bring new tricks. Every new pet gives ${A.PET_SPARKS} soul sparks.`)}</div><div class="fgrid one">${petCards}</div></div>
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
@@ -318,7 +345,8 @@ window.A = window.A || {};
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
     if (keep) screen.scrollTop = keep;
-    A.Scenes.camp($('#campCv'), campState(), { poof });
+    A.Scenes.camp($('#campCv'), campState(), { poof });   // das Bild zeigt noch, was neu ist (Brett leuchtet)
+    A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id)) return; A.Pets.choose(id); camp('tier'); });
@@ -390,6 +418,7 @@ window.A = window.A || {};
     const inp = input.read();
     const sdt = A.FX.simDt(dt);
     if (sdt > 0) Wd.step(sdt, inp);
+    A.Achieve.tick(dt, Wd.W.paused);   // Spielzeit, Gold, Erfolge prüfen und einblenden
     A.FX.update(sdt);
     if (G.run) G.run.rooms = Wd.saveRooms();
     draw.draw(Wd.W, dt);
@@ -857,14 +886,15 @@ window.A = window.A || {};
       ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
     $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
   }
 
   // ---------- Start ----------
-  document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) G.save(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) { G.save(); G.saveMeta(); } });
   window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin, petWin } };
   title();
 })();

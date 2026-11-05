@@ -9,10 +9,11 @@ A.Game = (function () {
   // ---------- Dauerhaft (Lager) ----------
   // camp: Stufe je Gebäude; troph: Wimpel der Weltenbosse (1 = Wimpel, 2 = goldener Wimpel);
   // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch;
-  // pets: gefundene Begleiter mit ihrer Treue ({ xp, n }); petSel: wer aus der Tierhütte mitkommt
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [] });
+  // pets: gefundene Begleiter mit ihrer Treue ({ xp, n }); petSel: wer aus der Tierhütte mitkommt;
+  // stats: Zähler fürs Auftragsbrett; ach: erreichte Erfolge (Zeit); achNew: noch nicht angeschaut; chron: die letzten Durchläufe (achieve.js)
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [] });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; fxCache = null; migrateCamp(); }
+  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; fxCache = null; migrateCamp(); }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -151,6 +152,7 @@ A.Game = (function () {
     };
     run.rng = new A.RNG(run.seed);
     run.pets = A.Pets.startPets();   // Begleiter aus der Tierhütte
+    A.Achieve.onRun(run);            // Zähler fürs Auftragsbrett (Völker, Klassen) und die Felder für die Chronik
     // Startausrüstung (die Lagerschmiede macht sie besser)
     const base = A.BASES.find(b => b.id === cls.weapon);
     run.gear.weapon = makeItem(base, ['common', 'good', 'rare'][Math.min(2, me.gearW)], 1);
@@ -385,8 +387,9 @@ A.Game = (function () {
   }
   function descend() {
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
+    A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
     if (run.floor === A.MAX_FLOOR) { run.won = true; meta.won = (meta.won || 0) + 1; saveMeta(); }
-    run.floor++; newFloor(); save(); return 'descend';
+    run.floor++; newFloor(); A.Achieve.onFloor(run); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
@@ -409,7 +412,7 @@ A.Game = (function () {
     const mult = e.boss ? 10 : e.elite ? 2 + nt * 0.6 : 1;
     const gold = Math.round(run.rng.int(3, 6) * (1 + 0.25 * (f - 1)) * mult * (1 + d.goldPct / 100));
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
-    run.kills++; run.floorKills++; meta.totalKills++;
+    run.kills++; run.floorKills++; meta.totalKills++; A.Achieve.onKill(e);
     const items = []; let esparks = 0, book = null;
     if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); }
     else if (e.elite) {
@@ -434,6 +437,7 @@ A.Game = (function () {
     if (room.type === 'fight' || room.type === 'elite') { const wl = wildLegend('room'); if (wl) items.push(wl); }
     if (room.type === 'elite' || room.type === 'boss') run.pendingBoon = (run.pendingBoon || 0) + 1;   // zweite Wahl nach Elite- und Boss-Kämpfen
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
+    A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
     if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
     save();
     return { items };
@@ -525,19 +529,23 @@ A.Game = (function () {
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
-  // die Funken für neue Wimpel, neue Seiten im Elite-Buch, neue Legenden, neue Kombos und neue Begleiter sind schon gutgeschrieben und werden nur mit angezeigt
+  // die Funken für neue Wimpel, neue Seiten im Elite-Buch, neue Legenden, neue Kombos, neue Begleiter und Erfolge sind schon gutgeschrieben und werden nur mit angezeigt
   function finishRun() {
-    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0;
+    A.Achieve.onEnd(run);   // Spielzeit, Anfängerpech, letzte Prüfung der Erfolge
+    const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
     const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
-    run.sparksEarned = sparks + banners + book + legend + combo + pet; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet;
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
   }
+  // Laufenden Durchlauf aufgeben: kommt ohne Seelenfunken in die Chronik, dann weg damit
+  function abandonRun() { if (run && !run.over) { A.Achieve.onEnd(run, true); A.Achieve.record(run, true); saveMeta(); } clearRun(); }
   function metaBuy(id) { const u = A.META_SHOP.find(x => x.id === id); if (!u || meta.unlocked.includes(id) || meta.sparks < u.cost || (u.needs && !meta.unlocked.includes(u.needs))) return false; meta.sparks -= u.cost; meta.unlocked.push(id); saveMeta(); return true; }
 
   // ---------- Speichern ----------
   function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; return run; } catch (e) { return null; } }
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
 
@@ -547,6 +555,6 @@ A.Game = (function () {
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

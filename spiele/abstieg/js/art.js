@@ -3113,6 +3113,26 @@ A.Art = (function () {
     '..NNNNNNNNNNNN..',
   ]];
   // Bauplatz (Pfähle und Bretter)
+  // Auftragsbrett im Lager: Bretter zwischen zwei Pfählen (die Zettel kommen beim Zeichnen dazu, je nach Erfolgen)
+  R.c_board = [[
+    '000000000000000000',
+    '0NNNNNNNNNNNNNNNN0',
+    '0NmmmmmmmmmmmmmmN0',
+    '0NmMMmMMmMMmMMmmN0',
+    '0NmmmmmmmmmmmmmmN0',
+    '0NmmmmmmmmmmmmmmN0',
+    '0NmMMmMMmMMmMMmmN0',
+    '0NmmmmmmmmmmmmmmN0',
+    '0NmmmmmmmmmmmmmmN0',
+    '0NmMMmMMmMMmMMmmN0',
+    '0NmmmmmmmmmmmmmmN0',
+    '0NNNNNNNNNNNNNNNN0',
+    '000000000000000000',
+    '..0NN0......0NN0..',
+    '..0NN0......0NN0..',
+    '..0nn0......0nn0..',
+    '..0000......0000..',
+  ]];
   R.c_plot = [[
     'N.......N',
     'NMMMMMMMN',
