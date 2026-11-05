@@ -325,7 +325,7 @@ A.CAPTAINS = [
     trick: { de: 'Ruft Ratten. Bei halbem Leben rennt er weg und holt den ganzen Schwarm.', en: 'Calls rats. At half health he runs off and brings the whole swarm.' },
     lines: { enter: { de: 'Meine Kinder! Fresst!', en: 'My children! Feast!' }, half: { de: 'Nicht ins Gesicht!', en: 'Not the face!' }, die: { de: 'Sagt meiner Mutter... nichts.', en: 'Tell my mother... nothing.' } } },
   { id: 'sporenmutter', world: 'jungle', base: 'pilzkrieger', name: { de: 'Sporenmutter', en: 'Spore Mother' }, col: '#d06bb0', traits: ['giftig', 'heiler'], hpMul: 2.6, sig: 'spores',
-    trick: { de: 'Giftspur und heilt ihre Brut. Feuer macht sie wütend: Sporenwolke!', en: 'Poison trail and heals her brood. Fire angers her: spore cloud!' },
+    trick: { de: 'Zieht eine Giftspur und heilt ihre Brut. Feuer macht sie wütend: Sporenwolke!', en: 'Poison trail and heals her brood. Fire angers her: spore cloud!' },
     lines: { enter: { de: 'Wer hat hier Fackeln dabei?', en: 'Who brought torches?' }, half: { de: 'Meine Sporen! Überall!', en: 'My spores! Everywhere!' }, die: { de: 'Ich komme als Schimmel wieder.', en: 'I shall return as mould.' } } },
   { id: 'sandak', world: 'desert', base: 'skorpion', name: { de: 'Hauptmann Sandak', en: 'Captain Sandak' }, col: '#feae34', traits: ['gepanzert'], hpMul: 2.6, sig: 'charge', resist: true,
     trick: { de: 'Rennt dich in gerader Linie um: zur Seite! Sein Panzer trotzt deinem Lieblings-Element.', en: 'Charges you in a straight line: step aside! His armor shrugs off your favorite element.' },

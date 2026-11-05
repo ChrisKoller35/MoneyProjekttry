@@ -156,7 +156,7 @@ A.World = (function () {
     });
     r.monsters = list.length;
     const cm = list.find(m => m.captain); if (cm) A.Foes.onSpawn(cm);
-    const el = list.filter(m => m.traits); if (el.length && hooks.onElite) hooks.onElite(el);   // neue Eigenschaften kurz vorstellen
+    const el = list.filter(m => m.traits && !m.captain); if (el.length && hooks.onElite) hooks.onElite(el);   // der Hauptmann hat seine eigene Einblendung (foes.js);   // neue Eigenschaften kurz vorstellen
   }
   function freeSpot(x, y, r) {
     if (!blocked(x, y, r) && reachable(x, y)) return [x, y];
@@ -175,6 +175,7 @@ A.World = (function () {
   function monSpecial(m, dt, d, nx, ny) {
     const h = W.hero;
     if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
+    if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)
     if (A.Foes.flee(m, dt, d, nx, ny)) return true;   // Flucht unter 30 % Leben (foes.js)

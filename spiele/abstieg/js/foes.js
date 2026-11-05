@@ -32,6 +32,7 @@ A.Foes = (function () {
     const e = G().monsterEntity(base, floor, cap.traits.slice(), 1);
     e.captain = cap.id; e.name = A.t(cap.name); e.color = cap.col;
     e.maxHp = Math.round(e.maxHp * cap.hpMul); e.hp = e.maxHp;
+    if (e.shieldCap) e.shieldCap = Math.round(e.maxHp * 0.3);   // Schildträger: 30 % des echten Lebens
     e.atk = Math.round(e.atk * 1.15); e.mag = Math.round(e.mag * 1.15);
     if (cap.summon) { e.summon = cap.summon; e.summonCd = 6; }
     if (cap.resist) { const r = G().run, cnt = r ? A.Gear.counts(r) : {}, el = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]; if (el && cnt[el] >= 2) e.resistEl = el; }
@@ -65,7 +66,7 @@ A.Foes = (function () {
       if (s.t <= 0 && d > 90 && d < 440 && api.clearLine(m, h)) { s.phase = 'wind'; s.pt = 0.7; s.dx = nx; s.dy = ny; m.fx = nx; m.fy = ny; say(m, L('Sturmangriff!', 'Charge!'), cap.col, 16); api.fx('windup', { m }); return true; }
     }
     if (cap.sig === 'whisper' && (s.whisper -= dt) <= 0 && d < 420 && h.alive) {   // Flüstern: Abklingzeiten verlängern
-      s.whisper = 7; let n = 0; for (const k in h.cds) if (h.cds[k] > 0) { h.cds[k] += 1.5; n++; }
+      s.whisper = 7; let n = 0; for (const k in h.cds) if (h.cds[k] > w.t) { h.cds[k] += 1.5; n++; }   // cds = Zeitpunkt, ab dem der Zauber wieder geht
       api.float(h.x, h.y - 46, n ? L('Flüstern... langsamer...', 'Whispers... slower...') : L('Flüstern...', 'Whispers...'), cap.col, 14);
       if (A.FX) { A.FX.flash(h.x, h.y, 70, cap.col, 0.3); A.FX.ev('nova', { e: m, r: 80, color: cap.col, magic: true }); }
       return false;
@@ -86,6 +87,7 @@ A.Foes = (function () {
   }
   // Sandak: Treffer mit dem Lieblings-Element des Helden halbiert (ein Spruch, nicht bei jedem Treffer)
   function pre(from, to, opts) {
+    if (from.side === 'enemy' && from.revT > W().t && to.side === 'hero') return { mul: 1.25 };   // Rache: 25 % mehr Schaden
     if (!to.resistEl || from !== W().hero || opts.kind === 'poison' || opts.kind === 'burn' || opts.kind === 'thorns') return null;
     if (!(to.resistSaid > W().t)) { to.resistSaid = W().t + 3; say(to, L(`${A.t(A.ELEMENTS[to.resistEl].name)}? Kitzelt.`, `${A.t(A.ELEMENTS[to.resistEl].name)}? Tickles.`), '#c0cbdc', 13); }
     return { mul: 0.55 };
@@ -96,13 +98,13 @@ A.Foes = (function () {
     const cap = m.captain ? CAP(m.captain) : null, s = m.cs;
     if ((m.spores || (cap && cap.sig === 'spores')) && opts && opts.kind === 'burn' && !(m.sporeT > w.t)) spores(m, cap);
     if ((m.shell || (cap && cap.sig === 'shell')) && !m.shelled && m.hp < m.maxHp * 0.3) {
-      m.shelled = true; m.shellT = w.t + (cap ? 2.5 : 1.2); m.shield = Math.max(m.shield || 0, 0);
+      m.shelled = true; m.shellT = w.t + (cap ? 2.5 : 1.2);
       say(m, cap ? line(cap, 'low') : L('Panzer zu!', 'Shell shut!'), '#2ce8f5', 14); api.fx('shield', { e: m });
     }
     if (!cap || !s) return;
     if (!s.half && m.hp < m.maxHp * 0.5) {
       s.half = true; say(m, line(cap, 'half'), cap.col, 16);
-      if (cap.sig === 'swarm') { m.fleeUntil = w.t + 1.6; m.fleeing = true; summonPack(m, cap.summon || 'ratte', 3); }
+      if (cap.sig === 'swarm') { m.fleeUntil = w.t + 1.6; m.fleeing = true; m.state = 'chase'; summonPack(m, cap.summon || 'ratte', 3); }
     }
     if (!s.low && m.hp < m.maxHp * 0.3) {
       s.low = true;
@@ -127,7 +129,7 @@ A.Foes = (function () {
     m.sporeT = w.t + 3;
     (w.efx || (w.efx = [])).push({ kind: 'puddle', pk: 'poison', src: m, x: m.x, y: m.y + 6, r, t0: w.t, until: w.t + 3.5, tick: w.t + 0.2, dmg });
     if (h.alive && ((h.x - m.x) / r) ** 2 + ((h.y - m.y) / (r * EY)) ** 2 < 1.2) api.addEffect(h, 'poison', dmg, 3);
-    say(m, cap ? L('Sporen! Überall!', 'Spores! Everywhere!') : L('Sporen!', 'Spores!'), '#63c74d', 14);
+    say(m, L('Sporen!', 'Spores!'), '#63c74d', 14);
     if (A.FX) { A.FX.burst(m.x, m.y - 8, 18, { color: ['#63c74d', '#b86fa0', '#d06bb0'], smin: 40, smax: 150, z: 3, vz: 90, g: 120, life: 0.8, add: true }); A.FX.ev('nova', { e: m, r, color: '#63c74d', magic: true }); }
   }
 
@@ -135,7 +137,7 @@ A.Foes = (function () {
   // Flucht (world.js monSpecial): unter 30 % Leben rennt er 1,8 Sekunden vom Helden weg; wer ihn dabei erwischt, zählt für «Keine Flucht»
   function flee(m, dt, d, nx, ny) {
     const w = W();
-    if (m.flee && !m.fled && m.hp > 0 && m.hp < m.maxHp * 0.3 && !m.captain) { m.fled = true; m.fleeUntil = w.t + 1.8; m.fleeing = true; say(m, m.mid === 'kobolddieb' ? L('Tschüss!', 'Bye!') : L('Hilfe!', 'Help!'), '#fee761', 13); }
+    if (m.flee && !m.fled && m.state !== 'leap' && m.hp > 0 && m.hp < m.maxHp * 0.3 && !m.captain) { m.fled = true; m.state = 'chase'; m.fleeUntil = w.t + 1.8; m.fleeing = true; say(m, m.mid === 'kobolddieb' ? L('Tschüss!', 'Bye!') : L('Hilfe!', 'Help!'), '#fee761', 13); }
     if (!(m.fleeUntil > w.t)) { if (m.fleeing) { m.fleeing = false; m.fdir = null; m.cd = Math.min(m.cd, 0.3); } return false; }
     if (!m.fdir) m.fdir = fleeDir(m, w.hero);
     const sp = m.speed * 1.25 * dt, x0 = m.x, y0 = m.y;
@@ -171,7 +173,7 @@ A.Foes = (function () {
     let n = 0;
     for (const o of w.mons) {
       if (o === e || !o.alive || o.boss || o.captain || o.revenged || o.spawn > 0 || Math.hypot(o.x - e.x, o.y - e.y) > 180) continue;
-      o.revenged = true; o.revT = w.t + 4; o.buffs.atk = { mul: 0.25, until: w.t + 4 }; o.buffs.mag = { mul: 0.25, until: w.t + 4 };
+      o.revenged = true; o.revT = w.t + 4;   // 4 s schneller (speedMul) und stärker (pre)
       if (n++ < 2) say(o, L('Rache!', 'Revenge!'), '#e43b44', 13);
       if (A.FX && !A.FX.low) A.FX.part({ kind: 'smoke', x: o.x, y: o.y - 20, vx: 0, vy: -24, life: 0.5, size: 2, grow: 5, color: '#e43b44', drag: 1 });
     }
