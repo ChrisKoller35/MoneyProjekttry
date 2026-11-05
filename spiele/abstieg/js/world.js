@@ -590,7 +590,8 @@ A.World = (function () {
     boonStep(dt);
     const ls = A.Legends.stopped();   // Zeitstopp der Totenmaske: Bosse kurz, Elite-Kreise ganz angehalten
     if (ls < 2) A.Bosses.tick(dt);
-    if (!ls) { A.Elites.tick(dt); A.Foes.tick(dt); A.Weather.tick(dt); }   // Welt-Eigenheiten: Steinschlag, Regen, Sandsturm, Strömung, Ausbruch
+    if (!ls) { A.Elites.tick(dt); A.Foes.tick(dt); }
+    A.Weather.tick(dt, !!ls);   // Welt-Eigenheiten: Steinschlag, Regen, Sandsturm, Strömung, Ausbruch (im Zeitstopp hängen Steine und Lava in der Luft)
     A.Gear.tick(dt);
     A.Legends.tick(dt);
     A.Combos.tick(dt);

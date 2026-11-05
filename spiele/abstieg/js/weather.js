@@ -24,16 +24,25 @@ A.Weather = (function () {
   function st(w) { return w.wx || (w.wx = { on: false, next: w.t + rnd(10, 16), until: 0, wind: 0, dropT: 3, marks: [], drops: [] }); }
   function raining(w) { w = w || W(); return !!w && kind(w) === 'regen' && st(w).on; }
   function storm(w) { w = w || W(); return !!w && kind(w) === 'sturm' && st(w).on; }
-  const pushable = (e) => e.alive && !e.fly && !e.boss && !e.rooted && !(e.spawn > 0) && !(e.leapT > 0);
+  const pushable = (e) => e.alive && !e.fly && !e.boss && !e.rooted && !(e.spawn > 0) && e.state !== 'leap';
+  // Schieben (Strömung, Treibsand, Wind): nie im Boss-Raum (Flut des Kraken, Pharao), und wer gebremst oder festgehalten ist, wird nur sanft geschoben – er soll immer rauskommen
+  const pushMul = (w, e) => (w.active && w.active.type === 'boss') ? 0 : (e.rootUntil > w.t || e.stun > 0 || (e.slowUntil && e.slowUntil > w.t)) ? 0.3 : 1;
+  const EY = 0.6;   // Warnkreise sind flache Ellipsen (wie bei Bossen und Elite): Treffer genau in der gezeichneten Fläche
+  const inEll = (o, e) => { const R = o.r + (e.r || 0) * 0.6, dx = (e.x - o.x) / R, dy = (e.y - o.y) / (R * EY); return dx * dx + dy * dy < 1; };
+  // Farben mischen (Grundlicht blendet mit dem Wetter über)
+  const mix = (a, b, k) => { const p = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A1 = p(a), B1 = p(b); return '#' + A1.map((v, i) => Math.round(v + (B1[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
   const tileAt = (w, x, y) => { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return (w.tiles[ty] || [])[tx]; };
   const onHaz = (w, e) => tileAt(w, e.x, e.y + (e.r || 0) * 0.5) === 5;
   const noBurn = (e) => { if (e.effects.some(f => f.kind === 'burn')) e.effects = e.effects.filter(f => f.kind !== 'burn'); };
 
   // ---------- jede Sekunde 60 Mal ----------
-  function tick(dt) {
+  function tick(dt, stopped) {
     const w = W(); if (!w || !w.hero) return;
     const k = kind(w); if (!k) return;
     const s = st(w), h = w.hero, live = w.mons.filter(m => m.alive);
+    if (!w.active) s.marks = s.marks.filter(o => o.done);   // Raum gesäubert: nichts schlägt mehr ein
+    if (stopped) { for (const o of s.marks) if (!o.done) { o.t0 += dt; o.at += dt; } return; }   // Zeitstopp der Totenmaske: Steine und Lava hängen in der Luft
+    if (w.active !== s.room) { s.room = w.active; s.dropT = 2.5; }   // neuer Kampf: erst durchatmen
     // Wetter, das kommt und geht: Wolkenbruch und Sandsturm
     if (k === 'regen' || k === 'sturm') {
       if (!s.on && w.t >= s.next) {
@@ -46,10 +55,10 @@ A.Weather = (function () {
     if (k === 'regen' && s.on) { noBurn(h); for (const m of live) noBurn(m); }
     if (k === 'sturm') {
       // Treibsand zieht zur Mitte des Flecks
-      for (const e of [h, ...live]) { if (!pushable(e) || !onHaz(w, e)) continue; const c = sandMid(w, e); const dx = c[0] - e.x, dy = c[1] - e.y, d = Math.hypot(dx, dy); if (d > 6) api.moveEnt(e, dx / d * 28 * dt, dy / d * 28 * dt); }
+      for (const e of [h, ...live]) { if (!pushable(e) || !onHaz(w, e)) continue; const c = sandMid(w, e); const dx = c[0] - e.x, dy = c[1] - e.y, d = Math.hypot(dx, dy); const k2 = 28 * pushMul(w, e) * dt; if (d > 6 && k2) api.moveEnt(e, dx / d * k2, dy / d * k2); }
       if (s.on) {
         const wx = s.wind * 32 * dt;
-        for (const e of [h, ...live]) if (pushable(e)) api.moveEnt(e, wx, Math.sin(w.t * 1.3) * 6 * dt);
+        for (const e of [h, ...live]) if (pushable(e) && pushMul(w, e)) api.moveEnt(e, wx * pushMul(w, e), Math.sin(w.t * 1.3) * 6 * dt * pushMul(w, e));
         for (const sh of w.shots) if (!sh.opts.lob) sh.vx += s.wind * 150 * dt;
       }
     }
@@ -58,7 +67,7 @@ A.Weather = (function () {
         if (!e.alive || e.fly || !onHaz(w, e)) continue;
         noBurn(e);
         if (!pushable(e)) continue;
-        const [dx, dy] = flow(w, e.x, e.y); api.moveEnt(e, dx * 55 * dt, dy * 55 * dt);
+        const [dx, dy] = flow(w, e.x, e.y), k2 = 55 * pushMul(w, e) * dt; if (k2) api.moveEnt(e, dx * k2, dy * k2);
       }
     }
     // Von oben: Steinschlag und Lava – nur, wenn gekämpft wird
@@ -67,7 +76,7 @@ A.Weather = (function () {
       if (s.dropT <= 0) {
         const rock = k === 'steinschlag', R = rock ? 44 : 50, warn = rock ? 1.25 : 1.35;
         s.dropT = (rock ? rnd(5.5, 7.5) : rnd(6.5, 8.5)) / pace(w);
-        const spots = [[h.x + rnd(-40, 40), h.y + rnd(-30, 30)]];
+        const spots = [[h.x + rnd(-26, 26), h.y + rnd(-14, 14)]];
         const tg = live.filter(m => !(m.spawn > 0));
         if (rock) { if (tg.length && Math.random() < 0.6) { const m = tg[Math.floor(Math.random() * tg.length)]; spots.push([m.x + rnd(-20, 20), m.y + rnd(-15, 15)]); } }
         else for (let i = 0; i < 2; i++) { const a = w.active, x = (a.x + 1 + Math.random() * (a.w - 2)) * TS, y = (a.y + 1 + Math.random() * (a.h - 2)) * TS; spots.push([x, y]); }
@@ -78,7 +87,6 @@ A.Weather = (function () {
     // Einschlag
     for (const o of s.marks) if (w.t >= o.at && !o.done) { o.done = true; impact(w, o); }
     s.marks = s.marks.filter(o => !o.done || w.t < o.at + 0.5);
-    if (!w.active) s.marks = s.marks.filter(o => o.done);   // Raum gesäubert: keine neuen Einschläge mehr
   }
   // Mitte des Treibsand-Flecks unter einer Figur: zusammenhängende Kacheln einmal suchen, dann gemerkt
   function sandMid(w, e) {
@@ -91,7 +99,9 @@ A.Weather = (function () {
       const [x, y] = todo.pop(); cells.push([x, y]);
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, k = ny * MW + nx; if (!seen.has(k) && (w.tiles[ny] || [])[nx] === 5) { seen.add(k); todo.push([nx, ny]); } }
     }
-    const mid = [cells.reduce((a, c) => a + c[0] + 0.5, 0) / cells.length * TS, cells.reduce((a, c) => a + c[1] + 0.5, 0) / cells.length * TS];
+    const ax = cells.reduce((a, c) => a + c[0] + 0.5, 0) / cells.length, ay = cells.reduce((a, c) => a + c[1] + 0.5, 0) / cells.length;
+    let best = cells[0], bd = 1e9; for (const c of cells) { const d = (c[0] + 0.5 - ax) ** 2 + (c[1] + 0.5 - ay) ** 2; if (d < bd) { bd = d; best = c; } }   // Mitte liegt immer auf Sand (Ring- und U-Formen)
+    const mid = [(best[0] + 0.5) * TS, (best[1] + 0.5) * TS];
     for (const [x, y] of cells) memo[y * MW + x] = mid;
     return mid;
   }
@@ -103,13 +113,14 @@ A.Weather = (function () {
   function impact(w, o) {
     const h = w.hero, rock = o.kind === 'rock';
     const src = { side: o.kind, crit: 0, alive: false, atk: 0, mag: 0 };
-    const opts = { kind: rock ? 'phys' : 'magic', noCrit: true, noKb: true, world: true, color: rock ? '#c0cbdc' : '#f77622' };
-    if (h.alive && Math.hypot(h.x - o.x, h.y - o.y) < o.r + h.r) { const d = api.hit(src, h, h.maxHp * (rock ? 0.1 : 0.11), opts); if (!rock && d > 0) api.addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.025)), 2.2); }
-    for (const m of w.mons) {
-      if (!m.alive || m.spawn > 0 || m.fly || Math.hypot(m.x - o.x, m.y - o.y) >= o.r + m.r) continue;
+    const opts = { kind: rock ? 'phys' : 'magic', noCrit: true, noKb: true, color: rock ? '#c0cbdc' : '#f77622' };
+    if (h.alive && inEll(o, h)) { const d = api.hit(src, h, h.maxHp * (rock ? 0.1 : 0.11), opts); if (!rock && d > 0) api.addEffect(h, 'burn', Math.max(1, Math.round(h.maxHp * 0.025)), 2.2); }
+    for (const m of w.mons.slice()) {
+      if (!m.alive || m.spawn > 0 || m.fly || !inEll(o, m)) continue;
+      if (o.hit && o.hit.has(m)) continue; (o.hit || (o.hit = new Set())).add(m);   // Kinder, die beim Treffer entstehen (Schleimkönig), nicht gleich mittreffen
       const pct = m.boss ? 0.05 : (m.elite || m.captain || m.traits) ? 0.12 : 0.28;
       const d = api.hit(src, m, m.maxHp * pct, opts); if (d > 0 && !rock) api.addEffect(m, 'burn', Math.max(1, Math.round(m.maxHp * 0.03)), 2.2);
-      if (d > 0) { m.stun = Math.max(m.stun || 0, rock ? 0.5 : 0.25); W().stats.wxHits = (W().stats.wxHits || 0) + 1; }
+      if (d > 0 && !m.boss) m.stun = Math.max(m.stun || 0, rock ? 0.5 : 0.25);
     }
     if (A.FX) {
       A.FX.shake(rock ? 0.3 : 0.25);
@@ -126,8 +137,9 @@ A.Weather = (function () {
   function ambient(col) {
     const w = W(), k = w && kind(w); if (!k) return col;
     if (k === 'finsternis') return w.active && w.active.type === 'boss' ? '#2a2040' : '#16111f';
-    if (k === 'regen' && st(w).on) return '#2c4436';
-    if (k === 'sturm' && st(w).on) return '#6a5644';
+    const s = st(w), f = s.on ? clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - (k === 'regen' ? 9 : 7))) / 1, 0, 1) : 0;   // weich über- und ausblenden
+    if (k === 'regen' && f > 0) return mix(col, '#2c4436', f);
+    if (k === 'sturm' && f > 0) return mix(col, '#6a5644', f);
     return col;
   }
 
@@ -140,11 +152,11 @@ A.Weather = (function () {
       if (o.done) continue;
       const q = clamp((w.t - o.t0) / (o.at - o.t0), 0, 1), x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy), R = o.r / PX;
       if (o.kind === 'rock') {
-        b.globalAlpha = 0.25 + 0.45 * q; b.fillStyle = '#08060e'; b.beginPath(); b.ellipse(x, y, R * (0.35 + 0.65 * q), R * 0.5 * (0.35 + 0.65 * q), 0, 0, TAU); b.fill();
-        g.globalAlpha = 0.25 + 0.4 * q; g.strokeStyle = '#c0cbdc'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * 0.5, 0, 0, TAU); g.stroke();
+        b.globalAlpha = 0.25 + 0.45 * q; b.fillStyle = '#08060e'; b.beginPath(); b.ellipse(x, y, R * (0.35 + 0.65 * q), R * EY * (0.35 + 0.65 * q), 0, 0, TAU); b.fill();
+        g.globalAlpha = 0.25 + 0.4 * q; g.strokeStyle = '#c0cbdc'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * EY, 0, 0, TAU); g.stroke();
       } else {
-        b.globalAlpha = 0.18 + 0.3 * q; b.fillStyle = '#be4a2f'; b.beginPath(); b.ellipse(x, y, R * q, R * 0.5 * q, 0, 0, TAU); b.fill();
-        g.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * (6 + q * 14))); g.strokeStyle = q > 0.7 ? '#fee761' : '#f77622'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * 0.5, 0, 0, TAU); g.stroke();
+        b.globalAlpha = 0.18 + 0.3 * q; b.fillStyle = '#be4a2f'; b.beginPath(); b.ellipse(x, y, R * q, R * EY * q, 0, 0, TAU); b.fill();
+        g.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * (6 + q * 14))); g.strokeStyle = q > 0.7 ? '#fee761' : '#f77622'; g.lineWidth = 1; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, R, R * EY, 0, 0, TAU); g.stroke();
       }
     }
     // Strömung und Treibsand: bewegte Striche und Wirbel auf dem Gefahr-Boden
@@ -181,9 +193,10 @@ A.Weather = (function () {
       const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - 9)) / 1, 0, 1);
       // auf der Leucht-Ebene: das dunkle Regenlicht schluckt sie sonst
       g.strokeStyle = '#9fc8ff'; g.lineWidth = 1;
-      for (let i = 0; i < 120; i++) {
-        const x = ((i * 53.7 + t * 50) % (bw + 20)) - 10, y = ((i * 91.3 + t * (300 + (i % 5) * 30)) % (bh + 20)) - 10;
-        g.globalAlpha = (0.22 + (i % 3) * 0.08) * fade; g.beginPath(); g.moveTo(Math.round(x) + 0.5, Math.round(y)); g.lineTo(Math.round(x - 2) + 0.5, Math.round(y + 7)); g.stroke();
+      for (let grp = 0; grp < 3; grp++) {   // drei Helligkeiten, je ein Pfad
+        g.globalAlpha = (0.22 + grp * 0.08) * fade; g.beginPath();
+        for (let i = grp; i < 120; i += 3) { const x = ((i * 53.7 + t * 50) % (bw + 20)) - 10, y = ((i * 91.3 + t * (300 + (i % 5) * 30)) % (bh + 20)) - 10; g.moveTo(Math.round(x) + 0.5, Math.round(y)); g.lineTo(Math.round(x - 2) + 0.5, Math.round(y + 7)); }
+        g.stroke();
       }
       for (let i = 0; i < 16; i++) { const q = (t * 2.5 + i * 0.37) % 1, x = Math.floor(hash(i, Math.floor(t * 2.5 + i * 0.37)) * bw), y = Math.floor(hash(i + 50, Math.floor(t * 2.5 + i * 0.37)) * bh); g.globalAlpha = 0.45 * (1 - q) * fade; g.beginPath(); g.ellipse(x + 0.5, y + 0.5, 1 + q * 3, 0.5 + q * 1.2, 0, 0, TAU); g.stroke(); }
     }
@@ -200,7 +213,7 @@ A.Weather = (function () {
     if (k === 'finsternis') {
       const h = w.hero;
       for (const m of w.mons) {
-        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < 170) continue;
+        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < 200) continue;   // ausserhalb des eigenen Lichts
         const x = Math.round(m.x / PX - cx), y = Math.round(m.y / PX - cy - m.r / PX * 1.6), blink = Math.sin(t * 1.7 + m.x) > 0.95;
         if (blink) continue;
         g.globalAlpha = 0.95; g.fillStyle = '#ff0044'; g.fillRect(x - 3, y, 2, 1); g.fillRect(x + 2, y, 2, 1);
