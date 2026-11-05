@@ -313,6 +313,10 @@ A.ELITE_TRAITS = {
   spiegel: { name: { de: 'Spiegelnd', en: 'Mirrored' }, col: '#ffffff', icon: 'ef_spiegel', tip: { de: 'spaltet sich in Spiegelbilder', en: 'splits into mirror images' }, text: { de: 'Bei halbem Leben tauchen zwei Spiegelbilder auf, die mitkämpfen.', en: 'At half health two mirror images appear and join the fight.' } },
   klingen: { name: { de: 'Klingenwirbel', en: 'Bladestorm' }, col: '#8b9bb4', icon: 'ef_klingen', tip: { de: 'Klingen kreisen um ihn', en: 'blades circle around it' }, text: { de: 'Drei Klingen kreisen um ihn. Nicht zu lange danebenstehen.', en: 'Three blades circle around it. Do not stand next to it for long.' } },
   heiler: { name: { de: 'Heiler', en: 'Healer' }, col: '#c8f5a0', icon: 'ef_heil', heal: true, tip: { de: 'heilt andere Gegner: zuerst besiegen!', en: 'heals other enemies: defeat it first!' }, text: { de: 'Heilt die anderen Gegner im Raum. Am besten zuerst besiegen.', en: 'Heals the other enemies in the room. Best defeated first.' } },
+  magnetisch: { name: { de: 'Magnetisch', en: 'Magnetic' }, col: '#e43b44', icon: 'ef_magnet', tip: { de: 'zieht dich an: dagegen laufen!', en: 'pulls you in: walk away!' }, text: { de: 'Zieht dich langsam zu sich heran. Fernkämpfer hassen ihn.', en: 'Slowly pulls you towards it. Ranged fighters hate it.' } },
+  bombenleger: { name: { de: 'Bombenleger', en: 'Bomber' }, col: '#feae34', icon: 'ef_lunte', tip: { de: 'legt Bomben: weg da!', en: 'drops bombs: run!' }, text: { de: 'Legt immer wieder eine Bombe hinter sich. Die trifft auch seine Freunde.', en: 'Keeps dropping bombs behind it. They hit its friends too.' } },
+  dornig: { name: { de: 'Dornenpanzer', en: 'Thorn Armor' }, col: '#63c74d', icon: 'ef_dorn', tip: { de: 'Waffen-Treffer stechen zurück', en: 'weapon hits sting back' }, text: { de: 'Ein Drittel deines Waffen-Schadens sticht zurück, auch bei Pfeilen. Zauber gehen durch.', en: 'A third of your weapon damage stings back, arrows included. Spells get through.' } },
+  zaeh: { name: { de: 'Zäh', en: 'Stubborn' }, col: '#c0cbdc', icon: 'ef_zaeh', heal: true, tip: { de: 'steht einmal wieder auf', en: 'gets up once more' }, text: { de: 'Fällt er, steht er einmal mit einem Drittel Leben wieder auf. «Noch nicht!»', en: 'When it falls, it gets up once more with a third of its health. "Not yet!"' } },
 };
 // Hauptleute (js/foes.js): je Welt einer, auf der dritten Ebene der Welt im Elite-Raum (A.CAPTAIN_FLOOR). Gebaut aus einem Gegner (base) mit festen
 // Elite-Eigenschaften (traits) und einer eigenen Masche (sig): swarm (ruft Ratten, rennt bei halbem Leben weg), spores (Feuer macht Sporenwolke),
@@ -669,17 +673,17 @@ A.HAZARDS = {
 };
 // Eigenheiten der Welten (weather.js): jede Welt spielt sich ein bisschen anders. from: ab welcher Ebene (die allererste Ebene bleibt ruhig)
 A.WORLD_FX = {
-  stone: { id: 'steinschlag', from: 2, col: '#c0cbdc', name: { de: 'Steinschlag', en: 'Rockfall' },
+  stone: { tool: { de: 'Morscher Pfeiler', en: 'Cracked Pillar' }, toolTip: { de: 'Stoss ihn an: Steine regnen auf die Gegner.', en: 'Bump it: rocks rain on the enemies.' }, id: 'steinschlag', from: 2, col: '#c0cbdc', name: { de: 'Steinschlag', en: 'Rockfall' },
     tip: { de: 'Steinschlag! Wo ein Schatten wächst, kracht gleich ein Stein runter. Trifft auch Gegner.', en: 'Rockfall! Where a shadow grows, a rock is about to drop. Hits enemies too.' } },
-  jungle: { id: 'regen', col: '#7fd8ff', name: { de: 'Wolkenbruch', en: 'Downpour' },
+  jungle: { tool: { de: 'Blitzstein', en: 'Lightning Stone' }, toolTip: { de: 'Berühre ihn: Blitze in die Gegner, im Regen mehr.', en: 'Touch it: lightning strikes the enemies, more in the rain.' }, id: 'regen', col: '#7fd8ff', name: { de: 'Wolkenbruch', en: 'Downpour' },
     tip: { de: 'Wolkenbruch! Im Regen erlischt Feuer, Blitze treffen härter und der Schlamm wird zäh.', en: 'Downpour! Rain puts out fire, lightning hits harder and mud gets sticky.' } },
-  desert: { id: 'sturm', col: '#ead4aa', name: { de: 'Sandsturm', en: 'Sandstorm' },
+  desert: { tool: { de: 'Sandhorn', en: 'Sand Horn' }, toolTip: { de: 'Blas hinein: eine Sandböe fegt die Gegner weg.', en: 'Blow it: a gust of sand sweeps the enemies away.' }, id: 'sturm', col: '#ead4aa', name: { de: 'Sandsturm', en: 'Sandstorm' },
     tip: { de: 'Treibsand zieht dich zur Mitte. Im Sandsturm weht der Wind dich, die Gegner und alle Geschosse weg.', en: 'Quicksand drags you to its middle. In a sandstorm the wind pushes you, the enemies and every shot.' } },
-  water: { id: 'stroemung', col: '#2ce8f5', name: { de: 'Strömung', en: 'Current' },
+  water: { tool: { de: 'Schleuse', en: 'Floodgate' }, toolTip: { de: 'Öffne sie: eine Welle wirft die Gegner um und heilt dich.', en: 'Open it: a wave knocks the enemies down and heals you.' }, id: 'stroemung', col: '#2ce8f5', name: { de: 'Strömung', en: 'Current' },
     tip: { de: 'Strömung! Seichtes Wasser trägt dich mit und löscht Feuer.', en: 'Current! Shallow water carries you along and puts out fire.' } },
-  volcano: { id: 'ausbruch', col: '#f77622', name: { de: 'Ausbruch', en: 'Eruption' },
+  volcano: { tool: { de: 'Lavafass', en: 'Lava Barrel' }, toolTip: { de: 'Stoss es an: Lava regnet auf die Gegner.', en: 'Bump it: lava rains on the enemies.' }, id: 'ausbruch', col: '#f77622', name: { de: 'Ausbruch', en: 'Eruption' },
     tip: { de: 'Der Vulkan spuckt! In glühende Kreise schlägt gleich Lava ein. Trifft auch Gegner.', en: 'The volcano spits! Lava lands in the glowing circles. Hits enemies too.' } },
-  abyss: { id: 'finsternis', col: '#b55088', name: { de: 'Finsternis', en: 'Darkness' },
+  abyss: { tool: { de: 'Seelenlaterne', en: 'Soul Lantern' }, toolTip: { de: 'Zünde sie an: grelles Licht blendet die Gegner, sie nehmen mehr Schaden.', en: 'Light it: a glare blinds the enemies, they take more damage.' }, id: 'finsternis', col: '#b55088', name: { de: 'Finsternis', en: 'Darkness' },
     tip: { de: 'Finsternis! Du siehst nur, was dein Licht trifft. Rote Augen im Dunkeln sind keine Glühwürmchen.', en: 'Darkness! You only see what your light reaches. Red eyes in the dark are not fireflies.' } },
 };
 A.FLOORS_PER_WORLD = 4;
