@@ -41,6 +41,7 @@ A.Elites = (function () {
       else if (id === 'beschwoerer') { const pool = A.monsterPool(floor).filter(x => !x.rooted && x.id !== base.id); e.summon = (pool.length ? rng.pick(pool) : base).id; e.summonCd = 7; }
       else if (id === 'blinzelnd') e.teleport = true;
       else if (id === 'vampir') e.lifesteal = 35;
+      else if (id === 'dornig') e.thorns = (e.thorns || 0) + 33;
       else if (id === 'riese') { e.giant = true; e.maxHp = Math.round(e.maxHp * 1.6); e.atk = Math.round(e.atk * 1.2); e.mag = Math.round(e.mag * 1.2); e.spd = Math.max(0, e.spd - 1); }
     }
     if (tr.includes('schild')) e.shieldCap = Math.round(e.maxHp * 0.3);
@@ -50,7 +51,7 @@ A.Elites = (function () {
   // Beim Hinstellen in den Raum (world.js addMon): Zeitgeber, voller Schild
   function onAdd(m) {
     if (!m.traits) return;
-    m.ef = { fire: 2 + Math.random() * 2, frost: 2.5 + Math.random() * 2.5, storm: 2 + Math.random() * 2, stomp: 2 + Math.random(), heal: 3, busy: 0, hurtT: -9, spin: Math.random() * TAU, bladeT: 0, trail: 0, lx: m.x, ly: m.y, ghosts: [], gT: 0 };
+    m.ef = { fire: 2 + Math.random() * 2, frost: 2.5 + Math.random() * 2.5, storm: 2 + Math.random() * 2, stomp: 2 + Math.random(), heal: 3, bomb: 2.5 + Math.random() * 2, busy: 0, hurtT: -9, spin: Math.random() * TAU, bladeT: 0, trail: 0, lx: m.x, ly: m.y, ghosts: [], gT: 0 };
     if (m.shieldCap) m.shield = m.shieldCap;
   }
 
@@ -77,7 +78,7 @@ A.Elites = (function () {
     const w = W(), h = w.hero, s = m.ef; if (!s) return false;
     if (s.busy > w.t) return true;
     const k = m.raged ? 0.7 : 1;
-    s.fire -= dt; s.frost -= dt; s.storm -= dt; s.stomp -= dt; s.heal -= dt;
+    s.fire -= dt; s.frost -= dt; s.storm -= dt; s.stomp -= dt; s.heal -= dt; s.bomb -= dt;
     if (has(m, 'feurig') && s.fire <= 0 && d < 220) {   // bleibt stehen, glüht auf, Feuerring um sich
       s.fire = 6 * k; s.busy = w.t + 1;
       add({ kind: 'tele', fx: 'fire', from: m, follow: m, x: m.x, y: m.y, r: 100, t0: w.t, at: w.t + 1, dmg: m.atk * 1.3, col: '#f77622' });
@@ -101,6 +102,11 @@ A.Elites = (function () {
       say(m, L('Gewitter!', 'Thunderstorm!'), '#7fd8ff');
     }
     if (has(m, 'heiler') && s.heal <= 0) { s.heal = 3.5; healPulse(m); }
+    if (has(m, 'bombenleger') && s.bomb <= 0 && d < 520) {   // Bombe an seiner Stelle: trifft dich und alle Gegner im Kreis
+      s.bomb = 5 * k;
+      add({ kind: 'tele', fx: 'bomb', from: m, x: m.x, y: m.y + 6, r: 72, t0: w.t, at: w.t + 1.7, dmg: m.atk * 1.4, col: '#feae34' });
+      say(m, L('Bombe!', 'Bomb!'), '#feae34'); if (A.Sound) A.Sound.fuse();
+    }
     return false;
   }
   // Heiler: heilt verletzte Gegner in der Nähe (grüne Strahlen) und ein wenig sich selbst
@@ -119,6 +125,12 @@ A.Elites = (function () {
     const w = W(), s = m.ef; if (!s) return;
     s.hurtT = w.t;
     if (dmg > 0 && has(m, 'gepanzert') && A.FX && Math.random() < 0.6) { A.FX.burst(m.x, m.y - 12, 5, { color: ['#ffffff', '#c0cbdc', '#fee761'], smin: 70, smax: 180, life: 0.22, add: true, kind: 'spark', drag: 5 }); if (A.Sound && Math.random() < 0.35) A.Sound.clink(); }
+    if (m.hp <= 0 && has(m, 'zaeh') && !m.toughUsed) {   // Zäh: steht einmal wieder auf
+      m.toughUsed = true; m.hp = Math.max(1, Math.round(m.maxHp * 0.33)); m.stun = 0;
+      say(m, L('Noch nicht!', 'Not yet!'), '#c0cbdc');
+      if (A.FX) { A.FX.ev('nova', { e: m, r: 80, color: '#c0cbdc', magic: true }); A.FX.flash(m.x, m.y, 80, '#ffffff', 0.25); }
+      return;
+    }
     if (m.hp <= 0 || m.hp >= m.maxHp * 0.5) return;
     if (has(m, 'wuetend') && !m.raged) rage(m);
     if (has(m, 'spiegel') && !m.mirrored) mirror(m);
@@ -165,6 +177,11 @@ A.Elites = (function () {
         s.spin += dt * (m.stun > 0 ? 1.5 : 3.4);
         if (h.alive && w.t >= s.bladeT) for (let i = 0; i < 3; i++) { const p = blade(m, i); if (Math.hypot(h.x - p.x, h.y - p.y) < h.r + 9) { s.bladeT = w.t + 0.55; api.hit(m, h, m.atk * 0.45, { kind: 'phys' }); api.fx('wallhit', { x: p.x, y: p.y, color: '#ffffff' }); break; } }
       }
+      // Magnetisch: zieht den Helden langsam heran (nicht im Boss-Raum, nicht wenn er schon dran ist)
+      if (has(m, 'magnetisch') && h.alive && !(w.active && w.active.type === 'boss')) {
+        const dx = m.x - h.x, dy = m.y - h.y, dd = Math.hypot(dx, dy) || 1;
+        if (dd < 330 && dd > m.r + h.r + 24) { api.moveEnt(h, dx / dd * 40 * dt, dy / dd * 40 * dt); if (A.FX && !A.FX.low && Math.random() < dt * 12) { const q = Math.random(); A.FX.part({ add: true, x: h.x + dx * q, y: h.y + dy * q - 10, vx: dx / dd * 120, vy: dy / dd * 120, life: 0.3, color: Math.random() < 0.5 ? '#e43b44' : '#c0cbdc', drag: 0 }); } }
+      }
       // Giftspur und Nachbilder nur, wenn er sich bewegt
       const mv = Math.hypot(m.x - s.lx, m.y - s.ly); s.lx = m.x; s.ly = m.y;
       if (has(m, 'giftig') && !m.fly) { s.trail += Math.min(mv, 40); if (s.trail > 30) { s.trail = 0; puddle(m, 'poison', m.x, m.y + 8, 24, 3.5, Math.max(1, Math.round(m.atk * 0.25))); } }
@@ -210,7 +227,7 @@ A.Elites = (function () {
       if (S) S.thunder();
     } else if (b.fx === 'bomb') {
       if (me) api.hit(b.from, h, b.dmg, { kind: 'phys' });
-      for (const o of w.mons) if (o.alive && !(o.spawn > 0) && inEll(b, o, o.r * 0.5)) api.hit(b.from, o, b.dmg * 0.6, { kind: 'magic', color: '#feae34' });   // trifft auch die anderen Gegner
+      for (const o of w.mons) if (o.alive && o !== b.from && !(o.spawn > 0) && inEll(b, o, o.r * 0.5)) api.hit(b.from, o, b.dmg * 0.6, { kind: 'magic', color: '#feae34' });   // trifft auch die anderen Gegner
       if (F) { F.ev('boom', { x: b.x, y: b.y, r: b.r, color: '#feae34' }); F.shake(0.5); F.rocks(b.x, b.y, 6, 70, ['#5d275d', '#b13e53', '#f77622']); F.smoke(b.x, b.y, 8, '#5a6988', 6); }
     }
   }

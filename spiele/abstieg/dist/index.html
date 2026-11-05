@@ -794,6 +794,10 @@ A.ELITE_TRAITS = {
   spiegel: { name: { de: 'Spiegelnd', en: 'Mirrored' }, col: '#ffffff', icon: 'ef_spiegel', tip: { de: 'spaltet sich in Spiegelbilder', en: 'splits into mirror images' }, text: { de: 'Bei halbem Leben tauchen zwei Spiegelbilder auf, die mitkämpfen.', en: 'At half health two mirror images appear and join the fight.' } },
   klingen: { name: { de: 'Klingenwirbel', en: 'Bladestorm' }, col: '#8b9bb4', icon: 'ef_klingen', tip: { de: 'Klingen kreisen um ihn', en: 'blades circle around it' }, text: { de: 'Drei Klingen kreisen um ihn. Nicht zu lange danebenstehen.', en: 'Three blades circle around it. Do not stand next to it for long.' } },
   heiler: { name: { de: 'Heiler', en: 'Healer' }, col: '#c8f5a0', icon: 'ef_heil', heal: true, tip: { de: 'heilt andere Gegner: zuerst besiegen!', en: 'heals other enemies: defeat it first!' }, text: { de: 'Heilt die anderen Gegner im Raum. Am besten zuerst besiegen.', en: 'Heals the other enemies in the room. Best defeated first.' } },
+  magnetisch: { name: { de: 'Magnetisch', en: 'Magnetic' }, col: '#e43b44', icon: 'ef_magnet', tip: { de: 'zieht dich an: dagegen laufen!', en: 'pulls you in: walk away!' }, text: { de: 'Zieht dich langsam zu sich heran. Fernkämpfer hassen ihn.', en: 'Slowly pulls you towards it. Ranged fighters hate it.' } },
+  bombenleger: { name: { de: 'Bombenleger', en: 'Bomber' }, col: '#feae34', icon: 'ef_lunte', tip: { de: 'legt Bomben: weg da!', en: 'drops bombs: run!' }, text: { de: 'Legt immer wieder eine Bombe hinter sich. Die trifft auch seine Freunde.', en: 'Keeps dropping bombs behind it. They hit its friends too.' } },
+  dornig: { name: { de: 'Dornenpanzer', en: 'Thorn Armor' }, col: '#63c74d', icon: 'ef_dorn', tip: { de: 'Nahkampf sticht zurück', en: 'melee hits sting back' }, text: { de: 'Ein Drittel deines Nahkampf-Schadens sticht zurück. Zauber gehen durch.', en: 'A third of your melee damage stings back. Spells get through.' } },
+  zaeh: { name: { de: 'Zäh', en: 'Stubborn' }, col: '#c0cbdc', icon: 'ef_zaeh', tip: { de: 'steht einmal wieder auf', en: 'gets up once more' }, text: { de: 'Fällt er, steht er einmal mit einem Drittel Leben wieder auf. «Noch nicht!»', en: 'When it falls, it gets up once more with a third of its health. "Not yet!"' } },
 };
 // Hauptleute (js/foes.js): je Welt einer, auf der dritten Ebene der Welt im Elite-Raum (A.CAPTAIN_FLOOR). Gebaut aus einem Gegner (base) mit festen
 // Elite-Eigenschaften (traits) und einer eigenen Masche (sig): swarm (ruft Ratten, rennt bei halbem Leben weg), spores (Feuer macht Sporenwolke),
@@ -5279,6 +5283,10 @@ A.Art = (function () {
   R.ef_spiegel = [['..555..', '.56645.', '.56545.', '.54445.', '..555..', '...N...', '...N...']];
   R.ef_klingen = [['...5...', '...5...', '..545..', '5554555', '..545..', '...5...', '...5...']];
   R.ef_heil = [['..lll..', '..l6l..', 'lll6lll', 'l66666l', 'lll6lll', '..l6l..', '..lll..']];
+  R.ef_magnet = [['6.....6', 'R.....R', 'R.....R', 'R.....R', 'RR...RR', '.RRRRR.', '..rrr..']];
+  R.ef_lunte = [['......Y', '.....N.', '..333..', '.35333.', '.33333.', '..333..', 'y.y.y..']];
+  R.ef_dorn = [['...l...', '.l.G.l.', '..GGG..', 'lGGlGGl', '..GGG..', '.l.G.l.', '...l...']];
+  R.ef_zaeh = [['.6...6.', '665.566', '..555..', '..545..', '..555..', '665.566', '.6...6.']];
   // kreisende Klinge (Klingenwirbel), zwei Bilder: dreht sich
   R.ef_blade = [['..5..', '..5..', '55655', '..5..', '..5..'], ['5...5', '.5.5.', '..6..', '.5.5.', '5...5']];
   R.crystal = [[
@@ -6392,11 +6400,71 @@ A.Bosses = (function () {
     api.float(m.x, m.y - 70, L('Wut!', 'Rage!'), '#e43b44', 20);
   }
 
+  // ---------- Endphase: ab einem Viertel Leben ruft der Boss seine Welt (Eigenheiten in weather.js) ----------
+  const FINALE = {
+    schleimkoenig: { de: 'Die Decke stürzt ein!', en: 'The ceiling caves in!', col: '#c0cbdc' },
+    dornenmutter: { de: 'Ruft das Gewitter!', en: 'Calls the thunderstorm!', col: '#7fd8ff' },
+    sandpharao: { de: 'Ewiger Sandsturm!', en: 'Endless sandstorm!', col: '#ead4aa' },
+    kraken: { de: 'Der Strudel erwacht!', en: 'The maelstrom wakes!', col: '#2ce8f5' },
+    rostkoenig: { de: 'Der Vulkan bricht aus!', en: 'The volcano erupts!', col: '#f77622' },
+    waechter: { de: 'Das Licht geht aus!', en: 'The lights go out!', col: '#b55088' },
+  };
+  function finale(m, s) {
+    const f = FINALE[m.mid]; s.p3 = true; s.t3 = 1.2;
+    if (!f) return;
+    if (A.FX) { A.FX.banner(m.name, L(f.de, f.en), f.col, 2.6); A.FX.shake(0.7); A.FX.ev('nova', { e: m, r: 150, color: f.col, magic: true }); }
+    api.float(m.x, m.y - 80, L('Letzte Phase!', 'Final phase!'), f.col, 20);
+    if (A.Sound && A.Sound.roar) A.Sound.roar();
+    if (m.mid === 'dornenmutter' || m.mid === 'sandpharao') A.Weather.force();
+  }
+  // Endphase je Boss, läuft neben den normalen Angriffen
+  function finaleStep(m, s, dt) {
+    const w = W(), h = w.hero;
+    s.t3 -= dt; if (s.t3 > 0 || !h.alive) return;
+    switch (m.mid) {
+      case 'schleimkoenig': {   // Einsturz: Steine auf den Helden und in den Raum (treffen auch den König)
+        s.t3 = 3.2; A.Weather.drop('rock', h.x + (Math.random() - 0.5) * 40, h.y + (Math.random() - 0.5) * 20);
+        for (let i = 0; i < 2; i++) { const p = roomSpot(16); if (p) A.Weather.drop('rock', p.x, p.y); }
+        if (A.FX) A.FX.shake(0.25);
+        break;
+      }
+      case 'dornenmutter': {   // Gewitter: Blitze schlagen in markierte Stellen ein
+        s.t3 = 3.6;
+        tele(m, h.x, h.y, 48, 1.15, m.atk * 1.3, { col: '#7fd8ff', bolt: true });
+        for (let i = 0; i < 2; i++) { const p = near(h.x, h.y, 170); tele(m, p.x, p.y, 48, 1.25 + i * 0.15, m.atk * 1.3, { col: '#7fd8ff', bolt: true }); }
+        break;
+      }
+      case 'sandpharao': {   // Sturm dreht alle 3 Sekunden (weather.js), dazu Treibsand-Pfützen
+        s.t3 = 6.5; for (let i = 0; i < 2; i++) { const p = near(h.x, h.y, 160); pool(p.x, p.y, 58, 7, 'sand'); }
+        break;
+      }
+      case 'kraken': {   // Strudel zieht zum Kraken, die Flut kommt öfter
+        s.t3 = 7; add({ kind: 'wind', from: m, t0: w.t, until: w.t + 2.2, pow: 60, water: true });
+        s.t2 -= 2;
+        api.float(m.x, m.y - 60, L('Strudel!', 'Maelstrom!'), '#2ce8f5', 16);
+        break;
+      }
+      case 'rostkoenig': {   // Ausbruch: Lava auf den Helden und in den Raum
+        s.t3 = 3;
+        A.Weather.drop('lava', h.x + (Math.random() - 0.5) * 40, h.y + (Math.random() - 0.5) * 20);
+        for (let i = 0; i < 2; i++) { const p = roomSpot(16); if (p) A.Weather.drop('lava', p.x, p.y); }
+        break;
+      }
+      case 'waechter': {   // Licht aus: 3,5 Sekunden fast dunkel, nur sein Auge und deine Lampe leuchten
+        s.t3 = 9; A.Weather.blackout(3.5);
+        api.float(h.x, h.y - 50, L('Dunkel!', 'Dark!'), '#b55088', 17);
+        break;
+      }
+    }
+  }
+
   // ---------- Verhalten je Boss (true = steht still, keine normalen Angriffe) ----------
   function step(m, dt, d) {
     const w = W(), h = w.hero;
     const s = m.bs || (m.bs = { t: 2.2, t2: 6, busy: 0 });
     if (!s.p2 && m.hp < m.maxHp * 0.5) enrage(m, s);
+    if (s.p2 && !s.p3 && m.hp < m.maxHp * 0.25) finale(m, s);
+    if (s.p3) finaleStep(m, s, dt);
     const k = s.p2 ? 0.7 : 1;
     s.t -= dt; s.t2 -= dt;
     if (s.busy > w.t) return true;
@@ -6501,6 +6569,7 @@ A.Bosses = (function () {
           if (b.tentacle) A.FX.burst(b.x, b.y, 14, { color: ['#b55088', '#68386c', '#2ce8f5'], smin: 30, smax: 90, z: 2, vz: 180, g: 420, life: 0.7 });
           if (b.sand) A.FX.smoke(b.x, b.y, 4, '#e4a672', 6);
           if (b.hammer) { A.FX.shake(0.35); A.FX.rocks(b.x, b.y, 4, 50, ['#8a3a1a', '#5d275d', '#f77622']); }
+          if (b.bolt) { w.bolts.push({ x0: b.x + (Math.random() - 0.5) * 60, y0: b.y - 520, x1: b.x, y1: b.y, life: 0.32, max: 0.32, col: '#c0f8ff', seed: Math.random() * 99 }); A.FX.flash(b.x, b.y, 140, '#c0f8ff', 0.3); A.FX.shake(0.25); if (A.Sound && A.Sound.thunder) A.Sound.thunder(); }
         }
       } else if (b.kind === 'pool') {
         if (w.t > b.until) { b.done = true; continue; }
@@ -6513,7 +6582,7 @@ A.Bosses = (function () {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
         const dx = b.from.x - h.x, dy = b.from.y - h.y, dd = Math.hypot(dx, dy) || 1;
         if (h.alive && dd > b.from.r + h.r + 6) api.moveEnt(h, dx / dd * b.pow * dt, dy / dd * b.pow * dt);
-        if (A.FX && !A.FX.low && Math.random() < dt * 40) { const a = Math.random() * TAU, rr = 160 + Math.random() * 200; A.FX.part({ kind: 'spark', add: false, x: b.from.x + Math.cos(a) * rr, y: b.from.y + Math.sin(a) * rr * 0.7, vx: -Math.cos(a) * 260, vy: -Math.sin(a) * 180, life: 0.6, color: Math.random() < 0.5 ? '#e4a672' : '#ead4aa', drag: 0.5 }); }
+        if (A.FX && !A.FX.low && Math.random() < dt * 40) { const a = Math.random() * TAU, rr = 160 + Math.random() * 200; A.FX.part({ kind: 'spark', add: false, x: b.from.x + Math.cos(a) * rr, y: b.from.y + Math.sin(a) * rr * 0.7, vx: -Math.cos(a) * 260, vy: -Math.sin(a) * 180, life: 0.6, color: b.water ? (Math.random() < 0.5 ? '#2ce8f5' : '#c0f8ff') : Math.random() < 0.5 ? '#e4a672' : '#ead4aa', drag: 0.5 }); }
       } else if (b.kind === 'beam') {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
         if (w.t < b.warm) continue;
@@ -6642,6 +6711,7 @@ A.Elites = (function () {
       else if (id === 'beschwoerer') { const pool = A.monsterPool(floor).filter(x => !x.rooted && x.id !== base.id); e.summon = (pool.length ? rng.pick(pool) : base).id; e.summonCd = 7; }
       else if (id === 'blinzelnd') e.teleport = true;
       else if (id === 'vampir') e.lifesteal = 35;
+      else if (id === 'dornig') e.thorns = (e.thorns || 0) + 33;
       else if (id === 'riese') { e.giant = true; e.maxHp = Math.round(e.maxHp * 1.6); e.atk = Math.round(e.atk * 1.2); e.mag = Math.round(e.mag * 1.2); e.spd = Math.max(0, e.spd - 1); }
     }
     if (tr.includes('schild')) e.shieldCap = Math.round(e.maxHp * 0.3);
@@ -6651,7 +6721,7 @@ A.Elites = (function () {
   // Beim Hinstellen in den Raum (world.js addMon): Zeitgeber, voller Schild
   function onAdd(m) {
     if (!m.traits) return;
-    m.ef = { fire: 2 + Math.random() * 2, frost: 2.5 + Math.random() * 2.5, storm: 2 + Math.random() * 2, stomp: 2 + Math.random(), heal: 3, busy: 0, hurtT: -9, spin: Math.random() * TAU, bladeT: 0, trail: 0, lx: m.x, ly: m.y, ghosts: [], gT: 0 };
+    m.ef = { fire: 2 + Math.random() * 2, frost: 2.5 + Math.random() * 2.5, storm: 2 + Math.random() * 2, stomp: 2 + Math.random(), heal: 3, bomb: 2.5 + Math.random() * 2, busy: 0, hurtT: -9, spin: Math.random() * TAU, bladeT: 0, trail: 0, lx: m.x, ly: m.y, ghosts: [], gT: 0 };
     if (m.shieldCap) m.shield = m.shieldCap;
   }
 
@@ -6678,7 +6748,7 @@ A.Elites = (function () {
     const w = W(), h = w.hero, s = m.ef; if (!s) return false;
     if (s.busy > w.t) return true;
     const k = m.raged ? 0.7 : 1;
-    s.fire -= dt; s.frost -= dt; s.storm -= dt; s.stomp -= dt; s.heal -= dt;
+    s.fire -= dt; s.frost -= dt; s.storm -= dt; s.stomp -= dt; s.heal -= dt; s.bomb -= dt;
     if (has(m, 'feurig') && s.fire <= 0 && d < 220) {   // bleibt stehen, glüht auf, Feuerring um sich
       s.fire = 6 * k; s.busy = w.t + 1;
       add({ kind: 'tele', fx: 'fire', from: m, follow: m, x: m.x, y: m.y, r: 100, t0: w.t, at: w.t + 1, dmg: m.atk * 1.3, col: '#f77622' });
@@ -6702,6 +6772,11 @@ A.Elites = (function () {
       say(m, L('Gewitter!', 'Thunderstorm!'), '#7fd8ff');
     }
     if (has(m, 'heiler') && s.heal <= 0) { s.heal = 3.5; healPulse(m); }
+    if (has(m, 'bombenleger') && s.bomb <= 0 && d < 520) {   // Bombe an seiner Stelle: trifft dich und alle Gegner im Kreis
+      s.bomb = 5 * k;
+      add({ kind: 'tele', fx: 'bomb', from: m, x: m.x, y: m.y + 6, r: 72, t0: w.t, at: w.t + 1.7, dmg: m.atk * 1.4, col: '#feae34' });
+      say(m, L('Bombe!', 'Bomb!'), '#feae34'); if (A.Sound) A.Sound.fuse();
+    }
     return false;
   }
   // Heiler: heilt verletzte Gegner in der Nähe (grüne Strahlen) und ein wenig sich selbst
@@ -6720,6 +6795,12 @@ A.Elites = (function () {
     const w = W(), s = m.ef; if (!s) return;
     s.hurtT = w.t;
     if (dmg > 0 && has(m, 'gepanzert') && A.FX && Math.random() < 0.6) { A.FX.burst(m.x, m.y - 12, 5, { color: ['#ffffff', '#c0cbdc', '#fee761'], smin: 70, smax: 180, life: 0.22, add: true, kind: 'spark', drag: 5 }); if (A.Sound && Math.random() < 0.35) A.Sound.clink(); }
+    if (m.hp <= 0 && has(m, 'zaeh') && !m.toughUsed) {   // Zäh: steht einmal wieder auf
+      m.toughUsed = true; m.hp = Math.max(1, Math.round(m.maxHp * 0.33)); m.stun = 0;
+      say(m, L('Noch nicht!', 'Not yet!'), '#c0cbdc');
+      if (A.FX) { A.FX.ev('nova', { e: m, r: 80, color: '#c0cbdc', magic: true }); A.FX.flash(m.x, m.y, 80, '#ffffff', 0.25); }
+      return;
+    }
     if (m.hp <= 0 || m.hp >= m.maxHp * 0.5) return;
     if (has(m, 'wuetend') && !m.raged) rage(m);
     if (has(m, 'spiegel') && !m.mirrored) mirror(m);
@@ -6766,6 +6847,11 @@ A.Elites = (function () {
         s.spin += dt * (m.stun > 0 ? 1.5 : 3.4);
         if (h.alive && w.t >= s.bladeT) for (let i = 0; i < 3; i++) { const p = blade(m, i); if (Math.hypot(h.x - p.x, h.y - p.y) < h.r + 9) { s.bladeT = w.t + 0.55; api.hit(m, h, m.atk * 0.45, { kind: 'phys' }); api.fx('wallhit', { x: p.x, y: p.y, color: '#ffffff' }); break; } }
       }
+      // Magnetisch: zieht den Helden langsam heran (nicht im Boss-Raum, nicht wenn er schon dran ist)
+      if (has(m, 'magnetisch') && h.alive && !(w.active && w.active.type === 'boss')) {
+        const dx = m.x - h.x, dy = m.y - h.y, dd = Math.hypot(dx, dy) || 1;
+        if (dd < 330 && dd > m.r + h.r + 24) { api.moveEnt(h, dx / dd * 40 * dt, dy / dd * 40 * dt); if (A.FX && !A.FX.low && Math.random() < dt * 12) { const q = Math.random(); A.FX.part({ add: true, x: h.x + dx * q, y: h.y + dy * q - 10, vx: dx / dd * 120, vy: dy / dd * 120, life: 0.3, color: Math.random() < 0.5 ? '#e43b44' : '#c0cbdc', drag: 0 }); } }
+      }
       // Giftspur und Nachbilder nur, wenn er sich bewegt
       const mv = Math.hypot(m.x - s.lx, m.y - s.ly); s.lx = m.x; s.ly = m.y;
       if (has(m, 'giftig') && !m.fly) { s.trail += Math.min(mv, 40); if (s.trail > 30) { s.trail = 0; puddle(m, 'poison', m.x, m.y + 8, 24, 3.5, Math.max(1, Math.round(m.atk * 0.25))); } }
@@ -6811,7 +6897,7 @@ A.Elites = (function () {
       if (S) S.thunder();
     } else if (b.fx === 'bomb') {
       if (me) api.hit(b.from, h, b.dmg, { kind: 'phys' });
-      for (const o of w.mons) if (o.alive && !(o.spawn > 0) && inEll(b, o, o.r * 0.5)) api.hit(b.from, o, b.dmg * 0.6, { kind: 'magic', color: '#feae34' });   // trifft auch die anderen Gegner
+      for (const o of w.mons) if (o.alive && o !== b.from && !(o.spawn > 0) && inEll(b, o, o.r * 0.5)) api.hit(b.from, o, b.dmg * 0.6, { kind: 'magic', color: '#feae34' });   // trifft auch die anderen Gegner
       if (F) { F.ev('boom', { x: b.x, y: b.y, r: b.r, color: '#feae34' }); F.shake(0.5); F.rocks(b.x, b.y, 6, 70, ['#5d275d', '#b13e53', '#f77622']); F.smoke(b.x, b.y, 8, '#5a6988', 6); }
     }
   }
@@ -7212,9 +7298,12 @@ A.Weather = (function () {
     if (stopped) { for (const o of s.marks) if (!o.done) { o.t0 += dt; o.at += dt; } return; }   // Zeitstopp der Totenmaske: Steine und Lava hängen in der Luft
     if (w.active !== s.room) { s.room = w.active; s.dropT = 2.5; }   // neuer Kampf: erst durchatmen
     // Wetter, das kommt und geht: Wolkenbruch und Sandsturm
+    // Endphase eines Bosses (bosses.js): Wetter bleibt, bis der Boss fällt
+    if (s.forced && !w.mons.some(m => m.boss && m.alive)) { s.forced = false; s.until = Math.min(s.until, w.t + 1); s.blackUntil = 0; }
+    if (s.forced && k === 'sturm' && w.t >= s.flipT) { s.flipT = w.t + 3; s.wind = -s.wind; }
     if (k === 'regen' || k === 'sturm') {
       if (!s.on && w.t >= s.next) {
-        s.on = true; s.until = w.t + (k === 'regen' ? 9 : 7); s.wind = (Math.random() < 0.5 ? -1 : 1);
+        s.on = true; s.start = w.t; s.until = w.t + (k === 'regen' ? 9 : 7); s.wind = (Math.random() < 0.5 ? -1 : 1);
         api.float(h.x, h.y - 52, k === 'regen' ? L('Wolkenbruch!', 'Downpour!') : L('Sandsturm!', 'Sandstorm!'), A.WORLD_FX[w.world.id].col, 17);
         if (A.Sound && A.Sound.thunder && k === 'regen') A.Sound.thunder(); else if (A.Sound && A.Sound.windup) A.Sound.windup();
         if (k === 'regen' && A.FX) A.FX.flash(h.x, h.y, 400, '#c0f8ff', 0.25);
@@ -7297,6 +7386,13 @@ A.Weather = (function () {
     }
     if (A.Sound && rock && A.Sound.stomp) A.Sound.stomp();
   }
+  // ---------- für die Endphase der Bosse (bosses.js) ----------
+  // ein Stein oder Lavabrocken an (x, y), mit der üblichen Vorwarnung
+  function drop(kind, x, y) { const w = W(); if (!w) return; const s = st(w), rock = kind === 'rock', [fx, fy] = api.freeSpot(x, y, 10); s.marks.push({ kind: rock ? 'rock' : 'lava', x: fx, y: fy, r: rock ? 44 : 50, t0: w.t, at: w.t + (rock ? 1.25 : 1.35) }); }
+  // Regen oder Sandsturm bleiben an, bis der Boss fällt
+  function force() { const w = W(), k = kind(w); if (!k) return; const s = st(w); s.forced = true; if (k === 'regen' || k === 'sturm') { if (!s.on) { s.on = true; s.start = w.t; s.wind = Math.random() < 0.5 ? -1 : 1; } s.until = w.t + 1e6; s.flipT = w.t + 3; } }
+  // Licht aus (Wächter): einige Sekunden fast völlige Dunkelheit
+  function blackout(sec) { const w = W(); if (!w) return; const s = st(w); s.blackUntil = w.t + sec; s.forced = true; }
   // Schaden: im Regen treffen Blitze härter
   function pre(from, to, opts) { return opts && opts.zap && raining() ? { mul: 1.3 } : null; }
   // Gefahr-Boden: im Regen wird Schlamm zäher
@@ -7304,8 +7400,8 @@ A.Weather = (function () {
   // Grundlicht: Finsternis im Abgrund, Regen und Sandsturm dunkeln ab
   function ambient(col) {
     const w = W(), k = w && kind(w); if (!k) return col;
-    if (k === 'finsternis') return w.active && w.active.type === 'boss' ? '#2a2040' : '#16111f';
-    const s = st(w), f = s.on ? clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - (k === 'regen' ? 9 : 7))) / 1, 0, 1) : 0;   // weich über- und ausblenden
+    if (k === 'finsternis') return st(w).blackUntil > w.t ? '#07050b' : w.active && w.active.type === 'boss' ? '#2a2040' : '#16111f';   // Wächter-Endphase: Licht aus
+    const s = st(w), f = s.on ? clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - s.start) / 1, 0, 1) : 0;   // weich über- und ausblenden
     if (k === 'regen' && f > 0) return mix(col, '#2c4436', f);
     if (k === 'sturm' && f > 0) return mix(col, '#6a5644', f);
     return col;
@@ -7358,7 +7454,7 @@ A.Weather = (function () {
     }
     // Regen: schräge Striche über das ganze Bild, Spritzer am Boden
     if (k === 'regen' && s.on) {
-      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - 9)) / 1, 0, 1);
+      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - s.start) / 1, 0, 1);
       // auf der Leucht-Ebene: das dunkle Regenlicht schluckt sie sonst
       g.strokeStyle = '#9fc8ff'; g.lineWidth = 1;
       for (let grp = 0; grp < 3; grp++) {   // drei Helligkeiten, je ein Pfad
@@ -7370,7 +7466,7 @@ A.Weather = (function () {
     }
     // Sandsturm: gelber Schleier und Sandschwaden im Wind
     if (k === 'sturm' && s.on) {
-      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - 7)) / 1, 0, 1);
+      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - s.start) / 1, 0, 1);
       g.globalAlpha = 0.1 * fade; g.fillStyle = '#d8a060'; g.fillRect(0, 0, bw, bh);   // Staubschleier (Leucht-Ebene, sonst schluckt ihn das Licht)
       for (let i = 0; i < 110; i++) {
         const sp = 140 + (i % 7) * 25, x = (((i * 71.3 + s.wind * t * sp) % (bw + 40)) + bw + 40) % (bw + 40) - 20, y = (i * 37.9 + Math.sin(t * 1.5 + i) * 6) % bh;
@@ -7381,7 +7477,7 @@ A.Weather = (function () {
     if (k === 'finsternis') {
       const h = w.hero;
       for (const m of w.mons) {
-        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < 200) continue;   // ausserhalb des eigenen Lichts
+        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < (s.blackUntil > w.t ? 70 : 200)) continue;   // ausserhalb des eigenen Lichts
         const x = Math.round(m.x / PX - cx), y = Math.round(m.y / PX - cy - m.r / PX * 1.6), blink = Math.sin(t * 1.7 + m.x) > 0.95;
         if (blink) continue;
         g.globalAlpha = 0.95; g.fillStyle = '#ff0044'; g.fillRect(x - 3, y, 2, 1); g.fillRect(x + 2, y, 2, 1);
@@ -7394,13 +7490,13 @@ A.Weather = (function () {
     const k = kind(w); if (!k) return;
     const s = st(w), h = w.hero;
     for (const o of s.marks) if (!o.done && o.kind === 'lava') Lt(o.x, o.y, o.r / PX * 1.4, '#f77622', 0.25 + 0.45 * clamp((w.t - o.t0) / (o.at - o.t0), 0, 1));
-    if (k === 'finsternis' && h.alive) { Lt(h.x, h.y - 8, 118, '#d8b0ff', 0.75); Lt(h.x, h.y - 8, 60, '#ffffff', 0.3); }
+    if (k === 'finsternis' && h.alive) { const bl = s.blackUntil > w.t; Lt(h.x, h.y - 8, bl ? 64 : 118, '#d8b0ff', 0.75); Lt(h.x, h.y - 8, bl ? 34 : 60, '#ffffff', 0.3); }
   }
   // Hinweis beim Betreten der Welt (Oberfläche)
   function tip(w) { const f = info(w); return f ? A.t(f.tip) : ''; }
   function nameOf(w) { const f = info(w); return f ? A.t(f.name) : ''; }
 
-  return { bind, kind, info, tick, pre, slow, ambient, drawGround, drawTop, lights, tip, nameOf, raining, storm, flow, sandMid };
+  return { bind, kind, info, tick, drop, force, blackout, pre, slow, ambient, drawGround, drawTop, lights, tip, nameOf, raining, storm, flow, sandMid };
 })();
 
 </script>

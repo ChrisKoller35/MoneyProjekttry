@@ -44,9 +44,12 @@ A.Weather = (function () {
     if (stopped) { for (const o of s.marks) if (!o.done) { o.t0 += dt; o.at += dt; } return; }   // Zeitstopp der Totenmaske: Steine und Lava hängen in der Luft
     if (w.active !== s.room) { s.room = w.active; s.dropT = 2.5; }   // neuer Kampf: erst durchatmen
     // Wetter, das kommt und geht: Wolkenbruch und Sandsturm
+    // Endphase eines Bosses (bosses.js): Wetter bleibt, bis der Boss fällt
+    if (s.forced && !w.mons.some(m => m.boss && m.alive)) { s.forced = false; s.until = Math.min(s.until, w.t + 1); s.blackUntil = 0; }
+    if (s.forced && k === 'sturm' && w.t >= s.flipT) { s.flipT = w.t + 3; s.wind = -s.wind; }
     if (k === 'regen' || k === 'sturm') {
       if (!s.on && w.t >= s.next) {
-        s.on = true; s.until = w.t + (k === 'regen' ? 9 : 7); s.wind = (Math.random() < 0.5 ? -1 : 1);
+        s.on = true; s.start = w.t; s.until = w.t + (k === 'regen' ? 9 : 7); s.wind = (Math.random() < 0.5 ? -1 : 1);
         api.float(h.x, h.y - 52, k === 'regen' ? L('Wolkenbruch!', 'Downpour!') : L('Sandsturm!', 'Sandstorm!'), A.WORLD_FX[w.world.id].col, 17);
         if (A.Sound && A.Sound.thunder && k === 'regen') A.Sound.thunder(); else if (A.Sound && A.Sound.windup) A.Sound.windup();
         if (k === 'regen' && A.FX) A.FX.flash(h.x, h.y, 400, '#c0f8ff', 0.25);
@@ -129,6 +132,13 @@ A.Weather = (function () {
     }
     if (A.Sound && rock && A.Sound.stomp) A.Sound.stomp();
   }
+  // ---------- für die Endphase der Bosse (bosses.js) ----------
+  // ein Stein oder Lavabrocken an (x, y), mit der üblichen Vorwarnung
+  function drop(kind, x, y) { const w = W(); if (!w) return; const s = st(w), rock = kind === 'rock', [fx, fy] = api.freeSpot(x, y, 10); s.marks.push({ kind: rock ? 'rock' : 'lava', x: fx, y: fy, r: rock ? 44 : 50, t0: w.t, at: w.t + (rock ? 1.25 : 1.35) }); }
+  // Regen oder Sandsturm bleiben an, bis der Boss fällt
+  function force() { const w = W(), k = kind(w); if (!k) return; const s = st(w); s.forced = true; if (k === 'regen' || k === 'sturm') { if (!s.on) { s.on = true; s.start = w.t; s.wind = Math.random() < 0.5 ? -1 : 1; } s.until = w.t + 1e6; s.flipT = w.t + 3; } }
+  // Licht aus (Wächter): einige Sekunden fast völlige Dunkelheit
+  function blackout(sec) { const w = W(); if (!w) return; const s = st(w); s.blackUntil = w.t + sec; s.forced = true; }
   // Schaden: im Regen treffen Blitze härter
   function pre(from, to, opts) { return opts && opts.zap && raining() ? { mul: 1.3 } : null; }
   // Gefahr-Boden: im Regen wird Schlamm zäher
@@ -136,8 +146,8 @@ A.Weather = (function () {
   // Grundlicht: Finsternis im Abgrund, Regen und Sandsturm dunkeln ab
   function ambient(col) {
     const w = W(), k = w && kind(w); if (!k) return col;
-    if (k === 'finsternis') return w.active && w.active.type === 'boss' ? '#2a2040' : '#16111f';
-    const s = st(w), f = s.on ? clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - (k === 'regen' ? 9 : 7))) / 1, 0, 1) : 0;   // weich über- und ausblenden
+    if (k === 'finsternis') return st(w).blackUntil > w.t ? '#07050b' : w.active && w.active.type === 'boss' ? '#2a2040' : '#16111f';   // Wächter-Endphase: Licht aus
+    const s = st(w), f = s.on ? clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - s.start) / 1, 0, 1) : 0;   // weich über- und ausblenden
     if (k === 'regen' && f > 0) return mix(col, '#2c4436', f);
     if (k === 'sturm' && f > 0) return mix(col, '#6a5644', f);
     return col;
@@ -190,7 +200,7 @@ A.Weather = (function () {
     }
     // Regen: schräge Striche über das ganze Bild, Spritzer am Boden
     if (k === 'regen' && s.on) {
-      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - 9)) / 1, 0, 1);
+      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - s.start) / 1, 0, 1);
       // auf der Leucht-Ebene: das dunkle Regenlicht schluckt sie sonst
       g.strokeStyle = '#9fc8ff'; g.lineWidth = 1;
       for (let grp = 0; grp < 3; grp++) {   // drei Helligkeiten, je ein Pfad
@@ -202,7 +212,7 @@ A.Weather = (function () {
     }
     // Sandsturm: gelber Schleier und Sandschwaden im Wind
     if (k === 'sturm' && s.on) {
-      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - (s.until - 7)) / 1, 0, 1);
+      const fade = clamp((s.until - w.t) / 1, 0, 1) * clamp((w.t - s.start) / 1, 0, 1);
       g.globalAlpha = 0.1 * fade; g.fillStyle = '#d8a060'; g.fillRect(0, 0, bw, bh);   // Staubschleier (Leucht-Ebene, sonst schluckt ihn das Licht)
       for (let i = 0; i < 110; i++) {
         const sp = 140 + (i % 7) * 25, x = (((i * 71.3 + s.wind * t * sp) % (bw + 40)) + bw + 40) % (bw + 40) - 20, y = (i * 37.9 + Math.sin(t * 1.5 + i) * 6) % bh;
@@ -213,7 +223,7 @@ A.Weather = (function () {
     if (k === 'finsternis') {
       const h = w.hero;
       for (const m of w.mons) {
-        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < 200) continue;   // ausserhalb des eigenen Lichts
+        if (!m.alive || m.spawn > 0 || Math.hypot(m.x - h.x, m.y - h.y) < (s.blackUntil > w.t ? 70 : 200)) continue;   // ausserhalb des eigenen Lichts
         const x = Math.round(m.x / PX - cx), y = Math.round(m.y / PX - cy - m.r / PX * 1.6), blink = Math.sin(t * 1.7 + m.x) > 0.95;
         if (blink) continue;
         g.globalAlpha = 0.95; g.fillStyle = '#ff0044'; g.fillRect(x - 3, y, 2, 1); g.fillRect(x + 2, y, 2, 1);
@@ -226,11 +236,11 @@ A.Weather = (function () {
     const k = kind(w); if (!k) return;
     const s = st(w), h = w.hero;
     for (const o of s.marks) if (!o.done && o.kind === 'lava') Lt(o.x, o.y, o.r / PX * 1.4, '#f77622', 0.25 + 0.45 * clamp((w.t - o.t0) / (o.at - o.t0), 0, 1));
-    if (k === 'finsternis' && h.alive) { Lt(h.x, h.y - 8, 118, '#d8b0ff', 0.75); Lt(h.x, h.y - 8, 60, '#ffffff', 0.3); }
+    if (k === 'finsternis' && h.alive) { const bl = s.blackUntil > w.t; Lt(h.x, h.y - 8, bl ? 64 : 118, '#d8b0ff', 0.75); Lt(h.x, h.y - 8, bl ? 34 : 60, '#ffffff', 0.3); }
   }
   // Hinweis beim Betreten der Welt (Oberfläche)
   function tip(w) { const f = info(w); return f ? A.t(f.tip) : ''; }
   function nameOf(w) { const f = info(w); return f ? A.t(f.name) : ''; }
 
-  return { bind, kind, info, tick, pre, slow, ambient, drawGround, drawTop, lights, tip, nameOf, raining, storm, flow, sandMid };
+  return { bind, kind, info, tick, drop, force, blackout, pre, slow, ambient, drawGround, drawTop, lights, tip, nameOf, raining, storm, flow, sandMid };
 })();

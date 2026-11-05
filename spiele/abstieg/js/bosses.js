@@ -40,11 +40,71 @@ A.Bosses = (function () {
     api.float(m.x, m.y - 70, L('Wut!', 'Rage!'), '#e43b44', 20);
   }
 
+  // ---------- Endphase: ab einem Viertel Leben ruft der Boss seine Welt (Eigenheiten in weather.js) ----------
+  const FINALE = {
+    schleimkoenig: { de: 'Die Decke stürzt ein!', en: 'The ceiling caves in!', col: '#c0cbdc' },
+    dornenmutter: { de: 'Ruft das Gewitter!', en: 'Calls the thunderstorm!', col: '#7fd8ff' },
+    sandpharao: { de: 'Ewiger Sandsturm!', en: 'Endless sandstorm!', col: '#ead4aa' },
+    kraken: { de: 'Der Strudel erwacht!', en: 'The maelstrom wakes!', col: '#2ce8f5' },
+    rostkoenig: { de: 'Der Vulkan bricht aus!', en: 'The volcano erupts!', col: '#f77622' },
+    waechter: { de: 'Das Licht geht aus!', en: 'The lights go out!', col: '#b55088' },
+  };
+  function finale(m, s) {
+    const f = FINALE[m.mid]; s.p3 = true; s.t3 = 1.2;
+    if (!f) return;
+    if (A.FX) { A.FX.banner(m.name, L(f.de, f.en), f.col, 2.6); A.FX.shake(0.7); A.FX.ev('nova', { e: m, r: 150, color: f.col, magic: true }); }
+    api.float(m.x, m.y - 80, L('Letzte Phase!', 'Final phase!'), f.col, 20);
+    if (A.Sound && A.Sound.roar) A.Sound.roar();
+    if (m.mid === 'dornenmutter' || m.mid === 'sandpharao') A.Weather.force();
+  }
+  // Endphase je Boss, läuft neben den normalen Angriffen
+  function finaleStep(m, s, dt) {
+    const w = W(), h = w.hero;
+    s.t3 -= dt; if (s.t3 > 0 || !h.alive) return;
+    switch (m.mid) {
+      case 'schleimkoenig': {   // Einsturz: Steine auf den Helden und in den Raum (treffen auch den König)
+        s.t3 = 3.2; A.Weather.drop('rock', h.x + (Math.random() - 0.5) * 40, h.y + (Math.random() - 0.5) * 20);
+        for (let i = 0; i < 2; i++) { const p = roomSpot(16); if (p) A.Weather.drop('rock', p.x, p.y); }
+        if (A.FX) A.FX.shake(0.25);
+        break;
+      }
+      case 'dornenmutter': {   // Gewitter: Blitze schlagen in markierte Stellen ein
+        s.t3 = 3.6;
+        tele(m, h.x, h.y, 48, 1.15, m.atk * 1.3, { col: '#7fd8ff', bolt: true });
+        for (let i = 0; i < 2; i++) { const p = near(h.x, h.y, 170); tele(m, p.x, p.y, 48, 1.25 + i * 0.15, m.atk * 1.3, { col: '#7fd8ff', bolt: true }); }
+        break;
+      }
+      case 'sandpharao': {   // Sturm dreht alle 3 Sekunden (weather.js), dazu Treibsand-Pfützen
+        s.t3 = 6.5; for (let i = 0; i < 2; i++) { const p = near(h.x, h.y, 160); pool(p.x, p.y, 58, 7, 'sand'); }
+        break;
+      }
+      case 'kraken': {   // Strudel zieht zum Kraken, die Flut kommt öfter
+        s.t3 = 7; add({ kind: 'wind', from: m, t0: w.t, until: w.t + 2.2, pow: 60, water: true });
+        s.t2 -= 2;
+        api.float(m.x, m.y - 60, L('Strudel!', 'Maelstrom!'), '#2ce8f5', 16);
+        break;
+      }
+      case 'rostkoenig': {   // Ausbruch: Lava auf den Helden und in den Raum
+        s.t3 = 3;
+        A.Weather.drop('lava', h.x + (Math.random() - 0.5) * 40, h.y + (Math.random() - 0.5) * 20);
+        for (let i = 0; i < 2; i++) { const p = roomSpot(16); if (p) A.Weather.drop('lava', p.x, p.y); }
+        break;
+      }
+      case 'waechter': {   // Licht aus: 3,5 Sekunden fast dunkel, nur sein Auge und deine Lampe leuchten
+        s.t3 = 9; A.Weather.blackout(3.5);
+        api.float(h.x, h.y - 50, L('Dunkel!', 'Dark!'), '#b55088', 17);
+        break;
+      }
+    }
+  }
+
   // ---------- Verhalten je Boss (true = steht still, keine normalen Angriffe) ----------
   function step(m, dt, d) {
     const w = W(), h = w.hero;
     const s = m.bs || (m.bs = { t: 2.2, t2: 6, busy: 0 });
     if (!s.p2 && m.hp < m.maxHp * 0.5) enrage(m, s);
+    if (s.p2 && !s.p3 && m.hp < m.maxHp * 0.25) finale(m, s);
+    if (s.p3) finaleStep(m, s, dt);
     const k = s.p2 ? 0.7 : 1;
     s.t -= dt; s.t2 -= dt;
     if (s.busy > w.t) return true;
@@ -149,6 +209,7 @@ A.Bosses = (function () {
           if (b.tentacle) A.FX.burst(b.x, b.y, 14, { color: ['#b55088', '#68386c', '#2ce8f5'], smin: 30, smax: 90, z: 2, vz: 180, g: 420, life: 0.7 });
           if (b.sand) A.FX.smoke(b.x, b.y, 4, '#e4a672', 6);
           if (b.hammer) { A.FX.shake(0.35); A.FX.rocks(b.x, b.y, 4, 50, ['#8a3a1a', '#5d275d', '#f77622']); }
+          if (b.bolt) { w.bolts.push({ x0: b.x + (Math.random() - 0.5) * 60, y0: b.y - 520, x1: b.x, y1: b.y, life: 0.32, max: 0.32, col: '#c0f8ff', seed: Math.random() * 99 }); A.FX.flash(b.x, b.y, 140, '#c0f8ff', 0.3); A.FX.shake(0.25); if (A.Sound && A.Sound.thunder) A.Sound.thunder(); }
         }
       } else if (b.kind === 'pool') {
         if (w.t > b.until) { b.done = true; continue; }
@@ -161,7 +222,7 @@ A.Bosses = (function () {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
         const dx = b.from.x - h.x, dy = b.from.y - h.y, dd = Math.hypot(dx, dy) || 1;
         if (h.alive && dd > b.from.r + h.r + 6) api.moveEnt(h, dx / dd * b.pow * dt, dy / dd * b.pow * dt);
-        if (A.FX && !A.FX.low && Math.random() < dt * 40) { const a = Math.random() * TAU, rr = 160 + Math.random() * 200; A.FX.part({ kind: 'spark', add: false, x: b.from.x + Math.cos(a) * rr, y: b.from.y + Math.sin(a) * rr * 0.7, vx: -Math.cos(a) * 260, vy: -Math.sin(a) * 180, life: 0.6, color: Math.random() < 0.5 ? '#e4a672' : '#ead4aa', drag: 0.5 }); }
+        if (A.FX && !A.FX.low && Math.random() < dt * 40) { const a = Math.random() * TAU, rr = 160 + Math.random() * 200; A.FX.part({ kind: 'spark', add: false, x: b.from.x + Math.cos(a) * rr, y: b.from.y + Math.sin(a) * rr * 0.7, vx: -Math.cos(a) * 260, vy: -Math.sin(a) * 180, life: 0.6, color: b.water ? (Math.random() < 0.5 ? '#2ce8f5' : '#c0f8ff') : Math.random() < 0.5 ? '#e4a672' : '#ead4aa', drag: 0.5 }); }
       } else if (b.kind === 'beam') {
         if (w.t > b.until || !b.from.alive) { b.done = true; continue; }
         if (w.t < b.warm) continue;
