@@ -140,9 +140,9 @@ A.World = (function () {
     const cap = A.Foes.captainFor(f);
     if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
     else if (cap && r === A.Foes.captainRoom(W)) {   // Hauptmann der Welt (foes.js), ab der zweiten Runde mit einem Begleiter
-      list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f)), f, false, 2));
+      list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f, run.lvVer || 0)), f, false, 2));
     } else {
-      const pool = A.monsterPool(f);
+      const pool = A.monsterPool(f, run.lvVer || 0);   // ab lvVer 6 mit den neuen Gegnern (ab der 2. Ebene einer Welt)
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
       const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0);
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
@@ -176,11 +176,19 @@ A.World = (function () {
     const h = W.hero;
     if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
     if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
+    if (m.curled && m.pose) m.pose = null;   // Panzer vorbei: wieder das normale Bild
+    // Einrollen (curl, Grabkäfer): unter halbem Leben einmal 2,5 s im Panzer (foes.js guard fängt jeden Treffer ab, keine Heilung danach), dann sofort Anlauf
+    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
+    if (m.charge && chargeStep(m, dt, d, nx, ny)) return true;
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)
     if (A.Foes.flee(m, dt, d, nx, ny)) return true;   // Flucht unter 30 % Leben (foes.js)
     m.skT -= dt;
-    if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
+    if (m.ring && !m.boss) {   // Kugelfisch: bläst sich 0,5 s sichtbar auf, dann ein Stachelring (nur aus der Nähe)
+      if (m.puffT > 0) { if ((m.puffT -= dt) <= 0) { m.pose = null; m.swing = 0.3; ringShot(m, m.ring, m.shotCol || m.color); fx('nova', { e: m, r: 60, color: m.shotCol || m.color, magic: true }); } return true; }
+      if (m.skT <= 0 && d < 320) { m.skT = m.ringCd || 5; m.puffT = 0.5; m.pose = m.mid + '_big'; fx('windup', { m }); return true; }
+    }
+    if (m.ring && m.boss && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
     if (m.summon) {
       m.sumT -= dt;
       const alive = W.mons.filter(o => o.alive && o.summoned).length;
@@ -195,6 +203,28 @@ A.World = (function () {
     if (m.leap && m.state !== 'leap' && m.cd <= 0 && d > 70 && d < 260 && clearLine(m, h)) { m.state = 'leap'; m.st = 0.32; m.lx = nx; m.ly = ny; m.cd = 2.2; fx('windup', { m }); return true; }
     if (m.state === 'leap') { m.st -= dt; moveEnt(m, m.lx * 520 * dt, m.ly * 520 * dt); if (m.st <= 0) { m.state = 'chase'; if (dist(m, h) < m.r + h.r + 14) hit(m, h, m.atk * 1.2, { kind: 'phys' }); fx('strike', { m }); } return true; }
     return false;
+  }
+  // Anlauf (charge): 0,45 s stehen und zittern, roter Pfeil-Streifen am Boden, dann 0,7 s geradeaus; Held = Schaden und Rückstoss, Wand = benommen
+  function chargeStep(m, dt, d, nx, ny) {
+    const h = W.hero;
+    if (m.state === 'windup' && m.chPh === 'wind') { m.fx = m.cdx; m.fy = m.cdy; if ((m.st -= dt) <= 0) { m.state = 'charge'; m.chPh = null; m.st = 0.7; } return true; }
+    if (m.state === 'charge') {
+      const ox = m.x, oy = m.y, step = 420 * dt; m.fx = m.cdx; m.fy = m.cdy; m.st -= dt;
+      moveEnt(m, m.cdx * step, m.cdy * step);
+      if (!m.chHit && h.alive && dist(m, h) < m.r + h.r + 6) { m.chHit = true; hit(m, h, m.atk * 1.4, { kind: 'phys' }); moveEnt(h, m.cdx * 34, m.cdy * 34); fx('strike', { m }); }
+      if (A.FX && !A.FX.low) A.FX.smoke(m.x, m.y + 8, 1, '#8b9bb4', 3);
+      if (Math.hypot(m.x - ox, m.y - oy) < step * 0.5) { m.state = 'chase'; m.stun = 0.6; fx('strike', { m }); float(m.x, m.y - 40, A.LANG === 'de' ? 'Benommen!' : 'Dazed!', '#fee761', 13); if (A.FX) A.FX.shake(0.15); }
+      else if (m.st <= 0) m.state = 'chase';
+      return true;
+    }
+    if ((m.chCd = (m.chCd ?? 1.5) - dt) > 0 || m.state === 'windup' || !h.alive || !(m.chNow || (d > 90 && d < 300 && clearLine(m, h)))) return false;
+    Object.assign(m, { state: 'windup', chPh: 'wind', st: 0.45, stMax: 0.45, chNow: false, chHit: false, chCd: 3.5, cdx: nx, cdy: ny, fx: nx, fy: ny });
+    fx('windup', { m });
+    if (A.FX) for (let k = 1; k <= 12; k++) {   // Warnung: Pfeil-Spitzen in Laufrichtung, bis zur ersten Wand
+      const cx = m.x + nx * k * 24, cy = m.y + ny * k * 24; if (solid(cx, cy)) break;
+      for (let j = -2; j <= 2; j++) A.FX.part({ x: cx - nx * Math.abs(j) * 5 - ny * j * 5, y: cy + 6 - ny * Math.abs(j) * 5 + nx * j * 5, life: 0.6, size: 2, color: '#e43b44', add: true, drag: 0 });
+    }
+    return true;
   }
   function blink(m) {
     const h = W.hero; fx('appear', { m });
