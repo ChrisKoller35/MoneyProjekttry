@@ -225,6 +225,58 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await shot('14n-rekorde-punkte');
   await page.click('#tClose'); await page.waitForTimeout(200);
 
+  // 9d4) Runde 2: Kronen-Laden, Gletscher, Grotte
+  await page.evaluate(() => { window.__mine.S.crowns = 400; });
+  await page.click('#crownPill'); await page.waitForTimeout(300);
+  await page.click('#tShop'); await page.waitForTimeout(300);
+  check((await page.locator('#toast').textContent()).includes('Kronen-Laden') && await page.locator('[data-buy="kraft"]').isEnabled(), 'Kronen-Laden öffnet sich aus der Karte');
+  await shot('26-kronen-laden');
+  const dmg0 = await page.evaluate(() => window.__mine.F.pickDmg(window.__mine.S.pick, window.__mine.S));
+  await page.click('[data-buy="kraft"]'); await page.waitForTimeout(200);
+  for (const k of ['start', 'gilde', 'lager', 'turm', 'helm', 'gpick']) { await page.click(`[data-buy="${k}"]`); await page.waitForTimeout(150); }
+  s = await S();
+  const dmg1 = await page.evaluate(() => window.__mine.F.pickDmg(window.__mine.S.pick, window.__mine.S));
+  const si = await page.evaluate(() => window.__mine.storeInfo());
+  check(Math.abs(dmg1 / dmg0 - 1.2) < 0.001 && s.crownsAll === 34 && s.crowns < 400 && s.shop.helm === 1 && s.shop.lager === 1, `Kronen-Kraft +20 %, Punktestand bleibt (${s.crowns} Kronen übrig, Punkte ${s.crownsAll})`);
+  check(si.cap === Math.floor(18 * 1.25) && si.rate === 1.25, `Grösseres Lager 18 h und Turm-Antrieb +25 % (${si.cap}, ${si.rate}/h)`);
+  await shot('27-laden-gekauft');
+  await page.click('#tBack'); await page.waitForTimeout(300);
+  check(await page.locator('[data-unl="eis"]').isEnabled() && await page.locator('[data-unl="wasser"]').isEnabled(), 'Gletscher und Grotte lassen sich freischalten');
+  await page.click('[data-unl="eis"]'); await page.waitForTimeout(200);
+  await page.click('[data-go="eis"]'); await page.waitForTimeout(300);
+  if (await page.locator('#tYes').isVisible()) { await page.click('#tYes'); await page.waitForTimeout(300); }
+  s = await S();
+  check(s.blk === 'eis' && s.depth <= 2 && s.gold >= 1000 && s.gold < 1500 && s.dw[0] === 10, `Gletscher startet mit Startkapital und Gilde (Gold ${s.gold}, Gräber ${s.dw[0]})`);
+  check((await page.evaluate(() => window.__mine.layerAt(5).name)) === 'Schnee', 'Gletscher hat eigene Schichten (Schnee)');
+  const ice = await page.evaluate(() => {
+    const m = window.__mine; m.S.dw = m.S.dw.map(() => 0); m.jump(33); window.__mineSpecial.spawn(null); m.freeze();
+    const hp = m.S.hp, d = m.F.pickDmg(m.S.pick, m.S); m.tap(); const half = (hp - m.S.hp) / d;
+    m.S.up.dyn = true; m.S.cdDyn = 0; m.useDyn(); return { half, melted: !m.frozen, b: m.banners() };
+  });
+  check([0.5, 2.5].some(x => Math.abs(ice.half - x) < 0.01) && ice.melted && ice.b.includes('Eis geschmolzen!'), `Eis halbiert den Schaden, Dynamit schmilzt es (×${ice.half})`);
+  await page.evaluate(() => { window.__mine.jump(34); window.__mine.freeze(); }); await page.waitForTimeout(2600);
+  await shot('28-gletscher-eis');
+  const fr = await page.evaluate(async () => {
+    const m = window.__mine; m.S.dw[0] = 50; m.startFrost(); const hp0 = m.S.hp; await new Promise(r => setTimeout(r, 500)); const cold = hp0 - m.S.hp;
+    m.S.up.bier = true; m.S.cdBeer = 0; m.useBeer(); const hp1 = m.S.hp; await new Promise(r => setTimeout(r, 500)); const warm = hp1 - m.S.hp;
+    return { frost: m.frost, cold, warm, dps: m.F.totalDps(m.S) };
+  });
+  check(fr.frost > 10 && fr.cold > 0 && fr.cold < fr.dps * 0.5 * 0.4 && fr.warm > fr.cold * 6, `Kälte: Zwerge frieren, Bier wärmt (${Math.round(fr.cold)} / ${Math.round(fr.warm)})`);
+  await page.waitForTimeout(400); await shot('29-kaelte');
+  await page.evaluate(() => { const m = window.__mine; m.S.crowns += 50; });
+  await page.click('#crownPill'); await page.waitForTimeout(300);
+  await page.click('[data-unl="wasser"]'); await page.waitForTimeout(200);
+  await page.click('[data-go="wasser"]'); await page.waitForTimeout(300);
+  if (await page.locator('#tYes').isVisible()) { await page.click('#tYes'); await page.waitForTimeout(300); }
+  const gr = await page.evaluate(() => { const m = window.__mine; return { blk: m.S.blk, name: m.layerAt(5).name, chest: m.F.chestEvery(m.S), chestStein: m.F.chestEvery(Object.assign({}, m.S, { blk: 'stein' })) }; });
+  check(gr.blk === 'wasser' && gr.name === 'Tropfstein' && gr.chest * 2 === gr.chestStein, `Grotte: eigene Schichten, doppelt so viele Truhen (${gr.chest} s)`);
+  await page.evaluate(() => { const m = window.__mine; m.S.dw = m.S.dw.map(() => 0); m.jump(40); }); await page.waitForTimeout(400);
+  await page.evaluate(() => { window.__mine.S.hp = window.__mine.F.rockHp(40); }); await page.waitForTimeout(2600);
+  await shot('30-grotte-boss-wasser');
+  const fl = await page.evaluate(() => { const m = window.__mine; m.failBoss(); return { d: m.S.depth, b: m.banners() }; });
+  check(fl.d === 38 && fl.b.includes('Das Wasser steigt!'), `Grotte: verlorener Boss heisst 2 Tiefen zurück (${fl.d})`);
+  await page.evaluate(() => window.__mine.retryBoss());
+
   // 9e) Ton aus, wenn das Fenster nicht mehr vorne ist
   const foc = await page.evaluate(() => { const m = window.__mine; window.dispatchEvent(new Event('blur')); const a = m.focus; window.dispatchEvent(new Event('focus')); return [a, m.focus]; });
   check(foc[0] === false && foc[1] === true, 'Ton aus, wenn man woanders hinklickt');
