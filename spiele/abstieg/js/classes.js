@@ -57,7 +57,7 @@ A.Classes = (function () {
     const w = W(), h = w.hero, o = s.opts;
     for (const m of w.mons) {
       if (!live(m) || Math.hypot(m.x - s.x, m.y - s.y) > o.r + m.r) continue;
-      api.hit(h, m, s.dmg, { kind: 'magic', color: o.col, basic: o.basic, burn: o.burn, poison: o.poison, slow: o.slow || !!o.freeze, slowDur: o.freeze ? 2.5 : 1.6, noKb: !o.basic });
+      api.hit(h, m, s.dmg, { kind: 'magic', color: o.col, basic: o.basic, burn: o.burn, poison: o.poison, slow: o.slow || !!o.freeze, slowDur: o.freeze ? 2.5 : 1.6, noKb: !o.basic, boom: true });
       if (o.freeze && m.alive && m.hp > 0) { const d = m.boss ? 0.3 : o.freeze; m.stun = Math.max(m.stun, d); m.frozenUntil = w.t + d; }
     }
     if (o.zone) w.zones.push({ kind: o.zone, x: s.x, y: s.y + 4, r: o.r, t0: w.t, until: w.t + o.zdur, tick: w.t + 0.25, dmg: o.zdmg, col: o.col });

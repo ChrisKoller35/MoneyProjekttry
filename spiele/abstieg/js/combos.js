@@ -172,7 +172,7 @@ A.Combos = (function () {
   }
   function pop(h, x, y, col) {
     const w = W(), r = 58, dmg = pow(h) * 0.4;
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col, soft: true });
     if (A.FX) {
       const c2 = FW[Math.floor(Math.random() * FW.length)];

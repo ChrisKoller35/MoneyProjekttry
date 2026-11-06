@@ -1563,12 +1563,12 @@ A.Gear = (function () {
   // Erdstoss um einen Punkt (Nachbeben, Stein 6)
   function quake(h, x, y, r, dmg) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'phys', proc: true, color: '#c0cbdc' });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'phys', proc: true, color: '#c0cbdc', boom: true });
     if (A.FX) { A.FX.ev('boom', { x, y, r, color: '#c0cbdc' }); A.FX.rocks(x, y, 5, r * 0.6); }
   }
   function boomAt(h, x, y, r, dmg, col) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col });
     A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
@@ -1720,7 +1720,7 @@ A.Classes = (function () {
     const w = W(), h = w.hero, o = s.opts;
     for (const m of w.mons) {
       if (!live(m) || Math.hypot(m.x - s.x, m.y - s.y) > o.r + m.r) continue;
-      api.hit(h, m, s.dmg, { kind: 'magic', color: o.col, basic: o.basic, burn: o.burn, poison: o.poison, slow: o.slow || !!o.freeze, slowDur: o.freeze ? 2.5 : 1.6, noKb: !o.basic });
+      api.hit(h, m, s.dmg, { kind: 'magic', color: o.col, basic: o.basic, burn: o.burn, poison: o.poison, slow: o.slow || !!o.freeze, slowDur: o.freeze ? 2.5 : 1.6, noKb: !o.basic, boom: true });
       if (o.freeze && m.alive && m.hp > 0) { const d = m.boss ? 0.3 : o.freeze; m.stun = Math.max(m.stun, d); m.frozenUntil = w.t + d; }
     }
     if (o.zone) w.zones.push({ kind: o.zone, x: s.x, y: s.y + 4, r: o.r, t0: w.t, until: w.t + o.zdur, tick: w.t + 0.25, dmg: o.zdmg, col: o.col });
@@ -2300,7 +2300,7 @@ A.Game = (function () {
     }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
     let fate = false;
-    if ((e.boss || e.captain) && !e.mirror && !e.summoned) { run.fatePts = (run.fatePts || 0) + 1; run.fateN = (run.fateN || 0) + 1; run.fateLater = false; fate = true; }   // Schicksalspunkt (build.js)
+    if ((e.boss || e.captain) && !e.mirror && !e.summoned) { run.fatePts = (run.fatePts || 0) + 1; run.fateLater = false; fate = true; }   // Schicksalspunkt (build.js)
     const levels = addXp(xp);
     questEvent('kill');
     save();
@@ -7744,7 +7744,7 @@ A.Legends = (function () {
       for (const m of w.mons) { if (!live(m) || done.has(m)) continue; const d = Math.hypot(m.x - cur.x, m.y - cur.y); if (d < bd) { bd = d; best = m; } }
       if (!best) break; done.add(best);
       w.bolts.push({ x0: cur.x, y0: cur.y - 10, x1: best.x, y1: best.y - 10, life: 0.25, max: 0.25, col: '#7fd8ff', seed: Math.random() * 99 });
-      api.hit(h, best, dmg, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff' }); cur = best;
+      api.hit(h, best, dmg, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff', zap: true }); cur = best;
     }
     if (done.size > 1) api.fx('zap', { x: first.x, y: first.y, color: '#7fd8ff' });
   }
@@ -7949,7 +7949,7 @@ A.Legends = (function () {
   function shift(b, dt) { for (const k of ['at', 't0', 'until', 'warm', 'hitT', 'tick']) if (typeof b[k] === 'number') b[k] += dt; }
   function boomAt(h, x, y, r, dmg, col) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col });
     A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
@@ -8253,7 +8253,7 @@ A.Combos = (function () {
   }
   function pop(h, x, y, col) {
     const w = W(), r = 58, dmg = pow(h) * 0.4;
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col, soft: true });
     if (A.FX) {
       const c2 = FW[Math.floor(Math.random() * FW.length)];
@@ -9218,7 +9218,7 @@ A.Wild = (function () {
   }
   function zap(x, y, m, dmg, h, w) {
     w.bolts.push({ x0: x, y0: y, x1: m.x, y1: m.y - 10, life: 0.25, max: 0.25, col: '#fee761', seed: Math.random() * 99 });
-    api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#fee761' });
+    api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#fee761', zap: true });
     api.fx('zap', { x: m.x, y: m.y, color: '#fee761' });
   }
 
@@ -9700,7 +9700,7 @@ A.Build = (function () {
   }
   // Schaden (world.js hit): Held gegen brennende, gebremste oder vergiftete Gegner, Blitze; Helfer und Tiere
   function pre(from, to, opts, t) {
-    const r = A.Game.run; if (!r || !r.fate || from.side !== 'hero' || to.side !== 'enemy' || (opts && (opts.kind === 'poison' || opts.kind === 'burn' || opts.kind === 'thorns'))) return null;
+    const r = A.Game.run; if (!r || !r.fate || from.side !== 'hero' || to.side !== 'enemy' || (opts && (opts.kind === 'poison' || opts.kind === 'burn'))) return null;
     const m = fateMods(r); let pct = 0;
     if (from.ally) pct += m.ally || 0;
     else {
@@ -9708,10 +9708,11 @@ A.Build = (function () {
       if (m.vsPoison && to.effects && to.effects.some(e => e.kind === 'poison')) pct += m.vsPoison;
       if (m.vsSlow && ((to.slowUntil && to.slowUntil > t) || to.stun > 0)) pct += m.vsSlow;
       if (m.zap && opts && opts.zap) pct += m.zap;
+      if (m.boom && opts && opts.boom) pct += m.boom;
     }
     return pct ? { mul: 1 + pct / 100 } : null;
   }
-  // Explosionen des Helden (world.js boom)
+  // Explosionen des Helden (Treffer mit opts.boom: world.js boom, Feuer-Explosion und Nachbeben, Piñata, Raketen, Flaschen)
   function boomMul(r) { const m = fateMods(r || A.Game.run); return 1 + (m.boom || 0) / 100; }
 
   return { fateLv, fateMods, fateText, pre, boomMul, W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };
@@ -10193,8 +10194,8 @@ A.World = (function () {
     for (const it of rw.items) drop({ kind: 'item', it }, e.x, e.y, 50);
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
-    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');
-    if (rw.fate) float(e.x, e.y - e.r - 62, A.LANG === 'de' ? '+1 Schicksalspunkt' : '+1 fate point', '#fee761', 15, 'u_star');   // Schicksalspunkte (build.js)   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (rw.fate) float(e.x, e.y - e.r - 62, A.LANG === 'de' ? '+1 Schicksalspunkt' : '+1 fate point', '#fee761', 15, 'u_star');   // Schicksalspunkte (build.js)
     if (e.traits) A.Elites.onDeath(e);
     A.Foes.onDeath(e);   // Hauptmann, Rache der Kumpels, fliehende Opfer (foes.js)
     fx('death', { e });
@@ -10307,11 +10308,11 @@ A.World = (function () {
       if (h.melee && !magic) h.spinT = W.t;
       const nc = sk.col || (magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff');
       fx('nova', { e: h, r: R, color: nc, magic });
-      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun }); }
+      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun, zap: id === 'entladung' }); }
     }
     else if (sk.chain) chain(h, P * pw, sk.chain, sk.col);
     else { // Einzelziel (attack / magic), Feuerball explodiert beim Aufprall
-      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise };
+      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise, zap: id === 'funke' };
       let pow = pw; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
       const hits = sk.hits || 1;
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
@@ -10322,8 +10323,7 @@ A.World = (function () {
   // Explosion: trifft alle Gegner im Umkreis
   // src: wer explodiert (Glut, der kleine Drache); sonst der Held
   function boom(x, y, r, dmg, opts, col, src) {
-    if (!src || src === W.hero) dmg *= A.Build.boomMul();   // Schicksalspunkte «Explosionen»
-    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col, boom: true }, opts));   // boom: Schicksalspunkte «Explosionen» (build.js pre)
     fx('boom', { x, y, r, color: col });
     if (!src) A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }
@@ -13436,7 +13436,7 @@ window.A = window.A || {};
     }).join('');
     const sub = pts ? L(`Du hast <b class="goldc">${pts}</b> Schicksalspunkt${pts > 1 ? 'e' : ''}. Jeder gibt der Richtung einen festen Bonus und zählt ${A.FATE_W} Punkte für deinen Build: passende Beute kommt öfter. Höchstens ${A.FATE_MAX} je Richtung.`, `You have <b class="goldc">${pts}</b> fate point${pts > 1 ? 's' : ''}. Each gives the direction a fixed bonus and counts ${A.FATE_W} points for your build: fitting loot drops more often. At most ${A.FATE_MAX} per direction.`)
       : L('Keine Punkte offen. Neue gibt es für jeden Welt-Boss und Hauptmann.', 'No points left. You get new ones for every world boss and captain.');
-    ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose" data-esc>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
+    ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose"${pts ? '' : ' data-esc'}>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
     overlay.querySelectorAll('[data-fate]').forEach(el => el.onclick = () => {
       const k = el.dataset.fate; if (!G.fateSpend(k)) return;
       S.buy(); A.FX.banner(L('Schicksal', 'Fate') + ': ' + t(A.BUILD_DIRS[k].name), A.Build.fateText(k, A.Build.fateLv(k)), A.BUILD_DIRS[k].col, 2);
@@ -13480,7 +13480,7 @@ window.A = window.A || {};
   // Offene Wahlen nacheinander zeigen (Stufenaufstieg, dann Segen); wartet, solange ein anderes Fenster offen ist
   function pendingPicks() {
     const r = G.run; if (!r || r.over || !dungeonEl.classList.contains('on')) return;
-    const fate = G.fateOpen() && !r.fateLater && !(Wd.W && Wd.W.active);   // Schicksalspunkt: erst, wenn der Raum frei ist
+    const fate = G.fateOpen() && !r.fateLater && !(Wd.W && (Wd.W.active || !Wd.W.hero.alive));   // Schicksalspunkt: erst, wenn der Raum frei ist
     if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0) && !fate) return;
     if (overlay.classList.contains('on')) { setTimeout(pendingPicks, 600); return; }
     if (r.pendingSkillPick > 0) skillPick(); else if (r.pendingBoon > 0) boonPick(); else fatePick();

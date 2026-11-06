@@ -113,7 +113,7 @@ A.Build = (function () {
   }
   // Schaden (world.js hit): Held gegen brennende, gebremste oder vergiftete Gegner, Blitze; Helfer und Tiere
   function pre(from, to, opts, t) {
-    const r = A.Game.run; if (!r || !r.fate || from.side !== 'hero' || to.side !== 'enemy' || (opts && (opts.kind === 'poison' || opts.kind === 'burn' || opts.kind === 'thorns'))) return null;
+    const r = A.Game.run; if (!r || !r.fate || from.side !== 'hero' || to.side !== 'enemy' || (opts && (opts.kind === 'poison' || opts.kind === 'burn'))) return null;
     const m = fateMods(r); let pct = 0;
     if (from.ally) pct += m.ally || 0;
     else {
@@ -121,10 +121,11 @@ A.Build = (function () {
       if (m.vsPoison && to.effects && to.effects.some(e => e.kind === 'poison')) pct += m.vsPoison;
       if (m.vsSlow && ((to.slowUntil && to.slowUntil > t) || to.stun > 0)) pct += m.vsSlow;
       if (m.zap && opts && opts.zap) pct += m.zap;
+      if (m.boom && opts && opts.boom) pct += m.boom;
     }
     return pct ? { mul: 1 + pct / 100 } : null;
   }
-  // Explosionen des Helden (world.js boom)
+  // Explosionen des Helden (Treffer mit opts.boom: world.js boom, Feuer-Explosion und Nachbeben, Piñata, Raketen, Flaschen)
   function boomMul(r) { const m = fateMods(r || A.Game.run); return 1 + (m.boom || 0) / 100; }
 
   return { fateLv, fateMods, fateText, pre, boomMul, W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };

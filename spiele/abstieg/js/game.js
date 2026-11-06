@@ -444,7 +444,7 @@ A.Game = (function () {
     }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
     let fate = false;
-    if ((e.boss || e.captain) && !e.mirror && !e.summoned) { run.fatePts = (run.fatePts || 0) + 1; run.fateN = (run.fateN || 0) + 1; run.fateLater = false; fate = true; }   // Schicksalspunkt (build.js)
+    if ((e.boss || e.captain) && !e.mirror && !e.summoned) { run.fatePts = (run.fatePts || 0) + 1; run.fateLater = false; fate = true; }   // Schicksalspunkt (build.js)
     const levels = addXp(xp);
     questEvent('kill');
     save();

@@ -325,8 +325,8 @@ A.World = (function () {
     for (const it of rw.items) drop({ kind: 'item', it }, e.x, e.y, 50);
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
-    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');
-    if (rw.fate) float(e.x, e.y - e.r - 62, A.LANG === 'de' ? '+1 Schicksalspunkt' : '+1 fate point', '#fee761', 15, 'u_star');   // Schicksalspunkte (build.js)   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (rw.fate) float(e.x, e.y - e.r - 62, A.LANG === 'de' ? '+1 Schicksalspunkt' : '+1 fate point', '#fee761', 15, 'u_star');   // Schicksalspunkte (build.js)
     if (e.traits) A.Elites.onDeath(e);
     A.Foes.onDeath(e);   // Hauptmann, Rache der Kumpels, fliehende Opfer (foes.js)
     fx('death', { e });
@@ -439,11 +439,11 @@ A.World = (function () {
       if (h.melee && !magic) h.spinT = W.t;
       const nc = sk.col || (magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff');
       fx('nova', { e: h, r: R, color: nc, magic });
-      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun }); }
+      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun, zap: id === 'entladung' }); }
     }
     else if (sk.chain) chain(h, P * pw, sk.chain, sk.col);
     else { // Einzelziel (attack / magic), Feuerball explodiert beim Aufprall
-      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise };
+      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise, zap: id === 'funke' };
       let pow = pw; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
       const hits = sk.hits || 1;
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
@@ -454,8 +454,7 @@ A.World = (function () {
   // Explosion: trifft alle Gegner im Umkreis
   // src: wer explodiert (Glut, der kleine Drache); sonst der Held
   function boom(x, y, r, dmg, opts, col, src) {
-    if (!src || src === W.hero) dmg *= A.Build.boomMul();   // Schicksalspunkte «Explosionen»
-    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col, boom: true }, opts));   // boom: Schicksalspunkte «Explosionen» (build.js pre)
     fx('boom', { x, y, r, color: col });
     if (!src) A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }

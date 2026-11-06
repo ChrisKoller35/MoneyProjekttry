@@ -707,7 +707,7 @@ window.A = window.A || {};
     }).join('');
     const sub = pts ? L(`Du hast <b class="goldc">${pts}</b> Schicksalspunkt${pts > 1 ? 'e' : ''}. Jeder gibt der Richtung einen festen Bonus und zählt ${A.FATE_W} Punkte für deinen Build: passende Beute kommt öfter. Höchstens ${A.FATE_MAX} je Richtung.`, `You have <b class="goldc">${pts}</b> fate point${pts > 1 ? 's' : ''}. Each gives the direction a fixed bonus and counts ${A.FATE_W} points for your build: fitting loot drops more often. At most ${A.FATE_MAX} per direction.`)
       : L('Keine Punkte offen. Neue gibt es für jeden Welt-Boss und Hauptmann.', 'No points left. You get new ones for every world boss and captain.');
-    ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose" data-esc>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
+    ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose"${pts ? '' : ' data-esc'}>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
     overlay.querySelectorAll('[data-fate]').forEach(el => el.onclick = () => {
       const k = el.dataset.fate; if (!G.fateSpend(k)) return;
       S.buy(); A.FX.banner(L('Schicksal', 'Fate') + ': ' + t(A.BUILD_DIRS[k].name), A.Build.fateText(k, A.Build.fateLv(k)), A.BUILD_DIRS[k].col, 2);
@@ -751,7 +751,7 @@ window.A = window.A || {};
   // Offene Wahlen nacheinander zeigen (Stufenaufstieg, dann Segen); wartet, solange ein anderes Fenster offen ist
   function pendingPicks() {
     const r = G.run; if (!r || r.over || !dungeonEl.classList.contains('on')) return;
-    const fate = G.fateOpen() && !r.fateLater && !(Wd.W && Wd.W.active);   // Schicksalspunkt: erst, wenn der Raum frei ist
+    const fate = G.fateOpen() && !r.fateLater && !(Wd.W && (Wd.W.active || !Wd.W.hero.alive));   // Schicksalspunkt: erst, wenn der Raum frei ist
     if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0) && !fate) return;
     if (overlay.classList.contains('on')) { setTimeout(pendingPicks, 600); return; }
     if (r.pendingSkillPick > 0) skillPick(); else if (r.pendingBoon > 0) boonPick(); else fatePick();

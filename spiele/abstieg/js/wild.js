@@ -229,7 +229,7 @@ A.Wild = (function () {
   }
   function zap(x, y, m, dmg, h, w) {
     w.bolts.push({ x0: x, y0: y, x1: m.x, y1: m.y - 10, life: 0.25, max: 0.25, col: '#fee761', seed: Math.random() * 99 });
-    api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#fee761' });
+    api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#fee761', zap: true });
     api.fx('zap', { x: m.x, y: m.y, color: '#fee761' });
   }
 
