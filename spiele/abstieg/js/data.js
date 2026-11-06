@@ -712,6 +712,34 @@ A.PET_GROW = 0.15;                      // jede Treue-Stufe über 1: +15 % Schad
 A.PET_XP = { kill: 1, elite: 3, boss: 15 };   // Treue je Sieg, den ein Tier miterlebt
 A.PET_SPARKS = 25;                      // Seelenfunken für jedes neue Tier
 A.PET_CAGE = 0.45;                      // Chance auf einen Käfig je Ebene (ab Ebene 2; wer noch kein Tier hat, findet auf Ebene 2 sicher eins)
+// Expeditionen (v41): Tiere, die gerade nicht mitkommen, gehen auf Reise (echte Zeit, läuft auch bei geschlossenem Spiel) und bringen etwas mit
+A.EXP_MAX = 3;   // so viele Tiere gleichzeitig unterwegs
+A.EXPEDITIONS = [
+  { id: 'kurz', h: 1, name: { de: 'Spaziergang', en: 'Stroll' }, sparks: [10, 15], treue: 8, gift: 0 },
+  { id: 'mittel', h: 4, name: { de: 'Ausflug', en: 'Trip' }, sparks: [30, 45], treue: 25, gift: 0.3 },
+  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7 },
+];
+// Mitbringsel für den nächsten Lauf (meta.gift, wird beim Start eingelöst)
+A.EXP_GIFTS = [
+  { k: 'pot', n: 1, text: { de: 'einen Trank', en: 'a potion' } },
+  { k: 'gold', n: 60, text: { de: '60 Gold', en: '60 gold' } },
+  { k: 'pot', n: 2, text: { de: 'zwei Tränke', en: 'two potions' } },
+];
+// Was jedes Tier nach der Reise erzählt (fehlt eins, gilt der Satz unter «_»)
+A.EXP_LINES = {
+  flitz: { de: 'Flitz ist zurück. Mit einem Hühnerknochen und einem sehr unschuldigen Blick.', en: 'Zippy is back. With a chicken bone and a very innocent look.' },
+  huhu: { de: 'Huhu ist zurück und hat alles gesehen. Wirklich alles. Sie redet nicht darüber.', en: 'Hoot is back and saw everything. Really everything. She will not talk about it.' },
+  glut: { de: 'Glut ist zurück und riecht nach Rauch. Irgendwo fehlt jetzt ein Heuhaufen.', en: 'Ember is back and smells of smoke. Somewhere a haystack is now missing.' },
+  brunhilde: { de: 'Brunhilde ist zurück. Mit drei Fliegen und einer Meinung.', en: 'Brunhilde is back. With three flies and an opinion.' },
+  stachel: { de: 'Stachel ist zurück. An ihm hängen zwei Blätter, ein Apfel und ein fremder Socken.', en: 'Prickles is back. Stuck to him: two leaves, an apple and a stranger\'s sock.' },
+  gacker: { de: 'Gacker hat unterwegs drei Eier gelegt und zwei davon verteidigt.', en: 'Cluck laid three eggs on the way and defended two of them.' },
+  moppel: { de: 'Moppel ist zurück. Er hat einen Tunnel gegraben. Wohin, weiss er selbst nicht.', en: 'Mopsy is back. He dug a tunnel. Where to, not even he knows.' },
+  lotte: { de: 'Lotte ist zurück und hat einen Zaun gegessen. Nur einen kleinen.', en: 'Lottie is back and ate a fence. Only a small one.' },
+  pfeffer: { de: 'Pfeffer ist zurück und kann ein neues Wort. Es ist kein schönes.', en: 'Pepper is back and knows a new word. It is not a nice one.' },
+  _: { de: 'Zurück von der Reise, müde und sehr zufrieden mit sich.', en: 'Back from the trip, tired and very pleased with itself.' },
+};
+// Kerzen am Lagerfeuer (v41): an wie vielen Tagen hintereinander ein Lauf zu Ende ging; jede Kerze +5 % Seelenfunken, höchstens 5
+A.CANDLE_MAX = 5; A.CANDLE_SPARKS = 0.05;
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen

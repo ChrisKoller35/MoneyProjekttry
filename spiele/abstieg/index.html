@@ -322,6 +322,42 @@
   .chip.gchip { min-height: 38px; padding: 6px 2px; flex-direction: row; gap: 2px; font-size: 14px; }
   .msg.gradenew { border-left-color: var(--gold); text-align: left; }
   .msg.gradenew img.px { vertical-align: -4px; }
+  /* v40: Schalter im Heldenblatt (Ruhige Beute, Punkte automatisch), Fairer Tod, Nochmal */
+  .optrow { display: flex; align-items: center; gap: 8px; background: rgba(24,20,37,0.45); border: 2px solid var(--line, #3a4466); padding: 8px 10px; margin: 10px 0; font-size: 13px; line-height: 1.35; text-align: left; }
+  .optrow span { flex: 1; min-width: 0; }
+  .optrow button, .q button { flex: none; font: inherit; font-size: 13px; padding: 6px 10px; background: #262b44; color: var(--pale, #ead4aa); border: 2px solid #5a6988; cursor: pointer; }
+  .q span { flex: 1; }
+  .optrow button:active, .q button:active { transform: translateY(1px); }
+  .deathbox { background: rgba(24,20,37,0.6); border-left: 4px solid #e43b44; padding: 10px 12px; margin: 10px 0; text-align: left; font-size: 15px; line-height: 1.4; }
+  .deathbox .dby { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .deathbox .tip { color: var(--pale, #ead4aa); font-size: 14px; margin-top: 4px; }
+  .deathbox .tip::before { content: '» '; color: var(--gold, #feae34); }
+  .endbtns { display: flex; gap: 10px; margin-top: 16px; }
+  .endbtns .btn { flex: 1; }
+  /* Expeditionen und Kerzen (v41) */
+  .candles { display: flex; align-items: center; gap: 12px; }
+  .candles .mini { flex: 1; min-width: 0; text-align: left; line-height: 1.35; }
+  .cdls { display: flex; gap: 3px; flex: none; }
+  .cdl { display: inline-flex; filter: grayscale(1) brightness(0.45); }
+  .cdl.on { filter: drop-shadow(0 0 4px rgba(254,231,97,0.75)); }
+  .exps { display: grid; gap: 6px; margin-top: 8px; }
+  .expc { display: flex; align-items: center; gap: 10px; background: rgba(24,20,37,0.45); border: 2px solid #3a4466; padding: 7px 9px; text-align: left; }
+  .expc .pp { flex: none; display: flex; }
+  .expc .pb { flex: 1; min-width: 0; font-size: 14px; }
+  .expc .pb > b { display: block; margin-bottom: 3px; }
+  .expc.away { border-color: #5a6988; }
+  .expc.away .pp { opacity: 0.55; }
+  .petc.away .pp { opacity: 0.5; }
+  .expc.back { border-color: var(--gold, #feae34); box-shadow: 0 0 0 1px rgba(254,174,52,0.35); }
+  .expc .bar { height: 5px; background: var(--ink); box-shadow: inset 0 0 0 1px var(--line); margin: 5px 0 2px; }
+  .expc .bar i { display: block; height: 100%; background: var(--green); }
+  .expc .btn.small { margin: 4px 0 0; }
+  .expbtns { display: flex; gap: 5px; flex-wrap: wrap; }
+  .expbtns button { flex: 1 1 0; min-width: 64px; font: inherit; font-size: 12px; line-height: 1.2; padding: 5px 6px; background: #262b44; color: var(--pale, #ead4aa); border: 2px solid #5a6988; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+  .expbtns button b { font-size: 14px; }
+  .expbtns button:active { transform: translateY(1px); }
+  .expnews { display: flex; align-items: center; gap: 10px; text-align: left; font-size: 14px; }
+  .candlemsg { color: var(--gold2, #fee761); }
   .exitdoor { position: relative; width: 150px; height: 176px; margin: 34px auto 14px; background: #262b44; border: 4px solid var(--ink); box-shadow: 0 0 0 4px #5a6988, 0 0 0 8px var(--ink), inset 0 0 0 3px #3a4466; perspective: 360px; }
   .exitdoor .ed-sign { position: absolute; left: 50%; top: -34px; transform: translateX(-50%); white-space: nowrap; padding: 3px 9px 4px; background: #3e8948; color: #fff; border: 3px solid var(--ink); box-shadow: inset 0 0 0 2px #63c74d, 0 0 18px rgba(99,199,77,0.55); font-size: 15px; font-weight: 700; letter-spacing: 1px; z-index: 3; animation: exitBlink 1.1s steps(2) infinite; }
   @keyframes exitBlink { 50% { box-shadow: inset 0 0 0 2px #63c74d, 0 0 6px rgba(99,199,77,0.25); } }

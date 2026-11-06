@@ -120,7 +120,7 @@ A.FX = (function () {
         for (let i = 0; i < 40; i++) part({ kind: 'spark', add: true, x: h.x + rnd(-14, 14), y: h.y + rnd(-4, 8), vx: rnd(-10, 10), vy: rnd(-160, -60), life: rnd(0.6, 1.1), color: Math.random() < 0.5 ? '#fee761' : '#feae34', drag: 1 });
         part({ kind: 'ring', x: h.x, y: h.y, life: 0.6, size: 70, color: '#fee761', add: true });
         flash(h.x, h.y, 120, '#fee761', 0.8);
-        banner((A.LANG === 'de' ? 'Stufe ' : 'Level ') + d.level, A.LANG === 'de' ? 'Werte verteilen: Helden-Knopf' : 'Spend points: hero button', '#fee761', 2.2);
+        banner((A.LANG === 'de' ? 'Stufe ' : 'Level ') + d.level, d.sub || (A.LANG === 'de' ? 'Werte verteilen: Helden-Knopf' : 'Spend points: hero button'), '#fee761', 2.2);
         return;
       }
       case 'heal': { const e = d.e; if (d.n < 3 && !d.loud) return; burst(e.x, e.y, 8, { color: ['#63c74d', '#c8f5a0'], smin: 10, smax: 40, vz: 80, z: 4, g: -40, life: 0.8, add: true, kind: 'plus' }); healT = 0.35; if (d.loud) S().heal(); return; }

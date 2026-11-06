@@ -185,9 +185,22 @@ A.Game = (function () {
     run.gear.armor = makeItem(A.BASES.find(b => b.id === 'leder'), me.gearA ? 'good' : 'common', 1);
     if (me.gearHB) for (const slot of ['helm', 'boots']) run.gear[slot] = makeItem(run.rng.pick(A.BASES.filter(b => b.slot === slot)), 'good', 1);
     run.hp = derived().maxHp;
+    // Mitbringsel von den Expeditionen (v41, meta.gift): wird beim Start eingelöst, ui.js zeigt es als Banner
+    const gf = meta.gift;
+    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0))) { const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0); run.potions += pot; run.gold += gold; run.giftNews = { pot, gold }; meta.gift = null; saveMeta(); }
     newFloor();
     save();
     return run;
+  }
+  // Kerzen am Lagerfeuer (v41): an wie vielen Tagen hintereinander (eigene Uhr) ein Lauf zu Ende ging, höchstens A.CANDLE_MAX
+  const dayKey = (d) => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  function candles(tick) {
+    const c = meta.candle && typeof meta.candle === 'object' ? meta.candle : null, today = dayKey(new Date()), y = new Date(); y.setDate(y.getDate() - 1);
+    const lit = c && (c.day === today || c.day === dayKey(y)) ? Math.max(0, Math.min(A.CANDLE_MAX, Math.floor(c.n) || 0)) : 0;   // gestern noch an: brennt weiter, sonst aus
+    if (!tick) return { n: lit, today: !!(c && c.day === today) };
+    if (c && c.day === today) return { n: lit, today: true };
+    meta.candle = { day: today, n: Math.min(A.CANDLE_MAX, lit + 1) };
+    return { n: meta.candle.n, today: true, up: true };
   }
 
   // ---------- Abgeleitete Werte ----------
@@ -499,10 +512,23 @@ A.Game = (function () {
   function addXp(xp) {
     run.xp += xp; let ups = 0;
     while (run.xp >= xpNeed(run.level)) { run.xp -= xpNeed(run.level); run.level++; run.points += 3; ups++; if (run.level % 3 === 0) run.pendingSkillPick = (run.pendingSkillPick || 0) + 1; }
-    if (ups) { const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.2 * ups)); run.levelUpFlag = true; }
+    if (ups) { const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.2 * ups)); run.levelUpFlag = true; if (meta.autoPts) autoSpend(); }   // «Immer automatisch» (v40)
     return ups;
   }
   function spend(stat) { if (run.points <= 0) return; run.points--; run.stats[stat]++; const before = derived(); run.hp = Math.min(before.maxHp, run.hp + (stat === 'tou' ? 8 : 0)); save(); }
+  // Punkte automatisch verteilen (v40): nach den Stärken der Klasse (Startwerte), Zähigkeit bekommt immer etwas ab. Jeder Punkt geht dorthin,
+  // wo Gewicht / (1 + Wert) am grössten ist, so bleibt das Verhältnis ungefähr wie beim Start. Gibt zurück, wie viele Punkte wohin gingen
+  function autoSpend() {
+    const Cl = A.CLASSES.find(c => c.id === run.cls), w = Object.assign({ str: 0, tou: 0, dex: 0, mind: 0, luck: 0 }, Cl && Cl.base), got = {};
+    w.tou = Math.max(w.tou, 1);
+    while (run.points > 0) {
+      let best = null, bv = -1;
+      for (const k of ['str', 'tou', 'dex', 'mind', 'luck']) { if (!(w[k] > 0)) continue; const v = w[k] / (1 + Math.max(0, run.stats[k] || 0)); if (v > bv) { bv = v; best = k; } }
+      if (!best) break;
+      spend(best); got[best] = (got[best] || 0) + 1;
+    }
+    return got;
+  }
   function skillOffer() {
     const cls = A.CLASSES.find(c => c.id === run.cls);
     const rest = cls.skills.filter(s => !run.known.includes(s));
@@ -533,7 +559,7 @@ A.Game = (function () {
   function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
 
   // ---------- Räume ----------
-  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else run.points++; save(); }   // Harte Pritsche (Grad 9)
+  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else { run.points++; if (meta.autoPts) autoSpend(); } save(); }   // Harte Pritsche (Grad 9)
   function doEvent(choiceIdx) {
     const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
     let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
@@ -547,7 +573,7 @@ A.Game = (function () {
     if (oc.potion) run.potions += oc.potion;
     if (oc.item) res.items.push(randomItem(oc.item));
     if (oc.curse) res.items.push(randomItem('cursed'));
-    if (oc.sacrifice) { const worst = run.bag[0]; if (worst) run.bag.shift(); run.points += 2; }
+    if (oc.sacrifice) { const worst = run.bag[0]; if (worst) run.bag.shift(); run.points += 2; if (meta.autoPts) autoSpend(); }
     for (const it of res.items) addToBag(it);
     save(); return res;
   }
@@ -587,8 +613,9 @@ A.Game = (function () {
     A.Achieve.onEnd(run);   // Spielzeit, Anfängerpech, letzte Prüfung der Erfolge
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
     const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run));   // Pakte: je Pakt +15 %
-    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang)
-    run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home;
+    const cd = candles(true), candle = Math.round(base * A.CANDLE_SPARKS * cd.n);
+    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
+    run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
@@ -614,7 +641,8 @@ A.Game = (function () {
   function metaBuy(id) { const u = A.META_SHOP.find(x => x.id === id); if (!u || meta.unlocked.includes(id) || meta.sparks < u.cost || (u.needs && !meta.unlocked.includes(u.needs))) return false; meta.sparks -= u.cost; meta.unlocked.push(id); saveMeta(); return true; }
 
   // ---------- Speichern ----------
-  function save() { if (!run) return; try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
+  function save() { if (!run) return; const Wd = A.World && A.World.W; if (Wd && Wd.seed === run.floorSeed && Wd.floor === run.floor && A.World.savePicks) { run.picks = A.World.savePicks(); run.rooms = A.World.saveRooms(); }   // Beute am Boden (v40): genau so, wie sie jetzt liegt (nur die Welt dieses Laufs)
+    try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
   function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
@@ -622,9 +650,9 @@ A.Game = (function () {
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
-    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
+    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

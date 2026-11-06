@@ -164,7 +164,7 @@ window.A = window.A || {};
       <div class="menu">
         ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} · ${t(U.floor)} ${r.floor}</button>` : ''}
         <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
-        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() ? `<i class="dot" title="${L('Ausbau möglich', 'Upgrade available')}"></i>` : ''}</button>
+        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() || A.Pets.tripsBack() ? `<i class="dot" title="${L('Im Lager wartet etwas', 'Something waits in the camp')}"></i>` : ''}</button>
         <div class="stats">${L('Durchläufe', 'Runs')} <b>${m.runs}</b> · ${L('Tiefste Ebene', 'Deepest floor')} <b>${m.best}</b> · ${L('Erfolge', 'Achievements')} <b>${A.Achieve.count()}/${A.ACHIEVEMENTS.length}</b>${m.achNew && m.achNew.length ? ` <b class="goldc">${L('Neu!', 'New!')}</b>` : ''}</div>
         <div class="howto pc">${t(U.howto)}</div>
         <button class="link" id="bReset">${t(U.reset)}</button>
@@ -263,7 +263,7 @@ window.A = window.A || {};
   function campState() {
     const lv = {}, open = {}, can = {}, rank = G.campRank();
     for (const b of A.CAMP) { lv[b.id] = G.campLevel(b.id); open[b.id] = G.campOpen(b.id); const c = G.campCost(b.id); can[b.id] = open[b.id] && c != null && c <= G.meta.sparks; }
-    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX, pets: Object.keys(A.PETS).filter(A.Pets.found), ach: A.Achieve.count(), achNew: !!(G.meta.achNew && G.meta.achNew.length) };
+    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX, pets: Object.keys(A.PETS).filter(id => A.Pets.found(id) && !(A.Pets.away(id) && !A.Pets.tripOf(id).done)),   /* wer noch auf Reise ist (v41), fehlt im Bild */ ach: A.Achieve.count(), achNew: !!(G.meta.achNew && G.meta.achNew.length) };
   }
   // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
   function camp(poof) {
@@ -317,12 +317,12 @@ window.A = window.A || {};
     const petCards = Object.keys(A.PETS).map(id => {
       const P = A.PETS[id];
       if (!A.Pets.found(id)) return `<div class="petc"><div class="pp">${petImg(id, 40)}</div><div class="pb"><b>???</b><div class="mini">${L('Sitzt irgendwo in einem Käfig (ab Ebene 2).', 'Sits in a cage somewhere (from floor 2).')}</div></div></div>`;
-      const lv = A.Pets.treue(id), pr = A.Pets.progress(id), on = psel.includes(id);
+      const lv = A.Pets.treue(id), pr = A.Pets.progress(id), on = psel.includes(id), aw = A.Pets.away(id);
       const tricks = A.Pets.tricks(id).map(x => `<div class="trick ${lv >= x.lv ? 'on' : ''}"><span>${'★'.repeat(x.lv)}</span> ${esc(x.text)}</div>`).join('');
-      return `<div class="petc have ${on ? 'sel' : ''}" ${sn ? `data-pet="${id}"` : ''}><div class="pp">${petImg(id, 40)}</div><div class="pb"><div class="ttl"><b style="color:${P.col}">${esc(t(P.name))}</b>${petStars(lv)}</div>
+      return `<div class="petc have ${on ? 'sel' : ''} ${aw ? 'away' : ''}" ${sn ? `data-pet="${id}"` : ''}><div class="pp">${petImg(id, 40)}</div><div class="pb"><div class="ttl"><b style="color:${P.col}">${esc(t(P.name))}</b>${petStars(lv)}</div>
         <div class="mini">${esc(t(P.kind))} · ${pr ? L(`Treue ${lv}: noch ${pr[1] - pr[0]} bis Treue ${lv + 1}`, `Loyalty ${lv}: ${pr[1] - pr[0]} more to loyalty ${lv + 1}`) : L('Treue 5: treuer geht nicht', 'Loyalty 5: as loyal as it gets')}</div>
         <div class="bar"><i style="width:${pr ? Math.round(pr[0] / pr[1] * 100) : 100}%"></i></div>${tricks}
-        ${sn ? `<div class="mini pick">${on ? `<b class="goldc">${L('Kommt mit in die Tiefe', 'Joins the descent')}</b>` : L('Antippen: kommt mit in die Tiefe', 'Tap: joins the descent')}</div>` : ''}</div></div>`;
+        ${sn ? `<div class="mini pick">${aw ? L('Gerade auf Reise (oben bei den Expeditionen).', 'Away on a trip (see expeditions above).') : on ? `<b class="goldc">${L('Kommt mit in die Tiefe', 'Joins the descent')}</b>` : L('Antippen: kommt mit in die Tiefe', 'Tap: joins the descent')}</div>` : ''}</div></div>`;
     }).join('');
     const petInfo = sn ? L(`Die Tierhütte schickt ${sn > 1 ? sn + ' Tiere' : 'ein Tier'} von Anfang an mit.`, `The pet hut sends ${sn > 1 ? sn + ' pets' : 'one pet'} along from the start.`)
       : pn ? L('Baue die Tierhütte, dann kommen deine Tiere von Anfang an mit.', 'Build the pet hut and your pets join you from the start.')
@@ -365,6 +365,7 @@ window.A = window.A || {};
       <div class="rankbar"><div><b>${L('Lager-Stufe', 'Camp level')} ${rank}</b><span>/ ${A.CAMP_MAX}</span></div><div class="bar"><i style="width:${Math.round(rank / A.CAMP_MAX * 100)}%"></i></div>
         <div class="mini">${next ? L(`Ab Lager-Stufe ${next.rank}: ${t(next.name)}`, `From camp level ${next.rank}: ${t(next.name)}`) : (rank >= A.CAMP_MAX ? L('Alles ausgebaut. Das Lager ist eine Legende.', 'Everything built. The camp is a legend.') : L('Alle Gebäude stehen. Jetzt nur noch höher bauen.', 'All buildings stand. Now build them higher.'))}</div></div>
       <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>
+      ${candleHtml()}${expHtml()}
       <h3>${L('Gebäude', 'Buildings')}</h3>${bld}
       <h3>${L('Auftragsbrett', 'Quest board')} ${achN}/${achMax}</h3><div class="card flags"><div class="mini">${L('Erfolge über alle Durchläufe hinweg. Jeder bringt Seelenfunken, sobald er erreicht ist, und ein Zettel mehr hängt am Brett.', 'Achievements across all runs. Each one gives soul sparks as soon as it is reached, and one more note hangs on the board.')}</div><div class="jobs">${jobs}</div></div>
       <h3>${L('Chronik', 'Chronicle')}</h3><div class="card flags"><div class="life">${lifeHtml}</div>${rows ? `<div class="runs">${rows}</div>` : `<div class="mini" style="margin-top:8px">${L('Noch kein Durchlauf. Die Chronik füllt sich mit jedem Abstieg.', 'No run yet. The chronicle fills up with every descent.')}</div>`}</div>
@@ -382,8 +383,48 @@ window.A = window.A || {};
     A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
-    screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id)) return; A.Pets.choose(id); camp('tier'); });
-    $('#bBack').onclick = () => { S.click(); title(); };
+    screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id) || A.Pets.away(id)) return; A.Pets.choose(id); camp('tier'); });
+    // Expeditionen (v41): losschicken und abholen; die Restzeit läuft sichtbar mit
+    screen.querySelectorAll('[data-trip]').forEach(b => b.onclick = () => { if (A.Pets.send(b.dataset.trip, b.dataset.k)) { S.click(); camp('exp'); } });
+    screen.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { const id = b.dataset.claim, res = A.Pets.claim(id); if (res) { expNews = { id, res }; S.level(); camp('exp'); } });
+    expNews = null;
+    clearInterval(expTimer);
+    if (screen.querySelector('[data-left]')) expTimer = setInterval(() => {
+      const els = screen.querySelectorAll('[data-left]'); if (!els.length) { clearInterval(expTimer); return; }
+      let back = false;
+      els.forEach(el => { const tr = A.Pets.tripOf(el.dataset.left); if (!tr || tr.done) { back = true; return; } el.querySelector('.tl').textContent = tripLeft(tr.left); el.querySelector('i').style.width = Math.round(tr.pct * 100) + '%'; });
+      if (back) { clearInterval(expTimer); camp('exp'); }
+    }, 15000);
+    $('#bBack').onclick = () => { S.click(); clearInterval(expTimer); title(); };
+  }
+  // ---------- Expeditionen und Kerzen (v41) ----------
+  let expNews = null, expTimer = null;
+  const tripLeft = (ms) => { const mn = Math.max(1, Math.ceil(ms / 60000)), h = Math.floor(mn / 60), r = mn % 60; return h ? L(`noch ${h} Std ${r} Min`, `${h} h ${r} min left`) : L(`noch ${r} Min`, `${r} min left`); };
+  function candleHtml() {
+    const c = G.candles(false), n = c.n, fl = Array.from({ length: A.CANDLE_MAX }, (_, i) => `<span class="cdl ${i < n ? 'on' : ''}">${ic('candle', 20)}</span>`).join('');
+    const txt = n ? L(`${n} ${n === 1 ? 'Kerze brennt' : 'Kerzen brennen'}: +${Math.round(n * A.CANDLE_SPARKS * 100)} % Seelenfunken auf jeden Lauf.`, `${n} candle${n === 1 ? '' : 's'} burning: +${Math.round(n * A.CANDLE_SPARKS * 100)}% soul sparks on every run.`) + ' ' + (c.today ? L('Heute schon angezündet. Bring morgen wieder einen Lauf zu Ende, dann brennt eine mehr.', 'Already lit today. Finish a run again tomorrow and one more will burn.') : L('Bring heute einen Lauf zu Ende, sonst gehen sie aus.', 'Finish a run today or they go out.'))
+      : L('Noch keine Kerze. Bring heute einen Lauf zu Ende, dann brennt die erste (+5 % Seelenfunken). Jeden Tag in Folge eine mehr.', 'No candle yet. Finish a run today and the first one burns (+5% soul sparks). One more for every day in a row.');
+    return `<div class="card candles"><div class="cdls">${fl}</div><div class="mini">${txt}</div></div>`;
+  }
+  function expHtml() {
+    const ids = Object.keys(A.PETS).filter(id => A.Pets.found(id)); if (!ids.length) return '';
+    const busy = A.Pets.busy(), team = A.Pets.sel();
+    const news = expNews ? (() => { const { id, res } = expNews, P = A.PETS[id];
+      return `<div class="msg expnews">${petImg(id, 30)}<span><b style="color:${P.col}">${esc(res.line)}</b> ${L(`Mitgebracht: +${res.sparks} Seelenfunken, +${res.treue} Treue`, `Brought back: +${res.sparks} soul sparks, +${res.treue} loyalty`)}${res.up ? L(` (jetzt Treue ${res.lv}!)`, ` (now loyalty ${res.lv}!)`) : ''}${res.gift ? L(`, dazu ${esc(t(res.gift.text))} für den nächsten Lauf`, `, plus ${esc(t(res.gift.text))} for the next run`) : ''}.</span></div>`; })() : '';
+    const cards = ids.map(id => {
+      const P = A.PETS[id], tr = A.Pets.tripOf(id);
+      let right;
+      if (tr && tr.done) right = `<div class="mini goldc">${L('Zurück!', 'Back!')} (${esc(t(tr.X.name))})</div><button class="btn primary small" data-claim="${id}">${L('Abholen', 'Collect')}</button>`;
+      else if (tr) right = `<div class="mini" data-left="${id}">${esc(t(tr.X.name))}: <span class="tl">${tripLeft(tr.left)}</span><div class="bar"><i style="width:${Math.round(tr.pct * 100)}%"></i></div></div>`;
+      else if (A.Pets.inRun(id)) right = `<div class="mini">${L('Ist gerade mit dir in der Tiefe.', 'Is down in the depths with you right now.')}</div>`;
+      else if (team.includes(id)) right = `<div class="mini">${L('Kommt mit in die Tiefe (Tierhütte).', 'Joins the descent (pet hut).')}</div>`;
+      else if (busy >= A.EXP_MAX) right = `<div class="mini">${L(`Schon ${A.EXP_MAX} Tiere unterwegs.`, `${A.EXP_MAX} pets are already away.`)}</div>`;
+      else right = `<div class="expbtns">${A.EXPEDITIONS.map(X => `<button data-trip="${id}" data-k="${X.id}"><b>${X.h} ${L('Std', 'h')}</b><span>${esc(t(X.name))}</span></button>`).join('')}</div>`;
+      return `<div class="expc ${tr ? (tr.done ? 'back' : 'away') : ''}"><div class="pp">${petImg(id, 34)}</div><div class="pb"><b style="color:${P.col}">${esc(t(P.name))}</b>${right}</div></div>`;
+    }).join('');
+    const info = L(`Tiere, die gerade nicht mitkommen, gehen auf Reise und bringen Seelenfunken und Treue mit, auf langen Reisen oft ein Mitbringsel für den nächsten Lauf. Die Zeit läuft auch, wenn das Spiel zu ist.`, `Pets that are not joining you go travelling and bring back soul sparks and loyalty, on long trips often a gift for the next run. Time keeps running while the game is closed.`)
+      + ' ' + A.EXPEDITIONS.map(X => `${X.h} ${L('Std', 'h')}: ${X.sparks[0]}-${X.sparks[1]}`).join(' · ') + ' ' + t(U.meta) + '.';
+    return `<h3>${L('Expeditionen', 'Expeditions')} ${busy}/${A.EXP_MAX}</h3><div class="card flags"><div class="mini">${info}</div>${news}<div class="exps">${cards}</div></div>`;
   }
 
   // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
@@ -427,11 +468,11 @@ window.A = window.A || {};
     A.Scenes.hideTitle(); A.Scenes.stage(null);
     screen.style.display = 'none'; dungeonEl.classList.add('on'); document.body.classList.add('play'); hudUpdate();
     const hooks = {
-      onItem: (it) => foundItem(it),
+      onItem: (it) => { if (!calmLoot(it)) foundItem(it); },   // Ruhige Beute (v40): schwächere Funde ohne Fenster
       onProp: (p) => useProp(p),
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
-      onDeath: () => { S.lose(); if (!G.run.over) { G.run.over = true; G.finishRun(); } setTimeout(() => runOver(), 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
-      onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
+      onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
+      onLevel: () => { if (Wd.W) { A.FX.ev('level', { h: Wd.W.hero, level: G.run.level, sub: G.meta.autoPts ? L('Punkte automatisch verteilt', 'Points spent automatically') : null }); if (G.meta.autoPts) { Wd.refreshHero(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 74, L('Punkte verteilt', 'Points spent'), '#fee761', 12, 'u_star'); } } hudUpdate(); },
       onElite: (list) => eliteNews(list),
       onBook: (ids) => bookNews(ids),
     };
@@ -441,6 +482,8 @@ window.A = window.A || {};
     S.music(A.Draw.themeOf(r.floor));
     const wfx = A.Weather.nameOf(Wd.W);
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
+    // Mitbringsel von der Expedition (v41): einmal nach dem Ebenen-Schild zeigen, dann vergessen
+    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); setTimeout(() => { if (Wd.W === w2 && dungeonEl.classList.contains('on')) A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }, 2800); }
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
@@ -456,7 +499,7 @@ window.A = window.A || {};
     if (sdt > 0) Wd.step(sdt, inp);
     A.Achieve.tick(dt, Wd.W.paused);   // Spielzeit, Gold, Erfolge prüfen und einblenden
     A.FX.update(sdt);
-    if (G.run) G.run.rooms = Wd.saveRooms();
+    if (G.run && Wd.W.seed === G.run.floorSeed && Wd.W.floor === G.run.floor) G.run.rooms = Wd.saveRooms();   // nur die Welt dieses Laufs (nicht die alte Ebene während der Werbung)
     draw.draw(Wd.W, dt);
     controlsTick();
     hudT += dt; if (hudT > 0.1) { hudT = 0; hudUpdate(); }
@@ -600,9 +643,10 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { S.click(); compareView(it, Object.assign({}, o, { slot: b.dataset.slot, again: true })); });
     const done = () => { if (o.back) o.back(); else ovClose(); };
     if (found) {
-      $('#bEq').onclick = () => { G.equip(it, c.slot); S.buy(); ovClose(); };
-      $('#bBag').onclick = () => { G.addToBag(it); S.click(); ovClose(); };
-      $('#bSell').onclick = () => { r.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
+      const letGo = () => { if (Wd.W) Wd.W.held = null; };   // Beute am Boden (v40): das Stück ist nicht mehr in der Hand
+      $('#bEq').onclick = () => { letGo(); G.equip(it, c.slot); S.buy(); ovClose(); };
+      $('#bBag').onclick = () => { letGo(); G.addToBag(it); S.click(); ovClose(); };
+      $('#bSell').onclick = () => { letGo(); r.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
       return;
     }
     if (inShop) {
@@ -613,6 +657,30 @@ window.A = window.A || {};
       $('#bSell').onclick = () => { G.sell(it); S.buy(); done(); };
     }
     $('#bClose').onclick = () => { S.click(); done(); };
+  }
+  // Ruhige Beute (v40, Schalter im Heldenblatt unter «Ausrüstung», meta.calm === false = aus): Schwächere oder gleiche Funde gehen ohne Fenster gleich in Gold.
+  // Was zur Build-Richtung passt oder «anders, eher schwächer» ist, kommt still in den Beutel (ist er voll: Gold). Besseres, «anders» mit Tendenz nach oben,
+  // Kombo-Teile, Legenden und Trophäen zeigen die Karte wie bisher. Gibt true zurück, wenn kein Fenster nötig ist
+  const calmOn = () => G.meta.calm !== false;
+  function calmLoot(it) {
+    const r = G.run; if (!calmOn() || !r || !it || it.legend || it.trophy) return false;
+    const c = A.Compare.all(it)[0], fit = A.Build.fits(it, r);
+    if (!c || cmpTip(c) === 'equip' || (c.verdict === 'mixed' && c.lean !== 'down') || (fit && fit.kind === 'combo')) return false;
+    const h = Wd.W && Wd.W.hero, keep = (fit || c.verdict === 'mixed') && r.bag.length < G.BAG_MAX, q = r.quiet || (r.quiet = { n: 0, g: 0, b: 0 });
+    if (Wd.W) Wd.W.held = null;   // vor dem Speichern: nicht mehr in der Hand (sonst läge es nach dem Neuladen doppelt da)
+    q.n++;
+    if (keep) { q.b++; G.addToBag(it); if (h) Wd.float(h.x, h.y - 44, L('In den Beutel', 'Into the bag'), '#ead4aa', 12, 'u_bag'); }
+    else { const g = G.sellValue(it); q.g += g; r.gold += g; G.save(); if (h) Wd.float(h.x, h.y - 44, '+' + g, '#feae34', 13, 'coin'); }
+    if (Wd.W) Wd.pause(false);
+    // Der Hinweis einmal, aber nur ausserhalb eines Kampfs (sonst verdeckt er den Elite-Balken oder kommt im Boss-Raum gar nicht)
+    if (!G.meta.calmHint && Wd.W && !Wd.W.active) { G.meta.calmHint = 1; G.saveMeta(); const w = Wd.W, tx = L(`Ruhige Beute: Schwächere Funde gehen gleich in Gold. Ausschalten im Heldenblatt unter «${t(U.items)}».`, `Quiet loot: weaker finds turn straight into gold. Switch it off in the hero sheet under «${t(U.items)}».`); w.hint = tx; setTimeout(() => { if (Wd.W === w && w.hint === tx) w.hint = ''; }, 9000); }
+    hudUpdate(); return true;
+  }
+  function calmRow(r) {
+    const on = calmOn(), q = r.quiet;
+    const txt = on ? L('Schwächere Funde gehen gleich in Gold, nur Besseres zeigt eine Karte.', 'Weaker finds turn straight into gold, only better ones show a card.') + (q && q.n ? ' ' + L(`Bisher ${q.n} still verstaut (+${q.g} Gold).`, `So far ${q.n} handled quietly (+${q.g} gold).`) : '')
+      : L('Jeder Fund zeigt eine Karte.', 'Every find shows a card.');
+    return `<div class="optrow">${ic('u_bag', 20)}<span><b>${L('Ruhige Beute', 'Quiet loot')}: ${on ? L('an', 'on') : L('aus', 'off')}</b> ${txt}</span><button id="bCalm">${on ? L('Ausschalten', 'Switch off') : L('Einschalten', 'Switch on')}</button></div>`;
   }
   // Gefundenes Item: gleich der Vergleich mit dem angelegten Stück
   function foundItem(it) {
@@ -634,7 +702,7 @@ window.A = window.A || {};
     return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '', !inBag && !worn);
   }
   // Treppe hinunter (auch am Ausgang: «Weiter nach unten»)
-  function goDown() { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won' || res == null) { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); }
+  function goDown() { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; const run0 = G.run; fadeOut(() => { if (!run0 || G.run !== run0 || run0.over) return; const res = G.descend(); if (res === 'won' || res == null) { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); }
   // Heimkehren (v39): der Durchlauf endet mit allen Funken und Bonus (am Ausgang als Sieg), ab ins Lager
   function homeBtn(exit) {
     const pc = Math.round((exit ? A.EXIT_SPARKS : A.HOME_SPARKS) * 100);
@@ -747,8 +815,10 @@ window.A = window.A || {};
     // Begleiter, die gerade dabei sind, mit Treue und dem, was sie schon können
     const pets = (r.pets || []).filter(id => A.PETS[id]).map(id => { const P = A.PETS[id], lv = A.Pets.treue(id), pr = A.Pets.progress(id);
       return `<div class="skill on" style="cursor:default"><div class="si">${petImg(id, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${P.col}">${esc(t(P.name))} ${petStars(lv)}</div><div class="ds">${A.Pets.tricks(id).filter(x => lv >= x.lv).map(x => esc(x.text)).join(' ')}${pr ? ` <span class="mini">${L(`(noch ${pr[1] - pr[0]} bis Treue ${lv + 1})`, `(${pr[1] - pr[0]} more to loyalty ${lv + 1})`)}</span>` : ''}</div></div></div>`; }).join('');
-    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}${A.Pacts.list(r).length ? `<h3>${L('Pakte', 'Pacts')} <span class="mini">${A.Pacts.list(r).length}/${A.PACT_MAX}</span></h3>${A.Pacts.list(r).map(id => pactRow(id, false)).join('')}` : ''}` :
-      tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
+    // Punkte automatisch verteilen (v40): einmal jetzt, oder immer (meta.autoPts)
+    const autoRow = `<div class="optrow">${ic('u_star', 20)}<span><b>${L('Immer automatisch', 'Always automatic')}: ${G.meta.autoPts ? L('an', 'on') : L('aus', 'off')}</b> ${L('Neue Punkte gehen gleich nach den Stärken deiner Klasse.', 'New points go straight to your class strengths.')}</span><button id="bAutoAll">${G.meta.autoPts ? L('Ausschalten', 'Switch off') : L('Einschalten', 'Switch on')}</button></div>`;
+    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span><button id="bAuto">${L('Automatisch', 'Auto')}</button></div>` : ''}${statsHtml}${kv}${autoRow}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}${A.Pacts.list(r).length ? `<h3>${L('Pakte', 'Pacts')} <span class="mini">${A.Pacts.list(r).length}/${A.PACT_MAX}</span></h3>${A.Pacts.list(r).map(id => pactRow(id, false)).join('')}` : ''}` :
+      tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}${calmRow(r)}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
       `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}${cbSec}`;
     ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}${nCb ? ` <b class="goldc">★${nCb}</b>` : ''}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
@@ -760,6 +830,9 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
+    const bc = $('#bCalm'); if (bc) bc.onclick = () => { G.meta.calm = !calmOn(); G.saveMeta(); S.click(); showSheet('gear'); };
+    const ba = $('#bAuto'); if (ba) ba.onclick = () => { G.autoSpend(); S.click(); showSheet('stats'); };
+    const baa = $('#bAutoAll'); if (baa) baa.onclick = () => { G.meta.autoPts = !G.meta.autoPts; G.saveMeta(); if (G.meta.autoPts && r.points > 0) G.autoSpend(); S.click(); showSheet('stats'); };
     const bf = $('#bFocus'); if (bf) bf.onclick = () => { S.click(); focusPick(tab); };
     const bft = $('#bFate'); if (bft) bft.onclick = () => { S.click(); fatePick(tab); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
@@ -1002,12 +1075,36 @@ window.A = window.A || {};
   }
 
   // ---------- Ende ----------
+  // Fairer Tod (v40): ein Tipp zu dem, was dich erwischt hat, dazu ein Hinweis auf Punkte oder Tränke, die noch übrig waren
+  function deathTips(r) {
+    const by = r.deathBy || {}, k = by.kind, tips = [];
+    tips.push(k === 'burn' ? L('Feuer brennt nach dem Treffer weiter. Raus aus den Flammen, dann trinken.', 'Fire keeps burning after the hit. Get out of the flames, then drink.')
+      : k === 'poison' ? L('Gift wirkt noch eine Weile nach. Lieber zu früh trinken als zu spät.', 'Poison lingers for a while. Better drink too early than too late.')
+      : k === 'rock' ? L('Wo Staub von der Decke rieselt, kommt gleich ein Stein. Kurz zur Seite.', 'Where dust trickles from the ceiling, a rock follows. Step aside.')
+      : k === 'lava' ? L('Glühender Boden wird gleich zu Lava. Nicht darauf stehen bleiben.', 'Glowing ground is about to turn into lava. Do not stand on it.')
+      : k === 'pot' ? L('Ein Knallkrug zischt eine Sekunde lang. Das ist dein Zeichen zu gehen.', 'A blast jar hisses for one second. That is your cue to leave.')
+      : by.boss ? L('Bosse halten bei halbem und bei viertel Leben kurz inne und holen dann zum grossen Angriff aus. Dann raus aus dem Warnkreis.', 'Bosses pause at half and at a quarter of their health, then wind up their big attack. Get out of the warning circle.')
+      : by.cap ? L('Hauptleute haben eine Masche, und ihr Spruch verrät sie meistens. Zuhören lohnt sich.', 'Captains have a trick, and their shout usually gives it away. Listen.')
+      : by.elite ? L('Die Eigenschaften einer Elite stehen oben im Balken. Erst lesen, dann reinlaufen.', 'An elite\'s traits are listed in the bar at the top. Read first, then charge in.')
+      : L('Warnkreise am Boden zeigen, wo gleich etwas einschlägt. Ausweichen lohnt sich.', 'Warning circles on the ground show where something is about to hit. Dodging pays off.'));
+    if (r.points > 0 && !G.meta.autoPts) tips.push(L(`Du hattest noch ${r.points} Punkte nicht verteilt. Im Heldenblatt gibt es dafür «Immer automatisch».`, `You still had ${r.points} unspent points. The hero sheet has «Always automatic» for that.`));
+    else if (r.potions > 0) tips.push(L(`Du hattest noch ${r.potions} ${r.potions === 1 ? 'Trank' : 'Tränke'} dabei. Trink, sobald dein Leben rot wird.`, `You still had ${r.potions} potion${r.potions === 1 ? '' : 's'}. Drink as soon as your health turns red.`));
+    return tips;
+  }
+  // Was reicht im Lager jetzt? Das günstigste Gebäude (sonst ein Volk), für den Ende-Bildschirm
+  function campNext() {
+    const m = G.meta, can = A.CAMP.filter(b => G.campOpen(b.id) && G.campCost(b.id) != null && G.campCost(b.id) <= m.sparks).sort((a, b) => G.campCost(a.id) - G.campCost(b.id));
+    if (can.length) { const b = can[0]; return t(b.name) + ' ' + L(`(Stufe ${G.campLevel(b.id) + 1})`, `(level ${G.campLevel(b.id) + 1})`) + (can.length > 1 ? L(` und ${can.length - 1} mehr`, ` and ${can.length - 1} more`) : ''); }
+    const race = A.META_SHOP.find(u => u.effect.race && !m.unlocked.includes(u.id) && u.cost <= m.sparks);
+    return race ? t(race.name) : null;
+  }
   function runOver() {
-    const r = G.run;
+    const r = G.run; if (!r) return;
     if (!r.over) { r.over = true; G.finishRun(); }
     Portal.gameplayStop();
     overlay.classList.remove('on'); overlay.innerHTML = '';
     const won = r.won, home = r.home, g = A.gradeOf(r), Cl = A.CLASSES.find(c => c.id === r.cls);   // home: 'boss' = nach einem Welt-Boss heimgekehrt, 'exit' = am Ausgang (v39)
+    const died = !home, cause = died ? A.Achieve.causeText({ by: r.deathBy }) : '', next = campNext();   // Fairer Tod (v40)
     const head = home === 'exit' || (home && won) ? L('Sieg! Heimgekehrt.', 'Victory! Home again.') : home ? L('Heimgekehrt!', 'Home again!') : won ? t(U.victory) : t(U.runOver);   // schon am Ausgang vorbei und später nach einem Boss heim: auch ein Sieg
     const msg = home === 'exit' ? L(`Der Ausgang war zu. Also bist du die Treppe hoch. Alle ${r.floor} Ebenen. Zu Fuss.`, `The exit was closed. So you took the stairs. All ${r.floor} floors. On foot.`)
       : home && won ? L(`Am Ausgang vorbei, noch tiefer, noch ein Boss. Dann die Treppe hoch, alle ${r.floor} Ebenen. Sieger dürfen das.`, `Past the exit, deeper still, one more boss. Then up the stairs, all ${r.floor} floors. Winners get to do that.`)
@@ -1016,15 +1113,26 @@ window.A = window.A || {};
       <div class="bigicon">${won || home === 'exit' ? ic('crown', 63) : home ? ic('u_tent', 60) : ic('u_skull', 60)}</div>
       <h2 class="mid">${head}</h2>
       ${msg ? `<div class="msg">${msg}</div>` : ''}<div class="sub">${home ? L(`Heimgekehrt von Ebene ${r.floor}`, `Went home from floor ${r.floor}`) : `${t(U.dead)} ${r.floor}`} (${esc(A.worldName(r.floor))}).${g ? ` ${L('Grad', 'Grade')} ${g}.` : ''}</div>
+      ${died ? `<div class="deathbox"><div class="dby">${ic('u_skull', 20)}<b>${esc(cause.charAt(0).toUpperCase() + cause.slice(1))}.</b></div>${deathTips(r).map(x => `<div class="tip">${esc(x)}</div>`).join('')}</div>` : ''}
       ${r.gradeNew ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L(`Neu: Grad ${r.gradeNew}`, `New: grade ${r.gradeNew}`)}</b> ${L('für', 'for')} ${esc(Cl ? t(Cl.name) : r.cls)}. <i>${esc(t(A.GRADES[r.gradeNew - 1].name))}</i>: ${esc(t(A.GRADES[r.gradeNew - 1].text))} ${L('Wähle ihn beim nächsten Helden.', 'Pick it with your next hero.')}</div>` : r.gradeTop ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L('Grad 10 geschafft!', 'Grade 10 done!')}</b> ${L('Mehr Grade gibt es nicht. Noch nicht.', 'There are no more grades. Not yet.')}</div>` : ''}
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
-      ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
-      <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
-    $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
+      ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
+      ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}
+      <div class="endbtns"><button class="btn ${died && !next ? 'primary' : ''}" id="bAgain">${ic('u_down', 26)}${L('Nochmal', 'Again')}</button><button class="btn ${died && !next ? '' : 'primary'}" id="bCamp">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>
+      <div class="mini">${L('Nochmal: derselbe Held', 'Again: the same hero')}${g ? L(`, Grad ${g}`, `, grade ${g}`) : ''}.</div></div>`);
+    let left = false; const once = (f) => () => { if (left) return; left = true; f(); };   // nur ein Knopf, nur einmal
+    $('#bCamp').onclick = once(() => { S.click(); G.clearRun(); Portal.showAd(() => camp()); });
+    // Nochmal (v40): gleich der nächste Lauf mit Volk, Klasse und Grad von eben (Begleiter wie zuletzt gewählt)
+    $('#bAgain').onclick = once(() => {
+      S.buy(); const race = A.RACES.find(x => x.id === r.race), cls = A.CLASSES.find(x => x.id === r.cls), gr = cls && G.gradeMax(cls.id) ? Math.min(g, G.gradeMax(cls.id)) : undefined;
+      G.clearRun();
+      if (!race || !cls || !G.raceUnlocked(race) || !G.classUnlocked(cls)) { Portal.showAd(() => heroSelect()); return; }
+      Portal.showAd(() => { A.Scenes.stage(null); G.newRun(race.id, cls.id, gr); Portal.gameplayStart(); dungeon(true); });
+    });
   }
 
   // ---------- Start ----------
