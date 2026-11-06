@@ -717,7 +717,7 @@ A.EXP_MAX = 3;   // so viele Tiere gleichzeitig unterwegs
 A.EXPEDITIONS = [
   { id: 'kurz', h: 1, name: { de: 'Spaziergang', en: 'Stroll' }, sparks: [10, 15], treue: 8, gift: 0 },
   { id: 'mittel', h: 4, name: { de: 'Ausflug', en: 'Trip' }, sparks: [30, 45], treue: 25, gift: 0.3 },
-  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7 },
+  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7, item: 0.4 },   // item: so oft ist das Mitbringsel ein seltenes Stück (v44)
 ];
 // Mitbringsel für den nächsten Lauf (meta.gift, wird beim Start eingelöst)
 A.EXP_GIFTS = [
@@ -725,6 +725,7 @@ A.EXP_GIFTS = [
   { k: 'gold', n: 60, text: { de: '60 Gold', en: '60 gold' } },
   { k: 'pot', n: 2, text: { de: 'zwei Tränke', en: 'two potions' } },
 ];
+A.EXP_ITEM = { k: 'item', n: 1, text: { de: 'ein seltenes Stück', en: 'a rare item' } };   // nur von der Expedition (v44); beim nächsten Lauf angelegt, wenn besser, sonst im Beutel
 // Was jedes Tier nach der Reise erzählt (fehlt eins, gilt der Satz unter «_»)
 A.EXP_LINES = {
   flitz: { de: 'Flitz ist zurück. Mit einem Hühnerknochen und einem sehr unschuldigen Blick.', en: 'Zippy is back. With a chicken bone and a very innocent look.' },
@@ -749,15 +750,41 @@ A.HYPE = { multi3: 10, multi5: 15, multi8: 25, elite: 10, captain: 25, boss: 25,
 A.SPONSOR_KNALL = 8;     // Baron von Knall: so viele Besiegte explodieren
 A.SPONSOR_RAGE = 0.3;    // Gräfin Gemetzel: mehr Schaden auf der Ebene
 // fans: ab so vielen Fans (eine je Kiste, für immer) schickt dieser Gönner Kisten
+// von: der Name nach «von» (für Sätze wie «Eine Kiste vom Goldenen Geier!»)
 A.SPONSORS = [
-  { id: 'trudi', fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
-  { id: 'geier', fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
-  { id: 'knall', fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
-  { id: 'pilz', fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
-  { id: 'gemetzel', fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
-  { id: 'mops', fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
-  { id: 'kiste', fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
-  { id: 'ruhm', fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+  { id: 'trudi', von: { de: 'von Tante Trudi', en: 'from Aunt Trudi' }, fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
+  { id: 'geier', von: { de: 'vom Goldenen Geier', en: 'from the Golden Vulture' }, fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
+  { id: 'knall', von: { de: 'von Baron von Knall', en: 'from Baron von Bang' }, fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
+  { id: 'pilz', von: { de: 'von Professor Pilz', en: 'from Professor Fungus' }, fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
+  { id: 'gemetzel', von: { de: 'von Gräfin Gemetzel', en: 'from Countess Carnage' }, fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
+  { id: 'mops', von: { de: 'vom Mops-Verein', en: 'from the Pug Club' }, fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
+  { id: 'kiste', von: { de: 'von der Kistenkönigin', en: 'from the Crate Queen' }, fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
+  { id: 'ruhm', von: { de: 'von Herrn Ruhm', en: 'from Mister Fame' }, fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+];
+// Gönner wählen (v43, Heldenwahl): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit.
+// fx: dmgPct/hpPct/goldPct/xpPct in Prozent wie die Pakte (game.js derived), pots: Tränke am Start, potHeal: Trank-Heilung,
+// monHp/monAtk: Gegner (game.js monsterEntity), hype: Auge füllt sich schneller, boom: jeder n-te Besiegte explodiert (show.js), sparks: Seelenfunken
+A.PATRON_RULES = {
+  trudi: { fx: { pots: 2, potHeal: -0.15 }, rule: { de: 'Proviant: 2 Tränke mehr am Start. Dafür heilen Tränke 15 % weniger, sonst gewöhnst du dich dran.', en: 'Packed lunch: 2 extra potions at the start. Potions heal 15% less, or you will get used to it.' } },
+  geier: { fx: { goldPct: 30, monAtk: 0.1 }, rule: { de: 'Die Wette läuft: +30 % Gold. Die Gegner haben davon gehört und schlagen 10 % fester zu.', en: 'The bet is on: +30% gold. The enemies heard about it and hit 10% harder.' } },
+  knall: { fx: { boom: 5 }, rule: { de: 'Feuerwerk: Jeder fünfte Besiegte explodiert. Einfach so.', en: 'Fireworks: every fifth enemy you defeat explodes. Just because.' } },
+  pilz: { fx: { xpPct: 25, hpPct: -10 }, rule: { de: 'Versuchsreihe: +25 % Erfahrung. Nebenwirkung: 10 % weniger Leben.', en: 'Test series: +25% experience. Side effect: 10% less health.' } },
+  gemetzel: { fx: { dmgPct: 15, hpPct: -15 }, rule: { de: 'Blutdurst: +15 % Schaden, aber 15 % weniger Leben. Die Gräfin mag es knapp.', en: 'Bloodlust: +15% damage, but 15% less health. The Countess likes it close.' } },
+  mops: { fx: { hpPct: 20, dmgPct: -10 }, rule: { de: 'Kuschelkurs: +20 % Leben, 10 % weniger Schaden. Gewalt ist keine Lösung. Meistens.', en: 'Cuddle course: +20% health, 10% less damage. Violence is not the answer. Usually.' } },
+  kiste: { fx: { hype: 0.5 }, rule: { de: 'Kistenregen: Das Auge füllt sich 50 % schneller.', en: 'Crate rain: the eye fills 50% faster.' } },
+  ruhm: { fx: { sparks: 0.2, monHp: 0.15 }, rule: { de: 'Rampenlicht: +20 % Seelenfunken. Die Gegner haben 15 % mehr Leben, fürs Publikum.', en: 'Spotlight: +20% soul sparks. Enemies have 15% more health, for the audience.' } },
+};
+A.patronOf = (r) => (r && typeof r.patron === 'string' && A.PATRON_RULES[r.patron] ? r.patron : null);
+A.patronVal = (k, r) => { const p = A.patronOf(r); return p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0; };
+// Tageswunsch (v43): jeden Tag wünscht sich ein Gönner etwas für einen Lauf; einmal am Tag erfüllbar, dann Fans und Seelenfunken
+A.WISH_FANS = 2; A.WISH_SPARKS = 30;
+A.WISHES = [
+  { id: 'kills', n: 50, text: { de: 'Besiege in einem Lauf {n} Gegner.', en: 'Defeat {n} enemies in one run.' } },
+  { id: 'elites', n: 3, text: { de: 'Besiege in einem Lauf {n} Elite-Gegner.', en: 'Defeat {n} elite enemies in one run.' } },
+  { id: 'floor', n: 6, text: { de: 'Komm bis Ebene {n}.', en: 'Reach floor {n}.' } },
+  { id: 'crates', n: 2, text: { de: 'Hol dir in einem Lauf {n} Kisten von oben.', en: 'Get {n} crates from above in one run.' } },
+  { id: 'boss', n: 1, text: { de: 'Besiege einen Welt-Boss.', en: 'Defeat a world boss.' } },
+  { id: 'home', n: 1, text: { de: 'Komm nach einem Welt-Boss mit Heimkehren nach Hause.', en: 'Come back home with Go home after a world boss.' } },
 ];
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------

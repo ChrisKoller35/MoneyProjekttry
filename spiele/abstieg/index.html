@@ -19,6 +19,7 @@
     --notch2: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
   }
   * { box-sizing: border-box; }
+  *, *::before, *::after { font-variant-ligatures: none; }   /* Pixelify Sans zeichnet «fi» und «fl» als Ligatur, die wie ein «A» aussieht («GräAn», «Anden»); gilt auch für den Text im Canvas */
   html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text); font-family: var(--ui); overflow: hidden; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
   body { user-select: none; -webkit-user-select: none; }
   button { font: inherit; color: inherit; }
@@ -66,6 +67,12 @@
   .sponsors { display: grid; gap: 6px; margin-top: 8px; }
   .spon { display: flex; align-items: center; gap: 10px; background: rgba(24,20,37,0.45); border: 2px solid #3a4466; padding: 7px 9px; text-align: left; }
   .spon.locked { filter: saturate(0.2) brightness(0.7); }
+  .chips.pats { grid-template-columns: repeat(3, 1fr); }
+  .chip.pchip { min-height: 40px; padding: 6px 4px; flex-direction: row; gap: 4px; font-size: 12px; }
+  .chip.pchip span { flex: 1; min-width: 0; }
+  .wishl { margin: 6px 2px 0; }
+  .perk.wishl, .mini.wishl { color: var(--gold2); }
+  .card .wishl { margin: 0 0 6px; }
   .spon .sb { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
   .spon .sb b { font-size: 14px; }
   .pill { display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 7px 0 5px; background: rgba(24,20,37,0.85); border: 2px solid var(--line); clip-path: var(--notch); font-size: 15px; font-weight: 700; white-space: nowrap; line-height: 1; }

@@ -19,6 +19,7 @@
     --notch2: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
   }
   * { box-sizing: border-box; }
+  *, *::before, *::after { font-variant-ligatures: none; }   /* Pixelify Sans zeichnet «fi» und «fl» als Ligatur, die wie ein «A» aussieht («GräAn», «Anden»); gilt auch für den Text im Canvas */
   html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text); font-family: var(--ui); overflow: hidden; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
   body { user-select: none; -webkit-user-select: none; }
   button { font: inherit; color: inherit; }
@@ -66,6 +67,12 @@
   .sponsors { display: grid; gap: 6px; margin-top: 8px; }
   .spon { display: flex; align-items: center; gap: 10px; background: rgba(24,20,37,0.45); border: 2px solid #3a4466; padding: 7px 9px; text-align: left; }
   .spon.locked { filter: saturate(0.2) brightness(0.7); }
+  .chips.pats { grid-template-columns: repeat(3, 1fr); }
+  .chip.pchip { min-height: 40px; padding: 6px 4px; flex-direction: row; gap: 4px; font-size: 12px; }
+  .chip.pchip span { flex: 1; min-width: 0; }
+  .wishl { margin: 6px 2px 0; }
+  .perk.wishl, .mini.wishl { color: var(--gold2); }
+  .card .wishl { margin: 0 0 6px; }
   .spon .sb { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
   .spon .sb b { font-size: 14px; }
   .pill { display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 7px 0 5px; background: rgba(24,20,37,0.85); border: 2px solid var(--line); clip-path: var(--notch); font-size: 15px; font-weight: 700; white-space: nowrap; line-height: 1; }
@@ -1272,7 +1279,7 @@ A.EXP_MAX = 3;   // so viele Tiere gleichzeitig unterwegs
 A.EXPEDITIONS = [
   { id: 'kurz', h: 1, name: { de: 'Spaziergang', en: 'Stroll' }, sparks: [10, 15], treue: 8, gift: 0 },
   { id: 'mittel', h: 4, name: { de: 'Ausflug', en: 'Trip' }, sparks: [30, 45], treue: 25, gift: 0.3 },
-  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7 },
+  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7, item: 0.4 },   // item: so oft ist das Mitbringsel ein seltenes Stück (v44)
 ];
 // Mitbringsel für den nächsten Lauf (meta.gift, wird beim Start eingelöst)
 A.EXP_GIFTS = [
@@ -1280,6 +1287,7 @@ A.EXP_GIFTS = [
   { k: 'gold', n: 60, text: { de: '60 Gold', en: '60 gold' } },
   { k: 'pot', n: 2, text: { de: 'zwei Tränke', en: 'two potions' } },
 ];
+A.EXP_ITEM = { k: 'item', n: 1, text: { de: 'ein seltenes Stück', en: 'a rare item' } };   // nur von der Expedition (v44); beim nächsten Lauf angelegt, wenn besser, sonst im Beutel
 // Was jedes Tier nach der Reise erzählt (fehlt eins, gilt der Satz unter «_»)
 A.EXP_LINES = {
   flitz: { de: 'Flitz ist zurück. Mit einem Hühnerknochen und einem sehr unschuldigen Blick.', en: 'Zippy is back. With a chicken bone and a very innocent look.' },
@@ -1304,15 +1312,41 @@ A.HYPE = { multi3: 10, multi5: 15, multi8: 25, elite: 10, captain: 25, boss: 25,
 A.SPONSOR_KNALL = 8;     // Baron von Knall: so viele Besiegte explodieren
 A.SPONSOR_RAGE = 0.3;    // Gräfin Gemetzel: mehr Schaden auf der Ebene
 // fans: ab so vielen Fans (eine je Kiste, für immer) schickt dieser Gönner Kisten
+// von: der Name nach «von» (für Sätze wie «Eine Kiste vom Goldenen Geier!»)
 A.SPONSORS = [
-  { id: 'trudi', fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
-  { id: 'geier', fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
-  { id: 'knall', fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
-  { id: 'pilz', fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
-  { id: 'gemetzel', fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
-  { id: 'mops', fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
-  { id: 'kiste', fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
-  { id: 'ruhm', fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+  { id: 'trudi', von: { de: 'von Tante Trudi', en: 'from Aunt Trudi' }, fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
+  { id: 'geier', von: { de: 'vom Goldenen Geier', en: 'from the Golden Vulture' }, fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
+  { id: 'knall', von: { de: 'von Baron von Knall', en: 'from Baron von Bang' }, fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
+  { id: 'pilz', von: { de: 'von Professor Pilz', en: 'from Professor Fungus' }, fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
+  { id: 'gemetzel', von: { de: 'von Gräfin Gemetzel', en: 'from Countess Carnage' }, fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
+  { id: 'mops', von: { de: 'vom Mops-Verein', en: 'from the Pug Club' }, fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
+  { id: 'kiste', von: { de: 'von der Kistenkönigin', en: 'from the Crate Queen' }, fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
+  { id: 'ruhm', von: { de: 'von Herrn Ruhm', en: 'from Mister Fame' }, fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+];
+// Gönner wählen (v43, Heldenwahl): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit.
+// fx: dmgPct/hpPct/goldPct/xpPct in Prozent wie die Pakte (game.js derived), pots: Tränke am Start, potHeal: Trank-Heilung,
+// monHp/monAtk: Gegner (game.js monsterEntity), hype: Auge füllt sich schneller, boom: jeder n-te Besiegte explodiert (show.js), sparks: Seelenfunken
+A.PATRON_RULES = {
+  trudi: { fx: { pots: 2, potHeal: -0.15 }, rule: { de: 'Proviant: 2 Tränke mehr am Start. Dafür heilen Tränke 15 % weniger, sonst gewöhnst du dich dran.', en: 'Packed lunch: 2 extra potions at the start. Potions heal 15% less, or you will get used to it.' } },
+  geier: { fx: { goldPct: 30, monAtk: 0.1 }, rule: { de: 'Die Wette läuft: +30 % Gold. Die Gegner haben davon gehört und schlagen 10 % fester zu.', en: 'The bet is on: +30% gold. The enemies heard about it and hit 10% harder.' } },
+  knall: { fx: { boom: 5 }, rule: { de: 'Feuerwerk: Jeder fünfte Besiegte explodiert. Einfach so.', en: 'Fireworks: every fifth enemy you defeat explodes. Just because.' } },
+  pilz: { fx: { xpPct: 25, hpPct: -10 }, rule: { de: 'Versuchsreihe: +25 % Erfahrung. Nebenwirkung: 10 % weniger Leben.', en: 'Test series: +25% experience. Side effect: 10% less health.' } },
+  gemetzel: { fx: { dmgPct: 15, hpPct: -15 }, rule: { de: 'Blutdurst: +15 % Schaden, aber 15 % weniger Leben. Die Gräfin mag es knapp.', en: 'Bloodlust: +15% damage, but 15% less health. The Countess likes it close.' } },
+  mops: { fx: { hpPct: 20, dmgPct: -10 }, rule: { de: 'Kuschelkurs: +20 % Leben, 10 % weniger Schaden. Gewalt ist keine Lösung. Meistens.', en: 'Cuddle course: +20% health, 10% less damage. Violence is not the answer. Usually.' } },
+  kiste: { fx: { hype: 0.5 }, rule: { de: 'Kistenregen: Das Auge füllt sich 50 % schneller.', en: 'Crate rain: the eye fills 50% faster.' } },
+  ruhm: { fx: { sparks: 0.2, monHp: 0.15 }, rule: { de: 'Rampenlicht: +20 % Seelenfunken. Die Gegner haben 15 % mehr Leben, fürs Publikum.', en: 'Spotlight: +20% soul sparks. Enemies have 15% more health, for the audience.' } },
+};
+A.patronOf = (r) => (r && typeof r.patron === 'string' && A.PATRON_RULES[r.patron] ? r.patron : null);
+A.patronVal = (k, r) => { const p = A.patronOf(r); return p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0; };
+// Tageswunsch (v43): jeden Tag wünscht sich ein Gönner etwas für einen Lauf; einmal am Tag erfüllbar, dann Fans und Seelenfunken
+A.WISH_FANS = 2; A.WISH_SPARKS = 30;
+A.WISHES = [
+  { id: 'kills', n: 50, text: { de: 'Besiege in einem Lauf {n} Gegner.', en: 'Defeat {n} enemies in one run.' } },
+  { id: 'elites', n: 3, text: { de: 'Besiege in einem Lauf {n} Elite-Gegner.', en: 'Defeat {n} elite enemies in one run.' } },
+  { id: 'floor', n: 6, text: { de: 'Komm bis Ebene {n}.', en: 'Reach floor {n}.' } },
+  { id: 'crates', n: 2, text: { de: 'Hol dir in einem Lauf {n} Kisten von oben.', en: 'Get {n} crates from above in one run.' } },
+  { id: 'boss', n: 1, text: { de: 'Besiege einen Welt-Boss.', en: 'Defeat a world boss.' } },
+  { id: 'home', n: 1, text: { de: 'Komm nach einem Welt-Boss mit Heimkehren nach Hause.', en: 'Come back home with Go home after a world boss.' } },
 ];
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
@@ -2300,7 +2334,7 @@ A.Game = (function () {
 
   // ---------- Durchlauf ----------
   let run = null;
-  function newRun(raceId, classId, grade) {
+  function newRun(raceId, classId, grade, patron) {
     const race = A.RACES.find(r => r.id === raceId), cls = A.CLASSES.find(c => c.id === classId);
     const g = Math.max(0, Math.min(gradeMax(cls.id), Math.floor(+grade) || 0));   // Grad (v39): nur, was die Klasse schon freigeschaltet hat
     const me = metaEffects();
@@ -2317,6 +2351,11 @@ A.Game = (function () {
       log: [], reviveUsed: false, over: false, won: false, grade: g,
     };
     if (grade != null) { (meta.gradeSel || (meta.gradeSel = {}))[cls.id] = g; saveMeta(); }
+    // Gönner (v43): nur einer, der sich schon vorgestellt hat; gemerkt für die nächste Heldenwahl
+    const sp = typeof patron === 'string' ? A.SPONSORS.find(s => s.id === patron) : null, pat = sp && A.PATRON_RULES[sp.id] && (Math.floor(+meta.fans) || 0) >= (sp.fans || 0) ? sp.id : null;
+    run.patron = pat;
+    if (patron !== undefined) { meta.patron = pat || ''; saveMeta(); }
+    run.potions += Math.max(0, Math.floor(A.patronVal('pots', run)));   // Tante Trudi: Proviant
     run.rng = new A.RNG(run.seed);
     run.pets = A.Pets.startPets();   // Begleiter aus der Tierhütte
     A.Achieve.onRun(run);            // Zähler fürs Auftragsbrett (Völker, Klassen) und die Felder für die Chronik
@@ -2328,7 +2367,17 @@ A.Game = (function () {
     run.hp = derived().maxHp;
     // Mitbringsel von den Expeditionen (v41, meta.gift): wird beim Start eingelöst, ui.js zeigt es als Banner
     const gf = meta.gift;
-    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0))) { const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0); run.potions += pot; run.gold += gold; run.giftNews = { pot, gold }; meta.gift = null; saveMeta(); }
+    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0) || (gf.item > 0))) {
+      const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0), want = Math.max(0, Math.floor(gf.item) || 0), item = Math.min(A.EXP_MAX * 2, want);   // höchstens 6 Stücke je Lauf, der Rest wartet auf den nächsten
+      run.potions += pot; run.gold += gold;
+      // seltene Stücke (v44): gleich angelegt, wenn besser als das Start-Stück an dem Platz, sonst in den Beutel
+      const made = [];
+      for (let i = 0; i < item; i++) { const it = randomItem('rare'), c = A.Compare ? A.Compare.all(it)[0] : null; made.push(it);
+        if (c && c.verdict === 'better') { const old = run.gear[c.slot]; run.gear[c.slot] = it; if (old) run.bag.push(old); } else run.bag.push(it); }
+      const worn = made.filter(x => Object.values(run.gear).includes(x)).length;   // ein späteres Stück kann ein früheres am selben Platz ersetzen
+      if (item) { trimBag(); run.hp = derived().maxHp; }
+      run.giftNews = { pot, gold, item, worn }; meta.gift = want > item ? { item: Math.min(A.EXP_MAX * 2, want - item) } : null; saveMeta();
+    }
     newFloor();
     save();
     return run;
@@ -2352,7 +2401,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0);   // om: Regel des Gönners (v43)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
     const d = {
@@ -2378,9 +2427,44 @@ A.Game = (function () {
 
   // elite: true = Elite mit voller Anzahl Eigenschaften, Zahl = so viele Eigenschaften (Champion), Liste = genau diese Eigenschaften, false = normal
   // Grad (v39): je Grad mehr Leben und Schaden; ab Ebene 25 (die Welten kommen wieder) je Runde mehr, damit es nach dem Ausgang nicht leichter wird
+  // Tageswunsch (v43): am ersten Blick des Tages wählt ein Gönner, der sich schon vorgestellt hat, einen Wunsch; der bleibt den ganzen Tag
+  function wishToday() {
+    const day = dayKey(new Date()), w0 = meta.wish && typeof meta.wish === 'object' ? meta.wish : null;
+    let S = w0 && w0.day === day ? A.SPONSORS.find(s => s.id === w0.sp) : null, W = w0 && w0.day === day ? A.WISHES.find(x => x.id === w0.w) : null;
+    if (!S || !W) {
+      let h = 0; for (const ch of day) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+      const list = A.SPONSORS.filter(s => (Math.floor(+meta.fans) || 0) >= (s.fans || 0));
+      S = list[h % list.length] || A.SPONSORS[0]; W = A.WISHES[(h >>> 7) % A.WISHES.length];
+      meta.wish = { day, sp: S.id, w: W.id, done: false }; saveMeta();
+    }
+    return { day, S, w: W, done: !!meta.wish.done };
+  }
+  function wishProgress(w, r) {
+    r = r || run; if (!r || !w) return 0;
+    switch (w.id) {
+      case 'kills': return r.kills || 0;
+      case 'elites': return r.eliteKills || 0;
+      case 'floor': return r.floor || 0;
+      case 'crates': return r.crates || 0;
+      case 'boss': return r.bossKills || 0;
+      case 'home': return r.home ? 1 : 0;
+      default: return 0;
+    }
+  }
+  // Prüft den Wunsch für den laufenden Durchlauf (end: am Ende, dann zählt auch Heimkehren). Erfüllt: Fans und Funken gleich, einmal am Tag
+  function wishCheck(end) {
+    if (!run || (run.over && !end)) return null;   // einmal am Tag: meta.wish.done (ein Lauf über Mitternacht kann auch den Wunsch des neuen Tages erfüllen)
+    const wt = wishToday(); if (wt.done || wishProgress(wt.w) < wt.w.n) return null;
+    const f0 = Math.max(0, Math.floor(+meta.fans) || 0);
+    meta.wish.done = true; meta.fans = f0 + A.WISH_FANS; meta.sparks += A.WISH_SPARKS;
+    wt.fresh = A.SPONSORS.filter(s => (s.fans || 0) > f0 && (s.fans || 0) <= meta.fans);   // stellen sich durch die neuen Fans vor
+    run.sparksWish = (run.sparksWish || 0) + A.WISH_SPARKS; run.wishDone = { day: wt.day, sp: wt.S.id, w: wt.w.id, fresh: wt.fresh.map(s => s.id) };
+    saveMeta(); save();
+    return wt;
+  }
   function monsterEntity(m, floor, elite, idx) {
     const gr = A.gradeOf(run), rd = A.worldRound(floor);
-    const hpM = (1 + 0.28 * (floor - 1)) * (1 + A.GRADE_HP * gr) * (1 + 0.5 * rd), atkM = (1 + 0.18 * (floor - 1)) * (1 + A.GRADE_ATK * gr) * (1 + 0.25 * rd);
+    const hpM = (1 + 0.28 * (floor - 1)) * (1 + A.GRADE_HP * gr) * (1 + 0.5 * rd) * (1 + A.patronVal('monHp', run)), atkM = (1 + 0.18 * (floor - 1)) * (1 + A.GRADE_ATK * gr) * (1 + 0.25 * rd) * (1 + A.patronVal('monAtk', run));   // Gönner-Regel (v43)
     const e = {
       id: 'e' + idx, mid: m.id, name: A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
@@ -2746,7 +2830,7 @@ A.Game = (function () {
   function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
-  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r); }   // Trockener Hals (pacts.js): nur halb so viel
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r) * (1 + A.patronVal('potHeal', r)); }   // Trockener Hals (pacts.js): nur halb so viel
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
@@ -2757,10 +2841,12 @@ A.Game = (function () {
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
     const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run));   // Pakte: je Pakt +15 %
     const cd = candles(true), candle = Math.round(base * A.CANDLE_SPARKS * cd.n);
-    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
+    const patron = Math.round(base * A.patronVal('sparks', run));   // Herr Ruhm als Gönner (v43)
+    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle + patron;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
+    run.sparksPatron = patron; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
@@ -2794,7 +2880,7 @@ A.Game = (function () {
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
@@ -9624,7 +9710,7 @@ A.Pets = (function () {
     const tr = tripOf(id); if (!tr || !tr.done) return null;
     const m = G().meta, e = trips()[id], X = tr.X, rng = new A.RNG(((Math.floor(e.t0 / 1000) ^ 0x3c6ef372) >>> 0) || 3);
     const sparks = rng.int(X.sparks[0], X.sparks[1]);
-    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }
+    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = X.item > 0 && rng.chance(X.item) && !((m.gift && m.gift.item) >= A.EXP_MAX * 2) ? A.EXP_ITEM : rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }   // warten schon 6 Stücke: Tränke oder Gold
     delete m.exp[id]; m.sparks += sparks;
     const up = gain(id, X.treue);
     G().saveMeta();
@@ -11313,6 +11399,7 @@ A.Show = (function () {
   // Wer schickt diese Kiste? Fest aus Startwert, Kisten-Zahl und Ebene (nie zweimal derselbe hintereinander, wenn es mehr gibt)
   function pickSponsor(r) {
     const list = sponsors(); if (!list.length) return A.SPONSORS[0];
+    const pat = A.patronOf(r), P = pat && list.find(s => s.id === pat); if (P) return P;   // Gönner dieses Laufs (v43) schickt alle Kisten
     let k = (((r.seed >>> 0) ^ Math.imul((r.crates || 0) + 1, 0x9e3779b1) ^ Math.imul(r.floor, 7919)) >>> 0) % list.length;
     if (list.length > 1 && list[k].id === r.lastSp) k = (k + 1) % list.length;
     return list[k];
@@ -11320,12 +11407,19 @@ A.Show = (function () {
 
   // ---------- Spektakel ----------
   // n Punkte fürs Auge; text schwebt über dem Helden («Dreifach! +10»)
+  // Show-Texte über dem Helden: was im selben Augenblick kommt, steht übereinander statt aufeinander
+  function sfloat(text, col, size) {
+    const w = W(), h = w && w.hero; if (!h || !api) return;
+    const s = w.show || (w.show = {}); s.ft = (s.ft || []).filter(t => w.t - t >= 0 && w.t - t < 0.7);
+    api.float(h.x, h.y - 92 - 18 * s.ft.length, text, col, size); s.ft.push(w.t);
+  }
   function hype(n, text) {
     const r = run(), w = W(); if (!live(r) || !w || !(n > 0)) return;
+    n = Math.round(n * (1 + A.patronVal('hype', r)));   // Kistenregen (v43)
     r.hype = Math.min(A.HYPE_MAX, (r.hype || 0) + n);
     r.hypeTot = (r.hypeTot || 0) + n;
-    const h = w.hero; if (h && text && api) api.float(h.x, h.y - 92, text + ' +' + n, '#2ce8f5', 13);
-    if (r.hype >= A.HYPE_MAX && !r.crateDue) { r.crateDue = true; if (h && api) api.float(h.x, h.y - 112, L('Die Zuschauer toben!', 'The crowd goes wild!'), '#fee761', 16); if (A.Sound.level) A.Sound.level(); }
+    if (text) sfloat(text + ' +' + n, '#2ce8f5', 13);
+    if (r.hype >= A.HYPE_MAX && !r.crateDue) { r.crateDue = true; sfloat(L('Die Zuschauer toben!', 'The crowd goes wild!'), '#fee761', 16); if (A.Sound.level) A.Sound.level(); }
   }
   // Gegner besiegt (world.js checkDeath): Mehrfach-Kills (eine Serie ohne lange Pause; 3, 5 und 8 zählen je Serie einmal), Elite, Hauptmann, Boss, Goldwicht, Mimik; Knall-Ladung des Barons
   function onKill(e) {
@@ -11336,6 +11430,7 @@ A.Show = (function () {
     if (n === 3) hype(H.multi3, L('Dreifach!', 'Triple!'));
     else if (n === 5) hype(H.multi5, L('Gemetzel!', 'Carnage!'));
     else if (n === 8) hype(H.multi8, L('Wahnsinn!', 'Madness!'));
+    if (e.boss) r.bossKills = (r.bossKills || 0) + 1;   // für den Tageswunsch (v43)
     if (e.boss) hype(H.boss, L('Boss!', 'Boss!'));
     else if (e.captain) hype(H.captain, L('Hauptmann!', 'Captain!'));
     else if (e.elite) hype(H.elite, L('Elite!', 'Elite!'));
@@ -11344,7 +11439,12 @@ A.Show = (function () {
     // Baron von Knall: die nächsten Besiegten gehen hoch (wie das Talent Kettenreaktion)
     if ((r.knall || 0) > 0 && !e.boss && w.hero && w.hero.alive) {
       r.knall--; w.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: w.t + 0.15, dmg: api.heroPower(w.hero) * 0.6, col: '#f77622', opts: { kette: true } });
-      if (!r.knall) api.float(w.hero.x, w.hero.y - 70, L('Knall-Ladung leer', 'Bang charge empty'), '#f77622', 13);
+      if (!r.knall) sfloat(L('Knall-Ladung leer', 'Bang charge empty'), '#f77622', 13);
+    }
+    // Feuerwerk (v43, Baron von Knall als Gönner): jeder n-te Besiegte geht hoch
+    else if (A.patronVal('boom', r) > 0 && !e.boss && w.hero && w.hero.alive) {
+      r.patKills = (r.patKills || 0) + 1;
+      if (r.patKills % A.patronVal('boom', r) === 0) w.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: w.t + 0.15, dmg: api.heroPower(w.hero) * 0.6, col: '#f77622', opts: { kette: true } });
     }
   }
   // Raum gesäubert (game.js roomCleared, bevor das Auftragsbrett die Werte zurücksetzt)
@@ -11364,7 +11464,7 @@ A.Show = (function () {
       const [x, y] = api.freeSpot(h.x + (h.fx >= 0 ? 44 : -44), h.y - 8, 15);
       w.picks.push({ kind: 'crate', sp: S.id, x, y, vx: 0, vy: 0, z: 420, vz: -60, t: 0 });
       r.crateDue = false; r.hype = 0; r.lastSp = S.id; G().save();
-      api.float(h.x, h.y - 100, L(`Eine Kiste von ${A.t(S.name)}!`, `A crate from ${A.t(S.name)}!`), '#fee761', 15);
+      sfloat(L(`Eine Kiste ${A.t(S.von)}!`, `A crate ${A.t(S.von)}!`), '#fee761', 15);
     }
     for (const p of w.picks) if (p.kind === 'crate' && !p.landed && p.z <= 0 && p.t > 0.1) {   // gelandet: Staub und Wackeln
       p.landed = true;
@@ -14567,6 +14667,7 @@ window.A = window.A || {};
     const r = G.run;
     if (!r || r.over || !document.body.classList.contains('play')) { hud.classList.remove('on'); return; }
     hud.classList.add('on');
+    const wd = G.wishCheck(); if (wd) wishNews(wd);   // Tageswunsch (v43)
     const d = G.derived();
     const pct = clamp(r.hp / d.maxHp * 100, 0, 100) + '%';
     if (hudLast.hp !== pct) { hudLast.hp = pct; H.hp.style.width = pct; H.trail.style.width = pct; }
@@ -14703,7 +14804,7 @@ window.A = window.A || {};
   }
 
   // ---------- Grad: was gilt (Regel des Grads, die Namen der Regeln davor, mehr Leben und Schaden, mehr Funken) ----------
-  let selGrade = null;
+  let selGrade = null, selPat = '';   // selPat: gewählter Gönner (v43), '' = keiner
   function gradeText(g) {
     if (!g) return `<b>${L('Normal', 'Normal')}:</b> ${L('Ohne Grad. So wie immer.', 'No grade. Business as usual.')}`;
     const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
@@ -14722,6 +14823,7 @@ window.A = window.A || {};
       <h3>${t(U.race)}</h3><div class="chips">${races}</div><div class="perk" id="racePerk"></div>
       <h3>${t(U.cls)}</h3><div class="chips">${classes}</div><div class="perk" id="clsPerk"></div>
       <div id="gradeBox"></div>
+      <div id="patronBox"></div>
       <button class="btn primary" id="bStart">${t(U.start)}</button><button class="btn" id="bBack">${t(U.back)}</button>
     </div>`, { stage: true });
     const upd = (peekCls) => {
@@ -14733,7 +14835,7 @@ window.A = window.A || {};
       $('#racePerk').innerHTML = `<b>${esc(t(race.name))}:</b> ${esc(t(race.perk))}`;
       const pc = peekCls || cls;
       $('#clsPerk').innerHTML = `<b>${esc(t(pc.name))}:</b> ${esc(t(pc.perk))}`;
-      gradeRow();
+      gradeRow(); patronRow();
       A.Scenes.stage($('#stage'), selRace, selCls);
     };
     // Grade (v39): erst nach dem ersten Sieg mit dieser Klasse; jeder Grad bringt eine Regel dazu, die von davor gelten weiter
@@ -14745,10 +14847,19 @@ window.A = window.A || {};
       box.innerHTML = `<h3>${L('Grad', 'Grade')}</h3><div class="chips grades">${chips}</div><div class="perk" id="gradePerk">${gradeText(selGrade)}</div>`;
       box.querySelectorAll('[data-grade]').forEach(el => el.onclick = () => { const g = +el.dataset.grade; if (g === selGrade) return; selGrade = g; S.click(); gradeRow(); });
     };
-    selGrade = null;
+    // Gönner (v43): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit; «Keiner» = wie bisher
+    const patronRow = () => {
+      const box = $('#patronBox'); if (!box) return;
+      const list = A.Show.sponsors().filter(s => A.PATRON_RULES[s.id]); if (selPat && !list.some(s => s.id === selPat)) selPat = '';
+      const chips = [`<button class="chip pchip ${selPat ? '' : 'sel'}" data-pat="">${L('Keiner', 'None')}</button>`].concat(list.map(s => `<button class="chip pchip ${selPat === s.id ? 'sel' : ''}" data-pat="${s.id}">${ic('crate', 14)}<span>${esc(t(s.name))}</span></button>`)).join('');
+      const S0 = selPat ? A.SPONSORS.find(s => s.id === selPat) : null;
+      box.innerHTML = `<h3>${L('Gönner', 'Sponsor')}</h3><div class="chips pats">${chips}</div><div class="perk" id="patPerk">${S0 ? `<b>${esc(t(S0.name))}:</b> ${esc(t(A.PATRON_RULES[S0.id].rule))} ${L('Schickt alle Kisten dieses Laufs.', 'Sends every crate this run.')}` : L('Ohne Gönner: Die Kisten kommen von allen, keine Regel.', 'No sponsor: crates come from anyone, no rule.')}</div><div class="perk wishl">${wishHtml()}</div>`;
+      box.querySelectorAll('[data-pat]').forEach(el => el.onclick = () => { const v = el.dataset.pat; if (v === selPat) return; selPat = v; S.click(); patronRow(); });
+    };
+    selGrade = null; selPat = typeof G.meta.patron === 'string' ? G.meta.patron : '';
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { S.click(); camp(); return; } if (selRace === r.id) return; selRace = r.id; S.click(); upd(); });
     screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; selGrade = null; S.click(); upd(); });
-    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, G.gradeMax(selCls) ? selGrade : undefined); Portal.gameplayStart(); dungeon(true); };
+    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, G.gradeMax(selCls) ? selGrade : undefined, selPat || ''); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { S.click(); title(); };
     upd();
   }
@@ -14948,27 +15059,42 @@ window.A = window.A || {};
       else right = `<div class="expbtns">${A.EXPEDITIONS.map(X => `<button data-trip="${id}" data-k="${X.id}"><b>${X.h} ${L('Std', 'h')}</b><span>${esc(t(X.name))}</span></button>`).join('')}</div>`;
       return `<div class="expc ${tr ? (tr.done ? 'back' : 'away') : ''}"><div class="pp">${petImg(id, 34)}</div><div class="pb"><b style="color:${P.col}">${esc(t(P.name))}</b>${right}</div></div>`;
     }).join('');
-    const info = L(`Tiere, die gerade nicht mitkommen, gehen auf Reise und bringen Seelenfunken und Treue mit, auf langen Reisen oft ein Mitbringsel für den nächsten Lauf. Die Zeit läuft auch, wenn das Spiel zu ist.`, `Pets that are not joining you go travelling and bring back soul sparks and loyalty, on long trips often a gift for the next run. Time keeps running while the game is closed.`)
+    const info = L(`Tiere, die gerade nicht mitkommen, gehen auf Reise und bringen Seelenfunken und Treue mit, auf langen Reisen oft ein Mitbringsel für den nächsten Lauf, von der Expedition auch mal ein seltenes Stück. Die Zeit läuft auch, wenn das Spiel zu ist.`, `Pets that are not joining you go travelling and bring back soul sparks and loyalty, on long trips often a gift for the next run, from an expedition sometimes a rare item. Time keeps running while the game is closed.`)
       + ' ' + A.EXPEDITIONS.map(X => `${X.h} ${L('Std', 'h')}: ${X.sparks[0]}-${X.sparks[1]}`).join(' · ') + ' ' + t(U.meta) + '.';
     return `<h3>${L('Expeditionen', 'Expeditions')} ${busy}/${A.EXP_MAX}</h3><div class="card flags"><div class="mini">${info}</div>${news}<div class="exps">${cards}</div></div>`;
   }
 
   // ---------- Zuschauer und Gönner (v42, show.js) ----------
   // Die Kiste ist aufgehoben: Zettel des Gönners, was drin war, neuer Gönner bei genug Fans
+  const up = (s) => s.charAt(0).toUpperCase() + s.slice(1);   // «vom Goldenen Geier» am Satzanfang
   function crateWin(p) {
     const res = A.Show.open(p); if (!res) { Wd.pause(false); return; }
     const Sp = res.S; S.level();
     ov(`<div class="center crate"><div class="bigicon">${ic('crate', 58)}</div><h2 class="mid">${L('Eine Kiste von oben!', 'A crate from above!')}</h2>
-      <div class="note"><div class="from">${L('Von', 'From')} <b>${esc(t(Sp.name))}</b>:</div>«${esc(t(Sp.note))}»</div>
+      <div class="note"><div class="from"><b>${esc(up(t(Sp.von)))}</b>:</div>«${esc(t(Sp.note))}»</div>
       <div class="msg">${L('Drin', 'Inside')}: <b class="goldc">${esc(res.got)}</b></div>
       ${res.fresh.length ? `<div class="msg gradenew">${ic('eye', 20)} <b>${L('Neuer Gönner', 'New sponsor')}: ${res.fresh.map(x => esc(t(x.name))).join(', ')}</b>. ${L(`Du hast jetzt ${res.fans} Fans.`, `You now have ${res.fans} fans.`)}</div>` : `<div class="mini">${L(`Fans: ${res.fans}`, `Fans: ${res.fans}`)}${nextSponsor() ? ' · ' + nextSponsor() : ''}</div>`}
-      <button class="btn primary" id="bOk">${L('Danke!', 'Thanks!')}</button></div>`);
+      <button class="btn primary" id="bOk" data-esc>${L('Danke!', 'Thanks!')}</button></div>`);
     $('#bOk').onclick = () => { S.click(); ovClose(); };
   }
   // Wer kommt als Nächstes dazu? («Noch 2 Fans bis Professor Pilz»)
   function nextSponsor() {
     const f = A.Show.fans(), nx = A.SPONSORS.filter(x => (x.fans || 0) > f).sort((a, b) => a.fans - b.fans)[0];
-    return nx ? L(`noch ${nx.fans - f} bis ${t(nx.name)}`, `${nx.fans - f} more until ${t(nx.name)}`) : '';
+    return nx ? L(`noch ${nx.fans - f}, dann kommt ${t(nx.name)}`, `${nx.fans - f} more, then ${t(nx.name)} joins`) : '';
+  }
+  // Tageswunsch erfüllt: Banner erst, wenn kein Fenster offen ist und kein anderes Banner läuft (Kiste, «Ebene 6», «Raum gesäubert»)
+  function wishNews(wd) {
+    const run0 = G.run, fresh = (wd.fresh || []).map(s => t(s.name)).join(', ');
+    const when = (f, n) => { if (G.run !== run0 || !run0 || run0.over || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(f, n + 1), 500); return; } f(); };
+    setTimeout(() => when(() => {
+      S.level(); A.FX.banner(L('Tageswunsch erfüllt!', 'Daily wish granted!'), L(`${t(wd.S.name)} freut sich: +${A.WISH_FANS} Fans, +${A.WISH_SPARKS} Seelenfunken`, `${t(wd.S.name)} is delighted: +${A.WISH_FANS} fans, +${A.WISH_SPARKS} soul sparks`), '#fee761', 2.8);
+      if (fresh) setTimeout(() => when(() => A.FX.banner(L('Neuer Gönner!', 'New sponsor!'), fresh, '#fee761', 2.4), 0), 3000);   // die Fans des Wunsches haben jemanden Neues angelockt
+    }, 0), 300);
+  }
+  // Tageswunsch (v43): wer sich heute etwas wünscht und ob es schon erfüllt ist
+  function wishHtml() {
+    const wt = G.wishToday(), txt = t(wt.w.text).replace('{n}', wt.w.n);
+    return `${ic('crate', 16)} <b>${L('Tageswunsch', 'Daily wish')}</b> ${esc(t(wt.S.von))}: «${esc(txt)}» ${wt.done ? `<b class="goldc">${L('Erfüllt!', 'Granted!')}</b>` : L(`(+${A.WISH_FANS} Fans, +${A.WISH_SPARKS} Funken)`, `(+${A.WISH_FANS} fans, +${A.WISH_SPARKS} sparks)`)}`;
   }
   function sponsorHtml() {
     const f = A.Show.fans(), on = A.Show.sponsors().length;
@@ -14977,7 +15103,7 @@ window.A = window.A || {};
       return `<div class="spon ${open ? '' : 'locked'}">${ic('crate', 30)}<div class="sb"><b>${open ? esc(t(x.name)) : '???'}</b><div>${open ? '«' + esc(t(x.note)) + '»' : L(`Stellt sich ab ${x.fans} Fans vor.`, `Introduces themselves at ${x.fans} fans.`)}</div></div></div>`;
     }).join('');
     const info = L(`Der Abstieg ist eine Show. Spektakel füllt das Auge oben (mehrere Gegner kurz nacheinander, Elite, Hauptleute, Bosse, Räume ohne Kratzer, knapp überlebt). Ist es voll, kracht nach dem Kampf eine Kiste von einem Gönner herunter. Jede Kiste bringt einen Fan, und mit mehr Fans melden sich neue Gönner.`, `The descent is a show. Spectacle fills the eye at the top (several enemies in quick succession, elites, captains, bosses, rooms without a scratch, close calls). When it is full, a crate from a sponsor crashes down after the fight. Every crate brings a fan, and with more fans new sponsors get in touch.`);
-    return `<h3>${L('Gönner', 'Sponsors')} ${on}/${A.SPONSORS.length}</h3><div class="card flags"><div class="mini">${info} <b class="goldc">${L(`Fans: ${f}`, `Fans: ${f}`)}</b>${nextSponsor() ? ' · ' + esc(nextSponsor()) : ''}</div><div class="sponsors">${rows}</div></div>`;
+    return `<h3>${L('Gönner', 'Sponsors')} ${on}/${A.SPONSORS.length}</h3><div class="card flags"><div class="mini wishl">${wishHtml()}</div><div class="mini">${info} <b class="goldc">${L(`Fans: ${f}`, `Fans: ${f}`)}</b>${nextSponsor() ? ' · ' + esc(nextSponsor()) : ''}</div><div class="sponsors">${rows}</div></div>`;
   }
 
   // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
@@ -15037,7 +15163,7 @@ window.A = window.A || {};
     const wfx = A.Weather.nameOf(Wd.W);
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
     // Mitbringsel von der Expedition (v41): einmal nach dem Ebenen-Schild zeigen, dann vergessen
-    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); setTimeout(() => { if (Wd.W === w2 && dungeonEl.classList.contains('on')) A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }, 2800); }
+    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); let tries = 0; const say = () => { if (Wd.W !== w2 || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && tries++ < 60) { setTimeout(say, 600); return; } A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : '', gn.item > 0 ? (gn.item === 1 ? (gn.worn ? L('ein seltenes Stück, gleich angelegt', 'a rare item, already equipped') : L('ein seltenes Stück im Beutel', 'a rare item in your bag')) : (gn.worn ? L(`${gn.item} seltene Stücke (${gn.worn} angelegt)`, `${gn.item} rare items (${gn.worn} equipped)`) : L(`${gn.item} seltene Stücke im Beutel`, `${gn.item} rare items in your bag`))) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }; setTimeout(say, 2800); }   // wartet, bis kein Fenster offen ist (z. B. die Segen-Wahl am Start) und kein anderes Banner läuft
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
@@ -15672,8 +15798,8 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
-      <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}</div>
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow || r.sparksPatron || r.sparksWish ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : '', r.sparksPatron ? L(`Rampenlicht: +${r.sparksPatron}`, `Spotlight: +${r.sparksPatron}`) : '', r.sparksWish ? L(`Tageswunsch: +${r.sparksWish}`, `Daily wish: +${r.sparksWish}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}${A.patronOf(r) ? ' · ' + L('Gönner', 'Sponsor') + ': ' + esc(t(A.SPONSORS.find(s => s.id === r.patron).name)) : ''}${r.wishDone ? ' · <b class="goldc">' + L('Tageswunsch erfüllt', 'Daily wish granted') + '</b>' + ((r.wishDone.fresh || []).length ? ' · ' + L('Neuer Gönner', 'New sponsor') + ': ' + r.wishDone.fresh.map(id => { const x = A.SPONSORS.find(s => s.id === id); return x ? esc(t(x.name)) : ''; }).filter(Boolean).join(', ') : '') : ''}</div>
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
       ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}
@@ -15686,7 +15812,7 @@ window.A = window.A || {};
       S.buy(); const race = A.RACES.find(x => x.id === r.race), cls = A.CLASSES.find(x => x.id === r.cls), gr = cls && G.gradeMax(cls.id) ? Math.min(g, G.gradeMax(cls.id)) : undefined;
       G.clearRun();
       if (!race || !cls || !G.raceUnlocked(race) || !G.classUnlocked(cls)) { Portal.showAd(() => heroSelect()); return; }
-      Portal.showAd(() => { A.Scenes.stage(null); G.newRun(race.id, cls.id, gr); Portal.gameplayStart(); dungeon(true); });
+      Portal.showAd(() => { A.Scenes.stage(null); G.newRun(race.id, cls.id, gr, A.patronOf(r) || ''); Portal.gameplayStart(); dungeon(true); });
     });
   }
 
