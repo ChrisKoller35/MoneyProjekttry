@@ -82,7 +82,7 @@ fs.mkdirSync(out, { recursive: true });
   async function closeOverlays(tag) {
     for (let i = 0; i < 6; i++) {
       const s = await state(); if (!s || !s.ov) return;
-      const sel = ['#overlay [data-b]', '#overlay [data-rep]', '#overlay #bBook', '#overlay [data-pick]', '#overlay #bTake', '#overlay [data-swap]', '#overlay #bHome', '#overlay #bEq', '#overlay #bHeal', '#overlay [data-c]', '#overlay #bOk', '#overlay #bClose'].map(q => q + ':not([disabled])');
+      const sel = ['#overlay [data-b]', '#overlay [data-rep]', '#overlay #bBook', '#overlay [data-pick]', '#overlay #bTake', '#overlay [data-swap]', '#overlay #bHome', '#overlay #bEq', '#overlay #bHeal', '#overlay [data-c]', '#overlay #bOk', '#overlay #bCombo', '#overlay #bClose'].map(q => q + ':not([disabled])');
       let done = false;
       for (const q of sel) { const l = page.locator(q); if (await l.count()) { if (tag && !shots[tag]) { shots[tag] = 1; await shot(tag); } await l.first().click(); await page.waitForTimeout(150); done = true; break; } }
       if (!done) { await shot('xx-overlay'); log.push('unbekanntes Overlay'); return; }
@@ -104,7 +104,7 @@ fs.mkdirSync(out, { recursive: true });
     // Beute aufheben
     if (s.picks.length) { const p = s.picks[0]; await walkTo(p.x, p.y, 3000); continue; }
     // Etwas benutzen?
-    const prop = cur.props.find(p => !p.used && !p.hidden && p.kind !== 'sign' && (p.kind !== 'stairs' || s.rooms.every(r => r.type !== 'fight' && r.type !== 'elite' || r.cleared || !adjacentReachable(r))));
+    const prop = cur.props.find(p => !p.used && !p.hidden && p.kind !== 'sign' && p.kind !== 'pot' && (p.kind !== 'stairs' || s.rooms.every(r => r.type !== 'fight' && r.type !== 'elite' || r.cleared || !adjacentReachable(r))));
     function adjacentReachable() { return true; }
     const blockedSecret = (r) => r.type === 'secret' && r.props.some(p => p.kind === 'rubble' && !p.used);
     // Geheimer Raum: erst das Geröll wegräumen (vorher ist er nicht erreichbar)

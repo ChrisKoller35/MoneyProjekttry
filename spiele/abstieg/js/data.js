@@ -302,6 +302,12 @@ A.MONSTERS.push(
   { id: 'wisperling', name: { de: 'Wisperling', en: 'Whisperling' }, hp: 28, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#68386c', shape: 'whisperer', fly: true, teleport: true, summon: 'fledermaus', summonCd: 11 },
 );
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
+// Überraschungen (surprise.js): die Truhe mit Zähnen und der Goldwicht; beide stehen in keiner Welt-Liste, kommen also nie zufällig
+A.MONSTERS.push(
+  { id: 'mimik', name: { de: 'Mimik', en: 'Mimic' }, hp: 70, atk: 11, def: 5, spd: 6, kind: 'melee', color: '#b86f50', shape: 'mimic', leap: true },
+  { id: 'goldwicht', name: { de: 'Goldwicht', en: 'Gold Gremlin' }, hp: 30, atk: 0, def: 3, spd: 9, kind: 'melee', color: '#feae34', shape: 'goldimp' },
+);
+
 // Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
 // Rache haben alle: fällt ein Kumpel daneben, werden sie kurz schneller und stärker
 // Elite-Eigenschaften (Regeln in js/elites.js): je tiefer, desto mehr davon. col = Farbe für Schein und Namen, tip = kurzer Hinweis im Kampf,
@@ -903,6 +909,10 @@ A.ACHIEVEMENTS = [
   { id: 'hauptmann1', cat: 'kampf', stat: 'captains', n: 1, sparks: 40, mon: 'ratte', name: { de: 'Offiziersjagd', en: 'Officer hunt' }, text: { de: 'Einen Hauptmann besiegen', en: 'Defeat a captain' } },
   { id: 'hauptleute', cat: 'kampf', stat: 'captKinds', n: A.CAPTAINS.length, sparks: 120, mon: 'skorpion', name: { de: 'Alle Offiziere', en: 'All officers' }, text: { de: `Alle ${A.CAPTAINS.length} Hauptleute einmal besiegen`, en: `Defeat all ${A.CAPTAINS.length} captains once` } },
   { id: 'hasenfuss', cat: 'verrueckt', stat: 'fleeKills', n: 20, sparks: 30, mon: 'kobolddieb', name: { de: 'Keine Flucht', en: 'No escape' }, text: { de: '20 fliehende Gegner erwischen', en: 'Catch 20 fleeing enemies' } },
+  // Überraschungen in der Welt (Version 37)
+  { id: 'scherben', cat: 'verrueckt', stat: 'pots', n: 200, sparks: 40, icon: 'u_pot', name: { de: 'Scherbenhaufen', en: 'Pile of shards' }, text: { de: '200 Krüge, Körbe und Urnen zerschlagen', en: 'Smash 200 jars, baskets and urns' } },
+  { id: 'zahnarzt', cat: 'kampf', stat: 'mimics', n: 1, sparks: 30, mon: 'mimik', name: { de: 'Zahnarzt', en: 'Dentist' }, text: { de: 'Eine Truhe mit Zähnen besiegen', en: 'Defeat a chest with teeth' } },
+  { id: 'goldwicht', cat: 'verrueckt', stat: 'gwicht', n: 3, sparks: 50, mon: 'goldwicht', name: { de: 'Haltet den Dieb!', en: 'Stop, thief!' }, text: { de: '3 Goldwichte erwischen, bevor sie verschwinden', en: 'Catch 3 gold gremlins before they vanish' } },
   { id: 'prinzip', cat: 'helden', stat: 'buildBest', n: 12, sparks: 60, icon: 't_mind', name: { de: 'Prinzipientreu', en: 'Stickler' }, text: { de: 'Mit einem starken Build (Build-Wert 8) Ebene 12 erreichen', en: 'Reach floor 12 with a strong build (build score 8)' } },
 ];
 A.ACH_CHRON = 20;   // so viele Durchläufe merkt sich die Chronik
@@ -963,6 +973,38 @@ A.PACTS = {
     name: { de: 'Kurzschluss', en: 'Short Circuit' }, curse: { de: 'Zauber laden 30 % langsamer', en: 'Spells recharge 30% slower' }, gift: { de: '+40 % Magie', en: '+40% magic' },
     flavor: { de: 'Mehr Saft, weniger Sicherung.', en: 'More juice, fewer fuses.' } },
 };
+// ---------- Überraschungen in der Welt (surprise.js, ab Ebenen-Bau 8) ----------
+// Krüge zum Zerschlagen: je Welt eigenes Bild (art.js), Farben (C Grundfarbe, D dunkel, H hell), Scherben-Farben und das Tier, das manchmal herausflitzt
+A.POTS = {
+  stone: { spr: 'pot_krug', name: { de: 'Krug', en: 'Jar' }, gold: { de: 'Goldener Krug', en: 'Golden jar' }, pal: { C: '#9a7b62', D: '#5d4636', H: '#c9a88a' }, bits: ['#9a7b62', '#5d4636', '#c9a88a'], critter: 'ratte' },
+  jungle: { spr: 'pot_korb', name: { de: 'Korb', en: 'Basket' }, gold: { de: 'Goldener Korb', en: 'Golden basket' }, pal: { C: '#c28569', D: '#733e39', H: '#e4a672' }, bits: ['#c28569', '#733e39', '#fee761'], critter: 'frosch' },
+  desert: { spr: 'pot_urne', name: { de: 'Urne', en: 'Urn' }, gold: { de: 'Goldene Urne', en: 'Golden urn' }, pal: { C: '#d77643', D: '#8a3b25', H: '#f0b07a' }, bits: ['#d77643', '#8a3b25', '#feae34'], critter: 'ratte' },
+  water: { spr: 'pot_amph', name: { de: 'Amphore', en: 'Amphora' }, gold: { de: 'Goldene Amphore', en: 'Golden amphora' }, pal: { C: '#4f8fa8', D: '#24536b', H: '#9fd3e0' }, bits: ['#4f8fa8', '#24536b', '#9fd3e0'], critter: 'krabbe' },
+  volcano: { spr: 'pot_kuebel', name: { de: 'Erzkübel', en: 'Ore bucket' }, gold: { de: 'Goldener Erzkübel', en: 'Golden ore bucket' }, pal: { C: '#5a6988', D: '#262b44', H: '#8b9bb4' }, bits: ['#5a6988', '#262b44', '#f77622'], critter: 'ratte' },
+  abyss: { spr: 'pot_glas', name: { de: 'Seelenglas', en: 'Soul jar' }, gold: { de: 'Goldenes Seelenglas', en: 'Golden soul jar' }, pal: { C: '#68386c', D: '#3e2731', H: '#b55088' }, bits: ['#b55088', '#2ce8f5', '#68386c'], critter: 'fledermaus' },
+};
+A.POT_BOOM_PAL = { C: '#a22633', D: '#3e2731', H: '#e43b44' };    // Knallkrug: rot, mit Zündschnur
+A.POT_GOLD_PAL = { C: '#feae34', D: '#be4a2f', H: '#fee761' };    // goldener Krug: glitzert
+// so viele Krüge je Raumart (von, bis); grosse Räume einer mehr
+// ACHTUNG Spielstand: POT_COUNT, POT_BOOM, POT_GOLDEN, MIMIC_FROM, MIMIC_CHANCE und die Platzierung (surprise.js place) bauen die Ebene.
+// Wer sie ändert, verschiebt Krüge in laufenden Spielständen: dann run.lvVer erhöhen (game.js) und die alte Bauweise behalten.
+A.POT_COUNT = { fight: [2, 4], elite: [2, 3], treasure: [2, 3], secret: [3, 5], shop: [1, 2], rest: [1, 3], event: [1, 2], shrine: [1, 2], forge: [1, 2], start: [0, 1], stairs: [1, 2] };
+A.POT_BOOM = 0.12; A.POT_GOLDEN = 0.03;   // Knallkrug (nur Kampfräume ab Ebene 2), goldener Krug (im geheimen Raum öfter)
+A.MIMIC_FROM = 3; A.MIMIC_CHANCE = 0.2;    // Truhe mit Zähnen: Schatzraum ab Ebene 3
+A.GOLDWICHT_FROM = 2; A.GOLDWICHT_CHANCE = 0.12; A.GOLDWICHT_TIME = 9;   // je Kampfraum, höchstens einer je Ebene; nach 9 s ist er weg
+// Was sonst noch in einem Krug liegt (mit 1 Gold für den Flohmarkt)
+A.POT_JUNK = [
+  { de: 'Eine alte Socke.', en: 'An old sock.' },
+  { de: 'Ein Zettel: «Hier war Gerd.»', en: 'A note: "Gerd was here."' },
+  { de: 'Ein sehr enttäuschter Käfer.', en: 'A very disappointed beetle.' },
+  { de: 'Staub. Premium-Staub.', en: 'Dust. Premium dust.' },
+  { de: 'Ein Gebiss. Nicht deins.', en: 'Dentures. Not yours.' },
+  { de: 'Eine Quittung für drei Krüge.', en: 'A receipt for three jars.' },
+  { de: '«Lieber Held, bitte nicht alles kaputt machen.»', en: '"Dear hero, please stop breaking everything."' },
+  { de: 'Ein kleinerer Krug. Leer.', en: 'A smaller jar. Empty.' },
+  { de: 'Ein Gutschein für einen Krug.', en: 'A voucher for one jar.' },
+  { de: 'Ein Liebesbrief an eine Ratte.', en: 'A love letter to a rat.' },
+];
 A.FATE_MAX = 3;
 A.FATE_W = 2;
 A.FATE = {

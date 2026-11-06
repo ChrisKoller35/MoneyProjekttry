@@ -62,6 +62,7 @@ A.Classes = (function () {
     }
     if (o.zone) w.zones.push({ kind: o.zone, x: s.x, y: s.y + 4, r: o.r, t0: w.t, until: w.t + o.zdur, tick: w.t + 0.25, dmg: o.zdmg, col: o.col });
     api.fx('flask', { x: s.x, y: s.y, r: o.r, color: o.col, big: !o.basic });
+    A.Surprise.blast(s.x, s.y, o.r);   // Krüge (surprise.js)
     // Hausbrauerei (combos.js): eine Überraschung springt weiter, am liebsten zu einem Gegner, den sie noch nicht erwischt hat
     if (o.surprise && (o.hops || 0) < A.Combos.bounces(h) && h.alive) {
       let next = null, bd = 1e9;

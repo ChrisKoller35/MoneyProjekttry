@@ -173,6 +173,16 @@ Ab Ebene 3 steht manchmal (35 %, nie auf Boss-Ebenen) ein **Pakt-Altar** verstec
 - **Trockener Hals:** Tränke heilen halb, +3 Tempo, +12 % Schaden. **Dornenkrone:** Gegner treffen 20 % härter, +25 % Dornen, +4 Rüstung. **Schicksalswette:** Bosse und Hauptleute +40 % Leben, sofort 2 Schicksalspunkte. **Kurzschluss:** Zauber laden 30 % langsamer, +40 % Magie.
 - Heldenblatt zeigt «Pakte n/3», der Endbildschirm «Pakte: +n». Steht im Durchlauf (`run.pacts`, `run.pact`); der Altar kommt erst ab Ebenen-Bau 7, eine laufende Ebene aus einem älteren Stand bleibt ohne. Daten `data.js` A.PACTS, Regeln `js/pacts.js`, Fenster `ui.js` pactWin.
 
+## Überraschungen in der Welt (06.11.2026)
+Die Räume sind nicht mehr leer: es gibt Dinge zum Kaputtmachen und zwei Gegner, mit denen man nicht rechnet. Regeln in `js/surprise.js`, Daten `A.POTS`, `A.POT_JUNK` und Werte in `js/data.js`, Bilder in `js/art.js`.
+- **Krüge zum Zerschlagen:** in fast jedem Raum (nicht im Boss-Raum) stehen 1 bis 5 Krüge, meist an der Wand, je Welt anders: **Krug** (Graue Gewölbe), **Korb mit Bananen** (Dschungel), **Urne** (Wüstengrab), **Amphore** (Versunkene Stadt), **Erzkübel** (Vulkanschmiede), **Seelenglas** (Abgrund, leuchtet). Durchlaufen, Hieb, Schuss, Flasche oder Explosion zerschlägt sie, die Scherben bleiben liegen. Drin: meistens etwas Gold, Bonbons, selten ein Trank oder ein Stück, Krempel mit Spruch («Ein Gebiss. Nicht deins.», 1 Gold für den Flohmarkt), oder ein Tier flitzt raus (Ratte, Frosch, Krabbe, Fledermaus). Der geheime Raum hat mehr Krüge.
+- **Knallkrug** (rot, mit Zündschnur, nur in Kampfräumen ab Ebene 2): zischt knapp eine Sekunde und knallt dann: Gegner verlieren etwa ein Drittel Leben (Elite 14 %, Boss 5 %), du 8 %, wenn du zu nah stehst. Nachbar-Krüge gehen mit (Kettenreaktion). Die Chronik schreibt «von einem Knallkrug zerlegt».
+- **Goldener Krug** (glitzert, selten, im geheimen Raum öfter): viel Gold, manchmal ein Stück.
+- **Mimik:** ab Ebene 3 ist etwa jede fünfte Schatztruhe eine Truhe mit Zähnen (man sieht sie ab und zu die Zunge zeigen). Wer sie öffnen will, bekommt einen Kampf: Türen zu, die Truhe springt dich an. Besiegt gibt sie Gold und ein gutes Stück, danach öffnet sie sich ganz normal.
+- **Goldwicht:** einmal je Ebene kann ab Ebene 2 in einem Kampf ein Goldwicht mit einem viel zu grossen Sack auftauchen («Meins! Alles meins!»). Er rennt weg und verliert bei jedem Treffer Gold. Erwischst du ihn, regnet es Gold und es gibt ein gutes Stück; nach 9 Sekunden springt er in ein Loch («Tschüssi!»).
+- **Erfolge:** «Scherbenhaufen» (200 Krüge), «Zahnarzt» (eine Mimik), «Haltet den Dieb!» (3 Goldwichte); damit 39 Erfolge.
+- **Spielstand:** Krüge und Mimik kommen erst ab Ebenen-Bau 8 (`run.lvVer`), eine laufende Ebene aus einem älteren Stand bleibt ohne. Die Krüge stehen fest aus dem Startwert der Ebene als letzte Dinge im Raum, zerbrochene bleiben zerbrochen. Neu im Durchlauf: `run.tamed`/`run.tamedFloor` (besiegte Mimik) und `run.gwFloor` (Goldwicht schon da); in `meta.stats` die Zähler `pots`, `mimics`, `gwicht`.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
@@ -188,7 +198,8 @@ Den zweiten Look «3D» (three.js, 18.10.) gibt es nicht mehr: Christoph braucht
   - `bosses` – Boss-Mechaniken mit Warnkreisen; `elites` – Elite-Eigenschaften (Würfeln, Verhalten, Aura, Balken oben, Warnkreise); `legends` – Wirkung der 20 Legenden (die 10 verrückten in `wild`) (Haken für Treffer, Siege, Zauber, Kampfbeginn, Zeichnen).
   - `compare` – Vergleich: Heldenwerte mit dem alten und dem neuen Stück, Urteil besser/schlechter/anders/gleich.
   - `pets` – Begleiter: Käfige, Treue, Tricks, Tierhütte, Verhalten im Kampf, Eier, Zunge, Käfig zeichnen; `wild` – die 10 verrückten Stücke (Bienen, Bananenschalen, Gartenzwerge, Seifenblasen, Kisti, Gewitterwolke, Piñata, Sparschwein, Tröte, Fliegenklatsche).
-  - `achieve` – Auftragsbrett (33 Erfolge mit Zählern und Einblendung) und Chronik (letzte 20 Durchläufe, Zahlen fürs ganze Spielerleben).
+  - `surprise` – Überraschungen: Krüge zum Zerschlagen (je Welt), Knallkrug, goldener Krug, Mimik, Goldwicht.
+  - `achieve` – Auftragsbrett (39 Erfolge mit Zählern und Einblendung) und Chronik (letzte 20 Durchläufe, Zahlen fürs ganze Spielerleben).
   - `weather` – Eigenheiten der Welten: Steinschlag, Wolkenbruch, Treibsand und Sandsturm, Strömung, Ausbruch, Finsternis.
   - `foes` – Hauptleute (je Welt einer, Maschen, Sprüche, Belohnung) und Reaktionen normaler Gegner (Flucht, Rache, Sporen, Panzer).
   - `build` – Dein Build: Richtungen erkennen, Name, Fokus, passende Beute und Kombo-Magnet (Gewichte fürs Würfeln, Zeichen an Stücken).
