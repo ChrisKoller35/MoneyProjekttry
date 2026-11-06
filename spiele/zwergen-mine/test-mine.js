@@ -14,8 +14,10 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   const S = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__mine.S)));
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
+  // Zufall abschalten (besondere Felsen, Maulwurf), damit die Prüfungen gleich bleiben; eigene Prüfungen weiter unten
+  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; });
 
-  await page.goto(file); await page.waitForTimeout(600);
+  await page.goto(file); await calm(page); await page.waitForTimeout(600);
   await shot('01-start');
   const tipNow = () => page.evaluate(() => window.__mine.tip);
   check((await tipNow()) === 'tap' && (await page.locator('#tip').textContent()).includes('Tippe auf den Felsen'), 'Tipp am Anfang: auf den Felsen tippen');
@@ -38,7 +40,8 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check((await tipNow()) !== 'dwarf', 'Zwergen-Tipp verschwindet nach dem Kauf');
   await shot('03-zwerge');
 
-  // 3) Vorspulen bis Boss auf Tiefe 10
+  // 3) Vorspulen bis Boss auf Tiefe 10 (Fundstücke können vorher Steine bringen; den Steine-Tipp hier überspringen, damit der Boss-Tipp sicher kommt)
+  await page.evaluate(() => { window.__mine.S.tips.gem = true; });
   await page.evaluate(() => { window.__mine.S.gold += 1e6; });
   for (let i = 0; i < 12; i++) { await page.locator('.buy').first().click(); await page.waitForTimeout(20); }
   await page.click('[data-tab="pick"]'); await page.waitForTimeout(100);
@@ -222,6 +225,58 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await shot('14n-rekorde-punkte');
   await page.click('#tClose'); await page.waitForTimeout(200);
 
+  // 9d4) Runde 2: Kronen-Laden, Gletscher, Grotte
+  await page.evaluate(() => { window.__mine.S.crowns = 400; });
+  await page.click('#crownPill'); await page.waitForTimeout(300);
+  await page.click('#tShop'); await page.waitForTimeout(300);
+  check((await page.locator('#toast').textContent()).includes('Kronen-Laden') && await page.locator('[data-buy="kraft"]').isEnabled(), 'Kronen-Laden öffnet sich aus der Karte');
+  await shot('26-kronen-laden');
+  const dmg0 = await page.evaluate(() => window.__mine.F.pickDmg(window.__mine.S.pick, window.__mine.S));
+  await page.click('[data-buy="kraft"]'); await page.waitForTimeout(200);
+  for (const k of ['start', 'gilde', 'lager', 'turm', 'helm', 'gpick']) { await page.click(`[data-buy="${k}"]`); await page.waitForTimeout(150); }
+  s = await S();
+  const dmg1 = await page.evaluate(() => window.__mine.F.pickDmg(window.__mine.S.pick, window.__mine.S));
+  const si = await page.evaluate(() => window.__mine.storeInfo());
+  check(Math.abs(dmg1 / dmg0 - 1.2) < 0.001 && s.crownsAll === 34 && s.crowns < 400 && s.shop.helm === 1 && s.shop.lager === 1, `Kronen-Kraft +20 %, Punktestand bleibt (${s.crowns} Kronen übrig, Punkte ${s.crownsAll})`);
+  check(si.cap === Math.floor(18 * 1.25) && si.rate === 1.25, `Grösseres Lager 18 h und Turm-Antrieb +25 % (${si.cap}, ${si.rate}/h)`);
+  await shot('27-laden-gekauft');
+  await page.click('#tBack'); await page.waitForTimeout(300);
+  check(await page.locator('[data-unl="eis"]').isEnabled() && await page.locator('[data-unl="wasser"]').isEnabled(), 'Gletscher und Grotte lassen sich freischalten');
+  await page.click('[data-unl="eis"]'); await page.waitForTimeout(200);
+  await page.click('[data-go="eis"]'); await page.waitForTimeout(300);
+  if (await page.locator('#tYes').isVisible()) { await page.click('#tYes'); await page.waitForTimeout(300); }
+  s = await S();
+  check(s.blk === 'eis' && s.depth <= 2 && s.gold >= 1000 && s.gold < 1500 && s.dw[0] === 10, `Gletscher startet mit Startkapital und Gilde (Gold ${s.gold}, Gräber ${s.dw[0]})`);
+  check((await page.evaluate(() => window.__mine.layerAt(5).name)) === 'Schnee', 'Gletscher hat eigene Schichten (Schnee)');
+  const ice = await page.evaluate(() => {
+    const m = window.__mine; m.S.dw = m.S.dw.map(() => 0); m.jump(33); window.__mineSpecial.spawn(null); m.freeze();
+    const hp = m.S.hp, d = m.F.pickDmg(m.S.pick, m.S); m.tap(); const half = (hp - m.S.hp) / d;
+    m.S.up.dyn = true; m.S.cdDyn = 0; m.useDyn(); return { half, melted: !m.frozen, b: m.banners() };
+  });
+  check([0.5, 2.5].some(x => Math.abs(ice.half - x) < 0.01) && ice.melted && ice.b.includes('Eis geschmolzen!'), `Eis halbiert den Schaden, Dynamit schmilzt es (×${ice.half})`);
+  await page.evaluate(() => { window.__mine.jump(34); window.__mine.freeze(); }); await page.waitForTimeout(2600);
+  await shot('28-gletscher-eis');
+  const fr = await page.evaluate(async () => {
+    const m = window.__mine; m.S.dw[0] = 50; m.startFrost(); const hp0 = m.S.hp; await new Promise(r => setTimeout(r, 500)); const cold = hp0 - m.S.hp;
+    m.S.up.bier = true; m.S.cdBeer = 0; m.useBeer(); const hp1 = m.S.hp; await new Promise(r => setTimeout(r, 500)); const warm = hp1 - m.S.hp;
+    return { frost: m.frost, cold, warm, dps: m.F.totalDps(m.S) };
+  });
+  check(fr.frost > 10 && fr.cold > 0 && fr.cold < fr.dps * 0.5 * 0.4 && fr.warm > fr.cold * 6, `Kälte: Zwerge frieren, Bier wärmt (${Math.round(fr.cold)} / ${Math.round(fr.warm)})`);
+  await page.waitForTimeout(400); await shot('29-kaelte');
+  await page.evaluate(() => { const m = window.__mine; m.S.crowns += 50; });
+  await page.click('#crownPill'); await page.waitForTimeout(300);
+  await page.click('[data-unl="wasser"]'); await page.waitForTimeout(200);
+  await page.click('[data-go="wasser"]'); await page.waitForTimeout(300);
+  if (await page.locator('#tYes').isVisible()) { await page.click('#tYes'); await page.waitForTimeout(300); }
+  const gr = await page.evaluate(() => { const m = window.__mine; return { blk: m.S.blk, name: m.layerAt(5).name, chest: m.F.chestEvery(m.S), chestStein: m.F.chestEvery(Object.assign({}, m.S, { blk: 'stein' })) }; });
+  check(gr.blk === 'wasser' && gr.name === 'Tropfstein' && gr.chest * 2 === gr.chestStein, `Grotte: eigene Schichten, doppelt so viele Truhen (${gr.chest} s)`);
+  await page.evaluate(() => { const m = window.__mine; m.S.dw = m.S.dw.map(() => 0); m.jump(40); }); await page.waitForTimeout(400);
+  await page.evaluate(() => { window.__mine.S.hp = window.__mine.F.rockHp(40); }); await page.waitForTimeout(2600);
+  await shot('30-grotte-boss-wasser');
+  const fl = await page.evaluate(() => { const m = window.__mine; m.failBoss(); return { d: m.S.depth, b: m.banners() }; });
+  check(fl.d === 38 && fl.b.includes('Das Wasser steigt!'), `Grotte: verlorener Boss heisst 2 Tiefen zurück (${fl.d})`);
+  await page.evaluate(() => window.__mine.retryBoss());
+
   // 9e) Ton aus, wenn das Fenster nicht mehr vorne ist
   const foc = await page.evaluate(() => { const m = window.__mine; window.dispatchEvent(new Event('blur')); const a = m.focus; window.dispatchEvent(new Event('focus')); return [a, m.focus]; });
   check(foc[0] === false && foc[1] === true, 'Ton aus, wenn man woanders hinklickt');
@@ -244,7 +299,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check(s.depth === 1 && s.gold === 0 && s.gems === 0 && s.heir === 0 && s.best === 1 && s.runs.length === 0 && Object.keys(s.goals).length === 0 && stored.heir === 0 && stored.depth === 1 && s.towers.length === 0 && s.crownsAll === 0 && s.blk === 'stein',
     `Ganz neu anfangen löscht alles (Tiefe ${s.depth}, Steine ${s.gems}, Erbstücke ${s.heir}, Ziele ${Object.keys(s.goals).length})`);
   await shot('14q-neues-spiel');
-  await page.reload(); await page.waitForTimeout(800);
+  await page.reload(); await calm(page); await page.waitForTimeout(800);
   s = await S();
   check(s.depth === 1 && s.heir === 0 && s.best === 1, 'Nach dem Neuladen bleibt es ein neues Spiel');
 
@@ -274,6 +329,48 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check((await tipNow()) === null && prestText.includes('Lohnt sich jetzt!'), `Im Reiter «Ziele»: Lohnt sich jetzt! (${await tipNow()}, ${prestText.slice(0, 60)})`);
   await shot('14t-ziele-umzug');
 
+  // 9i) Besondere Felsen: Goldader ×4, Kristall-Schwachstelle ×8, Panzerfels nur mit Dynamit
+  if (await page.locator('#tip').isVisible()) await page.click('#tipOk');
+  await page.click('[data-tab="pick"]'); await page.waitForTimeout(200);
+  const sp = await page.evaluate(() => {
+    const m = window.__mine, x = window.__mineSpecial, r = {};
+    m.S.dw = m.S.dw.map(() => 0); m.jump(33); x.spawn('gold'); m.S.hp = 1; const g0 = m.S.gold; m.tap();
+    r.goldOk = Math.abs((m.S.gold - g0) / m.F.rockGold(33, m.S) - 4) < 0.01;
+    x.spawn('panzer'); const hp = m.S.hp; m.tap(); r.panzerTap = m.S.hp === hp; r.kind = x.kind;
+    return r;
+  });
+  check(sp.goldOk, 'Goldader gibt vierfach Gold');
+  check(sp.panzerTap && sp.kind === 'panzer', 'Panzerfels: Tippen macht nichts');
+  await page.waitForTimeout(500); await shot('22-panzerfels');
+  const pz = await page.evaluate(() => { const m = window.__mine; m.S.up.dyn = true; m.S.cdDyn = 0; const d = m.S.depth; m.useDyn(); return { next: m.S.depth === d + 1, kind: window.__mineSpecial.kind }; });
+  check(pz.next && pz.kind !== 'panzer', 'Panzerfels platzt mit Dynamit');
+  await page.evaluate(() => window.__mineSpecial.spawn('kristall')); await page.waitForTimeout(400);
+  await shot('23-kristall');
+  const w = await page.evaluate(() => { const r = document.getElementById('scene').getBoundingClientRect(), p = window.__mineSpecial.weakSpot(); return { x: r.left + p.x, y: r.top + p.y, hp: window.__mine.S.hp, dmg: window.__mine.F.pickDmg(window.__mine.S.pick, window.__mine.S) }; });
+  await page.mouse.click(w.x, w.y); await page.waitForTimeout(100);
+  const hpK = (await S()).hp;
+  check(w.hp - hpK >= w.dmg * 7.9, `Kristall: Treffer auf die Schwachstelle zählt achtfach (×${((w.hp - hpK) / w.dmg).toFixed(1)})`);
+
+  // 9j) Maulwurf: klaut Gold, antippen bringt es doppelt zurück
+  const ml = await page.evaluate(async () => {
+    const m = window.__mine, x = window.__mineMole; m.S.gold = 1e6; const g0 = m.S.gold; x.spawn();
+    await new Promise(r => setTimeout(r, 900)); const out = x.mole && x.mole.out, sack = x.mole ? x.mole.sack : 0, g1 = m.S.gold;
+    return { out, sack, stole: g1 < g0 };
+  });
+  check(ml.out && ml.sack > 0 && ml.stole, `Maulwurf klaut einen Sack Gold (${ml.sack})`);
+  await page.waitForTimeout(300); await shot('24-maulwurf');
+  const mc = await page.evaluate(() => { const m = window.__mine, x = window.__mineMole, g = m.S.gold, sack = x.mole.sack; x.catch(); return { back: Math.abs(m.S.gold - g - 2 * sack) < 1, moles: m.S.st.moles }; });
+  check(mc.back && mc.moles === 1, 'Maulwurf erwischt: Sack doppelt zurück');
+
+  // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
+  const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
+  check(fd.n === 0, 'Im Herz des Berges gibt es keine Fundstücke');
+  await page.click('[data-tab="goal"]'); await page.waitForTimeout(300);
+  await page.locator('.card', { hasText: 'Fundstücke' }).locator('.buy').click(); await page.waitForTimeout(300);
+  check((await page.locator('#toast').textContent()).includes('/ 42'), 'Sammlung der Fundstücke öffnet sich (42)');
+  await shot('25-fundstuecke');
+  await page.click('#tClose'); await page.waitForTimeout(200);
+
   // 10) Spätere Schichten ansehen
   for (const d of [61, 91, 111, 131]) {
     await page.evaluate((d) => window.__mine.jump(d), d); await page.waitForTimeout(1200);
@@ -285,7 +382,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'de-CH' });
     await ctx.addInitScript((sv) => { if (!localStorage.getItem('zwergenmine.v1')) localStorage.setItem('zwergenmine.v1', sv); }, JSON.stringify(save));
     const p = await ctx.newPage(); p.on('pageerror', e => errors.push('ctx pageerror: ' + e.message));
-    await p.goto(file); await p.waitForTimeout(1200); return p;
+    await p.goto(file); await calm(p); await p.waitForTimeout(1200); return p;
   };
   const off = await withSave({ gold: 500, gems: 3, depth: 22, maxDepth: 22, pick: 12, dw: [10, 6, 2, 0, 0, 0, 0, 0], gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, taps: 900, saved: Date.now() - 3600 * 1000, up: { spitze: true }, goals: {}, heir: 0, st: { bosses: 2, chests: 1, prest: 0 } });
   check(await off.locator('#toast').isVisible(), 'Offline-Belohnung erscheint');
@@ -323,7 +420,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   // 13) Englisch
   const en = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'en-US' });
   en.on('pageerror', e => errors.push('en pageerror: ' + e.message));
-  await en.goto(file); await en.waitForTimeout(500);
+  await en.goto(file); await calm(en); await en.waitForTimeout(500);
   check((await en.locator('#tip').textContent()).includes('Tap the rock'), 'Tipp auf Englisch');
   await en.evaluate(() => { const m = window.__mine; m.S.gold = 1e9; m.S.maxDepth = 60; m.jump(60); });
   await en.click('[data-tab="goal"]'); await en.waitForTimeout(300);
@@ -338,7 +435,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   // 14) PC
   const desk = await browser.newPage({ viewport: { width: 1280, height: 720 }, locale: 'de-CH' });
   desk.on('pageerror', e => errors.push('desk pageerror: ' + e.message));
-  await desk.goto(file); await desk.waitForTimeout(400);
+  await desk.goto(file); await calm(desk); await desk.waitForTimeout(400);
   await desk.evaluate(() => { const m = window.__mine; m.S.gold = 1e7; m.S.up.dyn = true; m.S.up.bier = true; m.jump(42); });
   await desk.keyboard.press('KeyD'); await desk.waitForTimeout(100);
   await desk.keyboard.press('KeyB'); await desk.waitForTimeout(600);

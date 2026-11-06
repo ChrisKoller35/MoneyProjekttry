@@ -186,8 +186,13 @@ const T = DE ? {
   noTower: 'Noch kein Förderturm. Besiege das Herz des Berges auf Tiefe 150, dann fördert hier ein Turm Kronen, auch wenn du weg bist.',
   blocksT: 'Blöcke', soon: 'Bald', here: 'Hier bist du', hereD: 'Du bist hier auf Tiefe {d}', start: 'Start', again: 'Nochmal',
   blk: { stein: 'Alter Berg', vulkan: 'Vulkan', eis: 'Gletscher', wasser: 'Grotte' },
-  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis, das nur Dynamit schmilzt. Kommt bald.', wasser: 'Das Wasser steigt, dafür mehr Truhen. Kommt bald.' },
-  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans' },
+  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis halbiert den Schaden, bis Dynamit es sprengt (dafür doppelt Gold). Bei Kälte frieren die Zwerge, Bier wärmt.', wasser: 'Doppelt so viele Truhen. Verlierst du einen Boss, steigt das Wasser: 2 Tiefen zurück.' },
+  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans', eis: 'Herz des Gletschers', wasser: 'Herz der Grotte' },
+  eisLayers: ['Schnee', 'Firn', 'Packeis', 'Gletscherstein', 'Frostkupfer', 'Eisen im Eis', 'Silberfrost', 'Eisgold', 'Blaueis', 'Frostgrund', 'Eisobsidian', 'Polarmithril', 'Kältekern', 'Ewiges Eis'],
+  wasserLayers: ['Tropfstein', 'Kalkstein', 'Muschelbank', 'Korallenstein', 'Grünspan', 'Rostwasser', 'Perlmutt', 'Goldsand', 'Seekristall', 'Tiefsee', 'Schwarzes Riff', 'Nixenmithril', 'Strudelkern', 'Abgrund'],
+  iceMelt: 'Eis geschmolzen!', iceSub: 'Jetzt voller Schaden, doppelt Gold', iceLbl: '❄ Eis: halber Schaden', frostOn: 'Kälteeinbruch!', frostSub: '12 s: Zwerge frieren, Bier wärmt', warm: 'warm', floodFail: 'Das Wasser steigt!', floodSub: '2 Tiefen zurück. Kauf Stärkeres, dann nochmal',
+  shopT: 'Kronen-Laden', shopNote: 'Ausgeben senkt den Punktestand nicht', shopBought: 'Gekauft!',
+  shop: { kraft: ['Kronen-Kraft', '+20 % Graben je Stufe, für immer'], start: ['Startkapital', 'Jeder neue Block und jede neue Mine beginnt mit Gold'], gilde: ['Zwergen-Gilde', 'Jeder Start mit 10 Gräbern je Stufe'], lager: ['Grösseres Lager', 'Fördertürme sammeln 6 Stunden länger'], turm: ['Turm-Antrieb', 'Alle Fördertürme +25 % Kronen'], helm: ['Goldhelme', 'Alle Zwerge tragen goldene Helme'], gpick: ['Goldene Hacke', 'Deine Hacke glänzt golden'] },
   vulkanLayers: ['Asche', 'Bimsstein', 'Basalt', 'Schwefel', 'Glutkupfer', 'Schmiedeeisen', 'Feuergold', 'Rubin', 'Magma', 'Glutschlund', 'Obsidian', 'Drachenglas', 'Feuerkern', 'Höllenschlot'],
   blkDoneTitle: '{b} geschafft!', blkDoneText: 'Dein Förderturm fördert ab jetzt {r} pro Stunde, auch wenn du weg bist. Das Lager fasst 12 Stunden. Mit Kronen schaltest du neue Blöcke frei. Dein Punktestand zählt alle Kronen, auch die ausgegebenen.',
   blockDoneName: 'Block geschafft!', blockDoneEff: 'Tiefer geht es hier nicht. Wähle auf der Karte deinen nächsten Block.', nextBlock: 'Nächster Block',
@@ -230,8 +235,13 @@ const T = DE ? {
   noTower: 'No mine tower yet. Beat the Heart of the Mountain at depth 150 and a tower will mine crowns here, even while you are away.',
   blocksT: 'Blocks', soon: 'Soon', here: 'You are here', hereD: 'You are at depth {d}', start: 'Start', again: 'Again',
   blk: { stein: 'Old Mountain', vulkan: 'Volcano', eis: 'Glacier', wasser: 'Grotto' },
-  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice only dynamite can melt. Coming soon.', wasser: 'The water rises, but more chests. Coming soon.' },
-  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano' },
+  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice halves your damage until dynamite blasts it (double gold). In cold snaps dwarves freeze, beer warms them.', wasser: 'Twice as many chests. Lose a boss and the water rises: 2 depths back.' },
+  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano', eis: 'Heart of the Glacier', wasser: 'Heart of the Grotto' },
+  eisLayers: ['Snow', 'Firn', 'Pack Ice', 'Glacier Stone', 'Frost Copper', 'Iron in Ice', 'Silver Frost', 'Ice Gold', 'Blue Ice', 'Frost Floor', 'Ice Obsidian', 'Polar Mithril', 'Cold Core', 'Eternal Ice'],
+  wasserLayers: ['Dripstone', 'Limestone', 'Shell Bank', 'Coral Stone', 'Verdigris', 'Rust Water', 'Mother of Pearl', 'Gold Sand', 'Sea Crystal', 'Deep Sea', 'Black Reef', 'Mermaid Mithril', 'Whirlpool Core', 'Abyss'],
+  iceMelt: 'Ice melted!', iceSub: 'Full damage now, double gold', iceLbl: '❄ Ice: half damage', frostOn: 'Cold snap!', frostSub: '12 s: dwarves freeze, beer warms', warm: 'warm', floodFail: 'The water rises!', floodSub: '2 depths back. Buy upgrades, then retry',
+  shopT: 'Crown Shop', shopNote: 'Spending never lowers your score', shopBought: 'Bought!',
+  shop: { kraft: ['Crown Power', '+20% digging per level, forever'], start: ['Starting Gold', 'Every new block and mine starts with gold'], gilde: ['Dwarf Guild', 'Every start with 10 diggers per level'], lager: ['Bigger Storage', 'Mine towers collect 6 hours longer'], turm: ['Tower Drive', 'All mine towers +25% crowns'], helm: ['Golden Helmets', 'All dwarves wear golden helmets'], gpick: ['Golden Pickaxe', 'Your pickaxe shines gold'] },
   vulkanLayers: ['Ash', 'Pumice', 'Basalt', 'Sulfur', 'Ember Copper', 'Forge Iron', 'Fire Gold', 'Ruby', 'Magma', 'Ember Throat', 'Obsidian', 'Dragonglass', 'Fire Core', 'Hell Vent'],
   blkDoneTitle: '{b} cleared!', blkDoneText: 'Your mine tower now mines {r} per hour, even while you are away. Its storage holds 12 hours. Crowns unlock new blocks. Your score counts every crown, spent ones too.',
   blockDoneName: 'Block cleared!', blockDoneEff: 'You can’t dig deeper here. Pick your next block on the map.', nextBlock: 'Next block',
@@ -243,6 +253,22 @@ const T = DE ? {
 const DWARF_NAMES = DE
   ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
   : ['Digger', 'Rockbiter', 'Blaster', 'Drill Master', 'Steam Drill', 'Ore King', 'Lava Driller', 'Void Prospector'];
+// Texte für die besonderen Felsen (Goldader, Kristall, Panzerfels)
+const TS = DE ? {
+  gold: 'Goldader!', goldSub: 'vierfach Gold',
+  kristall: 'Kristall!', kristallSub: 'Triff die Schwachstelle',
+  weak: 'Schwachstelle!',
+  panzer: 'Panzerfels!', panzerSub: 'Nur Dynamit hilft (D)', panzerLbl: 'Nur Dynamit',
+  panzerGone: 'Der Panzerfels verwittert', panzerGoneSub: 'Zu spät. Er war schüchtern.',
+  klonk: 'Klonk', gem: 'Kristall zerbrochen',
+} : {
+  gold: 'Gold vein!', goldSub: 'quadruple gold',
+  kristall: 'Crystal!', kristallSub: 'Hit the weak spot',
+  weak: 'Weak spot!',
+  panzer: 'Armored rock!', panzerSub: 'Only dynamite works (D)', panzerLbl: 'Dynamite only',
+  panzerGone: 'The armored rock crumbles', panzerGoneSub: 'Too late. It was shy.',
+  klonk: 'Clank', gem: 'Crystal shattered',
+};
 
 // ---------- Spielformeln ----------
 // FORMELN_START (wird vom Balancing-Test gelesen)
@@ -319,13 +345,28 @@ const GEM_UPS = [
 const BLOCKS = [
   { k: 'stein',  rate: 1, cost: 0,  icon: '⛰️', color: '#c9c9d2' },
   { k: 'vulkan', rate: 2, cost: 10, icon: '🌋', color: '#ff8a3d' },
-  { k: 'eis',    rate: 2, cost: 25, icon: '🧊', color: '#7fe7ff', soon: true },
-  { k: 'wasser', rate: 3, cost: 50, icon: '🌊', color: '#57a8ff', soon: true },
+  { k: 'eis',    rate: 2, cost: 25, icon: '🧊', color: '#7fe7ff' },
+  { k: 'wasser', rate: 3, cost: 50, icon: '🌊', color: '#57a8ff' },
+];
+// Kronen-Laden: Käufe mit Kronen (der Punktestand bleibt)
+const SHOP = [
+  { k: 'kraft', icon: '💪', max: 10, cost: (L) => Math.ceil(6 * Math.pow(1.5, L)) },
+  { k: 'start', icon: '💰', max: 5,  cost: (L) => 5 * Math.pow(2, L) },
+  { k: 'gilde', icon: '🧔', max: 3,  cost: (L) => 8 * Math.pow(2, L) },
+  { k: 'lager', icon: '📦', max: 2,  cost: (L) => 15 * Math.pow(2, L) },
+  { k: 'turm',  icon: '⚙️', max: 4,  cost: (L) => 20 * Math.pow(2, L) },
+  { k: 'helm',  icon: '⛑️', max: 1,  cost: () => 10 },
+  { k: 'gpick', icon: '✨', max: 1,  cost: () => 12 },
 ];
 const F = {
   blockEnd: 150, blockCrowns: 10, towerMaxH: 12,
-  towerRate: (k) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate,
+  shopLv: (s, k) => (s && s.shop && s.shop[k]) || 0,
+  towerRate: (k, s) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate * (1 + 0.25 * F.shopLv(s, 'turm')),
+  towerCap: (s) => F.towerMaxH + 6 * F.shopLv(s, 'lager'),
+  startGold: (s) => { const L = F.shopLv(s, 'start'); return L ? 100 * Math.pow(10, L) : 0; },
+  startDw: (s) => 10 * F.shopLv(s, 'gilde'),
   lavaEvery: () => 45 + Math.random() * 15, lavaSec: 10, lavaTap: 3,
+  frostSec: 12, frostDw: 0.25, iceChance: 0.25, iceDmg: 0.5, iceGold: 2,
   isBoss: (d) => d % 10 === 0,
   isBigBoss: (d) => d % 50 === 0,
   layerOf: (d) => Math.floor((d - 1) / 10) % LAYERS.length,
@@ -337,7 +378,7 @@ const F = {
   bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
   bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0),
   heirMult: (s) => 1 + 0.05 * (s.heir || 0),
-  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s),
+  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s) * (1 + 0.2 * F.shopLv(s, 'kraft')),
   pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1),
   dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1),
   pickCost: (L) => Math.ceil(10 * Math.pow(1.19, L)),
@@ -352,7 +393,7 @@ const F = {
   gemCost: (k, L) => { const g = GEM_UPS.find(u => u.key === k); return Math.ceil(g.base * Math.pow(g.grow, L)); },
   offlineRate: (s) => 0.25 + 0.075 * s.gu.offline,
   offlineMaxSec: 8 * 3600,
-  chestEvery: (s) => Math.max(18, 60 - 5 * s.gu.chest),
+  chestEvery: (s) => Math.max(18, 60 - 5 * s.gu.chest) * (s.blk === 'wasser' ? 0.5 : 1),
   chestLife: (s) => s.up.laterne ? 18 : 9,
   chestMult: (s) => s.up.magnet ? 2 : 1,
   dynCd: 90, dynTaps: 30, beerCd: 180, beerSec: 20, beerMult: 3,
@@ -384,6 +425,14 @@ const layerCache = {};
 const HEARTS = {
   stein:  { rock: '#8a6a2a', dark: '#4a3510', ore: '#fff2a8', bg: '#1a1205' },
   vulkan: { rock: '#8a1f0f', dark: '#4a0a04', ore: '#ffdd55', bg: '#220500' },
+  eis:    { rock: '#8cc8f0', dark: '#3a6a9a', ore: '#ffffff', bg: '#06121e' },
+  wasser: { rock: '#2a8a9a', dark: '#0a3a4a', ore: '#aaffee', bg: '#021418' },
+};
+// Farbstich je Block: Farbton, wie stark, mehr Sättigung, heller
+const TINT = {
+  vulkan: { h: 14,  k: 0.6, ds: 0.18, dl: 0,    bk: 0.7,  bds: 0.25 },
+  eis:    { h: 200, k: 0.7, ds: 0.05, dl: 0.12, bk: 0.75, bds: 0.2 },
+  wasser: { h: 182, k: 0.6, ds: 0.12, dl: 0.02, bk: 0.75, bds: 0.25 },
 };
 function layerAt(d) {
   const kind = S.blk || 'stein', heart = d > 140 && d <= F.blockEnd;
@@ -398,23 +447,36 @@ function layerAt(d) {
     const tint = (hex, dl, ds, minL = 0) => { const [h, s, l] = hexToHsl(hex); return hslToHex((h + shift) % 360, Math.min(1, s * 1.1 + ds), Math.min(0.9, Math.max(minL, l + dl))); };
     L = { rock: tint(base.rock, 0.02, 0.12), dark: tint(base.dark, 0, 0.12), ore: tint(base.ore, 0.08, 0.3, 0.6), bg: tint(base.bg, 0, 0.15), glow: true };
   }
-  if (kind === 'vulkan' && !heart) {   // Vulkan: alles zieht ins Rot, Glut in der Luft
-    const hot = (hex, k, ds, dl = 0) => { const [h, s, l] = hexToHsl(hex), dh = ((14 - h + 540) % 360) - 180; return hslToHex((h + dh * k + 360) % 360, Math.min(1, s + ds), Math.min(0.9, l + dl)); };
-    L = { rock: hot(L.rock, 0.6, 0.18), dark: hot(L.dark, 0.6, 0.18), ore: hot(L.ore, 0.25, 0.1, 0.05), bg: hot(L.bg, 0.7, 0.25), glow: L.glow };
+  const tn = TINT[kind];
+  if (tn && !heart) {   // Vulkan rot, Gletscher eisblau, Grotte türkis
+    const mix = (hex, k, ds, dl = 0) => { const [h, s, l] = hexToHsl(hex), dh = ((tn.h - h + 540) % 360) - 180; return hslToHex((h + dh * k + 360) % 360, Math.min(1, Math.max(0, s + ds)), Math.min(0.9, l + dl)); };
+    L = { rock: mix(L.rock, tn.k, tn.ds, tn.dl), dark: mix(L.dark, tn.k, tn.ds, tn.dl * 0.5), ore: mix(L.ore, 0.25, 0.1, 0.05), bg: mix(L.bg, tn.bk, tn.bds), glow: L.glow };
   }
-  const names = kind === 'vulkan' ? T.vulkanLayers : T.layers;
+  const names = T[kind + 'Layers'] || T.layers;
   L.name = heart ? T.heart[kind] || T.heart.stein : names[i] + (r ? ' ' + ringName(r) : '');
   return (layerCache[key] = L);
 }
+
+const TM = DE ? {
+  steal: 'Ein Maulwurf klaut Gold!', stealSub: 'Antippen, bevor er weg ist',
+  caught: 'Erwischt!', caughtSub: 'Sack doppelt zurück',
+  gone: 'Weg ist er.', goneSub: 'Mit {n} Gold. Frech.', tap: 'Antippen!',
+  tip: 'Ein Maulwurf! Tipp ihn an, bevor er im Loch ist, dann gibt er das Gold doppelt zurück.',
+} : {
+  steal: 'A mole is stealing gold!', stealSub: 'Tap him before he\'s gone',
+  caught: 'Caught!', caughtSub: 'Sack back, doubled',
+  gone: 'And he\'s gone.', goneSub: 'With {n} gold. Cheeky.', tap: 'Tap!',
+  tip: 'A mole! Tap him before he reaches the hole and he returns the gold, doubled.',
+};
 
 // ---------- Spielstand ----------
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
   return { gold: 0, gems: 0, depth: 1, maxDepth: 1, farm: false, pick: 0, dw: DWARVES.map(() => 0),
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
-    up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0 }, cdDyn: 0, cdBeer: 0,
-    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {},
-    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {} };
+    up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
+    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
+    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0 };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -430,8 +492,10 @@ function load() {
     if (!Array.isArray(S.runs)) S.runs = [];
     if (d.lastMaxAt == null) S.lastMaxAt = S.runTime;                     // Spielstand von vor den Tipps
     if (!S.tips || typeof S.tips !== 'object') S.tips = {};
+    if (!S.finds || typeof S.finds !== 'object') S.finds = {};
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
+    S.shop = Object.assign({}, d.shop || {});
     if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
     if (d.towers == null) {   // Spielstand von vor den Blöcken
       if (S.best > F.blockEnd) {   // Herz des Berges schon besiegt: Alter Berg zählt als geschafft
@@ -444,6 +508,55 @@ function load() {
   } catch (e) { return null; }
 }
 function save() { S.saved = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+// ---------- Fundstücke: drei je Schicht (Texte und Liste) ----------
+const TF = DE ? { title: 'Fundstücke', found: 'Fundstück!', layerDone: 'Schicht vollständig!', layerDoneSub: '+5 Steine', allDone: 'Alle Fundstücke!', allDoneSub: '+50 Steine. Du bist fertig. Grab trotzdem weiter.', unknown: '?' }
+  : { title: 'Finds', found: 'A find!', layerDone: 'Layer complete!', layerDoneSub: '+5 gems', allDone: 'All finds!', allDoneSub: "+50 gems. You're done. Keep digging anyway.", unknown: '?' };
+const FL = DE ? 'de' : 'en';
+const FINDS = [
+  { id: 'wurm', layer: 0, icon: '🪱', name: { de: 'Versteinerter Regenwurm', en: 'Fossilized earthworm' }, text: { de: 'Hat nie jemandem etwas getan. Jetzt ist er ein Briefbeschwerer.', en: "Never hurt anyone. Now it's a paperweight." } },
+  { id: 'gzwerg', layer: 0, icon: '🧔', name: { de: 'Gartenzwerg, vermisst', en: 'Garden gnome, missing' }, text: { de: 'Seit 1998 auf der Flucht. Die Zipfelmütze hat ihn verraten.', en: 'On the run since 1998. The pointy hat gave him away.' } },
+  { id: 'brot', layer: 0, icon: '🥪', name: { de: 'Zwergen-Pausenbrot', en: "Dwarf's packed lunch" }, text: { de: 'Seit 1874 im Boden. Noch essbar. Theoretisch.', en: 'In the ground since 1874. Still edible. Technically.' } },
+  { id: 'stein', layer: 1, icon: '🪨', name: { de: 'Gewöhnlicher Stein', en: 'Ordinary rock' }, text: { de: 'Du hast ihn aufgehoben. Das sagt mehr über dich als über ihn.', en: 'You picked it up. That says more about you than about it.' } },
+  { id: 'meissel', layer: 1, icon: '🔨', name: { de: 'Stumpfer Meissel', en: 'Blunt chisel' }, text: { de: 'Hat 40 Jahre gemeisselt. Sein Lebenswerk: dieser Kratzer.', en: "Forty years of chiselling. Life's work: this scratch." } },
+  { id: 'kopf', layer: 1, icon: '🗿', name: { de: 'Steinkopf, grimmig', en: 'Grumpy stone head' }, text: { de: 'Schaut dich an, als hättest du ihn geweckt. Hast du.', en: 'Looks at you like you woke him up. You did.' } },
+  { id: 'diamant', layer: 2, icon: '💎', name: { de: 'Diamant (fast)', en: 'Diamond (almost)' }, text: { de: 'Noch 3 Millionen Jahre Druck, dann wäre er was geworden.', en: 'Three million more years of pressure and it would have been somebody.' } },
+  { id: 'pfeife', layer: 2, icon: '🐤', name: { de: 'Kanarienvogel-Pfeife', en: 'Canary whistle' }, text: { de: 'Der Vogel ist weg. Die Pfeife pfeift nur noch Vorwürfe.', en: 'The bird is gone. The whistle only whistles accusations now.' } },
+  { id: 'socke', layer: 2, icon: '🧦', name: { de: 'Russige Socke', en: 'Sooty sock' }, text: { de: 'Eine Socke. Die andere ist noch tiefer. Viel Glück.', en: 'One sock. The other one is deeper. Good luck.' } },
+  { id: 'muenze', layer: 3, icon: '🪙', name: { de: 'Grüne Münze', en: 'Green coin' }, text: { de: 'Früher glänzte sie. Jetzt hat sie Persönlichkeit.', en: 'It used to shine. Now it has personality.' } },
+  { id: 'glocke', layer: 3, icon: '🔔', name: { de: 'Kupferglocke, stumm', en: 'Silent copper bell' }, text: { de: 'Läutet nicht mehr. Hat genug gesagt.', en: "Doesn't ring any more. It has said enough." } },
+  { id: 'kabel', layer: 3, icon: '🔌', name: { de: 'Uraltes Kabel', en: 'Ancient cable' }, text: { de: 'Führt ins Nichts. Wie jedes Kabel in jeder Schublade.', en: 'Leads nowhere. Like every cable in every drawer.' } },
+  { id: 'schraube', layer: 4, icon: '🔩', name: { de: 'Rostige Schraube', en: 'Rusty screw' }, text: { de: 'Hielt einst etwas Wichtiges zusammen. Was, weiss keiner mehr.', en: 'Once held something important together. Nobody remembers what.' } },
+  { id: 'loeffel', layer: 4, icon: '🥄', name: { de: 'Verbogener Löffel', en: 'Bent spoon' }, text: { de: 'Jemand hat sehr fest an ihn gedacht.', en: 'Someone thought about it very hard.' } },
+  { id: 'hufeisen', layer: 4, icon: '🧲', name: { de: 'Hufeisen, Glück leer', en: 'Horseshoe, luck used' }, text: { de: 'Das Glück ist aufgebraucht. Das Eisen ist noch da.', en: 'The luck is used up. The iron remains.' } },
+  { id: 'gabel', layer: 5, icon: '🍴', name: { de: 'Silbergabel', en: 'Silver fork' }, text: { de: 'Gehörte zu einem Besteck für zwölf. Die anderen elf feiern ohne sie.', en: 'Part of a set for twelve. The other eleven are partying without it.' } },
+  { id: 'spiegel', layer: 5, icon: '🪞', name: { de: 'Trüber Spiegel', en: 'Cloudy mirror' }, text: { de: 'Zeigt dich, nur müder. Ehrlich gesagt: realistisch.', en: 'Shows you, but more tired. Honestly: accurate.' } },
+  { id: 'medaille', layer: 5, icon: '🥈', name: { de: 'Medaille, Zweiter', en: 'Silver medal' }, text: { de: 'Zweiter Platz im Graben, 1912. Der Sieger liegt eine Schicht tiefer.', en: 'Second place, digging, 1912. The winner is one layer down.' } },
+  { id: 'goldzahn', layer: 6, icon: '🦷', name: { de: 'Goldzahn eines Riesen', en: "Giant's gold tooth" }, text: { de: 'Der Riese hat ihn nicht vermisst. Er hat noch 31.', en: "The giant didn't miss it. He has 31 more." } },
+  { id: 'ring', layer: 6, icon: '💍', name: { de: 'Ring, zu klein', en: 'Ring, too small' }, text: { de: 'Passt niemandem. Das macht ihn wertvoll und völlig nutzlos.', en: 'Fits nobody. That makes it precious and utterly useless.' } },
+  { id: 'pokal', layer: 6, icon: '🏆', name: { de: 'Pokal fürs Mitmachen', en: 'Participation trophy' }, text: { de: 'Fürs Dabeisein. Aus echtem Gold. Jemand hat übertrieben.', en: 'For showing up. Solid gold. Someone overdid it.' } },
+  { id: 'kugel', layer: 7, icon: '🔮', name: { de: 'Kristallkugel', en: 'Crystal ball' }, text: { de: 'Sie zeigt deine Zukunft: Graben. Sehr viel Graben.', en: 'It shows your future: digging. So much digging.' } },
+  { id: 'glas', layer: 7, icon: '🍷', name: { de: 'Weinglas, leer', en: 'Empty wine glass' }, text: { de: 'Jemand hat es bis zum letzten Tropfen genossen. Vor 400 Jahren.', en: 'Someone enjoyed it to the last drop. 400 years ago.' } },
+  { id: 'eis', layer: 7, icon: '🧊', name: { de: 'Ewiger Eiswürfel', en: 'Eternal ice cube' }, text: { de: 'Schmilzt nicht. Hat sich entschieden.', en: "Won't melt. It has made up its mind." } },
+  { id: 'ei', layer: 8, icon: '🍳', name: { de: 'Spiegelei, durch', en: 'Fried egg, well done' }, text: { de: 'Ganz durch. Sehr durch. Geologisch durch.', en: 'Well done. Very done. Geologically done.' } },
+  { id: 'stiefel', layer: 8, icon: '🥾', name: { de: 'Halber Stiefel', en: 'Half a boot' }, text: { de: 'Der Besitzer hat den Rest der Strecke barfuss gemacht.', en: 'The owner did the rest of the trip barefoot.' } },
+  { id: 'wurst', layer: 8, icon: '🌭', name: { de: 'Wurst am Spiess', en: 'Sausage on a stick' }, text: { de: 'Wollte nur kurz grillen. Stand zu nah am Kern.', en: 'Just wanted a quick barbecue. Stood too close to the core.' } },
+  { id: 'fisch', layer: 9, icon: '🐟', name: { de: 'Fisch ohne Augen', en: 'Eyeless fish' }, text: { de: 'Hat nie Licht gesehen. Will es auch jetzt nicht. Laterne aus, bitte.', en: "Has never seen light. Doesn't want to now. Lantern off, please." } },
+  { id: 'karte', layer: 9, icon: '📜', name: { de: 'Karte nach oben', en: 'Map to the surface' }, text: { de: 'Ein Pfeil nach oben, darunter «Raus». Du ignorierst sie.', en: "An arrow pointing up, labelled 'Out'. You ignore it." } },
+  { id: 'kerze', layer: 9, icon: '🕯️', name: { de: 'Kerzenstummel', en: 'Candle stub' }, text: { de: 'Brennt noch. Wer ihn angezündet hat, weiss niemand. Besser nicht fragen.', en: 'Still burning. Nobody knows who lit it. Best not to ask.' } },
+  { id: 'messer', layer: 10, icon: '🗡️', name: { de: 'Obsidianmesser', en: 'Obsidian knife' }, text: { de: 'Scharf genug, um Ausreden zu schneiden.', en: 'Sharp enough to cut through excuses.' } },
+  { id: 'orb', layer: 10, icon: '⚫', name: { de: 'Glatte schwarze Kugel', en: 'Smooth black orb' }, text: { de: 'Du hast hineingeschaut. Sie hat zurückgeschaut. Unentschieden.', en: 'You looked in. It looked back. A draw.' } },
+  { id: 'wuerfel', layer: 10, icon: '🎲', name: { de: 'Würfel, nur Einsen', en: 'Die, all ones' }, text: { de: 'Gezinkt. Aber in die falsche Richtung.', en: 'Loaded. In the wrong direction.' } },
+  { id: 'hemd', layer: 11, icon: '🧥', name: { de: 'Kettenhemd, Grösse S', en: 'Chainmail, size S' }, text: { de: 'Leicht wie eine Feder. Passt einem Hamster.', en: 'Light as a feather. Fits a hamster.' } },
+  { id: 'schluessel', layer: 11, icon: '🔑', name: { de: 'Schlüssel ohne Schloss', en: 'Key without a lock' }, text: { de: 'Das Schloss liegt in einer anderen Mine. Natürlich.', en: 'The lock is in another mine. Of course.' } },
+  { id: 'nadel', layer: 11, icon: '🪡', name: { de: 'Mithril-Nadel', en: 'Mithril needle' }, text: { de: 'Hat einmal einen Drachen genäht. Frag nicht, wozu.', en: 'Once stitched up a dragon. Do not ask why.' } },
+  { id: 'kartoffel', layer: 12, icon: '🥔', name: { de: 'Ewige Ofenkartoffel', en: 'Eternal baked potato' }, text: { de: 'Seit Jahrhunderten im Ofen. Immer noch zu heiss zum Essen.', en: 'In the oven for centuries. Still too hot to eat.' } },
+  { id: 'thermo', layer: 12, icon: '🌡️', name: { de: 'Thermometer, kaputt', en: 'Broken thermometer' }, text: { de: 'Zeigt «Ja».', en: "Reads 'Yes'." } },
+  { id: 'flamme', layer: 12, icon: '🔥', name: { de: 'Ewige Flamme, klein', en: 'Small eternal flame' }, text: { de: 'Ewig, ja. Gross, nein. Man kann nicht alles haben.', en: "Eternal, yes. Big, no. You can't have it all." } },
+  { id: 'nichts', layer: 13, icon: '🎁', name: { de: 'Ein Nichts in Geschenkpapier', en: 'Nothing, gift-wrapped' }, text: { de: 'Das Papier war das Geschenk.', en: 'The paper was the present.' } },
+  { id: 'brief', layer: 13, icon: '📭', name: { de: 'Brief an niemanden', en: 'Letter to nobody' }, text: { de: 'Absender: niemand. Inhalt: siehe Absender.', en: 'Sender: nobody. Contents: see sender.' } },
+  { id: 'loch', layer: 13, icon: '🕳️', name: { de: 'Loch zum Mitnehmen', en: 'Hole to go' }, text: { de: 'Ein Loch für unterwegs. Pass auf, wo du es abstellst.', en: 'A hole for the road. Mind where you put it down.' } },
+];
 
 // ---------- Zahlen schön schreiben ----------
 const SUFFIX = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc'];
@@ -486,6 +599,7 @@ const sfx = {
   fail: () => { [440, 330, 220].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.05), i * 110)); },
   win: () => { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.06), i * 120)); },
   lava: () => { beep(70, 0.5, 'sawtooth', 0.07); setTimeout(() => beep(55, 0.7, 'sawtooth', 0.06), 220); },
+  frost: () => { [1568, 1319, 1175, 988].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'sine', 0.04), i * 90)); },
   crown: () => { [880, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'sine', 0.06), i * 70)); },
 };
 
@@ -512,7 +626,7 @@ function showBanner(b) {
   if (banner && banner.life > 0.9) { bannerQ.push(b); if (bannerQ.length > 4) bannerQ.shift(); }
   else banner = b;
 }
-let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0, lava = 0, lavaTimer = 50;
+let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0, lava = 0, lavaTimer = 50, frost = 0, frozen = false, iceGold = false;
 const isEnd = () => S.depth === F.blockEnd;
 const tapMult = () => (rage > 0 ? 3 : 1) * (lava > 0 ? F.lavaTap : 1);
 
@@ -521,7 +635,16 @@ function rockCenter() { return { x: CW / 2, y: CH * 0.52, r: Math.min(CW * 0.27,
 function spawnRock() {
   bossActive = F.isBoss(S.depth) && !S.farm && !S.blockDone;
   hpMax = F.rockHp(S.depth);
+  const keep = rockN === 0 && S.special && S.hp > 0 && !bossActive && !S.farm;   // geladener Felsen läuft weiter
   S.hp = hpMax;
+  if (!keep) {
+    S.special = (rockN > 0 && !bossActive && !S.farm && S.depth >= 5) ? rollSpecial() : null;
+    S.specialT = S.special === 'panzer' ? 30 : 0;
+    if (S.special) showBanner({ text: TS[S.special], sub: TS[S.special + 'Sub'], life: 2, color: SPECIAL_COL[S.special] });
+  }
+  rockN++;
+  // Gletscher: manche Felsen stecken im Eis (halber Schaden, Dynamit schmilzt es, dafür doppelt Gold)
+  frozen = iceGold = S.blk === 'eis' && !bossActive && !S.farm && !S.blockDone && S.depth >= 3 && !S.special && rockN > 1 && Math.random() < F.iceChance;
   bossTimer = F.bossTime(S.depth, S);
   rockSeed = (S.depth * 9301 + 49297) % 233280;
   const LK = Math.floor((S.depth - 1) / 10);
@@ -537,13 +660,20 @@ function spawnRock() {
 
 function damage(amount, fromTap, x, y) {
   if (S.hp <= 0) return;
-  let crit = false;
-  if (fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult(S); crit = true; }
+  if (S.special === 'panzer') {   // Panzerfels: nur Dynamit hilft, auch Zwerge machen nichts
+    if (fromTap) { const c = rockCenter(); floats.push({ x: x ?? c.x, y: (y ?? c.y) - 20, text: TS.klonk, life: 0.8 }); sfx.hit(); }
+    return;
+  }
+  if (frozen) amount *= F.iceDmg;
+  let crit = false, weak = false;
+  if (S.special === 'kristall' && fromTap && x != null) { const w = weakSpot(); if (Math.hypot(x - w.x, y - w.y) <= 26) { amount *= 8; crit = weak = true; } }
+  if (!weak && fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult(S); crit = true; }
   S.hp -= amount;
   if (fromTap) {
     shake = Math.min(1, shake + (crit ? 0.6 : 0.25)); hitFlash = 1;
     const c = rockCenter();
-    floats.push({ x: (x ?? c.x) + (Math.random() - 0.5) * 30, y: (y ?? c.y) - 20, text: fmt(amount), life: 1, crit });
+    floats.push({ x: (x ?? c.x) + (Math.random() - 0.5) * 30, y: (y ?? c.y) - 20, text: fmt(amount), life: 1, crit, color: weak ? SPECIAL_COL.kristall : undefined });
+    if (weak) floats.push({ x, y: y - 50, text: TS.weak, life: 1.2, color: SPECIAL_COL.kristall });
     const col = layerAt(S.depth);
     for (let i = 0; i < (crit ? 10 : 4); i++) chips.push(chip(x ?? c.x, y ?? c.y, Math.random() < 0.35 ? col.ore : col.rock));
     crit ? sfx.crit() : sfx.hit();
@@ -558,8 +688,9 @@ function chip(x, y, color) {
 
 function breakRock() {
   const c = rockCenter();
-  const gold = F.rockGold(S.depth, S);
+  const gold = F.rockGold(S.depth, S) * specialGoldMult() * (iceGold ? F.iceGold : 1);
   S.gold += gold;
+  if (S.special === 'kristall') { S.gems += 1; showBanner({ text: TS.gem, sub: '💎 +1', life: 2, color: SPECIAL_COL.kristall }); sfx.chest(); }
   for (let i = 0; i < 26; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, layerAt(S.depth)[Math.random() < 0.4 ? 'ore' : 'rock']));
   const n = Math.min(10, 3 + Math.floor(Math.log10(gold + 1) * 2));
   for (let i = 0; i < n; i++) coins.push({ x: c.x + (Math.random() - 0.5) * c.r, y: c.y + (Math.random() - 0.5) * c.r * 0.6, t: -i * 0.04, sx: 0, sy: 0 });
@@ -578,6 +709,7 @@ function breakRock() {
     S.depth++;
     if (S.depth > S.maxDepth) { S.maxDepth = S.depth; onNewMax(); }
   }
+  S.special = null;
   spawnRock();
   refreshPanel(true);
 }
@@ -599,7 +731,7 @@ function finishBlock() {
   const b = blkOf(S.blk);
   setTimeout(() => afterToast(() => {
     popup(`<div class="big">👑 +${F.blockCrowns}</div><div style="font-weight:900;font-size:20px;margin-top:4px">${b.icon} ${T.blkDoneTitle.replace('{b}', T.blk[b.k])}</div>
-      <div class="small" style="font-size:14px;max-width:290px;margin:8px auto 0">${T.blkDoneText.replace('{r}', crownStr(b.rate))}</div>
+      <div class="small" style="font-size:14px;max-width:290px;margin:8px auto 0">${T.blkDoneText.replace('{r}', crownStr(+F.towerRate(b.k, S).toFixed(2)))}</div>
       <button id="tMap">${T.toMap}</button><div><button id="tLater" class="ghost">${T.later}</button></div>`);
     document.getElementById('tMap').onclick = () => { toast.style.display = 'none'; showRealm(); };
     document.getElementById('tLater').onclick = () => { toast.style.display = 'none'; };
@@ -607,26 +739,26 @@ function finishBlock() {
 }
 // Lager eines Turms: Kronen seit dem letzten Abholen, höchstens 12 Stunden
 function towerStore(tw, now) {
-  const max = F.towerMaxH * 3600e3;
+  const max = F.towerCap(S) * 3600e3;
   if (!(tw.since <= now)) tw.since = now;   // Uhr zurückgestellt: nichts schenken
   const el = Math.min(max, now - tw.since);
-  return { n: Math.floor(el / 3600e3 * F.towerRate(tw.k) + 1e-9), full: el >= max, el };
+  return { n: Math.floor(el / 3600e3 * F.towerRate(tw.k, S) + 1e-9), full: el >= max, el };
 }
 function storeInfo() {
   const now = Date.now(); let n = 0, rate = 0, cap = 0, next = Infinity;
   for (const tw of S.towers) {
-    const st = towerStore(tw, now), r = F.towerRate(tw.k), per = 3600e3 / r;
-    n += st.n; rate += r; cap += F.towerMaxH * r;
+    const st = towerStore(tw, now), r = F.towerRate(tw.k, S), per = 3600e3 / r;
+    n += st.n; rate += r; cap += F.towerCap(S) * r;
     if (!st.full) next = Math.min(next, per - (st.el % per));
   }
-  return { n, rate, cap, next };
+  return { n, rate: +rate.toFixed(2), cap: Math.floor(cap + 1e-9), next };
 }
 function collectAll() {
   const now = Date.now(); let n = 0;
   for (const tw of S.towers) {
     const st = towerStore(tw, now);
     if (st.n <= 0) continue;
-    n += st.n; tw.since = st.full ? now : tw.since + st.n * 3600e3 / F.towerRate(tw.k);
+    n += st.n; tw.since = st.full ? now : tw.since + st.n * 3600e3 / F.towerRate(tw.k, S);
   }
   if (!n) return 0;
   S.crowns += n; S.crownsAll += n;
@@ -641,11 +773,20 @@ function startBlock(k) {
   S.blk = k; S.blockDone = false;
   S.heir = 0; S.runTime = 0; S.lastMaxAt = 0; S.recBase = 0; S.blkBest = 1;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
-  rage = 0; beer = 0; lava = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  rage = 0; beer = 0; lava = 0; frost = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  applyStart();
   spawnRock(); buildPanel(); updateSkillBtns(); updateBossBtn();
   const b = blkOf(k);
   bannerQ.length = 0; banner = null; showBanner({ text: b.icon + ' ' + T.blk[k], sub: T.blkStart, life: 3, color: b.color });
   sfx.boss(); save();
+}
+// Kronen-Laden: Startkapital und Zwergen-Gilde bei jedem Neubeginn (Block oder Umzug)
+function applyStart() { S.gold = F.startGold(S); S.dw[0] = F.startDw(S); }
+// Gletscher: Kälteeinbruch
+function startFrost() {
+  frost = F.frostSec; lavaTimer = F.lavaEvery();
+  showBanner({ text: T.frostOn, sub: T.frostSub, life: 2.2, color: '#bff4ff' });
+  sfx.frost();
 }
 // Vulkan: Lava-Ausbruch
 function startLava() {
@@ -657,6 +798,7 @@ function startLava() {
 // Neue Bestmarke in dieser Mine: Rekord, Ring-Belohnung, Rangliste
 function onNewMax() {
   S.lastMaxAt = S.runTime;
+  rollFind();
   if (S.st.prest > 0 && S.recBase > 0 && S.maxDepth === S.recBase + 1) { showBanner({ text: T.record, sub: T.recordSub.replace('{n}', S.recBase), life: 2.6, color: '#ffd447' }); sfx.chest(); }
   S.blkBest = Math.max(S.blkBest || 1, S.maxDepth);
   if (S.maxDepth > S.best) {
@@ -668,8 +810,9 @@ function onNewMax() {
 
 function failBoss() {
   S.farm = true;
-  S.depth = Math.max(1, S.depth - 1);
-  showBanner({ text: T.bossFail, sub: T.bossFailSub, life: 2.4, color: '#ff6b6b' });
+  const flood = S.blk === 'wasser';   // Grotte: das Wasser steigt, zwei Tiefen zurück
+  S.depth = Math.max(1, S.depth - (flood ? 2 : 1));
+  showBanner(flood ? { text: T.floodFail, sub: T.floodSub, life: 2.6, color: '#57a8ff' } : { text: T.bossFail, sub: T.bossFailSub, life: 2.4, color: '#ff6b6b' });
   sfx.fail();
   spawnRock(); buildPanel();
 }
@@ -686,12 +829,104 @@ function bossPower() { const d = S.maxDepth; return F.totalDps(S) * Math.max(1, 
 function movePct() { return Math.round((F.heirMult({ heir: S.heir + F.heirGain(S) }) / F.heirMult(S) - 1) * 100); }
 function moveWorth() { return F.canPrestige(S) && movePct() >= 15 && S.runTime - S.lastMaxAt >= (S.farm ? 60 : 300); }
 
+// ---------- Besondere Felsen: Goldader, Kristall, Panzerfels ----------
+let rockN = 0;   // Felsen in dieser Sitzung (der erste nach dem Laden ist immer normal)
+const SPECIAL_COL = { gold: '#f5c542', kristall: '#7fe7ff', panzer: '#c7ccd6' };
+function rollSpecial() {
+  if (window.__mineSpecial && window.__mineSpecial.off) return null;
+  if (F.isBoss(S.depth)) return null;
+  if (S.up.dyn && S.cdDyn <= 0 && Math.random() < 1 / 25) return 'panzer';   // nur, wenn Dynamit bereit ist
+  if (Math.random() < 1 / 40) return 'kristall';
+  if (Math.random() < 1 / 18) return 'gold';
+  return null;
+}
+function specialGoldMult() { return S.special === 'gold' ? 4 : S.special === 'panzer' ? 6 : 1; }
+// Schwachstelle des Kristalls: wandert in rund 25 s einmal um den Mittelpunkt
+function weakSpot() {
+  const c = rockCenter(), a = t * 0.25;
+  return { x: c.x + Math.cos(a) * 0.55 * c.r, y: c.y + Math.sin(a) * 0.55 * c.r };
+}
+function specialStep(dt) {
+  if (S.special !== 'panzer') return;
+  S.specialT -= dt;
+  if (S.specialT <= 0) {
+    S.special = null; S.specialT = 0;
+    hpMax = F.rockHp(S.depth); S.hp = hpMax;
+    showBanner({ text: TS.panzerGone, sub: TS.panzerGoneSub, life: 2.4, color: SPECIAL_COL.panzer });
+  }
+}
+// Gletscher: Eispanzer über dem Felsen
+function drawIce(t) {
+  if (!frozen || S.hp <= 0) return;
+  const c = rockCenter();
+  ctx.save();
+  const g = ctx.createRadialGradient(c.x - c.r * 0.3, c.y - c.r * 0.4, c.r * 0.1, c.x, c.y, c.r * 1.05);
+  g.addColorStop(0, 'rgba(235,250,255,0.55)'); g.addColorStop(1, 'rgba(140,200,240,0.4)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(c.x, c.y, c.r * 1.02, c.r * 0.96, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2; ctx.stroke();
+  const R = rng(rockSeed + 17); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5;
+  for (let i = 0; i < 4; i++) { const a = R() * Math.PI * 2; ctx.beginPath(); ctx.moveTo(c.x + Math.cos(a) * c.r * 0.2, c.y + Math.sin(a) * c.r * 0.2); ctx.lineTo(c.x + Math.cos(a + 0.3) * c.r * 0.8, c.y + Math.sin(a + 0.3) * c.r * 0.75); ctx.stroke(); }
+  ctx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(t * 2)); ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(c.x - c.r * 0.45, c.y - c.r * 0.5, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const lbl = T.iceLbl + (S.up.dyn ? ' · 🧨' : ''), lw = ctx.measureText(lbl).width + 16, ly = c.y + c.r * 0.55;
+  ctx.fillStyle = 'rgba(10,24,40,0.85)'; roundRect(c.x - lw / 2, ly - 10, lw, 20, 6); ctx.fill();
+  ctx.fillStyle = '#bff4ff'; ctx.fillText(lbl, c.x, ly + 1);
+  ctx.restore();
+}
+function drawSpecial(t) {
+  if (!S.special || S.hp <= 0) return;
+  const c = rockCenter();
+  ctx.save();
+  if (S.special === 'gold') {
+    const R = rng(rockSeed + 11);
+    for (let i = 0; i < 12; i++) {
+      const a = R() * Math.PI * 2, d = Math.sqrt(R()) * c.r * 0.7, s = 3 + R() * 4;
+      const x = c.x + Math.cos(a) * d, y = c.y + Math.sin(a) * d * 0.9;
+      ctx.globalAlpha = Math.max(0, Math.sin(t * 4 + i * 1.7));
+      ctx.fillStyle = i % 2 ? '#fff' : '#f5c542';
+      ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s * 0.6, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s * 0.6, y); ctx.closePath(); ctx.fill();
+    }
+  } else if (S.special === 'kristall') {
+    const R = rng(rockSeed + 13);
+    ctx.strokeStyle = '#7fe7ff'; ctx.lineWidth = 2; ctx.globalAlpha = 0.75; ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + R() * 0.6, x0 = c.x + (R() - 0.5) * c.r * 0.3, y0 = c.y + (R() - 0.5) * c.r * 0.3;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(c.x + Math.cos(a) * c.r * 0.78, c.y + Math.sin(a) * c.r * 0.72); ctx.stroke();
+    }
+    const w = weakSpot(), pr = 12 + Math.sin(t * 6) * 2;   // pulsierender Ring 10–14 px
+    ctx.globalAlpha = 1; ctx.shadowColor = '#7fe7ff'; ctx.shadowBlur = 12;
+    ctx.fillStyle = '#eafcff'; ctx.beginPath(); ctx.arc(w.x, w.y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#bff4ff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(w.x, w.y, pr, 0, Math.PI * 2); ctx.stroke();
+  } else if (S.special === 'panzer') {
+    for (const [px, py] of [[-0.55, -0.45], [0.05, -0.55], [-0.25, 0]]) {   // drei Nietenplatten
+      const x = c.x + px * c.r, y = c.y + py * c.r, w = c.r * 0.5, h = c.r * 0.36;
+      ctx.fillStyle = '#8b8f99'; roundRect(x, y, w, h, 5); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#c7ccd6';
+      for (const [rx, ry] of [[0.12, 0.18], [0.88, 0.18], [0.12, 0.82], [0.88, 0.82]]) { ctx.beginPath(); ctx.arc(x + rx * w, y + ry * h, 3, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lw = ctx.measureText(TS.panzerLbl).width + 16, ly = c.y + c.r * 0.55;
+    ctx.fillStyle = 'rgba(20,16,26,0.85)'; roundRect(c.x - lw / 2, ly - 10, lw, 20, 6); ctx.fill();
+    ctx.fillStyle = '#ff8a3d'; ctx.fillText(TS.panzerLbl, c.x, ly + 1);
+    const bw = Math.min(CW * 0.6, 260), bx = CW / 2 - bw / 2, by = c.y + c.r * 1.12 - 2;   // Zeitbalken direkt über dem Lebensbalken
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; roundRect(bx, by, bw, 5, 2.5); ctx.fill();
+    ctx.fillStyle = '#ff6b6b'; roundRect(bx, by, Math.max(0, S.specialT / 30) * bw, 5, 2.5); ctx.fill();
+  }
+  ctx.restore();
+}
+// Für den Browser-Test: eine Art erzwingen oder alles abschalten
+window.__mineSpecial = { off: false, spawn(kind) { S.special = kind; S.specialT = kind === 'panzer' ? 30 : 0; }, get kind() { return S.special; }, weakSpot };
+
 // ---------- Eingabe ----------
 let lastTap = 0;
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   const r = cv.getBoundingClientRect();
   const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (mole && mole.out && Math.hypot(x - mole.x, y - mole.y) < 36) { catchMole(); return; }
   if (chest && Math.hypot(x - chest.x, y - chest.y) < 40) { openChest(); return; }
   const now = performance.now();
   if (now - lastTap < 40) return;
@@ -715,7 +950,9 @@ function useDyn() {
   if (!S.up.dyn || S.cdDyn > 0 || S.hp <= 0) return;
   S.cdDyn = F.dynCd; const c = rockCenter(); swingT = 1; shake = 1;
   for (let i = 0; i < 18; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, '#ff8a3d'));
-  damage(F.pickDmg(S.pick, S) * F.dynTaps * tapMult(), true, c.x, c.y - 10);
+  if (frozen) { frozen = false; showBanner({ text: T.iceMelt, sub: T.iceSub, life: 2, color: '#bff4ff' }); for (let i = 0; i < 24; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, i % 2 ? '#e8f8ff' : '#9fd8ff')); }
+  if (S.special === 'panzer') { S.hp = 0; breakRock(); }   // Panzerfels platzt sofort
+  else damage(F.pickDmg(S.pick, S) * F.dynTaps * tapMult(), true, c.x, c.y - 10);
   sfx.boss(); updateSkillBtns();
 }
 function useBeer() {
@@ -737,6 +974,89 @@ function updateSkillBtns() {
     btn.querySelector('.lbl').textContent = on ? '×3 ' + Math.ceil(beer) + 's' : cd > 0 ? Math.ceil(cd) + 's' : name;
   }
 }
+
+// ---------- Maulwurf: klaut ab und zu einen Sack Gold, antippen bringt ihn doppelt zurück ----------
+let mole = null, moleTimer = 180;   // erster Auftritt frühestens nach 3 Minuten Sitzung
+const moleY = () => CH - 36;   // ganz unten, unter dem Lebensbalken, zwischen den Knöpfen Dynamit/Bier
+function spawnMole() {
+  if (mole) return;
+  const left = Math.random() < 0.5, x0 = CW * (left ? 0.2 : 0.8), x1 = CW * (left ? 0.8 : 0.2);   // Löcher neben den Knöpfen Dynamit/Bier
+  mole = { x: x0, y: moleY(), x0, x1, dir: left ? 1 : -1, ph: 'in', k: 0, out: false, sack: 0, seen: false };
+}
+function moleStep(dt) {
+  if (!mole) {
+    if (bossActive || S.gold <= 0 || toast.style.display === 'block' || tipNow || S.st.prest + S.maxDepth < 8 || window.__mineMole.off) return;
+    moleTimer -= dt;
+    if (moleTimer <= 0) { spawnMole(); moleTimer = 120 + Math.random() * 120; }
+    return;
+  }
+  mole.y = moleY();
+  if (mole.ph === 'in') {   // kommt 0,6 s lang aus dem Loch, dann greift er sich den Sack
+    mole.k += dt / 0.6;
+    if (mole.k >= 1) {
+      mole.k = 1; mole.ph = 'run'; mole.out = true;
+      mole.sack = Math.ceil(Math.min(S.gold * 0.08, F.rockGold(S.depth, S) * 3));
+      S.gold -= mole.sack;
+      floats.push({ x: mole.x, y: mole.y - 30, text: '-' + fmt(mole.sack), life: 1.3, color: '#ff6b6b' });
+      showBanner({ text: TM.steal, sub: TM.stealSub, life: 2, color: '#ff6b6b' });
+      sfx.fail(); refreshPanel(true);
+    }
+  } else if (mole.ph === 'run') {
+    mole.x += mole.dir * Math.abs(mole.x1 - mole.x0) / 4.5 * dt;
+    if (Math.random() < dt * 8) { const p = chip(mole.x - mole.dir * 12, mole.y + 8, layerAt(S.depth).rock); p.vx = -mole.dir * Math.random() * 2; p.vy = -1.5 - Math.random() * 1.5; p.size = 3 + Math.random() * 3; chips.push(p); }
+    if ((mole.x - mole.x1) * mole.dir >= 0) { mole.x = mole.x1; moleEscape(); }
+  } else {   // 'back': erwischt, verschwindet rückwärts ins Loch
+    mole.k -= dt / 0.4;
+    if (mole.k <= 0) mole = null;
+  }
+}
+function catchMole() {
+  if (!mole || !mole.out) return;
+  const gain = mole.sack * 2;
+  S.gold += gain; S.st.moles++;
+  for (let i = 0; i < 8; i++) coins.push({ x: mole.x, y: mole.y, t: -i * 0.03, sx: 0, sy: 0 });
+  for (let i = 0; i < 16; i++) chips.push(chip(mole.x, mole.y - 10, CONFETTI[i % CONFETTI.length]));
+  showBanner({ text: TM.caught, sub: '+' + fmt(gain) + ' · ' + TM.caughtSub, life: 2, color: '#6fdc7a', coin: true });
+  sfx.chest();
+  mole.out = false; mole.seen = true; mole.ph = 'back'; mole.k = 1; mole.hole = mole.x;   // Loch dort, wo er erwischt wurde
+  refreshPanel(true); save();
+}
+function moleEscape() {
+  floats.push({ x: mole.x, y: mole.y - 30, text: 'Hihi!', life: 1.3, color: '#ff6b6b' });
+  showBanner({ text: TM.gone, sub: TM.goneSub.replace('{n}', fmt(mole.sack)), life: 2, color: '#ff6b6b' });
+  mole = null;
+}
+function drawMole(t) {
+  if (!mole) return;
+  const { x, y } = mole;
+  ctx.fillStyle = '#1a0f0a';   // Löcher
+  for (const hx of mole.ph === 'back' ? [mole.hole] : [mole.x0, mole.x1]) { ctx.beginPath(); ctx.ellipse(hx, y + 6, 18, 6, 0, 0, Math.PI * 2); ctx.fill(); }
+  const rise = mole.ph === 'run' ? 1 : Math.max(0, mole.k), hop = mole.ph === 'run' ? Math.abs(Math.sin(t * 14)) * 4 : 0;
+  ctx.save();
+  if (rise < 1) { ctx.beginPath(); ctx.rect(x - 40, y - 60, 80, 66); ctx.clip(); }   // nur über der Lochmitte sichtbar
+  ctx.translate(x, y - hop + (1 - rise) * 30);
+  if (mole.dir < 0) ctx.scale(-1, 1);   // blickt in Laufrichtung
+  const step = mole.ph === 'run' ? Math.sin(t * 14) * 3 : 0;
+  ctx.fillStyle = '#3e2818'; ctx.fillRect(-10 + step, 4, 6, 5); ctx.fillRect(5 - step, 4, 6, 5);   // Pfoten
+  ctx.fillStyle = '#5a3a24'; roundRect(-14, -12, 28, 18, 8); ctx.fill();   // Körper
+  if (mole.sack > 0 && mole.ph === 'run') {   // Sack auf dem Rücken
+    ctx.fillStyle = '#c9a54a'; ctx.beginPath(); ctx.arc(-6, -16, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(-9, -26, 6, 4);
+    ctx.strokeStyle = '#8a6a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-6, -21); ctx.lineTo(-6, -11); ctx.stroke();
+  }
+  ctx.fillStyle = '#f09ab0'; ctx.beginPath(); ctx.arc(15, -3, 4, 0, Math.PI * 2); ctx.fill();   // Nase
+  for (const ex of [5, 10]) {   // Augen
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex, -7, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(ex + 1, -7, 1.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  if (mole.out && Math.sin(t * 8) > -0.3) {   // blinkender Pfeil «Antippen!»
+    const ay = y - 46 - hop;
+    ctx.fillStyle = '#ffd447'; ctx.beginPath(); ctx.moveTo(x - 7, ay); ctx.lineTo(x + 7, ay); ctx.lineTo(x, ay + 9); ctx.closePath(); ctx.fill();
+    ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.strokeText(TM.tap, x, ay - 2); ctx.fillText(TM.tap, x, ay - 2);
+  }
+}
+window.__mineMole = { spawn: spawnMole, get mole() { return mole; }, catch: catchMole, off: false };
 
 // ---------- Truhe ----------
 function spawnChest() {
@@ -884,6 +1204,20 @@ function drawBackground(t) {
       ctx.fillStyle = `rgba(255,${120 + Math.floor(E() * 80)},40,${0.35 + 0.3 * Math.sin(t * 4 + i) ** 2})`;
       ctx.beginPath(); ctx.arc(x, y, 1.5 + E() * 1.5, 0, Math.PI * 2); ctx.fill();
     }
+  } else if (S.blk === 'eis') {   // Gletscher: Schnee fällt
+    const E = rng(91), n = frost > 0 ? 50 : 22;
+    for (let i = 0; i < n; i++) {
+      const sp = (frost > 0 ? 60 : 18) + E() * 25, x = (E() * CW + Math.sin(t * 0.9 + i) * 14 + (frost > 0 ? t * 40 : 0)) % CW, y = (t * sp + E() * CH) % CH;
+      ctx.fillStyle = `rgba(235,248,255,${0.35 + E() * 0.4})`;
+      ctx.beginPath(); ctx.arc(x, y, 1.2 + E() * 2, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (S.blk === 'wasser') {   // Grotte: Luftblasen steigen
+    const E = rng(53);
+    ctx.strokeStyle = 'rgba(170,240,255,0.35)'; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 16; i++) {
+      const sp = 15 + E() * 30, x = E() * CW + Math.sin(t * 2 + i) * 6, y = CH - ((t * sp + E() * CH) % CH);
+      ctx.beginPath(); ctx.arc(x, y, 2 + E() * 4, 0, Math.PI * 2); ctx.stroke();
+    }
   }
   // Name der Schicht, darunter Block und Ziel
   ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '800 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -934,8 +1268,10 @@ function drawDwarves(t) {
     const x = c.x + side * (c.r + 18 + row * 10);
     const y = c.y + c.r * 0.55 - row * 20;
     const speed = 5 + type * 0.6;
-    if (lava > 0) { ctx.globalAlpha = 0.55; drawDwarf(x, y + 14, 1.15 - row * 0.05, DWARVES[type].hat, 0, side > 0); ctx.globalAlpha = 1; return; }   // in Deckung
-    drawDwarf(x, y, 1.25 - row * 0.05, DWARVES[type].hat, t * speed + idx * 1.3, side > 0);
+    const hat = F.shopLv(S, 'helm') ? '#f5c542' : DWARVES[type].hat;
+    if (lava > 0) { ctx.globalAlpha = 0.55; drawDwarf(x, y + 14, 1.15 - row * 0.05, hat, 0, side > 0); ctx.globalAlpha = 1; return; }   // in Deckung
+    const cold = frost > 0 && beer <= 0;   // Kälte: Zwerge zittern und schwingen langsam
+    drawDwarf(x + (cold ? Math.sin(t * 40 + idx) * 1.2 : 0), y, 1.25 - row * 0.05, hat, t * speed * (cold ? F.frostDw : 1) + idx * 1.3, side > 0);
   });
 }
 
@@ -945,7 +1281,8 @@ function drawPlayerPick() {
   ctx.save(); ctx.translate(c.x + c.r * 0.55, c.y - c.r * 0.55);
   ctx.rotate(-0.9 + (1 - swingT) * 1.4);
   ctx.fillStyle = '#8a5a2b'; ctx.fillRect(-3, -4, 6, 46);
-  ctx.fillStyle = '#d6dbe4'; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.quadraticCurveTo(0, -16, 24, 0); ctx.quadraticCurveTo(0, -6, -22, -2); ctx.fill();
+  const gp = F.shopLv(S, 'gpick'); if (gp) { ctx.shadowColor = '#ffd447'; ctx.shadowBlur = 12; }
+  ctx.fillStyle = gp ? '#ffd447' : '#d6dbe4'; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.quadraticCurveTo(0, -16, 24, 0); ctx.quadraticCurveTo(0, -6, -22, -2); ctx.fill();
   ctx.restore();
 }
 
@@ -964,6 +1301,15 @@ function drawChest(t) {
 }
 
 function drawFx(dt) {
+  if (S.blk === 'wasser' && bossActive) {   // Grotte: beim Boss steigt das Wasser mit der Zeit
+    const lvl = 1 - bossTimer / F.bossTime(S.depth, S), top = CH - 20 - lvl * CH * 0.45, tt = performance.now() / 600;
+    ctx.fillStyle = 'rgba(40,150,210,0.3)'; ctx.beginPath(); ctx.moveTo(0, CH);
+    for (let x = 0; x <= CW; x += 10) ctx.lineTo(x, top + Math.sin(x / 30 + tt) * 4);
+    ctx.lineTo(CW, CH); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(190,240,255,0.5)'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let x = 0; x <= CW; x += 10) { const y = top + Math.sin(x / 30 + tt) * 4; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  }
   for (const p of chips) {
     ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.life);
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore();
@@ -984,7 +1330,7 @@ function drawFx(dt) {
     ctx.font = `900 ${f.crit ? 30 : f.gold ? 24 : 18}px system-ui, sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.strokeText(f.text, f.x, f.y);
-    ctx.fillStyle = f.crit ? '#ff8a3d' : f.gold ? '#f5c542' : '#fff'; ctx.fillText(f.text, f.x, f.y);
+    ctx.fillStyle = f.color || (f.crit ? '#ff8a3d' : f.gold ? '#f5c542' : '#fff'); ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
   if (banner && toast.style.display !== 'block') {
@@ -999,6 +1345,13 @@ function drawFx(dt) {
     ctx.globalAlpha = 1;
   }
   if (bossFlash > 0) { ctx.fillStyle = `rgba(255,50,50,${bossFlash * 0.28})`; ctx.fillRect(0, 0, CW, CH); }
+  if (frost > 0) {
+    const fg = ctx.createRadialGradient(CW / 2, CH / 2, Math.min(CW, CH) * 0.25, CW / 2, CH / 2, Math.max(CW, CH) * 0.7);
+    fg.addColorStop(0, 'rgba(190,235,255,0)'); fg.addColorStop(1, 'rgba(190,235,255,0.45)');
+    ctx.fillStyle = fg; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = '#bff4ff'; ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('❄ ' + (beer > 0 ? '🍺 ' + T.warm : '🧔 ×¼') + '  ' + Math.ceil(frost) + 's', CW - 14, CH - 100);
+  }
   if (lava > 0) {
     const lg = ctx.createLinearGradient(0, CH, 0, CH * 0.35);
     lg.addColorStop(0, `rgba(255,80,10,${0.45 + Math.sin(performance.now() / 90) * 0.1})`); lg.addColorStop(1, 'rgba(255,80,10,0)');
@@ -1078,6 +1431,7 @@ function buildPanel() {
     rows.push(makeRow({ icon: S.blockDone ? iconCanvas(emojiIcon('🏔️')) : iconCanvas(heirIcon), kind: 'prest' }));
     if (S.towers.length || S.blkBest >= 100) rows.push(makeRow({ icon: iconCanvas(emojiIcon('👑')), kind: 'realm' }));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🏆')), kind: 'rec' }));
+    rows.push(makeRow({ icon: iconCanvas(emojiIcon('🦴')), kind: 'finds' }));
     const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
     gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
   }
@@ -1121,6 +1475,9 @@ function rowData(r) {
   }
   if (r.kind === 'rec') {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
+  }
+  if (r.kind === 'finds') {
+    return { name: TF.title, lvl: '', eff: `<b>${findCount()} / ${FINDS.length}</b>` + (S.depth <= 140 ? ` · ${layerAt(S.depth).name}: ${layerFinds(F.layerOf(S.depth)).length} / 3` : ''), cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'realm') {
     const st = storeInfo();
@@ -1179,6 +1536,7 @@ function buy(r) {
   if (r.kind === 'prest') { if (S.blockDone) showRealm(); else newMine(); return; }
   if (r.kind === 'realm') { showRealm(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
+  if (r.kind === 'finds') { showFinds(); return; }
   if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
@@ -1212,8 +1570,9 @@ const TIPS = [
   { id: 'tap', at: 'rock', when: () => S.st.prest === 0 && S.taps === 0 && S.depth === 1, done: () => S.taps >= 5 || S.depth > 1 },
   { id: 'dwarf', at: 'dwarf', when: () => S.st.prest === 0 && S.st.bosses === 0 && S.dw.every(n => n === 0) && S.gold >= F.dwarfCost(0, 0), done: () => S.dw[0] > 0 },
   { id: 'boss', at: 'rock', when: () => S.st.prest === 0 && S.st.bosses === 0 && bossActive, done: () => !bossActive },
-  { id: 'gem', at: 'gem', when: () => tab !== 'gem' && S.st.prest === 0 && S.gems >= F.gemCost('power', 0) && GEM_UPS.every(u => !S.gu[u.key]), done: () => tab === 'gem' || GEM_UPS.some(u => S.gu[u.key]) },
+  { id: 'gem', at: 'gem', when: () => tab !== 'gem' && S.st.prest === 0 && S.dw[0] > 0 && !bossActive && S.gems >= F.gemCost('power', 0) && GEM_UPS.every(u => !S.gu[u.key]), done: () => tab === 'gem' || GEM_UPS.some(u => S.gu[u.key]) },
   { id: 'move', at: 'goal', when: () => tab !== 'goal' && moveWorth(), done: () => tab === 'goal' || !F.canPrestige(S) },
+  { id: 'mole', at: 'rock', when: () => !!(mole && mole.out && !mole.seen), done: () => !mole || !mole.out },
   { id: 'end', at: 'rock', when: () => S.blkBest >= 100 && !S.towers.length && !S.blockDone && !S.farm && !bossActive, done: () => bossActive || S.blockDone || S.towers.length > 0 },
 ];
 const stageEl = document.getElementById('stage'), tipEl = document.getElementById('tip');
@@ -1224,7 +1583,7 @@ function updateTip() {
   const tip = TIPS.find(x => !S.tips[x.id] && x.when());
   if (!tip) return;
   S.tips[tip.id] = true; tipNow = tip; tipAt = t;
-  tipEl.querySelector('.txt').textContent = T.tips[tip.id];
+  tipEl.querySelector('.txt').textContent = T.tips[tip.id] || TM.tip;
   tipEl.style.display = 'block'; placeTip();
 }
 function hideTip() {
@@ -1259,6 +1618,40 @@ function checkGoals() {
   sfx.boss();
   if (tab === 'goal') buildPanel();
   save();
+}
+
+// ---------- Fundstücke: finden und ansehen ----------
+function findCount() { return FINDS.filter(f => S.finds[f.id]).length; }
+function layerFinds(i) { return FINDS.filter(f => f.layer === i && S.finds[f.id]); }
+// Bei jeder neuen Tiefe: 22 % Chance auf ein noch fehlendes Fundstück dieser Schicht (Ringe zählen zur selben Schicht)
+function rollFind() {
+  if (S.maxDepth < 2 || S.maxDepth > 140) return;   // im Herz (141-150) gibt es keine Fundstücke
+  const i = F.layerOf(S.maxDepth);
+  const open = FINDS.filter(f => f.layer === i && !S.finds[f.id]);
+  if (!open.length || Math.random() >= 0.22) return;
+  const f = open[Math.floor(Math.random() * open.length)];
+  S.finds[f.id] = 1; S.gems += 1;
+  showBanner({ text: TF.found, sub: f.icon + ' ' + f.name[FL] + '  💎 +1', life: 3, color: '#ffd447' });
+  sfx.chest();
+  const c = rockCenter();
+  for (let k = 0; k < 20; k++) { const p = chip(c.x, c.y - c.r * 0.3, CONFETTI[k % CONFETTI.length]); p.vx *= 1.7; p.vy -= 4; p.size = 5 + Math.random() * 4; chips.push(p); }
+  if (layerFinds(i).length === 3) { S.gems += 5; showBanner({ text: TF.layerDone, sub: layerAt(S.maxDepth).name + ' · 💎 ' + TF.layerDoneSub, life: 2.6, color: '#57d2ff' }); }
+  if (findCount() === FINDS.length) { S.gems += 50; showBanner({ text: TF.allDone, sub: TF.allDoneSub, life: 3.2, color: '#ffd447' }); sfx.boss(); }
+  save();
+}
+function showFinds() {
+  if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
+  const esc = (x) => x.replace(/"/g, '&quot;');
+  const rows = T.layers.map((ln, i) => {
+    const cells = FINDS.filter(f => f.layer === i).map((f) => S.finds[f.id]
+      ? `<span title="${esc(f.text[FL])}" style="flex:1;min-width:0;background:#2a2238;border-radius:8px;padding:4px;font-size:12px"><b>${f.icon} ${f.name[FL]}</b><div class="small" style="font-size:10px;margin-top:2px">${f.text[FL]}</div></span>`
+      : `<span style="flex:1;min-width:0;background:#1c1726;border-radius:8px;padding:4px;color:#6f6680;font-weight:900;font-size:18px">${TF.unknown}</span>`).join('');
+    return `<div style="display:flex;gap:6px;align-items:center;margin-top:6px"><span style="width:64px;flex:none;text-align:left;font-size:12px;font-weight:800">${ln}<br><span class="small" style="font-size:11px">${layerFinds(i).length} / 3</span></span>${cells}</div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🦴 ${TF.title} ${findCount()} / ${FINDS.length}</div>
+    <div style="max-height:60vh;overflow:auto">${rows}</div>
+    <button id="tClose">${T.close}</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
 }
 
 // ---------- Neue Mine (Umzug) ----------
@@ -1310,14 +1703,16 @@ function renderRealm() {
     else if (!open) btn = `<button data-unl="${b.k}"${S.crowns >= b.cost ? '' : ' disabled'}>🔓 ${b.cost} 👑</button>`;
     else btn = `<button data-go="${b.k}">${doneN ? T.again : T.start}</button>`;
     const info = here && !S.blockDone ? T.hereD.replace('{d}', S.depth) : T.blkInfo[b.k];
-    return `<div class="bk${here ? ' here' : ''}${b.soon ? ' soon' : ''}"><span class="e">${b.icon}</span><span class="i"><b>${T.blk[b.k]}${doneN ? ' ✓' + (doneN > 1 ? '×' + doneN : '') : ''}</b>${info} · 👑 ${b.rate}/h</span>${btn}</div>`;
+    return `<div class="bk${here ? ' here' : ''}${b.soon ? ' soon' : ''}"><span class="e">${b.icon}</span><span class="i"><b>${T.blk[b.k]}${doneN ? ' ✓' + (doneN > 1 ? '×' + doneN : '') : ''}</b>${info} · 👑 ${+F.towerRate(b.k, S).toFixed(2)}/h</span>${btn}</div>`;
   }).join('');
   popup(`<div style="font-weight:900;font-size:18px">👑 ${T.realm}</div>
     <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.score} <b style="color:#ffd447">${S.crownsAll}</b></div>
+    <button id="tShop" style="background:#c77dff;color:#2a0a40;margin-top:8px">🛒 ${T.shopT}</button>
     ${towers}<div class="small" style="margin-top:10px;text-align:left;font-weight:800">🗺 ${T.blocksT}</div><div class="realm" style="margin-top:4px">${blocks}</div>
     <button id="tClose">${T.close}</button>`, true);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
   const take = document.getElementById('tTake'); if (take) take.onclick = () => { collectAll(); renderRealm(); };
+  document.getElementById('tShop').onclick = () => renderShop();
   toast.querySelectorAll('[data-unl]').forEach((el) => el.onclick = () => {
     const b = blkOf(el.dataset.unl); if (S.crowns < b.cost) return;
     S.crowns -= b.cost; S.unl[b.k] = true; sfx.buy(); save();
@@ -1329,6 +1724,39 @@ function renderRealm() {
     if (!S.blockDone && S.maxDepth > 1) askConfirm(T.switchAsk.replace('{b}', T.blk[k]).replace('{d}', S.depth), () => startBlock(k), T.switchYes, '#ffd447');
     else startBlock(k);
   });
+}
+// ---------- Kronen-Laden ----------
+function shopEff(k, L) {
+  if (k === 'kraft') return L ? `<b style="color:#6fdc7a">+${20 * L}&nbsp;%</b>` : '';
+  if (k === 'start') return L ? `<b style="color:#6fdc7a">${fmt(F.startGold(S))}</b> Gold` : '';
+  if (k === 'gilde') return L ? `<b style="color:#6fdc7a">${F.startDw(S)}×</b> ${DWARF_NAMES[0]}` : '';
+  if (k === 'lager') return `<b style="color:#6fdc7a">${F.towerCap(S)} h</b>`;
+  if (k === 'turm') return L ? `<b style="color:#6fdc7a">+${25 * L}&nbsp;%</b>` : '';
+  return '';
+}
+function renderShop() {
+  const rows = SHOP.map((it) => {
+    const L = F.shopLv(S, it.k), max = L >= it.max, cost = it.cost(L), nm = T.shop[it.k], eff = shopEff(it.k, L);
+    const lvl = it.max > 1 ? ` <span style="color:var(--muted);font-size:12px">${L}/${it.max}</span>` : (L ? ' ✓' : '');
+    const btn = max ? `<button disabled>${it.max > 1 ? 'MAX' : '✓'}</button>` : `<button data-buy="${it.k}"${S.crowns >= cost ? '' : ' disabled'}>👑 ${cost}</button>`;
+    return `<div class="bk"><span class="e">${it.icon}</span><span class="i"><b>${nm[0]}${lvl}</b>${nm[1]}${eff ? ' · ' + eff : ''}</span>${btn}</div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🛒 ${T.shopT}</div>
+    <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.shopNote}</div>
+    <div class="realm">${rows}</div>
+    <button id="tBack">🗺 ${T.map}</button><div><button id="tClose" class="ghost">${T.close}</button></div>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+  document.getElementById('tBack').onclick = () => renderRealm();
+  toast.querySelectorAll('[data-buy]').forEach((el) => el.onclick = () => buyShop(el.dataset.buy));
+}
+function buyShop(k) {
+  const it = SHOP.find(x => x.k === k), L = F.shopLv(S, k);
+  if (!it || L >= it.max || S.crowns < it.cost(L)) return false;
+  S.crowns -= it.cost(L); S.shop[k] = L + 1;
+  sfx.buy(); showBanner({ text: T.shopBought, sub: it.icon + ' ' + T.shop[k][0], life: 2, color: '#c77dff' });
+  refreshPanel(true); save();
+  if (toast.style.display === 'block' && document.getElementById('tBack')) renderShop();
+  return true;
 }
 // Ganz von vorne: alles löschen, nur die Ton-Einstellung bleibt
 function startOver() {
@@ -1343,7 +1771,8 @@ function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
   S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.blkBest;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
-  rage = 0; beer = 0; lava = 0; chest = null; chestTimer = 25; layerShown = -1;
+  rage = 0; beer = 0; lava = 0; frost = 0; chest = null; chestTimer = 25; layerShown = -1;
+  applyStart();
   spawnRock(); buildPanel(); updateSkillBtns(); seenPrest = false;
   bannerQ.length = 0; banner = null; showBanner({ text: T.newMine, sub: '⚱ +' + gain + ' ' + T.heir, life: 3, color: '#c77dff' });
   sfx.boss(); Portal.happytime();
@@ -1411,7 +1840,7 @@ function frame(now) {
   S.runTime += dt; S.st.time += dt;
 
   // Zwerge graben
-  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1) * (lava > 0 ? 0 : 1);   // bei Lava in Deckung
+  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1) * (lava > 0 ? 0 : 1) * (frost > 0 && beer <= 0 ? F.frostDw : 1);   // Lava: in Deckung, Kälte: frieren (Bier wärmt)
   if (dps > 0 && S.hp > 0) damage(dps * dt, false);
   if (bossActive) {
     bossTimer -= dt;
@@ -1422,7 +1851,8 @@ function frame(now) {
   if (rage > 0) rage -= dt;
   if (beer > 0) beer -= dt;
   if (lava > 0) { lava -= dt; if (Math.random() < 0.6) { const p = chip(Math.random() * CW, CH + 4, Math.random() < 0.5 ? '#ff8a3d' : '#ffd23f'); p.vy = -7 - Math.random() * 6; p.vx *= 0.3; chips.push(p); } }
-  else if (S.blk === 'vulkan' && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) startLava(); }
+  else if (frost > 0) frost -= dt;
+  else if ((S.blk === 'vulkan' || S.blk === 'eis') && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) (S.blk === 'vulkan' ? startLava : startFrost)(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
     goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip(); updateCrowns();
@@ -1448,9 +1878,9 @@ function frame(now) {
   // Zeichnen
   drawBackground(t);
   drawDwarves(t);
-  drawRock(t);
+  drawRock(t); specialStep(dt); drawSpecial(t); drawIce(t);
   drawPlayerPick();
-  drawChest(t);
+  drawChest(t); moleStep(dt); drawMole(t);
   drawFx(dt);
 
   // HUD
@@ -1483,7 +1913,8 @@ requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
-  showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; } };
+  showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP };
 </script>
 </body>
 </html>
