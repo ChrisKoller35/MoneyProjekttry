@@ -1097,7 +1097,7 @@ A.COMBOS = {
     flavor: { de: 'Geld regiert die Welt. Jetzt auch das Wetter.', en: 'Money rules the world. Now the weather too.' } },
   schattenschritt: { need: [{ spell: 'blitzschritt' }, { el: 'schatten' }], col: '#b55088',
     name: { de: 'Schattenschritt', en: 'Shadow Step' },
-    text: { de: 'Nach einem Blitzschritt bist du 1,5 Sekunden ein Schatten: Gegner treffen dich nicht, und dein nächster Treffer ist ein Volltreffer mit doppeltem Schaden.', en: 'After a flash step you are a shadow for 1.5 seconds: enemies cannot hit you, and your next hit is a critical hit for double damage.' },
+    text: { de: 'Nach einem Blitzschritt bist du 1,5 Sekunden ein Schatten: Gegner treffen dich nicht, und dein nächster Treffer ist ein Volltreffer mit doppeltem Schaden (höchstens alle 3 Sekunden).', en: 'After a flash step you are a shadow for 1.5 seconds: enemies cannot hit you, and your next hit is a critical hit for double damage (at most every 3 seconds).' },
     flavor: { de: 'Du warst nie hier. Die Delle im Gegner schon.', en: 'You were never here. The dent in the enemy was.' } },
   blitzpanzer: { need: [{ tal: 'eisen' }, { el: 'blitz' }], col: '#7fd8ff',
     name: { de: 'Blitzpanzer', en: 'Storm Plate' },
@@ -8538,8 +8538,8 @@ A.Combos = (function () {
   // Blitzschritt (world.js dash): Schattenschritt macht den Helden 1,5 Sekunden unverwundbar (h.inv wie beim Sprung selbst),
   // der nächste Treffer in 3 Sekunden ist ein Volltreffer mit doppeltem Schaden (pre)
   function onDash(h) {
-    const w = W(); if (!on(h, 'schattenschritt') || !h.alive) return;
-    h.cbShadeUntil = w.t + 1.5; h.cbShadeHit = w.t + 3; h.inv = Math.max(h.inv, 1.5);
+    const w = W(); if (!on(h, 'schattenschritt') || !h.alive || h.cbShadeCd > w.t) return;   // höchstens alle 3 Sekunden (mit Echo sonst fast immer unverwundbar)
+    h.cbShadeCd = w.t + 3; h.cbShadeUntil = w.t + 1.5; h.cbShadeHit = w.t + 3; h.inv = Math.max(h.inv, 1.5);
     api.float(h.x, h.y - 60, L('Schattenschritt!', 'Shadow step!'), '#e0a4ff', 13);
     if (A.FX) A.FX.burst(h.x, h.y - 10, 16, { color: ['#b55088', '#68386c', '#e0a4ff'], smin: 40, smax: 140, life: 0.5, add: true, kind: 'spark', drag: 3 });
   }
@@ -9341,9 +9341,9 @@ A.Pets = (function () {
     if (!a.under) dig(a);
     if (T('moppel', 5) && !a.slide && (a.slideT = (a.slideT == null ? 4 : a.slideT) - dt) <= 0) {
       const list = chainFrom(a, 3); a.slideT = list.length ? 9 : 0.5;
-      if (list.length) { a.slide = list; api.float(a.x, a.y - 30, L('Erdrutsch!', 'Landslide!'), '#8a5a3c', 14); }
+      if (list.length) { a.slide = list; a.slideEnd = w.t + 3; api.float(a.x, a.y - 30, L('Erdrutsch!', 'Landslide!'), '#8a5a3c', 14); }
     }
-    if (a.slide) { a.slide = a.slide.filter(live); if (!a.slide.length) a.slide = null; }
+    if (a.slide) { a.slide = a.slide.filter(live); if (!a.slide.length || w.t > a.slideEnd) a.slide = null; }   // nach 3 Sekunden Schluss (ein Ziel hinter Wasser erreicht er sonst nie)
     const big = !!a.slide, m = big ? a.slide[0] : target(a, 400) || h, d = dist(a, m) || 1, sp = (big ? 520 : 300) * (a.spd || 1) * dt;
     a.fx = (m.x - a.x) / d; a.fy = (m.y - a.y) / d; a.moving = d > 30;
     if (a.moving) api.moveEnt(a, a.fx * Math.min(sp, d), a.fy * Math.min(sp, d));
@@ -10639,7 +10639,7 @@ A.World = (function () {
     if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
     if (m.curled && m.pose) m.pose = null;   // Panzer vorbei: wieder das normale Bild
     // Einrollen (curl, Grabkäfer): unter halbem Leben einmal 2,5 s im Panzer (foes.js guard fängt jeden Treffer ab, keine Heilung danach), dann sofort Anlauf
-    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
+    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; m.chCd = 0; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
     if (m.charge && chargeStep(m, dt, d, nx, ny)) return true;
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)
@@ -10678,7 +10678,7 @@ A.World = (function () {
       else if (m.st <= 0) m.state = 'chase';
       return true;
     }
-    if ((m.chCd = (m.chCd ?? 1.5) - dt) > 0 || m.state === 'windup' || !h.alive || !(m.chNow || (d > 90 && d < 300 && clearLine(m, h)))) return false;
+    if ((m.chCd = (m.chCd ?? 1.5) - dt) > 0 || m.state === 'windup' || !h.alive || !(m.chNow ? clearLine(m, h) : (d > 90 && d < 300 && clearLine(m, h)))) return false;
     Object.assign(m, { state: 'windup', chPh: 'wind', st: 0.45, stMax: 0.45, chNow: false, chHit: false, chCd: 3.5, cdx: nx, cdy: ny, fx: nx, fy: ny });
     fx('windup', { m });
     if (A.FX) for (let k = 1; k <= 12; k++) {   // Warnung: Pfeil-Spitzen in Laufrichtung, bis zur ersten Wand
@@ -10712,7 +10712,7 @@ A.World = (function () {
     const sp = m.speed * slowMul(m) * hazardSlow(m) * A.Foes.speedMul(m);
     if (m.kind === 'melee') {
       if (d > m.r + h.r + 4) moveEnt(m, mx * sp * dt, my * sp * dt);
-      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
+      else if (m.cd <= 0) { m.state = 'windup'; m.chPh = null; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }   // chPh: ein abgebrochener Anlauf (Banane, Blase) macht aus dem Hieb sonst einen Anlauf
     } else {
       const want = 170, see = clearLine(m, h);
       if (!see) moveEnt(m, mx * sp * dt, my * sp * dt);
