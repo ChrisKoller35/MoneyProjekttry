@@ -44,7 +44,8 @@ A.World = (function () {
     // Krüge zum Zerschlagen und die Truhe mit Zähnen (surprise.js): ab Ebenen-Bau 8, immer als letzte Dinge im Raum
     if (v >= 8) A.Surprise.place(rooms, tiles, lv.reach, seed, floor);
     let reach = lv.reach;
-    if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
+    // Ein Kampf, der beim Schliessen der Seite noch lief, beginnt beim Wiederkommen von vorn (sonst bliebe der Raum leer und auf Boss-Ebenen die Treppe versteckt)
+    if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited && (s.cleared || !['fight', 'elite', 'boss'].includes(r.type)); r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
     return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach, big: lv.big };
   }
@@ -151,8 +152,9 @@ A.World = (function () {
     const run = G().run, rng = run.rng, f = run.floor;
     const list = [];
     const cap = A.Foes.captainFor(f);
-    if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
-    else if (cap && r === A.Foes.captainRoom(W)) {   // Hauptmann der Welt (foes.js), ab der zweiten Runde mit einem Begleiter
+    // Boss oder Hauptmann schon besiegt, aber die Seite wurde vor dem Ende des Kampfs geschlossen: er kommt nicht wieder (game.js killReward)
+    if (r.type === 'boss') { if (run.bossDown !== f) list.push(G().monsterEntity(A.bossOf(f), f, false, 1)); }
+    else if (cap && r === A.Foes.captainRoom(W) && run.capDown !== f) {   // Hauptmann der Welt (foes.js), ab der zweiten Runde mit einem Begleiter
       list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f, run.lvVer || 0)), f, false, 2));
     } else {
       const pool = A.monsterPool(f, run.lvVer || 0);   // ab lvVer 6 mit den neuen Gegnern (ab der 2. Ebene einer Welt)
