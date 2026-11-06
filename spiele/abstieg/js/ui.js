@@ -629,6 +629,30 @@ window.A = window.A || {};
     else if (p.kind === 'shrine') { r.pendingBoon = (r.pendingBoon || 0) + 1; Wd.markUsed(p); boonPick(); }
     else if (p.kind === 'forge') { S.forge(); forge(); }
     else if (p.kind === 'cage') petWin(p);
+    else if (p.kind === 'pact') pactWin(p);
+  }
+  // Pakt-Altar (pacts.js): 3 Pakte mit Fluch und Lohn; einen unterschreiben oder gehen (der Altar wartet dann weiter)
+  function pactRow(id, btn) {
+    const P = A.PACTS[id];
+    return `<div class="skill pact" style="cursor:default"><div class="si">${ic('pactaltar', 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${P.col}">${esc(A.Pacts.name(id))}</div>
+      <div class="ds"><span class="curse">${L('Fluch', 'Curse')}: ${esc(A.Pacts.curse(id))}</span><br><span class="gift">${L('Lohn', 'Reward')}: ${esc(A.Pacts.gift(id))}</span></div>${btn ? `<div class="mini"><i>${esc(t(P.flavor))}</i></div><button class="sign" data-pact="${id}">${L('Unterschreiben', 'Sign')}</button>` : ''}</div></div>`;
+  }
+  function pactWin(p) {
+    const have = A.Pacts.list(), offers = A.Pacts.offer(), full = have.length >= A.PACT_MAX, pct = Math.round(A.PACT_SPARKS * 100);
+    S.open();
+    const sub = full ? L('Du hast schon alle Pakte unterschrieben, die eine Seele tragen kann. Der Altar schweigt beleidigt.', 'You have already signed every pact one soul can carry. The altar sulks in silence.')
+      : L(`Eine Stimme flüstert: «Unterschreib hier. Und hier. Und hier.» Ein Pakt gilt bis zum Ende des Durchlaufs, mit Fluch und Lohn, und bringt am Ende +${pct} % Seelenfunken. Pakte: <b class="goldc">${have.length}/${A.PACT_MAX}</b>.`, `A voice whispers: "Sign here. And here. And here." A pact lasts until the end of the run, with a curse and a reward, and brings +${pct}% soul sparks at the end. Pacts: <b class="goldc">${have.length}/${A.PACT_MAX}</b>.`);
+    ov(`<div class="center"><div class="bigicon">${ic('pactaltar', 60)}</div><h2 class="mid" style="color:#e43b44">${L('Pakt-Altar', 'Pact Altar')}</h2></div><div class="sub">${sub}</div>
+      ${full ? '' : offers.map(id => pactRow(id, true)).join('')}
+      <button class="btn" id="bClose" data-esc>${full ? t(U.back) : L('Lieber nicht', 'Better not')}</button>`);
+    overlay.querySelectorAll('[data-pact]').forEach(el => el.onclick = () => {
+      const id = el.dataset.pact; if (!A.Pacts.sign(id)) return;
+      Wd.markUsed(p); S.level(); if (A.FX) A.FX.shake(0.25);
+      A.FX.banner(L('Pakt', 'Pact') + ': ' + A.Pacts.name(id), A.Pacts.gift(id), A.PACTS[id].col, 2.5);
+      if (Wd.W) Wd.refreshHero();
+      ovClose(); pendingPicks();
+    });
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
   // Käfig öffnen: wer sitzt drin? Mitnehmen (sind alle Plätze voll, geht eins dafür ins Lager) oder ins Lager schicken
   function petWin(p) {
@@ -673,7 +697,7 @@ window.A = window.A || {};
     // Begleiter, die gerade dabei sind, mit Treue und dem, was sie schon können
     const pets = (r.pets || []).filter(id => A.PETS[id]).map(id => { const P = A.PETS[id], lv = A.Pets.treue(id), pr = A.Pets.progress(id);
       return `<div class="skill on" style="cursor:default"><div class="si">${petImg(id, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${P.col}">${esc(t(P.name))} ${petStars(lv)}</div><div class="ds">${A.Pets.tricks(id).filter(x => lv >= x.lv).map(x => esc(x.text)).join(' ')}${pr ? ` <span class="mini">${L(`(noch ${pr[1] - pr[0]} bis Treue ${lv + 1})`, `(${pr[1] - pr[0]} more to loyalty ${lv + 1})`)}</span>` : ''}</div></div></div>`; }).join('');
-    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}` :
+    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}${A.Pacts.list(r).length ? `<h3>${L('Pakte', 'Pacts')} <span class="mini">${A.Pacts.list(r).length}/${A.PACT_MAX}</span></h3>${A.Pacts.list(r).map(id => pactRow(id, false)).join('')}` : ''}` :
       tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
       `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}${cbSec}`;
@@ -941,7 +965,7 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);

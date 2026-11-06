@@ -229,6 +229,7 @@
   .skill { display: flex; align-items: center; gap: 11px; background: linear-gradient(#2a2f4a, #242840); border: 3px solid var(--ink); clip-path: var(--notch); box-shadow: inset 0 0 0 2px #333b5c; padding: 8px 10px; margin-bottom: 7px; cursor: pointer; }
   .skill.on { box-shadow: inset 0 0 0 2px var(--gold); background: linear-gradient(#3b3550, #2c2740); }
   .pips.fate { display: inline-flex; vertical-align: middle; margin-left: 4px; } .pips.fate i { width: 7px; height: 7px; } .pips.fate i.on { background: var(--gold); box-shadow: 0 0 4px var(--gold); } .skill.off { opacity: .6; cursor: default; }
+  .skill.pact .curse { color: #f6757a; } .skill.pact .gift { color: #a2e05a; } .skill.pact .sign { display: block; margin-top: 8px; padding: 8px 14px; border: 2px solid #e43b44; background: #3e2731; color: #fee761; font: inherit; font-size: 12px; cursor: pointer; }
   .skill .si { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: radial-gradient(circle, #1f5a8a, #181425 75%); border: 2px solid #124e89; border-radius: 50%; }
   .skill.on .si { border-color: var(--gold); }
   .skill .nm { font-weight: 700; font-size: 16px; }
@@ -483,6 +484,7 @@
 <script src="js/wild.js"></script>
 <script src="js/achieve.js"></script>
 <script src="js/build.js"></script>
+<script src="js/pacts.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>

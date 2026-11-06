@@ -229,6 +229,7 @@
   .skill { display: flex; align-items: center; gap: 11px; background: linear-gradient(#2a2f4a, #242840); border: 3px solid var(--ink); clip-path: var(--notch); box-shadow: inset 0 0 0 2px #333b5c; padding: 8px 10px; margin-bottom: 7px; cursor: pointer; }
   .skill.on { box-shadow: inset 0 0 0 2px var(--gold); background: linear-gradient(#3b3550, #2c2740); }
   .pips.fate { display: inline-flex; vertical-align: middle; margin-left: 4px; } .pips.fate i { width: 7px; height: 7px; } .pips.fate i.on { background: var(--gold); box-shadow: 0 0 4px var(--gold); } .skill.off { opacity: .6; cursor: default; }
+  .skill.pact .curse { color: #f6757a; } .skill.pact .gift { color: #a2e05a; } .skill.pact .sign { display: block; margin-top: 8px; padding: 8px 14px; border: 2px solid #e43b44; background: #3e2731; color: #fee761; font: inherit; font-size: 12px; cursor: pointer; }
   .skill .si { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: radial-gradient(circle, #1f5a8a, #181425 75%); border: 2px solid #124e89; border-radius: 50%; }
   .skill.on .si { border-color: var(--gold); }
   .skill .nm { font-weight: 700; font-size: 16px; }
@@ -1414,6 +1415,37 @@ A.BUILD_DIRS = {
 // Schicksalspunkte (build.js, ui.js fatePick): je Welt-Boss und Hauptmann ein Punkt, frei auf eine Build-Richtung zu setzen, höchstens A.FATE_MAX je Richtung.
 // Jeder Punkt gibt den festen Bonus m (Werte je Punkt, Schlüssel wie bei Talenten; vsBurn/vsSlow/vsPoison/zap/ally/boom in Prozent wirken in build.js pre/boomMul)
 // und zählt A.FATE_W Punkte für die Richtung: Build-Name, Beute, Händler, Truhen und Schrein lehnen sich stärker daran an. Steht im Durchlauf (run.fate, run.fatePts).
+// Pakte (js/pacts.js): ab Ebene 3 steht manchmal ein Pakt-Altar versteckt in einem Kampfraum (taucht auf, wenn der Raum gesäubert ist).
+// Ein Pakt gilt bis zum Ende des Durchlaufs: ein Fluch (x) und ein Lohn (m, wie Segen in Game.derived), dazu je Pakt +15 % Seelenfunken am Ende.
+// x: mhp = Gegner mehr Leben, bossHp = Bosse und Hauptleute mehr Leben, extra = Gegner mehr je Kampfraum, potMul = Tränke heilen nur so viel,
+// hurt = Gegner treffen härter, cd = Zauber laden langsamer, noDodge = kein Ausweichen; fate = so viele Schicksalspunkte beim Unterschreiben
+A.PACT_MAX = 3; A.PACT_FROM = 3; A.PACT_CHANCE = 0.35; A.PACT_SPARKS = 0.15;
+A.PACTS = {
+  blut: { col: '#e43b44', m: { hpPct: -25, dmgPct: 30 },
+    name: { de: 'Blutvertrag', en: 'Blood Contract' }, curse: { de: '-25 % Leben', en: '-25% health' }, gift: { de: '+30 % Schaden', en: '+30% damage' },
+    flavor: { de: 'Unterschrift mit Blut. Tinte war aus.', en: 'Signed in blood. They were out of ink.' } },
+  gier: { col: '#feae34', m: { goldPct: 80, dropPct: 4 }, x: { mhp: 0.3 },
+    name: { de: 'Gierschlund', en: 'Greedmaw' }, curse: { de: 'Gegner haben +30 % Leben', en: 'Enemies have +30% health' }, gift: { de: '+80 % Gold, Gegner lassen öfter Beute fallen', en: '+80% gold, enemies drop loot more often' },
+    flavor: { de: 'Reich sterben ist auch sterben. Aber reich.', en: 'Dying rich is still dying. But rich.' } },
+  glas: { col: '#c0f8ff', m: { lifesteal: 5, crit: 8 }, x: { noDodge: 1 },
+    name: { de: 'Glasknochen', en: 'Glass Bones' }, curse: { de: 'Du weichst nie mehr aus', en: 'You never dodge again' }, gift: { de: '+5 % Lebensraub, +8 % Volltreffer', en: '+5% life steal, +8% crit' },
+    flavor: { de: 'Ausweichen ist was für Leute mit Plan.', en: 'Dodging is for people with a plan.' } },
+  horde: { col: '#a2e05a', m: { xpPct: 50, goldPct: 25 }, x: { extra: 1 },
+    name: { de: 'Hordenruf', en: 'Horde Call' }, curse: { de: 'In jedem Kampf ein Gegner mehr', en: 'One more enemy in every fight' }, gift: { de: '+50 % Erfahrung, +25 % Gold', en: '+50% experience, +25% gold' },
+    flavor: { de: 'Du hast gerufen. Sie haben Freunde mitgebracht.', en: 'You called. They brought friends.' } },
+  durst: { col: '#9be8ff', m: { spd: 3, dmgPct: 12 }, x: { potMul: 0.5 },
+    name: { de: 'Trockener Hals', en: 'Dry Throat' }, curse: { de: 'Tränke heilen nur halb so viel', en: 'Potions heal only half as much' }, gift: { de: '+3 Tempo, +12 % Schaden', en: '+3 speed, +12% damage' },
+    flavor: { de: 'Der Trank schmeckt nach Staub. Du auch.', en: 'The potion tastes of dust. So do you.' } },
+  dorn: { col: '#63c74d', m: { thorns: 25, def: 4 }, x: { hurt: 0.2 },
+    name: { de: 'Dornenkrone', en: 'Crown of Thorns' }, curse: { de: 'Gegner treffen 20 % härter', en: 'Enemies hit 20% harder' }, gift: { de: '+25 % Dornen, +4 Rüstung', en: '+25% thorns, +4 armor' },
+    flavor: { de: 'Es tut weh. Allen. Das ist der Trick.', en: 'It hurts. Everyone. That is the trick.' } },
+  wette: { col: '#fee761', x: { bossHp: 0.4 }, fate: 2,
+    name: { de: 'Schicksalswette', en: 'Fate Wager' }, curse: { de: 'Bosse und Hauptleute haben +40 % Leben', en: 'Bosses and captains have +40% health' }, gift: { de: 'Sofort 2 Schicksalspunkte', en: '2 fate points right away' },
+    flavor: { de: 'Das Schicksal setzt dagegen. Es hat noch nie verloren. Bisher.', en: 'Fate bets against you. It has never lost. So far.' } },
+  kurz: { col: '#c77dff', m: { magPct: 40 }, x: { cd: 0.3 },
+    name: { de: 'Kurzschluss', en: 'Short Circuit' }, curse: { de: 'Zauber laden 30 % langsamer', en: 'Spells recharge 30% slower' }, gift: { de: '+40 % Magie', en: '+40% magic' },
+    flavor: { de: 'Mehr Saft, weniger Sicherung.', en: 'More juice, fewer fuses.' } },
+};
 A.FATE_MAX = 3;
 A.FATE_W = 2;
 A.FATE = {
@@ -1495,7 +1527,7 @@ A.Boons = (function () {
   const upgOf = (id, r) => { r = r || run(); return (r && r.upg && r.upg[id]) || 0; };
   // Stärke und Abklingzeit (Sekunden) eines Zaubers mit Verstärkungen und Talenten
   function pow(id) { return A.SKILLS[id].pow * (1 + 0.3 * upgOf(id)); }
-  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1) * (hasTrophy('sandpharao') ? 0.8 : 1) * A.Gear.cdMul() * (1 - Math.min(0.5, A.Game.metaEffects().cdr)); }   // cdr: Schreibstube und Wimpel im Lager
+  function cd(id) { return A.SKILLS[id].cd * 2 * (1 - 0.2 * upgOf(id)) * (has('geist') ? 0.8 : 1) * (hasTrophy('sandpharao') ? 0.8 : 1) * A.Gear.cdMul() * (1 - Math.min(0.5, A.Game.metaEffects().cdr)) * A.Pacts.cdMul(); }   // cdr: Schreibstube und Wimpel im Lager; Kurzschluss (pacts.js)
   function hasTrophy(id) { const r = run(); return !!(r && r.gear && Object.values(r.gear).some(it => it && it.trophy === id)); }
   function icon(id) { const s = A.SKILLS[id]; return s && s.icon; }
   // Name mit Stufe (Feuerball II)
@@ -2089,8 +2121,8 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte
-    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.atkPct || 0) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.magPct || 0) / 100;
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
@@ -2101,11 +2133,12 @@ A.Game = (function () {
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
       regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
-      xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
+      xpPct: sum('xpPct') + tv('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
+    if (A.Pacts.val('noDodge', r)) d.dodge = 0;   // Glasknochen (pacts.js)
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
     const ce = A.Combos.evaluate(r, d); d.combo = ce.on; d.comboFull = ce.full;   // Kombos: erwacht und vollständig wirken sie (combos.js)
     return d;
@@ -2316,8 +2349,9 @@ A.Game = (function () {
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
-    run.lvVer = 6;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5) und neuen Gegnern (6); ältere Spielstände bauen ihre laufende Ebene wie bisher
+    run.lvVer = 7;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5), neuen Gegnern (6) und Pakt-Altären (7); ältere Spielstände bauen ihre laufende Ebene wie bisher
     run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
+    run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
@@ -2463,7 +2497,7 @@ A.Game = (function () {
   function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
-  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return ((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal; }
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r); }   // Trockener Hals (pacts.js): nur halb so viel
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
@@ -2472,7 +2506,8 @@ A.Game = (function () {
   function finishRun() {
     A.Achieve.onEnd(run);   // Spielzeit, Anfängerpech, letzte Prüfung der Erfolge
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
-    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
+    const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run)), sparks = base + pact;   // Pakte: je Pakt +15 %
+    run.sparksPact = pact;
     run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
@@ -4212,6 +4247,53 @@ A.Art = (function () {
     '.23444444444444443..',
     '.22333333333333332..',
     '..222222222222222...',
+  ]];
+  // Pakt-Altar (pacts.js): zwei Kerzen, eine Schriftrolle, eine glühende Rune; Bild 3 = benutzt, Kerzen aus
+  R.pactaltar = [[
+    '..Y.........Y..',
+    '..y.........y..',
+    '.0s0.......0s0.',
+    '.0s0.sssss.0s0.',
+    '.0s0.sMNMs.0s0.',
+    '.000.sssss.000.',
+    '222222222222222',
+    '233333333333332',
+    '.233vvVVVvv332.',
+    '.233vVrxrVv332.',
+    '.233vvVVVvv332.',
+    '.2333333333332.',
+    '222222222222222',
+    '111111111111111',
+  ], [
+    '...Y.......Y...',
+    '..yY.......Yy..',
+    '.0s0.......0s0.',
+    '.0s0.sssss.0s0.',
+    '.0s0.sMNMs.0s0.',
+    '.000.sssss.000.',
+    '222222222222222',
+    '233333333333332',
+    '.233vvVVVvv332.',
+    '.233vVrxrVv332.',
+    '.233vvVVVvv332.',
+    '.2333333333332.',
+    '222222222222222',
+    '111111111111111',
+  ], [
+    '...............',
+    '...............',
+    '.0s0.......0s0.',
+    '.0s0.sssss.0s0.',
+    '.0s0.sMNMs.0s0.',
+    '.000.sssss.000.',
+    '222222222222222',
+    '233333333333332',
+    '.233vv111vv332.',
+    '.233v13431v332.',
+    '.233vv111vv332.',
+    '.2333333333332.',
+    '222222222222222',
+    '111111111111111',
   ]];
   // Moppel der Maulwurf (Stehen/Laufen) und sein Erdhügel, wenn er unter der Erde wühlt
   R.pet_mole = [[
@@ -10312,6 +10394,89 @@ A.Build = (function () {
 
 </script>
 <script>
+// Der Abstieg – Pakte (A.PACTS in data.js): ab Ebene 3 steht manchmal ein Pakt-Altar versteckt in einem Kampfraum.
+// Ist der Raum gesäubert, taucht er auf; er bietet 3 Pakte an (fest aus dem Startwert der Ebene). Ein Pakt gilt bis zum Ende des Durchlaufs:
+// Fluch und Lohn, dazu je Pakt +15 % Seelenfunken am Ende. Höchstens 3 Pakte je Durchlauf (run.pacts).
+// game.js: mods in derived, potMul in potionPct, Funken in finishRun, Altar in newFloor (run.pact, ab lvVer 7);
+// world.js: Altar in genFloor, mehr Leben und ein Gegner mehr beim Betreten, härtere Treffer in hit; boons.js: Abklingzeit
+window.A = window.A || {};
+A.Pacts = (function () {
+  const L = (de, en) => A.LANG === 'de' ? de : en;
+  const G = () => A.Game;
+  const run = (r) => r || (G() && G().run);
+  // unterschriebene Pakte (unbekannte Ids aus einer neueren Version werden übersprungen)
+  function list(r) { r = run(r); return ((r && r.pacts) || []).filter(id => A.PACTS[id]); }
+  function has(id, r) { return list(r).includes(id); }
+  // Lohn: Werte wie die Segen (Game.derived)
+  function mods(r) { const o = {}; for (const id of list(r)) for (const k in (A.PACTS[id].m || {})) o[k] = (o[k] || 0) + A.PACTS[id].m[k]; return o; }
+  // Fluch: Summe eines Werts
+  function val(k, r) { let v = 0; for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x[k]) v += x[k]; } return v; }
+  function potMul(r) { let m = 1; for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x.potMul) m *= x.potMul; } return m; }
+  const cdMul = (r) => 1 + val('cd', r);
+  const hurtMul = (r) => 1 + val('hurt', r);
+  // Lebens-Faktor für einen Gegner, der beim Betreten eines Raums erscheint
+  function hpMul(m, r) { return 1 + val('mhp', r) + (m.boss || m.captain ? val('bossHp', r) : 0); }
+  const extra = (r) => val('extra', r);
+  const sparkPct = (r) => list(r).length * A.PACT_SPARKS;
+
+  // Steht auf der neuen Ebene ein Altar? Ab Ebene 3, nicht auf Boss-Ebenen, nicht mehr, wenn alle Pakte unterschrieben sind
+  function onFloor(r) {
+    if (r.floor < A.PACT_FROM || A.isBossFloor(r.floor) || list(r).length >= A.PACT_MAX) return false;
+    return r.rng.chance(A.PACT_CHANCE);
+  }
+  // In welchem Kampfraum? Fest aus dem Startwert der Ebene, möglichst nicht im Raum mit dem Käfig
+  function room(rooms, seed, avoid) {
+    const all = rooms.filter(x => x.type === 'fight' || x.type === 'elite'), list = all.filter(x => x !== avoid);
+    const pool = list.length ? list : all; if (!pool.length) return null;
+    return new A.RNG((((seed >>> 0) ^ 0x2f6b9a31) >>> 0) || 11).pick(pool);
+  }
+  // Die 3 Angebote des Altars dieser Ebene (ohne die schon unterschriebenen)
+  function offer(r) {
+    r = run(r); const free = Object.keys(A.PACTS).filter(id => !has(id, r));
+    return new A.RNG((((r.floorSeed >>> 0) ^ 0x7c3ab1d5) >>> 0) || 5).shuffle(free).slice(0, 3);
+  }
+  function sign(id) {
+    const r = run(); if (!r || !A.PACTS[id] || has(id, r) || list(r).length >= A.PACT_MAX) return false;
+    r.pacts = list(r).concat(id);
+    const P = A.PACTS[id]; if (P.fate) { r.fatePts = (r.fatePts || 0) + P.fate; r.fateLater = false; }
+    G().save(); return true;
+  }
+  // Der Raum ist gesäubert: der Altar taucht auf
+  function reveal(p, api) {
+    api.float(p.x, p.y - 44, L('Ein Pakt-Altar!', 'A pact altar!'), '#e43b44', 16);
+    if (A.FX) { A.FX.smoke(p.x, p.y - 10, 10, '#3e2731', 5); A.FX.part({ kind: 'ring', x: p.x, y: p.y - 6, life: 0.5, size: 64, color: '#e43b44', add: true }); }
+    if (A.Sound.open) A.Sound.open();
+  }
+
+  // ---------- Bild ----------
+  // Altar: Kerzen flackern, die Rune glüht; benutzt ist er dunkel und die Kerzen sind aus
+  function draw(dr, p, near, x, y) {
+    const b = dr.b, g = dr.g, t = dr.t, on = !p.used;
+    const spr = A.Art.sprite('pactaltar', on ? Math.floor(t * 3 + p.x) % 2 : 2);
+    const left = Math.round(x - spr.w / 2), top = Math.round(y + 5 - spr.h);
+    dr.shadow(x, y + 4, 11);
+    if (near && on) dr.outlineGlow(spr, x, y + 5, false, '#e43b44');
+    b.globalAlpha = on ? 1 : 0.8; b.drawImage(spr.img, left, top); b.globalAlpha = 1;
+    if (on) {
+      g.globalAlpha = 0.55 + Math.sin(t * 3 + p.x) * 0.25; g.fillStyle = '#ff0044'; g.fillRect(left + 7, top + 10, 3, 3); g.globalAlpha = 1;
+      if (A.FX && !A.FX.low && Math.random() < 0.06) A.FX.part({ kind: 'px', add: true, x: p.x + (Math.random() - 0.5) * 30, y: p.y - 4, vx: 0, vy: -20 - Math.random() * 20, life: 0.9, color: Math.random() < 0.5 ? '#e43b44' : '#68386c', drag: 0.3 });
+    }
+    return top;
+  }
+  function lights(w, Lt) {
+    for (const r of w.rooms) for (const p of r.props) if (p.kind === 'pact' && !p.hidden && !p.used) Lt(p.x, p.y - 10, 34, '#e43b44', 0.4 + Math.sin(w.t * 3) * 0.08);
+  }
+
+  // ---------- Texte ----------
+  const name = (id) => A.t(A.PACTS[id].name);
+  const curse = (id) => A.t(A.PACTS[id].curse);
+  const gift = (id) => A.t(A.PACTS[id].gift);
+
+  return { list, has, mods, val, potMul, cdMul, hurtMul, hpMul, extra, sparkPct, onFloor, room, offer, sign, reveal, draw, lights, name, curse, gift };
+})();
+
+</script>
+<script>
 // Der Abstieg – Vergleich: Was ändert sich am Helden, wenn er ein Stück anlegt?
 // Rechnet die Heldenwerte (game.js derived) einmal wie jetzt und einmal mit dem neuen Stück am Platz, also mit Element-Boni (gear.js),
 // Kräften, Trophäen, Legenden (legends.js) und Kombos (combos.js), und fällt ein Urteil: besser, schlechter, anders (Vor- und Nachteile) oder gleich.
@@ -10496,7 +10661,10 @@ A.World = (function () {
       }
     }
     // Käfig mit einem Begleiter (pets.js): steht versteckt in einem Kampfraum, bis der gesäubert ist; immer als letztes Ding im Raum
-    if (v >= 5 && G().run.cage) { const r = A.Pets.cageRoom(rooms, seed); if (r) r.props.push({ kind: 'cage', x: (r.anchor.tx + 0.5) * TS, y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
+    let cageR = null;
+    if (v >= 5 && G().run.cage) { const r = cageR = A.Pets.cageRoom(rooms, seed); if (r) r.props.push({ kind: 'cage', x: (r.anchor.tx + 0.5) * TS, y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
+    // Pakt-Altar (pacts.js): genauso versteckt, möglichst in einem anderen Kampfraum; teilt er den Raum mit dem Käfig, steht er daneben
+    if (v >= 7 && G().run.pact) { const r = A.Pacts.room(rooms, seed, cageR); if (r) r.props.push({ kind: 'pact', x: (r.anchor.tx + 0.5) * TS + (r === cageR ? TS * 2 : 0), y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
     let reach = lv.reach;
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
@@ -10605,12 +10773,13 @@ A.World = (function () {
     } else {
       const pool = A.monsterPool(f, run.lvVer || 0);   // ab lvVer 6 mit den neuen Gegnern (ab der 2. Ebene einer Welt)
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
-      const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0);
+      const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0) + A.Pacts.extra();   // Hordenruf (pacts.js)
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
       const champ = r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
     }
     list.forEach((m, i) => {
+      const pm = A.Pacts.hpMul(m); if (pm !== 1) { m.maxHp = Math.round(m.maxHp * pm); m.hp = m.maxHp; }   // Gierschlund, Schicksalswette (pacts.js)
       let x, y, tries = 0;
       do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < (W.big ? 160 : 130) || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
@@ -10741,7 +10910,8 @@ A.World = (function () {
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
     const fg = A.Foes.guard(from, to, opts); if (fg != null) return fg;   // Panzer (foes.js)
-    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
+    if (!opts.noDodge && !(to === W.hero && A.Pacts.val('noDodge')) && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) {   // Glasknochen (pacts.js): auch kein Ausweichen durch Zauber
+     float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
@@ -10750,6 +10920,7 @@ A.World = (function () {
     const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
     const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     const fp = A.Foes.pre(from, to, opts); if (fp) dmg *= fp.mul;   // Sandaks Panzer gegen dein Element (foes.js)
+    if (to === W.hero && from.side === 'enemy') dmg *= A.Pacts.hurtMul();   // Dornenkrone (pacts.js)
     const wp = A.Weather.pre(from, to, opts); if (wp) dmg *= wp.mul;   // Wolkenbruch: Blitze treffen härter (weather.js)
     const fp2 = A.Build.pre(from, to, opts, W.t); if (fp2) dmg *= fp2.mul;   // Schicksalspunkte (build.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
@@ -11136,7 +11307,7 @@ A.World = (function () {
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
-      a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); } });
+      a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); else if (p.kind === 'pact') A.Pacts.reveal(p, { float }); } });
       if (hooks.onCleared) hooks.onCleared(a); }
     // In der Nähe von etwas?
     W.near = null;
@@ -12107,6 +12278,7 @@ window.A = window.A || {};
           break;
         }
         case 'cage': top = A.Pets.drawCage(this, p, near, x, y); break;   // Käfig mit einem Begleiter (pets.js)
+        case 'pact': top = A.Pacts.draw(this, p, near, x, y); break;   // Pakt-Altar (pacts.js)
         case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
       if (near && !p.used || (near && (p.kind === 'merchant' || p.kind === 'forge' || p.kind === 'stairs'))) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
@@ -12204,6 +12376,7 @@ window.A = window.A || {};
       A.Legends.lights(W, L);
       A.Combos.lights(W, L);
       A.Pets.lights(W, L);
+      A.Pacts.lights(W, L);
       A.Wild.lights(W, L);
       A.Weather.lights(W, L);
       for (const m of W.mons) {
@@ -13981,6 +14154,30 @@ window.A = window.A || {};
     else if (p.kind === 'shrine') { r.pendingBoon = (r.pendingBoon || 0) + 1; Wd.markUsed(p); boonPick(); }
     else if (p.kind === 'forge') { S.forge(); forge(); }
     else if (p.kind === 'cage') petWin(p);
+    else if (p.kind === 'pact') pactWin(p);
+  }
+  // Pakt-Altar (pacts.js): 3 Pakte mit Fluch und Lohn; einen unterschreiben oder gehen (der Altar wartet dann weiter)
+  function pactRow(id, btn) {
+    const P = A.PACTS[id];
+    return `<div class="skill pact" style="cursor:default"><div class="si">${ic('pactaltar', 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${P.col}">${esc(A.Pacts.name(id))}</div>
+      <div class="ds"><span class="curse">${L('Fluch', 'Curse')}: ${esc(A.Pacts.curse(id))}</span><br><span class="gift">${L('Lohn', 'Reward')}: ${esc(A.Pacts.gift(id))}</span></div>${btn ? `<div class="mini"><i>${esc(t(P.flavor))}</i></div><button class="sign" data-pact="${id}">${L('Unterschreiben', 'Sign')}</button>` : ''}</div></div>`;
+  }
+  function pactWin(p) {
+    const have = A.Pacts.list(), offers = A.Pacts.offer(), full = have.length >= A.PACT_MAX, pct = Math.round(A.PACT_SPARKS * 100);
+    S.open();
+    const sub = full ? L('Du hast schon alle Pakte unterschrieben, die eine Seele tragen kann. Der Altar schweigt beleidigt.', 'You have already signed every pact one soul can carry. The altar sulks in silence.')
+      : L(`Eine Stimme flüstert: «Unterschreib hier. Und hier. Und hier.» Ein Pakt gilt bis zum Ende des Durchlaufs, mit Fluch und Lohn, und bringt am Ende +${pct} % Seelenfunken. Pakte: <b class="goldc">${have.length}/${A.PACT_MAX}</b>.`, `A voice whispers: "Sign here. And here. And here." A pact lasts until the end of the run, with a curse and a reward, and brings +${pct}% soul sparks at the end. Pacts: <b class="goldc">${have.length}/${A.PACT_MAX}</b>.`);
+    ov(`<div class="center"><div class="bigicon">${ic('pactaltar', 60)}</div><h2 class="mid" style="color:#e43b44">${L('Pakt-Altar', 'Pact Altar')}</h2></div><div class="sub">${sub}</div>
+      ${full ? '' : offers.map(id => pactRow(id, true)).join('')}
+      <button class="btn" id="bClose" data-esc>${full ? t(U.back) : L('Lieber nicht', 'Better not')}</button>`);
+    overlay.querySelectorAll('[data-pact]').forEach(el => el.onclick = () => {
+      const id = el.dataset.pact; if (!A.Pacts.sign(id)) return;
+      Wd.markUsed(p); S.level(); if (A.FX) A.FX.shake(0.25);
+      A.FX.banner(L('Pakt', 'Pact') + ': ' + A.Pacts.name(id), A.Pacts.gift(id), A.PACTS[id].col, 2.5);
+      if (Wd.W) Wd.refreshHero();
+      ovClose(); pendingPicks();
+    });
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
   }
   // Käfig öffnen: wer sitzt drin? Mitnehmen (sind alle Plätze voll, geht eins dafür ins Lager) oder ins Lager schicken
   function petWin(p) {
@@ -14025,7 +14222,7 @@ window.A = window.A || {};
     // Begleiter, die gerade dabei sind, mit Treue und dem, was sie schon können
     const pets = (r.pets || []).filter(id => A.PETS[id]).map(id => { const P = A.PETS[id], lv = A.Pets.treue(id), pr = A.Pets.progress(id);
       return `<div class="skill on" style="cursor:default"><div class="si">${petImg(id, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${P.col}">${esc(t(P.name))} ${petStars(lv)}</div><div class="ds">${A.Pets.tricks(id).filter(x => lv >= x.lv).map(x => esc(x.text)).join(' ')}${pr ? ` <span class="mini">${L(`(noch ${pr[1] - pr[0]} bis Treue ${lv + 1})`, `(${pr[1] - pr[0]} more to loyalty ${lv + 1})`)}</span>` : ''}</div></div></div>`; }).join('');
-    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}` :
+    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}${A.Pacts.list(r).length ? `<h3>${L('Pakte', 'Pacts')} <span class="mini">${A.Pacts.list(r).length}/${A.PACT_MAX}</span></h3>${A.Pacts.list(r).map(id => pactRow(id, false)).join('')}` : ''}` :
       tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
       `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}${cbSec}`;
@@ -14293,7 +14490,7 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);

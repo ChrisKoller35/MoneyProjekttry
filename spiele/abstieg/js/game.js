@@ -172,8 +172,8 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte
-    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.atkPct || 0) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.magPct || 0) / 100;
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
@@ -184,11 +184,12 @@ A.Game = (function () {
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
       regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
-      xpPct: sum('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
+      xpPct: sum('xpPct') + tv('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
       skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
     };
+    if (A.Pacts.val('noDodge', r)) d.dodge = 0;   // Glasknochen (pacts.js)
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
     const ce = A.Combos.evaluate(r, d); d.combo = ce.on; d.comboFull = ce.full;   // Kombos: erwacht und vollständig wirken sie (combos.js)
     return d;
@@ -399,8 +400,9 @@ A.Game = (function () {
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
-    run.lvVer = 6;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5) und neuen Gegnern (6); ältere Spielstände bauen ihre laufende Ebene wie bisher
+    run.lvVer = 7;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5), neuen Gegnern (6) und Pakt-Altären (7); ältere Spielstände bauen ihre laufende Ebene wie bisher
     run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
+    run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
@@ -546,7 +548,7 @@ A.Game = (function () {
   function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
-  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return ((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal; }
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r); }   // Trockener Hals (pacts.js): nur halb so viel
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
@@ -555,7 +557,8 @@ A.Game = (function () {
   function finishRun() {
     A.Achieve.onEnd(run);   // Spielzeit, Anfängerpech, letzte Prüfung der Erfolge
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
-    const sparks = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite;
+    const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run)), sparks = base + pact;   // Pakte: je Pakt +15 %
+    run.sparksPact = pact;
     run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
