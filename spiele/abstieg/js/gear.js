@@ -86,12 +86,12 @@ A.Gear = (function () {
   // Erdstoss um einen Punkt (Nachbeben, Stein 6)
   function quake(h, x, y, r, dmg) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'phys', proc: true, color: '#c0cbdc' });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'phys', proc: true, color: '#c0cbdc', boom: true });
     if (A.FX) { A.FX.ev('boom', { x, y, r, color: '#c0cbdc' }); A.FX.rocks(x, y, 5, r * 0.6); }
   }
   function boomAt(h, x, y, r, dmg, col) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col });
     A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }

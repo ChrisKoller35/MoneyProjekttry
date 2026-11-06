@@ -97,7 +97,7 @@ A.Legends = (function () {
       for (const m of w.mons) { if (!live(m) || done.has(m)) continue; const d = Math.hypot(m.x - cur.x, m.y - cur.y); if (d < bd) { bd = d; best = m; } }
       if (!best) break; done.add(best);
       w.bolts.push({ x0: cur.x, y0: cur.y - 10, x1: best.x, y1: best.y - 10, life: 0.25, max: 0.25, col: '#7fd8ff', seed: Math.random() * 99 });
-      api.hit(h, best, dmg, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff' }); cur = best;
+      api.hit(h, best, dmg, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff', zap: true }); cur = best;
     }
     if (done.size > 1) api.fx('zap', { x: first.x, y: first.y, color: '#7fd8ff' });
   }
@@ -302,7 +302,7 @@ A.Legends = (function () {
   function shift(b, dt) { for (const k of ['at', 't0', 'until', 'warm', 'hitT', 'tick']) if (typeof b[k] === 'number') b[k] += dt; }
   function boomAt(h, x, y, r, dmg, col) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col });
     A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }

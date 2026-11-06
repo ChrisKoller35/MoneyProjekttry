@@ -228,6 +228,7 @@
   .kv b { color: var(--text); }
   .skill { display: flex; align-items: center; gap: 11px; background: linear-gradient(#2a2f4a, #242840); border: 3px solid var(--ink); clip-path: var(--notch); box-shadow: inset 0 0 0 2px #333b5c; padding: 8px 10px; margin-bottom: 7px; cursor: pointer; }
   .skill.on { box-shadow: inset 0 0 0 2px var(--gold); background: linear-gradient(#3b3550, #2c2740); }
+  .pips.fate { display: inline-flex; vertical-align: middle; margin-left: 4px; } .pips.fate i { width: 7px; height: 7px; } .pips.fate i.on { background: var(--gold); box-shadow: 0 0 4px var(--gold); } .skill.off { opacity: .6; cursor: default; }
   .skill .si { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: radial-gradient(circle, #1f5a8a, #181425 75%); border: 2px solid #124e89; border-radius: 50%; }
   .skill.on .si { border-color: var(--gold); }
   .skill .nm { font-weight: 700; font-size: 16px; }
@@ -1349,6 +1350,29 @@ A.BUILD_DIRS = {
   gold: { name: { de: 'Gold', en: 'Gold' }, noun: { de: 'Dagobert', en: 'Scrooge' }, adj: { de: 'Goldgieriger', en: 'Greedy' }, col: '#feae34', icon: 'coin', tal: ['gold'], pw: ['goldmagnet', 'glueckspilz'], leg: ['muenzfresser', 'sparschwein', 'wuerfel'] },
   wucht: { name: { de: 'Wucht', en: 'Heavy hits' }, noun: { de: 'Holzfäller', en: 'Lumberjack' }, adj: { de: 'Wuchtiger', en: 'Hefty' }, col: '#e43b44', icon: 't_double', tal: ['glaskanone', 'berserker', 'wucht'], sp: ['hieb', 'rache', 'hinrichtung', 'wirbel'], pw: ['riesentoeter', 'panzerbrecher', 'seelensammler'], leg: ['riesenpilz', 'prahlhans', 'klatsche'], cls: ['klinge'] },
 };
+// Schicksalspunkte (build.js, ui.js fatePick): je Welt-Boss und Hauptmann ein Punkt, frei auf eine Build-Richtung zu setzen, höchstens A.FATE_MAX je Richtung.
+// Jeder Punkt gibt den festen Bonus m (Werte je Punkt, Schlüssel wie bei Talenten; vsBurn/vsSlow/vsPoison/zap/ally/boom in Prozent wirken in build.js pre/boomMul)
+// und zählt A.FATE_W Punkte für die Richtung: Build-Name, Beute, Händler, Truhen und Schrein lehnen sich stärker daran an. Steht im Durchlauf (run.fate, run.fatePts).
+A.FATE_MAX = 3;
+A.FATE_W = 2;
+A.FATE = {
+  feuer: { m: { vsBurn: 10 }, text: { de: '+{v} % Schaden gegen brennende Gegner', en: '+{v}% damage to burning enemies' } },
+  eis: { m: { vsSlow: 10 }, text: { de: '+{v} % Schaden gegen gebremste oder betäubte Gegner', en: '+{v}% damage to slowed or stunned enemies' } },
+  blitz: { m: { zap: 12 }, text: { de: '+{v} % Blitzschaden', en: '+{v}% lightning damage' } },
+  gift: { m: { vsPoison: 10 }, text: { de: '+{v} % Schaden gegen vergiftete Gegner', en: '+{v}% damage to poisoned enemies' } },
+  schatten: { m: { crit: 3, dodge: 3 }, text: { de: '+{crit} % Volltreffer, +{dodge} % Ausweichen', en: '+{crit}% crit, +{dodge}% dodge' } },
+  stein: { m: { hpPct: 6, def: 2 }, text: { de: '+{hpPct} % Leben, +{def} Rüstung', en: '+{hpPct}% health, +{def} armor' } },
+  krit: { m: { crit: 5 }, text: { de: '+{v} % Volltreffer', en: '+{v}% crit chance' } },
+  dornen: { m: { thorns: 8 }, text: { de: '+{v} % Dornen', en: '+{v}% thorns' } },
+  diener: { m: { ally: 15 }, text: { de: '+{v} % Schaden deiner Helfer und Tiere', en: '+{v}% damage of your minions and pets' } },
+  heil: { m: { lifesteal: 2 }, text: { de: '+{v} % Lebensraub', en: '+{v}% life steal' } },
+  tempo: { m: { spd: 2 }, text: { de: '+{v} Tempo', en: '+{v} speed' } },
+  bombe: { m: { boom: 12 }, text: { de: '+{v} % Schaden deiner Explosionen', en: '+{v}% damage of your explosions' } },
+  magie: { m: { magPct: 8 }, text: { de: '+{v} % Zauberkraft', en: '+{v}% spell power' } },
+  gold: { m: { goldPct: 15 }, text: { de: '+{v} % Gold', en: '+{v}% gold' } },
+  wucht: { m: { atkPct: 8 }, text: { de: '+{v} % Angriff', en: '+{v}% attack' } },
+};
+
 
 </script>
 <script>
@@ -1539,12 +1563,12 @@ A.Gear = (function () {
   // Erdstoss um einen Punkt (Nachbeben, Stein 6)
   function quake(h, x, y, r, dmg) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'phys', proc: true, color: '#c0cbdc' });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'phys', proc: true, color: '#c0cbdc', boom: true });
     if (A.FX) { A.FX.ev('boom', { x, y, r, color: '#c0cbdc' }); A.FX.rocks(x, y, 5, r * 0.6); }
   }
   function boomAt(h, x, y, r, dmg, col) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col });
     A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
@@ -1696,7 +1720,7 @@ A.Classes = (function () {
     const w = W(), h = w.hero, o = s.opts;
     for (const m of w.mons) {
       if (!live(m) || Math.hypot(m.x - s.x, m.y - s.y) > o.r + m.r) continue;
-      api.hit(h, m, s.dmg, { kind: 'magic', color: o.col, basic: o.basic, burn: o.burn, poison: o.poison, slow: o.slow || !!o.freeze, slowDur: o.freeze ? 2.5 : 1.6, noKb: !o.basic });
+      api.hit(h, m, s.dmg, { kind: 'magic', color: o.col, basic: o.basic, burn: o.burn, poison: o.poison, slow: o.slow || !!o.freeze, slowDur: o.freeze ? 2.5 : 1.6, noKb: !o.basic, boom: true });
       if (o.freeze && m.alive && m.hp > 0) { const d = m.boss ? 0.3 : o.freeze; m.stun = Math.max(m.stun, d); m.frozenUntil = w.t + d; }
     }
     if (o.zone) w.zones.push({ kind: o.zone, x: s.x, y: s.y + 4, r: o.r, t0: w.t, until: w.t + o.zdur, tick: w.t + 0.25, dmg: o.zdmg, col: o.col });
@@ -2004,8 +2028,8 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0);   // passive Talente vom Schrein und Element-Boni der Ausrüstung
-    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100;
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.atkPct || 0) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.magPct || 0) / 100;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
@@ -2198,6 +2222,14 @@ A.Game = (function () {
     return it;
   }
   function setFocus(dir) { run.focus = dir && A.BUILD_DIRS[dir] ? dir : null; save(); }
+  // Schicksalspunkt setzen (höchstens A.FATE_MAX je Richtung); später: Fenster nicht von selbst zeigen, bis der nächste Punkt kommt
+  function fateSpend(dir) {
+    if (!run || !(run.fatePts > 0) || !A.FATE[dir] || !A.BUILD_DIRS[dir]) return false;
+    run.fate = run.fate || {}; if ((run.fate[dir] || 0) >= A.FATE_MAX) return false;
+    run.fate[dir] = (run.fate[dir] || 0) + 1; run.fatePts--; save(); return true;
+  }
+  function fateLater() { if (run) { run.fateLater = true; save(); } }
+  function fateOpen() { return !!run && run.fatePts > 0 && Object.keys(A.FATE).some(k => A.BUILD_DIRS[k] && ((run.fate || {})[k] || 0) < A.FATE_MAX); }
   // slotIn: bei zwei vollen Schmuck-Plätzen wählt die Oberfläche, welcher ersetzt wird
   function equip(it, slotIn) {
     let slot = slotIn || it.slot;
@@ -2267,10 +2299,12 @@ A.Game = (function () {
       questEvent('elite');
     }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
+    let fate = false;
+    if ((e.boss || e.captain) && !e.mirror && !e.summoned) { run.fatePts = (run.fatePts || 0) + 1; run.fateLater = false; fate = true; }   // Schicksalspunkt (build.js)
     const levels = addXp(xp);
     questEvent('kill');
     save();
-    return { gold, coins: e.boss ? 8 : e.elite ? 3 + nt : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(e.elite ? 0.25 : 0.04), esparks, book };
+    return { gold, coins: e.boss ? 8 : e.elite ? 3 + nt : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(e.elite ? 0.25 : 0.04), esparks, book, fate };
   }
   // Raum gesäubert: ein Item als Belohnung, Aufgabe prüfen
   function roomCleared(room, stats) {
@@ -2396,7 +2430,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
@@ -7710,7 +7744,7 @@ A.Legends = (function () {
       for (const m of w.mons) { if (!live(m) || done.has(m)) continue; const d = Math.hypot(m.x - cur.x, m.y - cur.y); if (d < bd) { bd = d; best = m; } }
       if (!best) break; done.add(best);
       w.bolts.push({ x0: cur.x, y0: cur.y - 10, x1: best.x, y1: best.y - 10, life: 0.25, max: 0.25, col: '#7fd8ff', seed: Math.random() * 99 });
-      api.hit(h, best, dmg, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff' }); cur = best;
+      api.hit(h, best, dmg, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff', zap: true }); cur = best;
     }
     if (done.size > 1) api.fx('zap', { x: first.x, y: first.y, color: '#7fd8ff' });
   }
@@ -7915,7 +7949,7 @@ A.Legends = (function () {
   function shift(b, dt) { for (const k of ['at', 't0', 'until', 'warm', 'hitT', 'tick']) if (typeof b[k] === 'number') b[k] += dt; }
   function boomAt(h, x, y, r, dmg, col) {
     const w = W();
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col });
     A.Combos.onBoom(x, y, r, dmg, { proc: true });   // Domino (combos.js)
   }
@@ -8219,7 +8253,7 @@ A.Combos = (function () {
   }
   function pop(h, x, y, col) {
     const w = W(), r = 58, dmg = pow(h) * 0.4;
-    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col });
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - x, m.y - y) < r + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: 0.4, color: col, boom: true });
     api.fx('boom', { x, y, r, color: col, soft: true });
     if (A.FX) {
       const c2 = FW[Math.floor(Math.random() * FW.length)];
@@ -9184,7 +9218,7 @@ A.Wild = (function () {
   }
   function zap(x, y, m, dmg, h, w) {
     w.bolts.push({ x0: x, y0: y, x1: m.x, y1: m.y - 10, life: 0.25, max: 0.25, col: '#fee761', seed: Math.random() * 99 });
-    api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#fee761' });
+    api.hit(h, m, dmg, { kind: 'magic', proc: true, noKb: true, color: '#fee761', zap: true });
     api.fx('zap', { x: m.x, y: m.y, color: '#fee761' });
   }
 
@@ -9582,6 +9616,7 @@ A.Build = (function () {
     for (const boss in A.TROPHIES) if (d.tro && d.tro[A.TROPHIES[boss].power]) add('tro', boss, W.tro);
     add('cls', r.cls, W.cls);
     if (r.focus && D()[r.focus]) sc[r.focus] = (sc[r.focus] || 0) + W.focus;
+    for (const k in (r.fate || {})) if (D()[k] && r.fate[k] > 0) sc[k] = (sc[k] || 0) + A.FATE_W * r.fate[k];   // Schicksalspunkte
     const top = Object.keys(sc).filter(k => sc[k] > 0).sort((a, b) => sc[b] - sc[a] || a.localeCompare(b));
     const first = top[0] && sc[top[0]] >= A.BUILD_MIN ? top[0] : null;
     const second = first && top[1] && sc[top[1]] >= A.BUILD_MIN && sc[top[1]] >= sc[first] * 0.5 ? top[1] : null;
@@ -9604,7 +9639,7 @@ A.Build = (function () {
   // els/pws: Element bzw. Kraft -> Punkte der Richtung; magnet: Element -> Kombo, der nur noch dieses Element fehlt
   // Merkzettel: derived() ist nicht billig, und Listen (Beutel, Händler) fragen je Stück; solange sich am Helden nichts ändert, gilt die letzte Antwort
   let memo = { r: null, sig: '', w: null };
-  function sig(r) { return [r.cls, r.focus || '', (r.known || []).join(), (r.talents || []).join(), (r.combos || []).join(), A.SLOTS.map(s => { const it = r.gear[s]; return it ? `${it.uid}:${it.el || ''}:${it.power ? it.power.id : ''}` : ''; }).join()].join('|'); }
+  function sig(r) { return [r.cls, r.focus || '', JSON.stringify(r.fate || {}), (r.known || []).join(), (r.talents || []).join(), (r.combos || []).join(), A.SLOTS.map(s => { const it = r.gear[s]; return it ? `${it.uid}:${it.el || ''}:${it.power ? it.power.id : ''}` : ''; }).join()].join('|'); }
   function wants(r, d) {
     r = r || A.Game.run; if (!r) return null;
     if (!d) { const g = sig(r); if (memo.r === r && memo.sig === g) return memo.w; memo = { r, sig: g, w: null }; }
@@ -9648,7 +9683,39 @@ A.Build = (function () {
     return L(`Passt zu deinem Build (${dirName(f.dir)})`, `Fits your build (${dirName(f.dir)})`);
   }
 
-  return { W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };
+  // ---------- Schicksalspunkte (data.js A.FATE) ----------
+  function fateLv(k, r) { r = r || A.Game.run; return (r && r.fate && r.fate[k]) || 0; }
+  // Summe der Boni aller gesetzten Punkte (crit, dodge, hpPct, def, thorns, lifesteal, spd, goldPct, atkPct, magPct, vsBurn …)
+  function fateMods(r) {
+    const m = {}; if (!r || !r.fate) return m;
+    for (const k in r.fate) { const F = A.FATE[k], n = Math.min(A.FATE_MAX, r.fate[k] || 0); if (!F || n <= 0) continue; for (const key in F.m) m[key] = (m[key] || 0) + F.m[key] * n; }
+    return m;
+  }
+  // Bonus-Text einer Richtung bei n Punkten
+  function fateText(k, n) {
+    const F = A.FATE[k]; if (!F) return ''; n = Math.max(1, n || 1);
+    const keys = Object.keys(F.m); let s = A.t(F.text).replace('{v}', F.m[keys[0]] * n);
+    for (const key of keys) s = s.replace('{' + key + '}', F.m[key] * n);
+    return s;
+  }
+  // Schaden (world.js hit): Held gegen brennende, gebremste oder vergiftete Gegner, Blitze; Helfer und Tiere
+  function pre(from, to, opts, t) {
+    const r = A.Game.run; if (!r || !r.fate || from.side !== 'hero' || to.side !== 'enemy' || (opts && (opts.kind === 'poison' || opts.kind === 'burn'))) return null;
+    const m = fateMods(r); let pct = 0;
+    if (from.ally) pct += m.ally || 0;
+    else {
+      if (m.vsBurn && to.effects && to.effects.some(e => e.kind === 'burn')) pct += m.vsBurn;
+      if (m.vsPoison && to.effects && to.effects.some(e => e.kind === 'poison')) pct += m.vsPoison;
+      if (m.vsSlow && ((to.slowUntil && to.slowUntil > t) || to.stun > 0)) pct += m.vsSlow;
+      if (m.zap && opts && opts.zap) pct += m.zap;
+      if (m.boom && opts && opts.boom) pct += m.boom;
+    }
+    return pct ? { mul: 1 + pct / 100 } : null;
+  }
+  // Explosionen des Helden (Treffer mit opts.boom: world.js boom, Feuer-Explosion und Nachbeben, Piñata, Raketen, Flaschen)
+  function boomMul(r) { const m = fateMods(r || A.Game.run); return 1 + (m.boom || 0) / 100; }
+
+  return { fateLv, fateMods, fateText, pre, boomMul, W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };
 })();
 
 </script>
@@ -10062,6 +10129,7 @@ A.World = (function () {
     const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     const fp = A.Foes.pre(from, to, opts); if (fp) dmg *= fp.mul;   // Sandaks Panzer gegen dein Element (foes.js)
     const wp = A.Weather.pre(from, to, opts); if (wp) dmg *= wp.mul;   // Wolkenbruch: Blitze treffen härter (weather.js)
+    const fp2 = A.Build.pre(from, to, opts, W.t); if (fp2) dmg *= fp2.mul;   // Schicksalspunkte (build.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
@@ -10127,6 +10195,7 @@ A.World = (function () {
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
     if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (rw.fate) float(e.x, e.y - e.r - 62, A.LANG === 'de' ? '+1 Schicksalspunkt' : '+1 fate point', '#fee761', 15, 'u_star');   // Schicksalspunkte (build.js)
     if (e.traits) A.Elites.onDeath(e);
     A.Foes.onDeath(e);   // Hauptmann, Rache der Kumpels, fliehende Opfer (foes.js)
     fx('death', { e });
@@ -10239,11 +10308,11 @@ A.World = (function () {
       if (h.melee && !magic) h.spinT = W.t;
       const nc = sk.col || (magic ? (id === 'entladung' ? '#c77dff' : '#f77622') : '#ffffff');
       fx('nova', { e: h, r: R, color: nc, magic });
-      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun }); }
+      for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(h, m) < R + m.r) hit(h, m, P * pw, { kind: magic ? 'magic' : 'phys', burn: sk.burn, color: nc, slow: sk.slow, slowDur: 2.5, stun: sk.stun, zap: id === 'entladung' }); }
     }
     else if (sk.chain) chain(h, P * pw, sk.chain, sk.col);
     else { // Einzelziel (attack / magic), Feuerball explodiert beim Aufprall
-      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise };
+      const opts = { kind: magic ? 'magic' : 'phys', critBonus: sk.critBonus, poison: sk.poison, stun: sk.stun, burn: sk.burn, execute: sk.execute, blast: sk.blast, raise: sk.raise, zap: id === 'funke' };
       let pow = pw; if (sk.bonusMissingHp) pow *= 1 + sk.bonusMissingHp * (1 - h.hp / h.maxHp);
       const hits = sk.hits || 1;
       if (h.melee && !magic) { for (let i = 0; i < hits; i++) arc(h, 70, pow, opts); }
@@ -10254,7 +10323,7 @@ A.World = (function () {
   // Explosion: trifft alle Gegner im Umkreis
   // src: wer explodiert (Glut, der kleine Drache); sonst der Held
   function boom(x, y, r, dmg, opts, col, src) {
-    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
+    for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col, boom: true }, opts));   // boom: Schicksalspunkte «Explosionen» (build.js pre)
     fx('boom', { x, y, r, color: col });
     if (!src) A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }
@@ -13347,12 +13416,34 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
     const bf = $('#bFocus'); if (bf) bf.onclick = () => { S.click(); focusPick(tab); };
+    const bft = $('#bFate'); if (bft) bft.onclick = () => { S.click(); fatePick(tab); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
   }
-  // Dein Build (build.js): Name, die stärksten Richtungen und der Fokus-Knopf
+  // Dein Build (build.js): Name, die stärksten Richtungen, der Fokus-Knopf und die Schicksalspunkte
   function buildLine(r, d) {
     const p = A.Build.profile(r, d), col = p.first ? A.BUILD_DIRS[p.first].col : 'var(--mist)';
-    return `<div class="mini bld">${L('Build', 'Build')}: <b style="color:${col}">${esc(A.Build.name(p))}</b>${p.top.length ? ` <span>(${esc(A.Build.summary(p))})</span>` : ''}<button id="bFocus">${r.focus ? L('Fokus: ', 'Focus: ') + esc(A.Build.dirName(r.focus)) : L('Fokus', 'Focus')} ▾</button></div>`;
+    const nf = Object.values(r.fate || {}).reduce((a, n) => a + n, 0), fb = (r.fatePts > 0 || nf) ? `<button id="bFate"${r.fatePts > 0 ? ' class="goldc"' : ''}>${L('Schicksal', 'Fate')} ${r.fatePts > 0 ? `<b>+${r.fatePts}</b>` : nf} ▾</button>` : '';
+    return `<div class="mini bld">${L('Build', 'Build')}: <b style="color:${col}">${esc(A.Build.name(p))}</b>${p.top.length ? ` <span>(${esc(A.Build.summary(p))})</span>` : ''}<button id="bFocus">${r.focus ? L('Fokus: ', 'Focus: ') + esc(A.Build.dirName(r.focus)) : L('Fokus', 'Focus')} ▾</button>${fb}</div>`;
+  }
+  // Schicksalspunkte (build.js, data.js A.FATE): je Welt-Boss und Hauptmann einer; eine Richtung wählen, höchstens 3 je Richtung
+  function fatePick(tab) {
+    const r = G.run, p = A.Build.profile(r), pts = r.fatePts || 0, mine = [p.first, p.second].filter(Boolean);
+    const keys = Object.keys(A.BUILD_DIRS).filter(k => A.FATE[k]).sort((a, b) => (mine.includes(b) - mine.includes(a)) || ((p.score[b] || 0) - (p.score[a] || 0)) || a.localeCompare(b));
+    const rows = keys.map(k => {
+      const D = A.BUILD_DIRS[k], n = A.Build.fateLv(k, r), full = n >= A.FATE_MAX, pips = Array.from({ length: A.FATE_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
+      const now = n ? `<b class="goldc">${L('Jetzt', 'Now')}:</b> ${esc(A.Build.fateText(k, n))}` : '';
+      return `<div class="skill ${full ? 'on' : ''} ${pts && !full ? '' : 'off'}" data-fate="${k}"><div class="si">${ic(D.icon, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${D.col}">${esc(t(D.name))}${mine.includes(k) ? ` <span class="mini goldc">${L('dein Build', 'your build')}</span>` : ''} <span class="pips fate">${pips}</span></div><div class="ds">${n ? now + (full ? ` <span class="mini">(${L('voll', 'maxed')})</span>` : '') : esc(A.Build.fateText(k, 1))}</div></div></div>`;
+    }).join('');
+    const sub = pts ? L(`Du hast <b class="goldc">${pts}</b> Schicksalspunkt${pts > 1 ? 'e' : ''}. Jeder gibt der Richtung einen festen Bonus und zählt ${A.FATE_W} Punkte für deinen Build: passende Beute kommt öfter. Höchstens ${A.FATE_MAX} je Richtung.`, `You have <b class="goldc">${pts}</b> fate point${pts > 1 ? 's' : ''}. Each gives the direction a fixed bonus and counts ${A.FATE_W} points for your build: fitting loot drops more often. At most ${A.FATE_MAX} per direction.`)
+      : L('Keine Punkte offen. Neue gibt es für jeden Welt-Boss und Hauptmann.', 'No points left. You get new ones for every world boss and captain.');
+    ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose"${pts ? '' : ' data-esc'}>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-fate]').forEach(el => el.onclick = () => {
+      const k = el.dataset.fate; if (!G.fateSpend(k)) return;
+      S.buy(); A.FX.banner(L('Schicksal', 'Fate') + ': ' + t(A.BUILD_DIRS[k].name), A.Build.fateText(k, A.Build.fateLv(k)), A.BUILD_DIRS[k].col, 2);
+      if (Wd.W) Wd.refreshHero();
+      if (G.run.fatePts > 0) fatePick(tab); else if (tab) showSheet(tab); else { ovClose(); pendingPicks(); }
+    });
+    $('#bClose').onclick = () => { S.click(); if (G.run.fatePts > 0) G.fateLater(); if (tab) showSheet(tab); else { ovClose(); pendingPicks(); } };
   }
   // Fokus wählen: eine Richtung, die ab jetzt mehr zählt (Beute, Händler, Truhen, Schrein), oder automatisch
   function focusPick(tab) {
@@ -13389,9 +13480,10 @@ window.A = window.A || {};
   // Offene Wahlen nacheinander zeigen (Stufenaufstieg, dann Segen); wartet, solange ein anderes Fenster offen ist
   function pendingPicks() {
     const r = G.run; if (!r || r.over || !dungeonEl.classList.contains('on')) return;
-    if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0)) return;
+    const fate = G.fateOpen() && !r.fateLater && !(Wd.W && (Wd.W.active || !Wd.W.hero.alive));   // Schicksalspunkt: erst, wenn der Raum frei ist
+    if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0) && !fate) return;
     if (overlay.classList.contains('on')) { setTimeout(pendingPicks, 600); return; }
-    if (r.pendingSkillPick > 0) skillPick(); else boonPick();
+    if (r.pendingSkillPick > 0) skillPick(); else if (r.pendingBoon > 0) boonPick(); else fatePick();
   }
   // Alle Zauber-Knöpfe belegt? Dann fragen, welcher Platz frei wird (der alte bleibt im Zauberbuch)
   function chooseSlot(id, done) {
@@ -13587,7 +13679,7 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) { G.save(); G.saveMeta(); } });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin, petWin } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, fatePick, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin, petWin } };
   title();
 })();
 

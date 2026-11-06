@@ -868,3 +868,26 @@ A.BUILD_DIRS = {
   gold: { name: { de: 'Gold', en: 'Gold' }, noun: { de: 'Dagobert', en: 'Scrooge' }, adj: { de: 'Goldgieriger', en: 'Greedy' }, col: '#feae34', icon: 'coin', tal: ['gold'], pw: ['goldmagnet', 'glueckspilz'], leg: ['muenzfresser', 'sparschwein', 'wuerfel'] },
   wucht: { name: { de: 'Wucht', en: 'Heavy hits' }, noun: { de: 'Holzfäller', en: 'Lumberjack' }, adj: { de: 'Wuchtiger', en: 'Hefty' }, col: '#e43b44', icon: 't_double', tal: ['glaskanone', 'berserker', 'wucht'], sp: ['hieb', 'rache', 'hinrichtung', 'wirbel'], pw: ['riesentoeter', 'panzerbrecher', 'seelensammler'], leg: ['riesenpilz', 'prahlhans', 'klatsche'], cls: ['klinge'] },
 };
+// Schicksalspunkte (build.js, ui.js fatePick): je Welt-Boss und Hauptmann ein Punkt, frei auf eine Build-Richtung zu setzen, höchstens A.FATE_MAX je Richtung.
+// Jeder Punkt gibt den festen Bonus m (Werte je Punkt, Schlüssel wie bei Talenten; vsBurn/vsSlow/vsPoison/zap/ally/boom in Prozent wirken in build.js pre/boomMul)
+// und zählt A.FATE_W Punkte für die Richtung: Build-Name, Beute, Händler, Truhen und Schrein lehnen sich stärker daran an. Steht im Durchlauf (run.fate, run.fatePts).
+A.FATE_MAX = 3;
+A.FATE_W = 2;
+A.FATE = {
+  feuer: { m: { vsBurn: 10 }, text: { de: '+{v} % Schaden gegen brennende Gegner', en: '+{v}% damage to burning enemies' } },
+  eis: { m: { vsSlow: 10 }, text: { de: '+{v} % Schaden gegen gebremste oder betäubte Gegner', en: '+{v}% damage to slowed or stunned enemies' } },
+  blitz: { m: { zap: 12 }, text: { de: '+{v} % Blitzschaden', en: '+{v}% lightning damage' } },
+  gift: { m: { vsPoison: 10 }, text: { de: '+{v} % Schaden gegen vergiftete Gegner', en: '+{v}% damage to poisoned enemies' } },
+  schatten: { m: { crit: 3, dodge: 3 }, text: { de: '+{crit} % Volltreffer, +{dodge} % Ausweichen', en: '+{crit}% crit, +{dodge}% dodge' } },
+  stein: { m: { hpPct: 6, def: 2 }, text: { de: '+{hpPct} % Leben, +{def} Rüstung', en: '+{hpPct}% health, +{def} armor' } },
+  krit: { m: { crit: 5 }, text: { de: '+{v} % Volltreffer', en: '+{v}% crit chance' } },
+  dornen: { m: { thorns: 8 }, text: { de: '+{v} % Dornen', en: '+{v}% thorns' } },
+  diener: { m: { ally: 15 }, text: { de: '+{v} % Schaden deiner Helfer und Tiere', en: '+{v}% damage of your minions and pets' } },
+  heil: { m: { lifesteal: 2 }, text: { de: '+{v} % Lebensraub', en: '+{v}% life steal' } },
+  tempo: { m: { spd: 2 }, text: { de: '+{v} Tempo', en: '+{v} speed' } },
+  bombe: { m: { boom: 12 }, text: { de: '+{v} % Schaden deiner Explosionen', en: '+{v}% damage of your explosions' } },
+  magie: { m: { magPct: 8 }, text: { de: '+{v} % Zauberkraft', en: '+{v}% spell power' } },
+  gold: { m: { goldPct: 15 }, text: { de: '+{v} % Gold', en: '+{v}% gold' } },
+  wucht: { m: { atkPct: 8 }, text: { de: '+{v} % Angriff', en: '+{v}% attack' } },
+};
+

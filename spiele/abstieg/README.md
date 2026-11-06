@@ -158,6 +158,12 @@ In jedem Kampfraum (nicht im Boss-Raum, nicht auf Ebene 1) steht ein Ding, das d
 - **Abgrund, Seelenlaterne:** Grelles Licht blendet alle in der Nähe (2 Sekunden betäubt, 8 Sekunden 25 % mehr Schaden), der Raum bleibt hell.
 Code: `weather.js` (placeTool, useTool, drawTool), Namen in `data.js` A.WORLD_FX (tool, toolTip). Nicht im Spielstand.
 
+## Schicksalspunkte (06.11.2026)
+Jeder Welt-Boss und jeder Hauptmann gibt einen **Schicksalspunkt** («+1 Schicksalspunkt» über dem Besiegten). Ist der Raum frei, öffnet sich das Fenster «Schicksal»: du setzt den Punkt auf eine der 15 Build-Richtungen, höchstens 3 je Richtung. «Später» behält ihn; im Heldenblatt steht dann der Knopf «Schicksal +n».
+- Jeder Punkt gibt einen **festen Bonus**: Feuer +10 % Schaden gegen Brennende, Eis +10 % gegen Gebremste oder Betäubte, Blitz +12 % Blitzschaden, Gift +10 % gegen Vergiftete, Schatten +3 % Volltreffer und +3 % Ausweichen, Stein +6 % Leben und +2 Rüstung, Volltreffer +5 %, Dornen +8 %, Diener +15 % Schaden der Helfer und Tiere, Heilung +2 % Lebensraub, Tempo +2, Explosionen +12 %, Zauber +8 % Zauberkraft, Gold +15 %, Wucht +8 % Angriff.
+- Jeder Punkt zählt **2 Punkte** für die Richtung: Build-Name, Beute, Händler, Truhen und Schrein lehnen sich stärker daran an. Du bestimmst die Richtung, der Zufall liefert die Teile.
+- Steht im Durchlauf (`run.fate`, `run.fatePts`); alte Spielstände laden ohne Punkte. Daten `data.js` A.FATE, Rechnung `build.js` (fateMods, pre, boomMul), Fenster `ui.js` fatePick.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
