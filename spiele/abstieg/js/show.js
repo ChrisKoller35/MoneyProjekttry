@@ -25,6 +25,7 @@ A.Show = (function () {
   // Wer schickt diese Kiste? Fest aus Startwert, Kisten-Zahl und Ebene (nie zweimal derselbe hintereinander, wenn es mehr gibt)
   function pickSponsor(r) {
     const list = sponsors(); if (!list.length) return A.SPONSORS[0];
+    const pat = A.patronOf(r), P = pat && list.find(s => s.id === pat); if (P) return P;   // Gönner dieses Laufs (v43) schickt alle Kisten
     let k = (((r.seed >>> 0) ^ Math.imul((r.crates || 0) + 1, 0x9e3779b1) ^ Math.imul(r.floor, 7919)) >>> 0) % list.length;
     if (list.length > 1 && list[k].id === r.lastSp) k = (k + 1) % list.length;
     return list[k];
@@ -34,6 +35,7 @@ A.Show = (function () {
   // n Punkte fürs Auge; text schwebt über dem Helden («Dreifach! +10»)
   function hype(n, text) {
     const r = run(), w = W(); if (!live(r) || !w || !(n > 0)) return;
+    n = Math.round(n * (1 + A.patronVal('hype', r)));   // Kistenregen (v43)
     r.hype = Math.min(A.HYPE_MAX, (r.hype || 0) + n);
     r.hypeTot = (r.hypeTot || 0) + n;
     const h = w.hero; if (h && text && api) api.float(h.x, h.y - 92, text + ' +' + n, '#2ce8f5', 13);
@@ -48,6 +50,7 @@ A.Show = (function () {
     if (n === 3) hype(H.multi3, L('Dreifach!', 'Triple!'));
     else if (n === 5) hype(H.multi5, L('Gemetzel!', 'Carnage!'));
     else if (n === 8) hype(H.multi8, L('Wahnsinn!', 'Madness!'));
+    if (e.boss) r.bossKills = (r.bossKills || 0) + 1;   // für den Tageswunsch (v43)
     if (e.boss) hype(H.boss, L('Boss!', 'Boss!'));
     else if (e.captain) hype(H.captain, L('Hauptmann!', 'Captain!'));
     else if (e.elite) hype(H.elite, L('Elite!', 'Elite!'));
@@ -57,6 +60,11 @@ A.Show = (function () {
     if ((r.knall || 0) > 0 && !e.boss && w.hero && w.hero.alive) {
       r.knall--; w.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: w.t + 0.15, dmg: api.heroPower(w.hero) * 0.6, col: '#f77622', opts: { kette: true } });
       if (!r.knall) api.float(w.hero.x, w.hero.y - 70, L('Knall-Ladung leer', 'Bang charge empty'), '#f77622', 13);
+    }
+    // Feuerwerk (v43, Baron von Knall als Gönner): jeder n-te Besiegte geht hoch
+    else if (A.patronVal('boom', r) > 0 && !e.boss && w.hero && w.hero.alive) {
+      r.patKills = (r.patKills || 0) + 1;
+      if (r.patKills % A.patronVal('boom', r) === 0) w.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: w.t + 0.15, dmg: api.heroPower(w.hero) * 0.6, col: '#f77622', opts: { kette: true } });
     }
   }
   // Raum gesäubert (game.js roomCleared, bevor das Auftragsbrett die Werte zurücksetzt)

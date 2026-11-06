@@ -159,7 +159,7 @@ A.Game = (function () {
 
   // ---------- Durchlauf ----------
   let run = null;
-  function newRun(raceId, classId, grade) {
+  function newRun(raceId, classId, grade, patron) {
     const race = A.RACES.find(r => r.id === raceId), cls = A.CLASSES.find(c => c.id === classId);
     const g = Math.max(0, Math.min(gradeMax(cls.id), Math.floor(+grade) || 0));   // Grad (v39): nur, was die Klasse schon freigeschaltet hat
     const me = metaEffects();
@@ -176,6 +176,11 @@ A.Game = (function () {
       log: [], reviveUsed: false, over: false, won: false, grade: g,
     };
     if (grade != null) { (meta.gradeSel || (meta.gradeSel = {}))[cls.id] = g; saveMeta(); }
+    // Gönner (v43): nur einer, der sich schon vorgestellt hat; gemerkt für die nächste Heldenwahl
+    const sp = typeof patron === 'string' ? A.SPONSORS.find(s => s.id === patron) : null, pat = sp && A.PATRON_RULES[sp.id] && (Math.floor(+meta.fans) || 0) >= (sp.fans || 0) ? sp.id : null;
+    run.patron = pat;
+    if (patron !== undefined) { meta.patron = pat || ''; saveMeta(); }
+    run.potions += Math.max(0, Math.floor(A.patronVal('pots', run)));   // Tante Trudi: Proviant
     run.rng = new A.RNG(run.seed);
     run.pets = A.Pets.startPets();   // Begleiter aus der Tierhütte
     A.Achieve.onRun(run);            // Zähler fürs Auftragsbrett (Völker, Klassen) und die Felder für die Chronik
@@ -211,7 +216,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0);   // om: Regel des Gönners (v43)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
     const d = {
@@ -237,9 +242,42 @@ A.Game = (function () {
 
   // elite: true = Elite mit voller Anzahl Eigenschaften, Zahl = so viele Eigenschaften (Champion), Liste = genau diese Eigenschaften, false = normal
   // Grad (v39): je Grad mehr Leben und Schaden; ab Ebene 25 (die Welten kommen wieder) je Runde mehr, damit es nach dem Ausgang nicht leichter wird
+  // Tageswunsch (v43): am ersten Blick des Tages wählt ein Gönner, der sich schon vorgestellt hat, einen Wunsch; der bleibt den ganzen Tag
+  function wishToday() {
+    const day = dayKey(new Date()), w0 = meta.wish && typeof meta.wish === 'object' ? meta.wish : null;
+    let S = w0 && w0.day === day ? A.SPONSORS.find(s => s.id === w0.sp) : null, W = w0 && w0.day === day ? A.WISHES.find(x => x.id === w0.w) : null;
+    if (!S || !W) {
+      let h = 0; for (const ch of day) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+      const list = A.SPONSORS.filter(s => (Math.floor(+meta.fans) || 0) >= (s.fans || 0));
+      S = list[h % list.length] || A.SPONSORS[0]; W = A.WISHES[(h >>> 7) % A.WISHES.length];
+      meta.wish = { day, sp: S.id, w: W.id, done: false }; saveMeta();
+    }
+    return { day, S, w: W, done: !!meta.wish.done };
+  }
+  function wishProgress(w, r) {
+    r = r || run; if (!r || !w) return 0;
+    switch (w.id) {
+      case 'kills': return r.kills || 0;
+      case 'elites': return r.eliteKills || 0;
+      case 'floor': return r.floor || 0;
+      case 'crates': return r.crates || 0;
+      case 'boss': return r.bossKills || 0;
+      case 'home': return r.home ? 1 : 0;
+      default: return 0;
+    }
+  }
+  // Prüft den Wunsch für den laufenden Durchlauf (end: am Ende, dann zählt auch Heimkehren). Erfüllt: Fans und Funken gleich, einmal am Tag
+  function wishCheck(end) {
+    if (!run || (run.over && !end) || run.wishDone) return null;
+    const wt = wishToday(); if (wt.done || wishProgress(wt.w) < wt.w.n) return null;
+    meta.wish.done = true; meta.fans = (Math.floor(+meta.fans) || 0) + A.WISH_FANS; meta.sparks += A.WISH_SPARKS;
+    run.sparksWish = A.WISH_SPARKS; run.wishDone = { sp: wt.S.id, w: wt.w.id };
+    saveMeta(); save();
+    return wt;
+  }
   function monsterEntity(m, floor, elite, idx) {
     const gr = A.gradeOf(run), rd = A.worldRound(floor);
-    const hpM = (1 + 0.28 * (floor - 1)) * (1 + A.GRADE_HP * gr) * (1 + 0.5 * rd), atkM = (1 + 0.18 * (floor - 1)) * (1 + A.GRADE_ATK * gr) * (1 + 0.25 * rd);
+    const hpM = (1 + 0.28 * (floor - 1)) * (1 + A.GRADE_HP * gr) * (1 + 0.5 * rd) * (1 + A.patronVal('monHp', run)), atkM = (1 + 0.18 * (floor - 1)) * (1 + A.GRADE_ATK * gr) * (1 + 0.25 * rd) * (1 + A.patronVal('monAtk', run));   // Gönner-Regel (v43)
     const e = {
       id: 'e' + idx, mid: m.id, name: A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
@@ -605,7 +643,7 @@ A.Game = (function () {
   function shopMul() { return 1 - Math.min(0.5, metaEffects().shopOff); }
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
-  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r); }   // Trockener Hals (pacts.js): nur halb so viel
+  function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r) * (1 + A.patronVal('potHeal', r)); }   // Trockener Hals (pacts.js): nur halb so viel
   function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
@@ -616,10 +654,12 @@ A.Game = (function () {
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
     const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run));   // Pakte: je Pakt +15 %
     const cd = candles(true), candle = Math.round(base * A.CANDLE_SPARKS * cd.n);
-    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
+    const patron = Math.round(base * A.patronVal('sparks', run));   // Herr Ruhm als Gönner (v43)
+    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle + patron;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
+    run.sparksPatron = patron; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
@@ -653,7 +693,7 @@ A.Game = (function () {
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,

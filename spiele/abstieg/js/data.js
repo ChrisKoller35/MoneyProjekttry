@@ -759,6 +759,31 @@ A.SPONSORS = [
   { id: 'kiste', fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
   { id: 'ruhm', fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
 ];
+// Gönner wählen (v43, Heldenwahl): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit.
+// fx: dmgPct/hpPct/goldPct/xpPct in Prozent wie die Pakte (game.js derived), pots: Tränke am Start, potHeal: Trank-Heilung,
+// monHp/monAtk: Gegner (game.js monsterEntity), hype: Auge füllt sich schneller, boom: jeder n-te Besiegte explodiert (show.js), sparks: Seelenfunken
+A.PATRON_RULES = {
+  trudi: { fx: { pots: 2, potHeal: -0.15 }, rule: { de: 'Proviant: 2 Tränke mehr am Start. Dafür heilen Tränke 15 % weniger, sonst gewöhnst du dich dran.', en: 'Packed lunch: 2 extra potions at the start. Potions heal 15% less, or you will get used to it.' } },
+  geier: { fx: { goldPct: 30, monAtk: 0.1 }, rule: { de: 'Die Wette läuft: +30 % Gold. Die Gegner haben davon gehört und schlagen 10 % fester zu.', en: 'The bet is on: +30% gold. The enemies heard about it and hit 10% harder.' } },
+  knall: { fx: { boom: 5 }, rule: { de: 'Feuerwerk: Jeder fünfte Besiegte explodiert. Einfach so.', en: 'Fireworks: every fifth enemy you defeat explodes. Just because.' } },
+  pilz: { fx: { xpPct: 25, hpPct: -10 }, rule: { de: 'Versuchsreihe: +25 % Erfahrung. Nebenwirkung: 10 % weniger Leben.', en: 'Test series: +25% experience. Side effect: 10% less health.' } },
+  gemetzel: { fx: { dmgPct: 15, hpPct: -15 }, rule: { de: 'Blutdurst: +15 % Schaden, aber 15 % weniger Leben. Die Gräfin mag es knapp.', en: 'Bloodlust: +15% damage, but 15% less health. The Countess likes it close.' } },
+  mops: { fx: { hpPct: 20, dmgPct: -10 }, rule: { de: 'Kuschelkurs: +20 % Leben, 10 % weniger Schaden. Gewalt ist keine Lösung. Meistens.', en: 'Cuddle course: +20% health, 10% less damage. Violence is not the answer. Usually.' } },
+  kiste: { fx: { hype: 0.5 }, rule: { de: 'Kistenregen: Das Auge füllt sich 50 % schneller.', en: 'Crate rain: the eye fills 50% faster.' } },
+  ruhm: { fx: { sparks: 0.2, monHp: 0.15 }, rule: { de: 'Rampenlicht: +20 % Seelenfunken. Die Gegner haben 15 % mehr Leben, fürs Publikum.', en: 'Spotlight: +20% soul sparks. Enemies have 15% more health, for the audience.' } },
+};
+A.patronOf = (r) => (r && typeof r.patron === 'string' && A.PATRON_RULES[r.patron] ? r.patron : null);
+A.patronVal = (k, r) => { const p = A.patronOf(r); return p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0; };
+// Tageswunsch (v43): jeden Tag wünscht sich ein Gönner etwas für einen Lauf; einmal am Tag erfüllbar, dann Fans und Seelenfunken
+A.WISH_FANS = 2; A.WISH_SPARKS = 30;
+A.WISHES = [
+  { id: 'kills', n: 50, text: { de: 'Besiege in einem Lauf {n} Gegner.', en: 'Defeat {n} enemies in one run.' } },
+  { id: 'elites', n: 3, text: { de: 'Besiege in einem Lauf {n} Elite-Gegner.', en: 'Defeat {n} elite enemies in one run.' } },
+  { id: 'floor', n: 6, text: { de: 'Komm bis Ebene {n}.', en: 'Reach floor {n}.' } },
+  { id: 'crates', n: 2, text: { de: 'Hol dir in einem Lauf {n} Kisten von oben.', en: 'Get {n} crates from above in one run.' } },
+  { id: 'boss', n: 1, text: { de: 'Besiege einen Welt-Boss.', en: 'Defeat a world boss.' } },
+  { id: 'home', n: 1, text: { de: 'Komm heim: nach einem Welt-Boss «Heimkehren».', en: 'Come home: «Go home» after a world boss.' } },
+];
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
