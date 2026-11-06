@@ -976,12 +976,12 @@ A.PACTS = {
 // ---------- Überraschungen in der Welt (surprise.js, ab Ebenen-Bau 8) ----------
 // Krüge zum Zerschlagen: je Welt eigenes Bild (art.js), Farben (C Grundfarbe, D dunkel, H hell), Scherben-Farben und das Tier, das manchmal herausflitzt
 A.POTS = {
-  stone: { spr: 'pot_krug', name: { de: 'Krug', en: 'Jar' }, pal: { C: '#9a7b62', D: '#5d4636', H: '#c9a88a' }, bits: ['#9a7b62', '#5d4636', '#c9a88a'], critter: 'ratte' },
-  jungle: { spr: 'pot_korb', name: { de: 'Korb', en: 'Basket' }, pal: { C: '#c28569', D: '#733e39', H: '#e4a672' }, bits: ['#c28569', '#733e39', '#fee761'], critter: 'frosch' },
-  desert: { spr: 'pot_urne', name: { de: 'Urne', en: 'Urn' }, pal: { C: '#d77643', D: '#8a3b25', H: '#f0b07a' }, bits: ['#d77643', '#8a3b25', '#feae34'], critter: 'ratte' },
-  water: { spr: 'pot_amph', name: { de: 'Amphore', en: 'Amphora' }, pal: { C: '#4f8fa8', D: '#24536b', H: '#9fd3e0' }, bits: ['#4f8fa8', '#24536b', '#9fd3e0'], critter: 'krabbe' },
-  volcano: { spr: 'pot_kuebel', name: { de: 'Erzkübel', en: 'Ore bucket' }, pal: { C: '#5a6988', D: '#262b44', H: '#8b9bb4' }, bits: ['#5a6988', '#262b44', '#f77622'], critter: 'ratte' },
-  abyss: { spr: 'pot_glas', name: { de: 'Seelenglas', en: 'Soul jar' }, pal: { C: '#68386c', D: '#3e2731', H: '#b55088' }, bits: ['#b55088', '#2ce8f5', '#68386c'], critter: 'fledermaus' },
+  stone: { spr: 'pot_krug', name: { de: 'Krug', en: 'Jar' }, gold: { de: 'Goldener Krug', en: 'Golden jar' }, pal: { C: '#9a7b62', D: '#5d4636', H: '#c9a88a' }, bits: ['#9a7b62', '#5d4636', '#c9a88a'], critter: 'ratte' },
+  jungle: { spr: 'pot_korb', name: { de: 'Korb', en: 'Basket' }, gold: { de: 'Goldener Korb', en: 'Golden basket' }, pal: { C: '#c28569', D: '#733e39', H: '#e4a672' }, bits: ['#c28569', '#733e39', '#fee761'], critter: 'frosch' },
+  desert: { spr: 'pot_urne', name: { de: 'Urne', en: 'Urn' }, gold: { de: 'Goldene Urne', en: 'Golden urn' }, pal: { C: '#d77643', D: '#8a3b25', H: '#f0b07a' }, bits: ['#d77643', '#8a3b25', '#feae34'], critter: 'ratte' },
+  water: { spr: 'pot_amph', name: { de: 'Amphore', en: 'Amphora' }, gold: { de: 'Goldene Amphore', en: 'Golden amphora' }, pal: { C: '#4f8fa8', D: '#24536b', H: '#9fd3e0' }, bits: ['#4f8fa8', '#24536b', '#9fd3e0'], critter: 'krabbe' },
+  volcano: { spr: 'pot_kuebel', name: { de: 'Erzkübel', en: 'Ore bucket' }, gold: { de: 'Goldener Erzkübel', en: 'Golden ore bucket' }, pal: { C: '#5a6988', D: '#262b44', H: '#8b9bb4' }, bits: ['#5a6988', '#262b44', '#f77622'], critter: 'ratte' },
+  abyss: { spr: 'pot_glas', name: { de: 'Seelenglas', en: 'Soul jar' }, gold: { de: 'Goldenes Seelenglas', en: 'Golden soul jar' }, pal: { C: '#68386c', D: '#3e2731', H: '#b55088' }, bits: ['#b55088', '#2ce8f5', '#68386c'], critter: 'fledermaus' },
 };
 A.POT_BOOM_PAL = { C: '#a22633', D: '#3e2731', H: '#e43b44' };    // Knallkrug: rot, mit Zündschnur
 A.POT_GOLD_PAL = { C: '#feae34', D: '#be4a2f', H: '#fee761' };    // goldener Krug: glitzert

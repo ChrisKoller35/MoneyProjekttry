@@ -89,7 +89,7 @@ A.Surprise = (function () {
     if (p.v === 'gold') {
       coins(p.x, p.y - 6, 8 + Math.floor(Math.random() * 3), 1.5, 3, gm);
       if (Math.random() < 0.35) api.drop({ kind: 'item', it: G().randomItem(G().rollRarity(1)) }, p.x, p.y, 50);
-      say(L('Goldener ' + A.t(P.name) + '!', 'Golden ' + A.t(P.name).toLowerCase() + '!'), '#fee761', 16);
+      say((P.gold ? A.t(P.gold) : L('Goldener ' + A.t(P.name), 'Golden ' + A.t(P.name).toLowerCase())) + '!', '#fee761', 16);
       if (A.FX) A.FX.flash(p.x, p.y - 8, 90, '#fee761', 0.45);
       if (A.Sound.coin) A.Sound.coin();
       return;
