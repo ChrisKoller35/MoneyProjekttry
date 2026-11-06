@@ -117,6 +117,13 @@ A.Pets = (function () {
       for (let i = 0; i < n; i++) api.drop({ kind: 'gold', val: Math.ceil(rw.gold / n) }, e.x, e.y, 60 + Math.random() * 90);
       if (!(w.langT > w.t)) { w.langT = w.t + 1.2; api.float(e.x, e.y - e.r - 40, L('Langfinger!', 'Sticky fingers!'), '#f77622', 12); }   // nicht öfter als alle 1.2 Sekunden
     }
+    // Moppel (Goldnase): der letzte Gegner im Raum ist gefallen, er buddelt 2-4 Münzen aus
+    if (list.includes('moppel') && T('moppel', 3) && w && w.active && !w.mons.some(m => m.alive)) {
+      const a = w.allies.find(x => x.pet === 'moppel' && !x.gone) || e, n = 2 + Math.floor(Math.random() * 3), val = Math.max(2, Math.round(2 + w.floor * 0.8));
+      for (let i = 0; i < n; i++) api.drop({ kind: 'gold', val }, a.x, a.y, 50 + Math.random() * 80);
+      api.float(a.x, a.y - 34, L('Goldnase!', 'Gold nose!'), '#fee761', 13);
+      if (A.FX) A.FX.burst(a.x, a.y + 4, 8, { color: ['#733e39', '#8a5a3c', '#fee761'], smin: 20, smax: 90, life: 0.45, z: 2, vz: 90, g: 400, size: 2 });
+    }
   }
 
   // ---------- Verhalten im Kampf ----------
@@ -132,7 +139,12 @@ A.Pets = (function () {
     if (a.leap) { leapStep(a, dt, w); return true; }
     if (a.roll) { rollStep(a, dt, w); return true; }
     if (a.zz) { zigStep(a, dt, w); return true; }
+    if (a.ram) { ramStep(a, dt, w); return true; }
+    if (a.dive) { diveStep(a, dt, w); return true; }
+    if (a.pet === 'moppel') return mole(a, dt, w, h);   // vor dem Abstand: taucht immer auf, wenn kein Kampf mehr ist
     if (dist(a, h) > 420) return false;   // zu weit weg: erst zum Helden
+    if (a.pet === 'lotte') return goat(a, dt, w);
+    if (a.pet === 'pfeffer') return parrot(a, dt, w, h);
     if (a.pet === 'flitz') return flitz(a, dt, w);
     if (a.pet === 'huhu') return owl(a, dt, w);
     if (a.pet === 'glut') return drake(a, dt, w, h);
@@ -286,6 +298,101 @@ A.Pets = (function () {
     a.roll = null; a.r = 10; [a.x, a.y] = api.freeSpot(a.x, a.y, a.r);
     if (T('stachel', 3)) for (let i = 0; i < 8; i++) { const ang = i / 8 * TAU; api.shoot(a, a.x + Math.cos(ang) * 100, a.y + Math.sin(ang) * 100, power(a) * 0.45, { kind: 'phys', color: '#e4a672', speed: 380, life: 0.6, r: 4, quiet: i > 0 }); }
   }
+  // Moppel: im Kampf unter der Erde (nur ein wandernder Erdhügel), taucht unter dem Gegner auf, beisst, betäubt und buddelt sich wieder ein.
+  // Ohne Kampf (Raum gesäubert, neuer Raum, Held weit weg) taucht er immer auf und läuft wie jeder Helfer.
+  function mole(a, dt, w, h) {
+    if (!fight(w) || dist(a, h) > 420) { if (a.under) surface(a); a.slide = null; a.upT = 0; return false; }
+    if (a.upT > 0) { a.upT -= dt; a.moving = false; if (a.upT <= 0) dig(a); return true; }   // kurz oben: Biss, dann wieder runter
+    if (!a.under) dig(a);
+    if (T('moppel', 5) && !a.slide && (a.slideT = (a.slideT == null ? 4 : a.slideT) - dt) <= 0) {
+      const list = chainFrom(a, 3); a.slideT = list.length ? 9 : 0.5;
+      if (list.length) { a.slide = list; api.float(a.x, a.y - 30, L('Erdrutsch!', 'Landslide!'), '#8a5a3c', 14); }
+    }
+    if (a.slide) { a.slide = a.slide.filter(live); if (!a.slide.length) a.slide = null; }
+    const big = !!a.slide, m = big ? a.slide[0] : target(a, 400) || h, d = dist(a, m) || 1, sp = (big ? 520 : 300) * (a.spd || 1) * dt;
+    a.fx = (m.x - a.x) / d; a.fy = (m.y - a.y) / d; a.moving = d > 30;
+    if (a.moving) api.moveEnt(a, a.fx * Math.min(sp, d), a.fy * Math.min(sp, d));
+    if (a.moving && A.FX && !A.FX.low && Math.random() < 0.3) A.FX.part({ x: a.x, y: a.y + 4, z: 1, vx: (Math.random() - 0.5) * 30, vy: 0, vz: 40, g: 300, life: 0.3, color: '#733e39', size: 1 });
+    if (m !== h && d < 60 && (big || a.cd <= 0)) { if (big) a.slide.shift(); pop(a, m, big); }
+    return true;
+  }
+  function pop(a, m, big) {
+    [a.x, a.y] = api.freeSpot(m.x, m.y + m.r * 0.5, a.r);
+    a.under = false; a.upT = big ? 0.3 : 0.45; a.cd = a.rate; a.swing = 0.2; a.moving = false; a.fx = m.x >= a.x ? 1 : -1; a.fy = 0;
+    api.hit(a, m, power(a) * (big ? 2 : 1), { kind: 'phys', color: '#8a5a3c', stun: m.boss ? 0.25 : 0.5 });
+    dirt(a, true);
+  }
+  function dig(a) { a.under = true; dirt(a, false); }
+  function surface(a) { a.under = false; [a.x, a.y] = api.freeSpot(a.x, a.y, a.r); dirt(a, true); }
+  function dirt(a, big) {
+    if (A.FX) A.FX.burst(a.x, a.y + 4, big ? 10 : 5, { color: ['#733e39', '#8a5a3c', '#3e2731'], smin: 20, smax: big ? 110 : 60, life: 0.45, z: 2, vz: 90, g: 400, size: 2 });
+    if (big && A.Sound.gulp) A.Sound.gulp(0.3);
+  }
+  // Lotte: senkt den Kopf, nimmt Anlauf und rennt geradeaus durch die Gegner (prallt nicht ab); Doppelbock: hin und gleich wieder zurück
+  function goat(a, dt, w) {
+    const tgt = target(a, 340); if (!tgt) return false;
+    if (T('lotte', 5) && fight(w) && (a.bockT = (a.bockT == null ? 4 : a.bockT) - dt) <= 0) { a.bockT = 10; charge(a, tgt, true); api.float(a.x, a.y - 34, L('Doppelbock!', 'Double buck!'), '#e4e4e4', 15); return true; }
+    if (a.cd <= 0 && dist(a, tgt) < 280) { a.cd = a.rate; charge(a, tgt, false); return true; }
+    return false;
+  }
+  function charge(a, tgt, back) {
+    const d = dist(a, tgt) || 1;
+    a.ram = { dx: (tgt.x - a.x) / d, dy: (tgt.y - a.y) / d, wind: 0.4, t: 1, back, hits: new Set() };
+    a.fx = a.ram.dx; a.fy = a.ram.dy; api.fx('windup', { m: a });
+  }
+  function ramStep(a, dt, w) {
+    const R = a.ram; a.fx = R.dx; a.fy = R.dy;
+    if (R.wind > 0) { R.wind -= dt; a.moving = false; return; }   // Kopf gesenkt, scharrt
+    R.t -= dt; a.moving = true;
+    const sp = 400 * (a.spd || 1) * dt, bx = a.x, by = a.y;
+    api.moveEnt(a, R.dx * sp, R.dy * sp);
+    const wall = Math.hypot(a.x - bx, a.y - by) < sp * 0.4;
+    for (const m of w.mons) {
+      if (!live(m) || R.hits.has(m) || dist(a, m) > a.r + m.r + 6) continue;
+      R.hits.add(m);
+      // Dickschädel: steht hinter dem Gegner eine Wand oder Säule, wird er dagegen gedrückt
+      const px = m.x + R.dx * (m.r + 12), py = m.y + R.dy * (m.r + 12), fs = T('lotte', 3) ? api.freeSpot(px, py, m.r) : null, pin = !!fs && (fs[0] !== px || fs[1] !== py);
+      api.hit(a, m, power(a) * (pin ? 2 : 1), { kind: 'phys', color: '#e4e4e4', stun: pin ? 0.4 : 0 });
+      if (pin) { api.float(m.x, m.y - m.r - 26, L('Bumm!', 'Bonk!'), '#e4e4e4', 13); if (A.FX) A.FX.shake(0.08); }
+    }
+    if (R.t > 0 && !wall) return;
+    if (R.back && !R.turned) { R.turned = true; R.dx = -R.dx; R.dy = -R.dy; R.t = 1; R.wind = 0.15; R.hits.clear(); return; }
+    a.ram = null; [a.x, a.y] = api.freeSpot(a.x, a.y, a.r);
+    if (wall && A.FX) A.FX.shake(0.04);
+  }
+  // Pfeffer: kreist 40-60 px um den Helden und spuckt Sonnenblumenkerne; Sturzflug auf den Gegner mit dem meisten Leben
+  function parrot(a, dt, w, h) {
+    if (T('pfeffer', 5) && fight(w) && (a.diveT = (a.diveT == null ? 3 : a.diveT) - dt) <= 0) {
+      let big = null; for (const m of w.mons) if (live(m) && dist(h, m) < 450 && (!big || m.hp > big.hp)) big = m;
+      a.diveT = big ? 8 : 0.5;
+      if (big) { a.dive = { m: big, d0: Math.max(1, dist(a, big) - big.r), z: 11, up: 0 }; api.float(a.x, a.y - 40, 'Kraaa!', '#63c74d', 16); if (A.Sound.squeak) A.Sound.squeak(); return true; }
+    }
+    a.ang = (a.ang || Math.random() * TAU) + dt * 1.4;
+    const R = 50 + Math.sin(w.t * 0.9) * 10, gx = h.x + Math.cos(a.ang) * R, gy = h.y + Math.sin(a.ang) * R * 0.7, gd = Math.hypot(gx - a.x, gy - a.y), sp = 260 * (a.spd || 1) * dt;
+    a.moving = gd > 4;
+    if (a.moving) api.moveEnt(a, (gx - a.x) / gd * Math.min(sp, gd), (gy - a.y) / gd * Math.min(sp, gd));
+    const tgt = target(a, 360);
+    if (!tgt) { if (a.moving) { a.fx = gx >= a.x ? 1 : -1; a.fy = 0; } return true; }
+    a.fx = tgt.x >= a.x ? 1 : -1; a.fy = 0;
+    if (a.cd <= 0) {
+      a.cd = a.rate; a.swing = 0.2;
+      const a0 = Math.atan2(tgt.y - a.y, tgt.x - a.x), n = T('pfeffer', 3) ? 3 : 1;
+      for (let i = 0; i < n; i++) { const an = a0 + (i - (n - 1) / 2) * 0.3; api.shoot(a, a.x + Math.cos(an) * 100, a.y + Math.sin(an) * 100, power(a), { kind: 'phys', color: '#fee761', speed: 400, r: 3, life: 1, quiet: i > 0 }); }
+    }
+    return true;
+  }
+  function diveStep(a, dt, w) {
+    const D = a.dive, m = D.m; a.moving = true;
+    if (D.up > 0) { D.up -= dt; D.z = 11 * (1 - Math.max(0, D.up) / 0.35); if (D.up <= 0) a.dive = null; return; }   // zurück in die Luft
+    if (!live(m)) { a.dive = null; [a.x, a.y] = api.freeSpot(a.x, a.y, a.r); return; }
+    const d = dist(a, m) || 1, sp = 720 * dt;
+    a.fx = (m.x - a.x) / d; a.fy = (m.y - a.y) / d; D.z = 11 * clamp((d - m.r) / D.d0, 0, 1);
+    if (d > sp + m.r) { a.x += a.fx * sp; a.y += a.fy * sp; return; }
+    a.x = m.x - a.fx * m.r; a.y = m.y - a.fy * m.r; a.swing = 0.2; D.up = 0.35; D.z = 0;
+    api.hit(a, m, api.heroPower(w.hero) * 4, { kind: 'phys', color: '#63c74d', stun: m.boss ? 0.3 : 0.8 });
+    [a.x, a.y] = api.freeSpot(a.x, a.y, a.r);
+    if (A.FX) { A.FX.shake(0.1); A.FX.burst(a.x, a.y - 6, 10, { color: ['#63c74d', '#e43b44', '#fee761'], smin: 30, smax: 120, life: 0.5, z: 4, vz: 60, g: 200, size: 1 }); }
+  }
   // Gacker: legt im Kampf Eier, daraus schlüpfen Küken (oder Gold)
   function hen(a, dt, w) {
     if (!fight(w) || (a.eggT = (a.eggT == null ? 3 : a.eggT) - dt) > 0) return;
@@ -359,15 +466,24 @@ A.Pets = (function () {
       dr.shadow(x, y, 3); dr.blit(s, x, y - hop, flip, { alpha });
       return true;
     }
-    const Pt = P(a.pet); let name = Pt.spr, frame = 0, z = (a.z || 0) / PX, sc = 1;
+    if (a.pet === 'moppel' && a.under) {   // unter der Erde: nur ein wandernder Erdhügel, ohne Schatten
+      dr.blit(A.Art.sprite('pet_molehill'), x + (a.moving ? Math.round(Math.sin(t * 18)) : 0), y, false, { alpha });
+      return true;
+    }
+    const Pt = P(a.pet), fl = a.pet === 'huhu' || a.pet === 'pfeffer'; let name = Pt.spr, frame = 0, z = (a.z || 0) / PX, sc = 1;
     const ox = a.swing > 0 ? a.fx * Math.sin((1 - a.swing / 0.2) * Math.PI) * 3 : 0;
     if (a.pet === 'huhu') { frame = Math.floor(t * 7) % 2; z += a.swing > 0 ? 3 : 11 + Math.sin(t * 3 + a.x * 0.01) * 2; }
+    else if (a.pet === 'pfeffer') { frame = Math.floor(t * 7) % 2; z += a.dive ? a.dive.z : a.swing > 0 ? 8 : 11 + Math.sin(t * 3 + a.x * 0.01) * 2; }
+    else if (a.pet === 'lotte') {   // Kopf gesenkt beim Anlauf und Rammen, dabei staubt es
+      frame = a.ram ? 1 : 0; if (a.moving && !a.ram) z += Math.abs(Math.sin(t * 10 + a.x * 0.01)) * 2;
+      if (a.ram && a.ram.wind <= 0 && A.FX && !A.FX.low && Math.random() < 0.4) A.FX.smoke(a.x - a.fx * 10, a.y + 6, 1, '#c0cbdc', 3);
+    }
     else if (a.pet === 'stachel' && a.roll) { name = 'pet_hogball'; frame = Math.floor(t * 14) % 2; if (a.roll.big) sc = 2; }
     else if (a.pet === 'brunhilde') { frame = a.leap ? 1 : 0; if (a.moving && !a.leap) z += Math.abs(Math.sin(t * 7 + a.x * 0.01)) * 4; }
     else if (a.pet === 'glut') frame = Math.floor(t * (a.moving ? 8 : 3)) % 2;
     else frame = a.moving ? Math.floor(t * (a.pet === 'flitz' ? 14 : 9)) % 2 : 0;
     const spr = A.Art.sprite(name, frame);
-    dr.shadow(x, y, (a.pet === 'huhu' ? 4 : 6) * sc);
+    dr.shadow(x, y, (fl ? 4 : 6) * sc);
     dr.outlineGlow(spr, x + ox, y - z, flip, Pt.col, sc);
     dr.blit(spr, x + ox, y - z, flip, { alpha, sx: sc, sy: sc });
     // Treue 5: ein kleiner Stern funkelt über dem Tier

@@ -1711,6 +1711,89 @@ A.Art = (function () {
     '.22333333333333332..',
     '..222222222222222...',
   ]];
+  // Moppel der Maulwurf (Stehen/Laufen) und sein Erdhügel, wenn er unter der Erde wühlt
+  R.pet_mole = [[
+    '.....nnnnn.....',
+    '...nnNNNNNnn...',
+    '..nNNmmNNNNNn..',
+    '.nNNmmNNNNNN0n.',
+    '.nNNNNNNNNNNNNw',
+    'nNNNNNNNNNNNNww',
+    'nNNNNNNNNNNNNn.',
+    '.nNNNNNNNNNNn..',
+    '..ee.ee..ee.ee.',
+  ], [
+    '.....nnnnn.....',
+    '...nnNNNNNnn...',
+    '..nNNmmNNNNNn..',
+    '.nNNmmNNNNNN0n.',
+    '.nNNNNNNNNNNNNw',
+    'nNNNNNNNNNNNNww',
+    'nNNNNNNNNNNNNn.',
+    '.nNNNNNNNNNNn..',
+    '.ee..ee.ee..ee.',
+  ]];
+  R.pet_molehill = [[
+    '....nNNn....',
+    '..nNNmNNNn..',
+    '.nNmNN3NmNn.',
+    'nNNNmNNNNN3n',
+    'nnNNNNNNNNnn',
+  ]];
+  // Lotte die Ziege: Stehen, dann Kopf gesenkt (Anlauf und Rammen)
+  R.pet_goat = [[
+    '...........3.3..',
+    '..........3.3...',
+    '..........5665..',
+    '.........56606..',
+    '.5.......566666w',
+    '565......5665...',
+    '.5666666666655..',
+    '.666666666665...',
+    '.566666666665...',
+    '..55666666555...',
+    '..6.6....6.6....',
+    '..2.2....2.2....',
+  ], [
+    '................',
+    '................',
+    '................',
+    '.5..............',
+    '565.........33..',
+    '.566666666.3..3.',
+    '.66666666665663.',
+    '.666666666566066',
+    '.56666666656666w',
+    '..55666666555.5.',
+    '.6..6....6..6...',
+    '.2..2....2..2...',
+  ]];
+  // Pfeffer der Papagei: Flügel oben, Flügel unten
+  R.pet_parrot = [[
+    '.G.............',
+    '.GG......llll..',
+    '..GlG...llllll.',
+    '..GllG.llll60yy',
+    '...GllGllllll.y',
+    '....Gllllllll..',
+    '.....llllllll..',
+    '.....RRlllll...',
+    '....RRBllll....',
+    '...RBB...y.y...',
+    '..BB...........',
+  ], [
+    '.........llll..',
+    '........llllll.',
+    '.......llll60yy',
+    '.......llllll.y',
+    '.....Gllllllll.',
+    '...GGllllllll..',
+    '..GlllGllllll..',
+    '....GGRRllll...',
+    '....RRB..y.y...',
+    '...RBB.........',
+    '..BB...........',
+  ]];
   // ---------- Die zehn verrückten Stücke in der Welt (wild.js) ----------
   // Bananenschale, Gartenzwerg (wirft), Kisti die hungrige Truhe (zu, dann mit Zähnen), Gewitterwolke, Bonbon (C/H: Farbe), Sparschwein, Fliegenklatsche
   R.banana = [[
