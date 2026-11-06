@@ -183,6 +183,10 @@ Die Räume sind nicht mehr leer: es gibt Dinge zum Kaputtmachen und zwei Gegner,
 - **Erfolge:** «Scherbenhaufen» (200 Krüge), «Zahnarzt» (eine Mimik), «Haltet den Dieb!» (3 Goldwichte); damit 39 Erfolge.
 - **Spielstand:** Krüge und Mimik kommen erst ab Ebenen-Bau 8 (`run.lvVer`), eine laufende Ebene aus einem älteren Stand bleibt ohne. Die Krüge stehen fest aus dem Startwert der Ebene als letzte Dinge im Raum, zerbrochene bleiben zerbrochen. Neu im Durchlauf: `run.tamed`/`run.tamedFloor` (besiegte Mimik) und `run.gwFloor` (Goldwicht schon da); in `meta.stats` die Zähler `pots`, `mimics`, `gwicht`.
 
+## Weiterspielen nach dem Schliessen (06.11.2026)
+- Wer die Seite mitten in einem Kampf schliesst, kommt beim Weiterspielen wie immer im Startraum der Ebene an. Der Kampf, der noch lief, beginnt beim Betreten des Raums von vorn (vorher blieb der Raum leer, Beute, Käfig und Pakt-Altar fehlten, und auf Boss-Ebenen blieb die Treppe versteckt).
+- Ein Boss oder Hauptmann, der schon gefallen war, kommt dabei nicht noch einmal (`run.bossDown`, `run.capDown` = Ebene), damit es keine doppelte Beute und keine doppelten Schicksalspunkte gibt. Prüfung `resumetest.js` im Scratchpad (v38).
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
