@@ -907,10 +907,10 @@ function updateSkillBtns() {
 
 // ---------- Maulwurf: klaut ab und zu einen Sack Gold, antippen bringt ihn doppelt zurück ----------
 let mole = null, moleTimer = 180;   // erster Auftritt frühestens nach 3 Minuten Sitzung
-const moleY = () => CH < 420 ? CH - 40 : CH * 0.84;   // unter der Truhen-Zone (0.25-0.7)
+const moleY = () => CH - 36;   // ganz unten, unter dem Lebensbalken, zwischen den Knöpfen Dynamit/Bier
 function spawnMole() {
   if (mole) return;
-  const left = Math.random() < 0.5, x0 = CW * (left ? 0.08 : 0.92), x1 = CW * (left ? 0.92 : 0.08);
+  const left = Math.random() < 0.5, x0 = CW * (left ? 0.2 : 0.8), x1 = CW * (left ? 0.8 : 0.2);   // Löcher neben den Knöpfen Dynamit/Bier
   mole = { x: x0, y: moleY(), x0, x1, dir: left ? 1 : -1, ph: 'in', k: 0, out: false, sack: 0, seen: false };
 }
 function moleStep(dt) {
@@ -932,7 +932,7 @@ function moleStep(dt) {
       sfx.fail(); refreshPanel(true);
     }
   } else if (mole.ph === 'run') {
-    mole.x += mole.dir * CW * 0.84 / 4.5 * dt;
+    mole.x += mole.dir * Math.abs(mole.x1 - mole.x0) / 4.5 * dt;
     if (Math.random() < dt * 8) { const p = chip(mole.x - mole.dir * 12, mole.y + 8, layerAt(S.depth).rock); p.vx = -mole.dir * Math.random() * 2; p.vy = -1.5 - Math.random() * 1.5; p.size = 3 + Math.random() * 3; chips.push(p); }
     if ((mole.x - mole.x1) * mole.dir >= 0) { mole.x = mole.x1; moleEscape(); }
   } else {   // 'back': erwischt, verschwindet rückwärts ins Loch
@@ -1374,7 +1374,7 @@ function rowData(r) {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'finds') {
-    return { name: TF.title, lvl: '', eff: `<b>${findCount()} / ${FINDS.length}</b> · ${layerAt(S.depth).name}: ${layerFinds(F.layerOf(S.depth)).length} / 3`, cost: 0, cur: 'rec', locked: false, rec: true };
+    return { name: TF.title, lvl: '', eff: `<b>${findCount()} / ${FINDS.length}</b>` + (S.depth <= 140 ? ` · ${layerAt(S.depth).name}: ${layerFinds(F.layerOf(S.depth)).length} / 3` : ''), cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'realm') {
     const st = storeInfo();
@@ -1467,7 +1467,7 @@ const TIPS = [
   { id: 'tap', at: 'rock', when: () => S.st.prest === 0 && S.taps === 0 && S.depth === 1, done: () => S.taps >= 5 || S.depth > 1 },
   { id: 'dwarf', at: 'dwarf', when: () => S.st.prest === 0 && S.st.bosses === 0 && S.dw.every(n => n === 0) && S.gold >= F.dwarfCost(0, 0), done: () => S.dw[0] > 0 },
   { id: 'boss', at: 'rock', when: () => S.st.prest === 0 && S.st.bosses === 0 && bossActive, done: () => !bossActive },
-  { id: 'gem', at: 'gem', when: () => tab !== 'gem' && S.st.prest === 0 && S.gems >= F.gemCost('power', 0) && GEM_UPS.every(u => !S.gu[u.key]), done: () => tab === 'gem' || GEM_UPS.some(u => S.gu[u.key]) },
+  { id: 'gem', at: 'gem', when: () => tab !== 'gem' && S.st.prest === 0 && S.dw[0] > 0 && !bossActive && S.gems >= F.gemCost('power', 0) && GEM_UPS.every(u => !S.gu[u.key]), done: () => tab === 'gem' || GEM_UPS.some(u => S.gu[u.key]) },
   { id: 'move', at: 'goal', when: () => tab !== 'goal' && moveWorth(), done: () => tab === 'goal' || !F.canPrestige(S) },
   { id: 'mole', at: 'rock', when: () => !!(mole && mole.out && !mole.seen), done: () => !mole || !mole.out },
   { id: 'end', at: 'rock', when: () => S.blkBest >= 100 && !S.towers.length && !S.blockDone && !S.farm && !bossActive, done: () => bossActive || S.blockDone || S.towers.length > 0 },
@@ -1522,7 +1522,7 @@ function findCount() { return FINDS.filter(f => S.finds[f.id]).length; }
 function layerFinds(i) { return FINDS.filter(f => f.layer === i && S.finds[f.id]); }
 // Bei jeder neuen Tiefe: 22 % Chance auf ein noch fehlendes Fundstück dieser Schicht (Ringe zählen zur selben Schicht)
 function rollFind() {
-  if (S.maxDepth < 2) return;
+  if (S.maxDepth < 2 || S.maxDepth > 140) return;   // im Herz (141-150) gibt es keine Fundstücke
   const i = F.layerOf(S.maxDepth);
   const open = FINDS.filter(f => f.layer === i && !S.finds[f.id]);
   if (!open.length || Math.random() >= 0.22) return;
@@ -1532,7 +1532,7 @@ function rollFind() {
   sfx.chest();
   const c = rockCenter();
   for (let k = 0; k < 20; k++) { const p = chip(c.x, c.y - c.r * 0.3, CONFETTI[k % CONFETTI.length]); p.vx *= 1.7; p.vy -= 4; p.size = 5 + Math.random() * 4; chips.push(p); }
-  if (layerFinds(i).length === 3) { S.gems += 5; showBanner({ text: TF.layerDone, sub: T.layers[i] + ' · 💎 ' + TF.layerDoneSub, life: 2.6, color: '#57d2ff' }); }
+  if (layerFinds(i).length === 3) { S.gems += 5; showBanner({ text: TF.layerDone, sub: layerAt(S.maxDepth).name + ' · 💎 ' + TF.layerDoneSub, life: 2.6, color: '#57d2ff' }); }
   if (findCount() === FINDS.length) { S.gems += 50; showBanner({ text: TF.allDone, sub: TF.allDoneSub, life: 3.2, color: '#ffd447' }); sfx.boss(); }
   save();
 }
