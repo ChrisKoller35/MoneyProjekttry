@@ -186,8 +186,13 @@ const T = DE ? {
   noTower: 'Noch kein Förderturm. Besiege das Herz des Berges auf Tiefe 150, dann fördert hier ein Turm Kronen, auch wenn du weg bist.',
   blocksT: 'Blöcke', soon: 'Bald', here: 'Hier bist du', hereD: 'Du bist hier auf Tiefe {d}', start: 'Start', again: 'Nochmal',
   blk: { stein: 'Alter Berg', vulkan: 'Vulkan', eis: 'Gletscher', wasser: 'Grotte' },
-  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis, das nur Dynamit schmilzt. Kommt bald.', wasser: 'Das Wasser steigt, dafür mehr Truhen. Kommt bald.' },
-  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans' },
+  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis halbiert den Schaden, bis Dynamit es sprengt (dafür doppelt Gold). Bei Kälte frieren die Zwerge, Bier wärmt.', wasser: 'Doppelt so viele Truhen. Verlierst du einen Boss, steigt das Wasser: 2 Tiefen zurück.' },
+  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans', eis: 'Herz des Gletschers', wasser: 'Herz der Grotte' },
+  eisLayers: ['Schnee', 'Firn', 'Packeis', 'Gletscherstein', 'Frostkupfer', 'Eisen im Eis', 'Silberfrost', 'Eisgold', 'Blaueis', 'Frostgrund', 'Eisobsidian', 'Polarmithril', 'Kältekern', 'Ewiges Eis'],
+  wasserLayers: ['Tropfstein', 'Kalkstein', 'Muschelbank', 'Korallenstein', 'Grünspan', 'Rostwasser', 'Perlmutt', 'Goldsand', 'Seekristall', 'Tiefsee', 'Schwarzes Riff', 'Nixenmithril', 'Strudelkern', 'Abgrund'],
+  iceMelt: 'Eis geschmolzen!', iceSub: 'Jetzt voller Schaden, doppelt Gold', iceLbl: '❄ Eis: halber Schaden', frostOn: 'Kälteeinbruch!', frostSub: '12 s: Zwerge frieren, Bier wärmt', warm: 'warm', floodFail: 'Das Wasser steigt!', floodSub: '2 Tiefen zurück. Kauf Stärkeres, dann nochmal',
+  shopT: 'Kronen-Laden', shopNote: 'Ausgeben senkt den Punktestand nicht', shopBought: 'Gekauft!',
+  shop: { kraft: ['Kronen-Kraft', '+20 % Graben je Stufe, für immer'], start: ['Startkapital', 'Jeder neue Block und jede neue Mine beginnt mit Gold'], gilde: ['Zwergen-Gilde', 'Jeder Start mit 10 Gräbern je Stufe'], lager: ['Grösseres Lager', 'Fördertürme sammeln 6 Stunden länger'], turm: ['Turm-Antrieb', 'Alle Fördertürme +25 % Kronen'], helm: ['Goldhelme', 'Alle Zwerge tragen goldene Helme'], gpick: ['Goldene Hacke', 'Deine Hacke glänzt golden'] },
   vulkanLayers: ['Asche', 'Bimsstein', 'Basalt', 'Schwefel', 'Glutkupfer', 'Schmiedeeisen', 'Feuergold', 'Rubin', 'Magma', 'Glutschlund', 'Obsidian', 'Drachenglas', 'Feuerkern', 'Höllenschlot'],
   blkDoneTitle: '{b} geschafft!', blkDoneText: 'Dein Förderturm fördert ab jetzt {r} pro Stunde, auch wenn du weg bist. Das Lager fasst 12 Stunden. Mit Kronen schaltest du neue Blöcke frei. Dein Punktestand zählt alle Kronen, auch die ausgegebenen.',
   blockDoneName: 'Block geschafft!', blockDoneEff: 'Tiefer geht es hier nicht. Wähle auf der Karte deinen nächsten Block.', nextBlock: 'Nächster Block',
@@ -230,8 +235,13 @@ const T = DE ? {
   noTower: 'No mine tower yet. Beat the Heart of the Mountain at depth 150 and a tower will mine crowns here, even while you are away.',
   blocksT: 'Blocks', soon: 'Soon', here: 'You are here', hereD: 'You are at depth {d}', start: 'Start', again: 'Again',
   blk: { stein: 'Old Mountain', vulkan: 'Volcano', eis: 'Glacier', wasser: 'Grotto' },
-  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice only dynamite can melt. Coming soon.', wasser: 'The water rises, but more chests. Coming soon.' },
-  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano' },
+  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice halves your damage until dynamite blasts it (double gold). In cold snaps dwarves freeze, beer warms them.', wasser: 'Twice as many chests. Lose a boss and the water rises: 2 depths back.' },
+  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano', eis: 'Heart of the Glacier', wasser: 'Heart of the Grotto' },
+  eisLayers: ['Snow', 'Firn', 'Pack Ice', 'Glacier Stone', 'Frost Copper', 'Iron in Ice', 'Silver Frost', 'Ice Gold', 'Blue Ice', 'Frost Floor', 'Ice Obsidian', 'Polar Mithril', 'Cold Core', 'Eternal Ice'],
+  wasserLayers: ['Dripstone', 'Limestone', 'Shell Bank', 'Coral Stone', 'Verdigris', 'Rust Water', 'Mother of Pearl', 'Gold Sand', 'Sea Crystal', 'Deep Sea', 'Black Reef', 'Mermaid Mithril', 'Whirlpool Core', 'Abyss'],
+  iceMelt: 'Ice melted!', iceSub: 'Full damage now, double gold', iceLbl: '❄ Ice: half damage', frostOn: 'Cold snap!', frostSub: '12 s: dwarves freeze, beer warms', warm: 'warm', floodFail: 'The water rises!', floodSub: '2 depths back. Buy upgrades, then retry',
+  shopT: 'Crown Shop', shopNote: 'Spending never lowers your score', shopBought: 'Bought!',
+  shop: { kraft: ['Crown Power', '+20% digging per level, forever'], start: ['Starting Gold', 'Every new block and mine starts with gold'], gilde: ['Dwarf Guild', 'Every start with 10 diggers per level'], lager: ['Bigger Storage', 'Mine towers collect 6 hours longer'], turm: ['Tower Drive', 'All mine towers +25% crowns'], helm: ['Golden Helmets', 'All dwarves wear golden helmets'], gpick: ['Golden Pickaxe', 'Your pickaxe shines gold'] },
   vulkanLayers: ['Ash', 'Pumice', 'Basalt', 'Sulfur', 'Ember Copper', 'Forge Iron', 'Fire Gold', 'Ruby', 'Magma', 'Ember Throat', 'Obsidian', 'Dragonglass', 'Fire Core', 'Hell Vent'],
   blkDoneTitle: '{b} cleared!', blkDoneText: 'Your mine tower now mines {r} per hour, even while you are away. Its storage holds 12 hours. Crowns unlock new blocks. Your score counts every crown, spent ones too.',
   blockDoneName: 'Block cleared!', blockDoneEff: 'You can’t dig deeper here. Pick your next block on the map.', nextBlock: 'Next block',
@@ -335,13 +345,28 @@ const GEM_UPS = [
 const BLOCKS = [
   { k: 'stein',  rate: 1, cost: 0,  icon: '⛰️', color: '#c9c9d2' },
   { k: 'vulkan', rate: 2, cost: 10, icon: '🌋', color: '#ff8a3d' },
-  { k: 'eis',    rate: 2, cost: 25, icon: '🧊', color: '#7fe7ff', soon: true },
-  { k: 'wasser', rate: 3, cost: 50, icon: '🌊', color: '#57a8ff', soon: true },
+  { k: 'eis',    rate: 2, cost: 25, icon: '🧊', color: '#7fe7ff' },
+  { k: 'wasser', rate: 3, cost: 50, icon: '🌊', color: '#57a8ff' },
+];
+// Kronen-Laden: Käufe mit Kronen (der Punktestand bleibt)
+const SHOP = [
+  { k: 'kraft', icon: '💪', max: 10, cost: (L) => Math.ceil(6 * Math.pow(1.5, L)) },
+  { k: 'start', icon: '💰', max: 5,  cost: (L) => 5 * Math.pow(2, L) },
+  { k: 'gilde', icon: '🧔', max: 3,  cost: (L) => 8 * Math.pow(2, L) },
+  { k: 'lager', icon: '📦', max: 2,  cost: (L) => 15 * Math.pow(2, L) },
+  { k: 'turm',  icon: '⚙️', max: 4,  cost: (L) => 20 * Math.pow(2, L) },
+  { k: 'helm',  icon: '⛑️', max: 1,  cost: () => 10 },
+  { k: 'gpick', icon: '✨', max: 1,  cost: () => 12 },
 ];
 const F = {
   blockEnd: 150, blockCrowns: 10, towerMaxH: 12,
-  towerRate: (k) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate,
+  shopLv: (s, k) => (s && s.shop && s.shop[k]) || 0,
+  towerRate: (k, s) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate * (1 + 0.25 * F.shopLv(s, 'turm')),
+  towerCap: (s) => F.towerMaxH + 6 * F.shopLv(s, 'lager'),
+  startGold: (s) => { const L = F.shopLv(s, 'start'); return L ? 100 * Math.pow(10, L) : 0; },
+  startDw: (s) => 10 * F.shopLv(s, 'gilde'),
   lavaEvery: () => 45 + Math.random() * 15, lavaSec: 10, lavaTap: 3,
+  frostSec: 12, frostDw: 0.25, iceChance: 0.25, iceDmg: 0.5, iceGold: 2,
   isBoss: (d) => d % 10 === 0,
   isBigBoss: (d) => d % 50 === 0,
   layerOf: (d) => Math.floor((d - 1) / 10) % LAYERS.length,
@@ -353,7 +378,7 @@ const F = {
   bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
   bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0),
   heirMult: (s) => 1 + 0.05 * (s.heir || 0),
-  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s),
+  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s) * (1 + 0.2 * F.shopLv(s, 'kraft')),
   pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1),
   dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1),
   pickCost: (L) => Math.ceil(10 * Math.pow(1.19, L)),
@@ -368,7 +393,7 @@ const F = {
   gemCost: (k, L) => { const g = GEM_UPS.find(u => u.key === k); return Math.ceil(g.base * Math.pow(g.grow, L)); },
   offlineRate: (s) => 0.25 + 0.075 * s.gu.offline,
   offlineMaxSec: 8 * 3600,
-  chestEvery: (s) => Math.max(18, 60 - 5 * s.gu.chest),
+  chestEvery: (s) => Math.max(18, 60 - 5 * s.gu.chest) * (s.blk === 'wasser' ? 0.5 : 1),
   chestLife: (s) => s.up.laterne ? 18 : 9,
   chestMult: (s) => s.up.magnet ? 2 : 1,
   dynCd: 90, dynTaps: 30, beerCd: 180, beerSec: 20, beerMult: 3,
@@ -400,6 +425,14 @@ const layerCache = {};
 const HEARTS = {
   stein:  { rock: '#8a6a2a', dark: '#4a3510', ore: '#fff2a8', bg: '#1a1205' },
   vulkan: { rock: '#8a1f0f', dark: '#4a0a04', ore: '#ffdd55', bg: '#220500' },
+  eis:    { rock: '#8cc8f0', dark: '#3a6a9a', ore: '#ffffff', bg: '#06121e' },
+  wasser: { rock: '#2a8a9a', dark: '#0a3a4a', ore: '#aaffee', bg: '#021418' },
+};
+// Farbstich je Block: Farbton, wie stark, mehr Sättigung, heller
+const TINT = {
+  vulkan: { h: 14,  k: 0.6, ds: 0.18, dl: 0,    bk: 0.7,  bds: 0.25 },
+  eis:    { h: 200, k: 0.7, ds: 0.05, dl: 0.12, bk: 0.75, bds: 0.2 },
+  wasser: { h: 182, k: 0.6, ds: 0.12, dl: 0.02, bk: 0.75, bds: 0.25 },
 };
 function layerAt(d) {
   const kind = S.blk || 'stein', heart = d > 140 && d <= F.blockEnd;
@@ -414,11 +447,12 @@ function layerAt(d) {
     const tint = (hex, dl, ds, minL = 0) => { const [h, s, l] = hexToHsl(hex); return hslToHex((h + shift) % 360, Math.min(1, s * 1.1 + ds), Math.min(0.9, Math.max(minL, l + dl))); };
     L = { rock: tint(base.rock, 0.02, 0.12), dark: tint(base.dark, 0, 0.12), ore: tint(base.ore, 0.08, 0.3, 0.6), bg: tint(base.bg, 0, 0.15), glow: true };
   }
-  if (kind === 'vulkan' && !heart) {   // Vulkan: alles zieht ins Rot, Glut in der Luft
-    const hot = (hex, k, ds, dl = 0) => { const [h, s, l] = hexToHsl(hex), dh = ((14 - h + 540) % 360) - 180; return hslToHex((h + dh * k + 360) % 360, Math.min(1, s + ds), Math.min(0.9, l + dl)); };
-    L = { rock: hot(L.rock, 0.6, 0.18), dark: hot(L.dark, 0.6, 0.18), ore: hot(L.ore, 0.25, 0.1, 0.05), bg: hot(L.bg, 0.7, 0.25), glow: L.glow };
+  const tn = TINT[kind];
+  if (tn && !heart) {   // Vulkan rot, Gletscher eisblau, Grotte türkis
+    const mix = (hex, k, ds, dl = 0) => { const [h, s, l] = hexToHsl(hex), dh = ((tn.h - h + 540) % 360) - 180; return hslToHex((h + dh * k + 360) % 360, Math.min(1, Math.max(0, s + ds)), Math.min(0.9, l + dl)); };
+    L = { rock: mix(L.rock, tn.k, tn.ds, tn.dl), dark: mix(L.dark, tn.k, tn.ds, tn.dl * 0.5), ore: mix(L.ore, 0.25, 0.1, 0.05), bg: mix(L.bg, tn.bk, tn.bds), glow: L.glow };
   }
-  const names = kind === 'vulkan' ? T.vulkanLayers : T.layers;
+  const names = T[kind + 'Layers'] || T.layers;
   L.name = heart ? T.heart[kind] || T.heart.stein : names[i] + (r ? ' ' + ringName(r) : '');
   return (layerCache[key] = L);
 }
@@ -442,7 +476,7 @@ function freshState() {
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
-    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, special: null, specialT: 0 };
+    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0 };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -461,6 +495,7 @@ function load() {
     if (!S.finds || typeof S.finds !== 'object') S.finds = {};
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
+    S.shop = Object.assign({}, d.shop || {});
     if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
     if (d.towers == null) {   // Spielstand von vor den Blöcken
       if (S.best > F.blockEnd) {   // Herz des Berges schon besiegt: Alter Berg zählt als geschafft
@@ -564,6 +599,7 @@ const sfx = {
   fail: () => { [440, 330, 220].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.05), i * 110)); },
   win: () => { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.06), i * 120)); },
   lava: () => { beep(70, 0.5, 'sawtooth', 0.07); setTimeout(() => beep(55, 0.7, 'sawtooth', 0.06), 220); },
+  frost: () => { [1568, 1319, 1175, 988].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'sine', 0.04), i * 90)); },
   crown: () => { [880, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'sine', 0.06), i * 70)); },
 };
 
@@ -590,7 +626,7 @@ function showBanner(b) {
   if (banner && banner.life > 0.9) { bannerQ.push(b); if (bannerQ.length > 4) bannerQ.shift(); }
   else banner = b;
 }
-let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0, lava = 0, lavaTimer = 50;
+let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0, lava = 0, lavaTimer = 50, frost = 0, frozen = false, iceGold = false;
 const isEnd = () => S.depth === F.blockEnd;
 const tapMult = () => (rage > 0 ? 3 : 1) * (lava > 0 ? F.lavaTap : 1);
 
@@ -607,6 +643,8 @@ function spawnRock() {
     if (S.special) showBanner({ text: TS[S.special], sub: TS[S.special + 'Sub'], life: 2, color: SPECIAL_COL[S.special] });
   }
   rockN++;
+  // Gletscher: manche Felsen stecken im Eis (halber Schaden, Dynamit schmilzt es, dafür doppelt Gold)
+  frozen = iceGold = S.blk === 'eis' && !bossActive && !S.farm && !S.blockDone && S.depth >= 3 && !S.special && rockN > 1 && Math.random() < F.iceChance;
   bossTimer = F.bossTime(S.depth, S);
   rockSeed = (S.depth * 9301 + 49297) % 233280;
   const LK = Math.floor((S.depth - 1) / 10);
@@ -626,6 +664,7 @@ function damage(amount, fromTap, x, y) {
     if (fromTap) { const c = rockCenter(); floats.push({ x: x ?? c.x, y: (y ?? c.y) - 20, text: TS.klonk, life: 0.8 }); sfx.hit(); }
     return;
   }
+  if (frozen) amount *= F.iceDmg;
   let crit = false, weak = false;
   if (S.special === 'kristall' && fromTap && x != null) { const w = weakSpot(); if (Math.hypot(x - w.x, y - w.y) <= 26) { amount *= 8; crit = weak = true; } }
   if (!weak && fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult(S); crit = true; }
@@ -649,7 +688,7 @@ function chip(x, y, color) {
 
 function breakRock() {
   const c = rockCenter();
-  const gold = F.rockGold(S.depth, S) * specialGoldMult();
+  const gold = F.rockGold(S.depth, S) * specialGoldMult() * (iceGold ? F.iceGold : 1);
   S.gold += gold;
   if (S.special === 'kristall') { S.gems += 1; showBanner({ text: TS.gem, sub: '💎 +1', life: 2, color: SPECIAL_COL.kristall }); sfx.chest(); }
   for (let i = 0; i < 26; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, layerAt(S.depth)[Math.random() < 0.4 ? 'ore' : 'rock']));
@@ -692,7 +731,7 @@ function finishBlock() {
   const b = blkOf(S.blk);
   setTimeout(() => afterToast(() => {
     popup(`<div class="big">👑 +${F.blockCrowns}</div><div style="font-weight:900;font-size:20px;margin-top:4px">${b.icon} ${T.blkDoneTitle.replace('{b}', T.blk[b.k])}</div>
-      <div class="small" style="font-size:14px;max-width:290px;margin:8px auto 0">${T.blkDoneText.replace('{r}', crownStr(b.rate))}</div>
+      <div class="small" style="font-size:14px;max-width:290px;margin:8px auto 0">${T.blkDoneText.replace('{r}', crownStr(+F.towerRate(b.k, S).toFixed(2)))}</div>
       <button id="tMap">${T.toMap}</button><div><button id="tLater" class="ghost">${T.later}</button></div>`);
     document.getElementById('tMap').onclick = () => { toast.style.display = 'none'; showRealm(); };
     document.getElementById('tLater').onclick = () => { toast.style.display = 'none'; };
@@ -700,26 +739,26 @@ function finishBlock() {
 }
 // Lager eines Turms: Kronen seit dem letzten Abholen, höchstens 12 Stunden
 function towerStore(tw, now) {
-  const max = F.towerMaxH * 3600e3;
+  const max = F.towerCap(S) * 3600e3;
   if (!(tw.since <= now)) tw.since = now;   // Uhr zurückgestellt: nichts schenken
   const el = Math.min(max, now - tw.since);
-  return { n: Math.floor(el / 3600e3 * F.towerRate(tw.k) + 1e-9), full: el >= max, el };
+  return { n: Math.floor(el / 3600e3 * F.towerRate(tw.k, S) + 1e-9), full: el >= max, el };
 }
 function storeInfo() {
   const now = Date.now(); let n = 0, rate = 0, cap = 0, next = Infinity;
   for (const tw of S.towers) {
-    const st = towerStore(tw, now), r = F.towerRate(tw.k), per = 3600e3 / r;
-    n += st.n; rate += r; cap += F.towerMaxH * r;
+    const st = towerStore(tw, now), r = F.towerRate(tw.k, S), per = 3600e3 / r;
+    n += st.n; rate += r; cap += F.towerCap(S) * r;
     if (!st.full) next = Math.min(next, per - (st.el % per));
   }
-  return { n, rate, cap, next };
+  return { n, rate: +rate.toFixed(2), cap: Math.floor(cap + 1e-9), next };
 }
 function collectAll() {
   const now = Date.now(); let n = 0;
   for (const tw of S.towers) {
     const st = towerStore(tw, now);
     if (st.n <= 0) continue;
-    n += st.n; tw.since = st.full ? now : tw.since + st.n * 3600e3 / F.towerRate(tw.k);
+    n += st.n; tw.since = st.full ? now : tw.since + st.n * 3600e3 / F.towerRate(tw.k, S);
   }
   if (!n) return 0;
   S.crowns += n; S.crownsAll += n;
@@ -734,11 +773,20 @@ function startBlock(k) {
   S.blk = k; S.blockDone = false;
   S.heir = 0; S.runTime = 0; S.lastMaxAt = 0; S.recBase = 0; S.blkBest = 1;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
-  rage = 0; beer = 0; lava = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  rage = 0; beer = 0; lava = 0; frost = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  applyStart();
   spawnRock(); buildPanel(); updateSkillBtns(); updateBossBtn();
   const b = blkOf(k);
   bannerQ.length = 0; banner = null; showBanner({ text: b.icon + ' ' + T.blk[k], sub: T.blkStart, life: 3, color: b.color });
   sfx.boss(); save();
+}
+// Kronen-Laden: Startkapital und Zwergen-Gilde bei jedem Neubeginn (Block oder Umzug)
+function applyStart() { S.gold = F.startGold(S); S.dw[0] = F.startDw(S); }
+// Gletscher: Kälteeinbruch
+function startFrost() {
+  frost = F.frostSec; lavaTimer = F.lavaEvery();
+  showBanner({ text: T.frostOn, sub: T.frostSub, life: 2.2, color: '#bff4ff' });
+  sfx.frost();
 }
 // Vulkan: Lava-Ausbruch
 function startLava() {
@@ -762,8 +810,9 @@ function onNewMax() {
 
 function failBoss() {
   S.farm = true;
-  S.depth = Math.max(1, S.depth - 1);
-  showBanner({ text: T.bossFail, sub: T.bossFailSub, life: 2.4, color: '#ff6b6b' });
+  const flood = S.blk === 'wasser';   // Grotte: das Wasser steigt, zwei Tiefen zurück
+  S.depth = Math.max(1, S.depth - (flood ? 2 : 1));
+  showBanner(flood ? { text: T.floodFail, sub: T.floodSub, life: 2.6, color: '#57a8ff' } : { text: T.bossFail, sub: T.bossFailSub, life: 2.4, color: '#ff6b6b' });
   sfx.fail();
   spawnRock(); buildPanel();
 }
@@ -805,6 +854,26 @@ function specialStep(dt) {
     hpMax = F.rockHp(S.depth); S.hp = hpMax;
     showBanner({ text: TS.panzerGone, sub: TS.panzerGoneSub, life: 2.4, color: SPECIAL_COL.panzer });
   }
+}
+// Gletscher: Eispanzer über dem Felsen
+function drawIce(t) {
+  if (!frozen || S.hp <= 0) return;
+  const c = rockCenter();
+  ctx.save();
+  const g = ctx.createRadialGradient(c.x - c.r * 0.3, c.y - c.r * 0.4, c.r * 0.1, c.x, c.y, c.r * 1.05);
+  g.addColorStop(0, 'rgba(235,250,255,0.55)'); g.addColorStop(1, 'rgba(140,200,240,0.4)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(c.x, c.y, c.r * 1.02, c.r * 0.96, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2; ctx.stroke();
+  const R = rng(rockSeed + 17); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5;
+  for (let i = 0; i < 4; i++) { const a = R() * Math.PI * 2; ctx.beginPath(); ctx.moveTo(c.x + Math.cos(a) * c.r * 0.2, c.y + Math.sin(a) * c.r * 0.2); ctx.lineTo(c.x + Math.cos(a + 0.3) * c.r * 0.8, c.y + Math.sin(a + 0.3) * c.r * 0.75); ctx.stroke(); }
+  ctx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(t * 2)); ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(c.x - c.r * 0.45, c.y - c.r * 0.5, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const lbl = T.iceLbl + (S.up.dyn ? ' · 🧨' : ''), lw = ctx.measureText(lbl).width + 16, ly = c.y + c.r * 0.55;
+  ctx.fillStyle = 'rgba(10,24,40,0.85)'; roundRect(c.x - lw / 2, ly - 10, lw, 20, 6); ctx.fill();
+  ctx.fillStyle = '#bff4ff'; ctx.fillText(lbl, c.x, ly + 1);
+  ctx.restore();
 }
 function drawSpecial(t) {
   if (!S.special || S.hp <= 0) return;
@@ -881,6 +950,7 @@ function useDyn() {
   if (!S.up.dyn || S.cdDyn > 0 || S.hp <= 0) return;
   S.cdDyn = F.dynCd; const c = rockCenter(); swingT = 1; shake = 1;
   for (let i = 0; i < 18; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, '#ff8a3d'));
+  if (frozen) { frozen = false; showBanner({ text: T.iceMelt, sub: T.iceSub, life: 2, color: '#bff4ff' }); for (let i = 0; i < 24; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, i % 2 ? '#e8f8ff' : '#9fd8ff')); }
   if (S.special === 'panzer') { S.hp = 0; breakRock(); }   // Panzerfels platzt sofort
   else damage(F.pickDmg(S.pick, S) * F.dynTaps * tapMult(), true, c.x, c.y - 10);
   sfx.boss(); updateSkillBtns();
@@ -1134,6 +1204,20 @@ function drawBackground(t) {
       ctx.fillStyle = `rgba(255,${120 + Math.floor(E() * 80)},40,${0.35 + 0.3 * Math.sin(t * 4 + i) ** 2})`;
       ctx.beginPath(); ctx.arc(x, y, 1.5 + E() * 1.5, 0, Math.PI * 2); ctx.fill();
     }
+  } else if (S.blk === 'eis') {   // Gletscher: Schnee fällt
+    const E = rng(91), n = frost > 0 ? 50 : 22;
+    for (let i = 0; i < n; i++) {
+      const sp = (frost > 0 ? 60 : 18) + E() * 25, x = (E() * CW + Math.sin(t * 0.9 + i) * 14 + (frost > 0 ? t * 40 : 0)) % CW, y = (t * sp + E() * CH) % CH;
+      ctx.fillStyle = `rgba(235,248,255,${0.35 + E() * 0.4})`;
+      ctx.beginPath(); ctx.arc(x, y, 1.2 + E() * 2, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (S.blk === 'wasser') {   // Grotte: Luftblasen steigen
+    const E = rng(53);
+    ctx.strokeStyle = 'rgba(170,240,255,0.35)'; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 16; i++) {
+      const sp = 15 + E() * 30, x = E() * CW + Math.sin(t * 2 + i) * 6, y = CH - ((t * sp + E() * CH) % CH);
+      ctx.beginPath(); ctx.arc(x, y, 2 + E() * 4, 0, Math.PI * 2); ctx.stroke();
+    }
   }
   // Name der Schicht, darunter Block und Ziel
   ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '800 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1184,8 +1268,10 @@ function drawDwarves(t) {
     const x = c.x + side * (c.r + 18 + row * 10);
     const y = c.y + c.r * 0.55 - row * 20;
     const speed = 5 + type * 0.6;
-    if (lava > 0) { ctx.globalAlpha = 0.55; drawDwarf(x, y + 14, 1.15 - row * 0.05, DWARVES[type].hat, 0, side > 0); ctx.globalAlpha = 1; return; }   // in Deckung
-    drawDwarf(x, y, 1.25 - row * 0.05, DWARVES[type].hat, t * speed + idx * 1.3, side > 0);
+    const hat = F.shopLv(S, 'helm') ? '#f5c542' : DWARVES[type].hat;
+    if (lava > 0) { ctx.globalAlpha = 0.55; drawDwarf(x, y + 14, 1.15 - row * 0.05, hat, 0, side > 0); ctx.globalAlpha = 1; return; }   // in Deckung
+    const cold = frost > 0 && beer <= 0;   // Kälte: Zwerge zittern und schwingen langsam
+    drawDwarf(x + (cold ? Math.sin(t * 40 + idx) * 1.2 : 0), y, 1.25 - row * 0.05, hat, t * speed * (cold ? F.frostDw : 1) + idx * 1.3, side > 0);
   });
 }
 
@@ -1195,7 +1281,8 @@ function drawPlayerPick() {
   ctx.save(); ctx.translate(c.x + c.r * 0.55, c.y - c.r * 0.55);
   ctx.rotate(-0.9 + (1 - swingT) * 1.4);
   ctx.fillStyle = '#8a5a2b'; ctx.fillRect(-3, -4, 6, 46);
-  ctx.fillStyle = '#d6dbe4'; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.quadraticCurveTo(0, -16, 24, 0); ctx.quadraticCurveTo(0, -6, -22, -2); ctx.fill();
+  const gp = F.shopLv(S, 'gpick'); if (gp) { ctx.shadowColor = '#ffd447'; ctx.shadowBlur = 12; }
+  ctx.fillStyle = gp ? '#ffd447' : '#d6dbe4'; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.quadraticCurveTo(0, -16, 24, 0); ctx.quadraticCurveTo(0, -6, -22, -2); ctx.fill();
   ctx.restore();
 }
 
@@ -1214,6 +1301,15 @@ function drawChest(t) {
 }
 
 function drawFx(dt) {
+  if (S.blk === 'wasser' && bossActive) {   // Grotte: beim Boss steigt das Wasser mit der Zeit
+    const lvl = 1 - bossTimer / F.bossTime(S.depth, S), top = CH - 20 - lvl * CH * 0.45, tt = performance.now() / 600;
+    ctx.fillStyle = 'rgba(40,150,210,0.3)'; ctx.beginPath(); ctx.moveTo(0, CH);
+    for (let x = 0; x <= CW; x += 10) ctx.lineTo(x, top + Math.sin(x / 30 + tt) * 4);
+    ctx.lineTo(CW, CH); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(190,240,255,0.5)'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let x = 0; x <= CW; x += 10) { const y = top + Math.sin(x / 30 + tt) * 4; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  }
   for (const p of chips) {
     ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.life);
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore();
@@ -1249,6 +1345,13 @@ function drawFx(dt) {
     ctx.globalAlpha = 1;
   }
   if (bossFlash > 0) { ctx.fillStyle = `rgba(255,50,50,${bossFlash * 0.28})`; ctx.fillRect(0, 0, CW, CH); }
+  if (frost > 0) {
+    const fg = ctx.createRadialGradient(CW / 2, CH / 2, Math.min(CW, CH) * 0.25, CW / 2, CH / 2, Math.max(CW, CH) * 0.7);
+    fg.addColorStop(0, 'rgba(190,235,255,0)'); fg.addColorStop(1, 'rgba(190,235,255,0.45)');
+    ctx.fillStyle = fg; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = '#bff4ff'; ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('❄ ' + (beer > 0 ? '🍺 ' + T.warm : '🧔 ×¼') + '  ' + Math.ceil(frost) + 's', CW - 14, CH - 100);
+  }
   if (lava > 0) {
     const lg = ctx.createLinearGradient(0, CH, 0, CH * 0.35);
     lg.addColorStop(0, `rgba(255,80,10,${0.45 + Math.sin(performance.now() / 90) * 0.1})`); lg.addColorStop(1, 'rgba(255,80,10,0)');
@@ -1600,14 +1703,16 @@ function renderRealm() {
     else if (!open) btn = `<button data-unl="${b.k}"${S.crowns >= b.cost ? '' : ' disabled'}>🔓 ${b.cost} 👑</button>`;
     else btn = `<button data-go="${b.k}">${doneN ? T.again : T.start}</button>`;
     const info = here && !S.blockDone ? T.hereD.replace('{d}', S.depth) : T.blkInfo[b.k];
-    return `<div class="bk${here ? ' here' : ''}${b.soon ? ' soon' : ''}"><span class="e">${b.icon}</span><span class="i"><b>${T.blk[b.k]}${doneN ? ' ✓' + (doneN > 1 ? '×' + doneN : '') : ''}</b>${info} · 👑 ${b.rate}/h</span>${btn}</div>`;
+    return `<div class="bk${here ? ' here' : ''}${b.soon ? ' soon' : ''}"><span class="e">${b.icon}</span><span class="i"><b>${T.blk[b.k]}${doneN ? ' ✓' + (doneN > 1 ? '×' + doneN : '') : ''}</b>${info} · 👑 ${+F.towerRate(b.k, S).toFixed(2)}/h</span>${btn}</div>`;
   }).join('');
   popup(`<div style="font-weight:900;font-size:18px">👑 ${T.realm}</div>
     <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.score} <b style="color:#ffd447">${S.crownsAll}</b></div>
+    <button id="tShop" style="background:#c77dff;color:#2a0a40;margin-top:8px">🛒 ${T.shopT}</button>
     ${towers}<div class="small" style="margin-top:10px;text-align:left;font-weight:800">🗺 ${T.blocksT}</div><div class="realm" style="margin-top:4px">${blocks}</div>
     <button id="tClose">${T.close}</button>`, true);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
   const take = document.getElementById('tTake'); if (take) take.onclick = () => { collectAll(); renderRealm(); };
+  document.getElementById('tShop').onclick = () => renderShop();
   toast.querySelectorAll('[data-unl]').forEach((el) => el.onclick = () => {
     const b = blkOf(el.dataset.unl); if (S.crowns < b.cost) return;
     S.crowns -= b.cost; S.unl[b.k] = true; sfx.buy(); save();
@@ -1619,6 +1724,39 @@ function renderRealm() {
     if (!S.blockDone && S.maxDepth > 1) askConfirm(T.switchAsk.replace('{b}', T.blk[k]).replace('{d}', S.depth), () => startBlock(k), T.switchYes, '#ffd447');
     else startBlock(k);
   });
+}
+// ---------- Kronen-Laden ----------
+function shopEff(k, L) {
+  if (k === 'kraft') return L ? `<b style="color:#6fdc7a">+${20 * L}&nbsp;%</b>` : '';
+  if (k === 'start') return L ? `<b style="color:#6fdc7a">${fmt(F.startGold(S))}</b> Gold` : '';
+  if (k === 'gilde') return L ? `<b style="color:#6fdc7a">${F.startDw(S)}×</b> ${DWARF_NAMES[0]}` : '';
+  if (k === 'lager') return `<b style="color:#6fdc7a">${F.towerCap(S)} h</b>`;
+  if (k === 'turm') return L ? `<b style="color:#6fdc7a">+${25 * L}&nbsp;%</b>` : '';
+  return '';
+}
+function renderShop() {
+  const rows = SHOP.map((it) => {
+    const L = F.shopLv(S, it.k), max = L >= it.max, cost = it.cost(L), nm = T.shop[it.k], eff = shopEff(it.k, L);
+    const lvl = it.max > 1 ? ` <span style="color:var(--muted);font-size:12px">${L}/${it.max}</span>` : (L ? ' ✓' : '');
+    const btn = max ? `<button disabled>${it.max > 1 ? 'MAX' : '✓'}</button>` : `<button data-buy="${it.k}"${S.crowns >= cost ? '' : ' disabled'}>👑 ${cost}</button>`;
+    return `<div class="bk"><span class="e">${it.icon}</span><span class="i"><b>${nm[0]}${lvl}</b>${nm[1]}${eff ? ' · ' + eff : ''}</span>${btn}</div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🛒 ${T.shopT}</div>
+    <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.shopNote}</div>
+    <div class="realm">${rows}</div>
+    <button id="tBack">🗺 ${T.map}</button><div><button id="tClose" class="ghost">${T.close}</button></div>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+  document.getElementById('tBack').onclick = () => renderRealm();
+  toast.querySelectorAll('[data-buy]').forEach((el) => el.onclick = () => buyShop(el.dataset.buy));
+}
+function buyShop(k) {
+  const it = SHOP.find(x => x.k === k), L = F.shopLv(S, k);
+  if (!it || L >= it.max || S.crowns < it.cost(L)) return false;
+  S.crowns -= it.cost(L); S.shop[k] = L + 1;
+  sfx.buy(); showBanner({ text: T.shopBought, sub: it.icon + ' ' + T.shop[k][0], life: 2, color: '#c77dff' });
+  refreshPanel(true); save();
+  if (toast.style.display === 'block' && document.getElementById('tBack')) renderShop();
+  return true;
 }
 // Ganz von vorne: alles löschen, nur die Ton-Einstellung bleibt
 function startOver() {
@@ -1633,7 +1771,8 @@ function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
   S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.blkBest;
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
-  rage = 0; beer = 0; lava = 0; chest = null; chestTimer = 25; layerShown = -1;
+  rage = 0; beer = 0; lava = 0; frost = 0; chest = null; chestTimer = 25; layerShown = -1;
+  applyStart();
   spawnRock(); buildPanel(); updateSkillBtns(); seenPrest = false;
   bannerQ.length = 0; banner = null; showBanner({ text: T.newMine, sub: '⚱ +' + gain + ' ' + T.heir, life: 3, color: '#c77dff' });
   sfx.boss(); Portal.happytime();
@@ -1701,7 +1840,7 @@ function frame(now) {
   S.runTime += dt; S.st.time += dt;
 
   // Zwerge graben
-  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1) * (lava > 0 ? 0 : 1);   // bei Lava in Deckung
+  const dps = F.totalDps(S) * (beer > 0 ? F.beerMult : 1) * (lava > 0 ? 0 : 1) * (frost > 0 && beer <= 0 ? F.frostDw : 1);   // Lava: in Deckung, Kälte: frieren (Bier wärmt)
   if (dps > 0 && S.hp > 0) damage(dps * dt, false);
   if (bossActive) {
     bossTimer -= dt;
@@ -1712,7 +1851,8 @@ function frame(now) {
   if (rage > 0) rage -= dt;
   if (beer > 0) beer -= dt;
   if (lava > 0) { lava -= dt; if (Math.random() < 0.6) { const p = chip(Math.random() * CW, CH + 4, Math.random() < 0.5 ? '#ff8a3d' : '#ffd23f'); p.vy = -7 - Math.random() * 6; p.vx *= 0.3; chips.push(p); } }
-  else if (S.blk === 'vulkan' && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) startLava(); }
+  else if (frost > 0) frost -= dt;
+  else if ((S.blk === 'vulkan' || S.blk === 'eis') && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) (S.blk === 'vulkan' ? startLava : startFrost)(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
     goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip(); updateCrowns();
@@ -1738,7 +1878,7 @@ function frame(now) {
   // Zeichnen
   drawBackground(t);
   drawDwarves(t);
-  drawRock(t); specialStep(dt); drawSpecial(t);
+  drawRock(t); specialStep(dt); drawSpecial(t); drawIce(t);
   drawPlayerPick();
   drawChest(t); moleStep(dt); drawMole(t);
   drawFx(dt);
@@ -1773,7 +1913,8 @@ requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
-  showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; } };
+  showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP };
 </script>
 </body>
 </html>

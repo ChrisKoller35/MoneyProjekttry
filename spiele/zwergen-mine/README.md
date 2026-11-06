@@ -1,6 +1,6 @@
 # Zwergen-Mine
 
-**Stand 6.11.2026:** Version 7 spielbar: dazu besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
+**Stand 6.11.2026:** Version 8 spielbar: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
 
 ## Spielregel
 
@@ -9,10 +9,13 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **14 Schichten** zu je 10 Tiefen: Erde, Stein, Kohle, Kupfer, Eisen, Silber, Gold, Kristall, Lava, Tiefe, Obsidian, Mithril, Glutkern, Leere.
 - **Letzte Schicht und Endboss:** Tiefe 141 bis 150 ist das «Herz des Berges» (im Vulkan «Herz des Vulkans»), leuchtend; wer sie zum ersten Mal erreicht, bekommt 30 Steine. Auf Tiefe 150 wartet der Endboss mit Krone (Grossboss, 40 Sekunden). Tiefer geht es in einem Block nicht.
 - **Block geschafft:** Endboss besiegt gibt sofort 👑 10 Kronen und einen Förderturm. Jeder Turm fördert Kronen über echte Zeit, auch wenn man weg ist (Alter Berg 1 pro Stunde, Vulkan 2). Das Lager fasst 12 Stunden, danach fördert der Turm nichts mehr, bis man abholt (Uhr verstellen bringt nichts). Ein grüner Punkt an der Krone oben zeigt, dass Kronen im Lager liegen.
-- **Dein Reich (Karte):** Klick auf die Krone oben, den Knopf «Nächster Block» oder Reiter «Ziele», «Dein Reich». Dort: Kronen, Punktestand, Fördertürme mit Lager und «Abholen», und die Blöcke. Alter Berg ist frei, Vulkan kostet 10 Kronen (einmal), Gletscher und Grotte kommen bald. Einen Block kann man beliebig oft spielen, jeder geschaffte gibt einen weiteren Turm. Wechselt man mitten im Block, fragt das Spiel nach.
+- **Dein Reich (Karte):** Klick auf die Krone oben, den Knopf «Nächster Block» oder Reiter «Ziele», «Dein Reich». Dort: Kronen, Punktestand, Fördertürme mit Lager und «Abholen», und die Blöcke. Alter Berg ist frei, Vulkan kostet 10 Kronen, Gletscher 25, Grotte 50 (je einmal). Einen Block kann man beliebig oft spielen, jeder geschaffte gibt einen weiteren Turm. Wechselt man mitten im Block, fragt das Spiel nach.
 - **Punktestand:** alle Kronen, die man je bekommen hat. Ausgeben senkt ihn nicht. Er geht an die Rangliste des Portals (`Portal.submitScore`).
 - **Neuer Block:** Gold, Zwerge, Hacke, Werkzeuge und Erbstücke fangen neu an. Kronen, Steine samt Stein-Verbesserungen, Ziele und Rekorde bleiben.
 - **Vulkan:** eigene Schichten (Asche, Bimsstein, Basalt … Höllenschlot), alles rot, Glut in der Luft. Alle 45 bis 60 Sekunden ein Lava-Ausbruch: 10 Sekunden lang zählen Tipps (und Dynamit) dreifach, die Zwerge gehen in Deckung und graben nicht.
+- **Gletscher:** eigene Schichten (Schnee, Firn, Packeis … Ewiges Eis), eisblau, Schnee fällt. Jeder vierte Felsen steckt im Eis: halber Schaden, bis Dynamit das Eis schmilzt, dafür doppelt Gold. Alle 45 bis 60 Sekunden ein Kälteeinbruch: 12 Sekunden graben die Zwerge nur einen Viertel so schnell, ausser das Bierfass läuft (Bier wärmt). Turm: 2 Kronen pro Stunde.
+- **Grotte:** eigene Schichten (Tropfstein, Kalkstein … Abgrund), türkis, Luftblasen. Doppelt so viele Truhen. Bei Bossen steigt sichtbar das Wasser; verliert man, geht es 2 Tiefen zurück statt einer. Turm: 3 Kronen pro Stunde.
+- **Kronen-Laden** (Karte, Knopf «Kronen-Laden»; Ausgeben senkt den Punktestand nicht): Kronen-Kraft (+20 % Graben je Stufe, 10 Stufen), Startkapital (jeder neue Block und jede neue Mine beginnt mit 1000, 10'000 … bis 10 Mio. Gold), Zwergen-Gilde (Start mit 10, 20 oder 30 Gräbern), Grösseres Lager (Türme sammeln 18 oder 24 Stunden), Turm-Antrieb (alle Türme +25 % je Stufe, 4 Stufen), Goldhelme und Goldene Hacke (nur zum Anschauen).
 - **Alte Spielstände:** Wer das Herz auf 150 schon besiegt hatte (Rekord über 150), bekommt beim ersten Laden den Alten Berg als geschafft: 10 Kronen, einen Turm und ein Erklär-Fenster. Steckt die laufende Mine tiefer als 150, ist der Block fertig (Tiefe 150, Knopf «Nächster Block»), sonst gräbt man weiter und kann den Berg nochmal schaffen.
 - **8 Zwerge**, der siebte ab Tiefe 60, der achte ab Tiefe 80. Bei 10, 25, 50, 100, 150, 200 Zwergen einer Sorte verdoppelt sich deren Leistung.
 - **15 Werkzeuge** (Reiter «Hacke»), freigeschaltet nach Tiefe: Stahlspitze, Doppelschlag, Förderband, Grosse Laterne, Dynamit, Zeitlupe, Bierfass, Goldwaage, Sprengkurs, Erz-Magnet, Glücksbringer, Zwergenlied, Diamantbohrer, Doppelschicht, Kristallkugel.
@@ -33,8 +36,8 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 ## Dateien
 
 - `index.html` – das ganze Spiel in einer Datei (kein Internet nötig, ca. 80 KB), Texte Deutsch/Englisch je nach Browser-Sprache
-- `test-mine.js` – Browser-Test mit 74 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
-- Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan) und `bilder-v7/` (Felsen, Maulwurf, Fundstücke)
+- `test-mine.js` – Browser-Test mit 85 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
+- Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan) `bilder-v7/` (Felsen, Maulwurf, Fundstücke) und `bilder-v8/` (Gletscher, Grotte, Kronen-Laden)
 
 ## Bedienung
 
@@ -53,7 +56,7 @@ Objekt `Portal` oben im Code: `gameplayStart`, `gameplayStop`, `happytime` (Boss
 Zwischen `FORMELN_START` und `FORMELN_ENDE` im Code.
 
 - Felsen: Leben ×1.21 pro Tiefe, ab Tiefe 40 zusätzlich ×1.025 pro Tiefe, ab Tiefe 140 nur noch ×1.15 pro Tiefe. Gold ×1.2 pro Tiefe.
-- Blöcke (`BLOCKS`, `F.blockEnd` 150, `F.blockCrowns` 10, `F.towerMaxH` 12, `F.towerRate`): Kronen pro Stunde je Turm Alter Berg 1, Vulkan 2, Gletscher 2, Grotte 3; Freischalten 0 / 10 / 25 / 50 Kronen. Lava: alle 45 bis 60 s, 10 s, Tipps ×3.
+- Blöcke (`BLOCKS`, `F.blockEnd` 150, `F.blockCrowns` 10, `F.towerMaxH` 12, `F.towerRate`): Kronen pro Stunde je Turm Alter Berg 1, Vulkan 2, Gletscher 2, Grotte 3; Freischalten 0 / 10 / 25 / 50 Kronen. Lava: alle 45 bis 60 s, 10 s, Tipps ×3. Kälte: alle 45 bis 60 s, 12 s, Zwerge ×¼. Eis: 25 % der Felsen ab Tiefe 3, Schaden ×½, Gold ×2. Laden (`SHOP`, `F.shopLv`, `F.towerCap`, `F.startGold`, `F.startDw`); Kronen-Kraft steckt in `F.powerMult` (der Sim ohne Laden ändert das nichts).
 - Boss: 7-faches Leben, 5-faches Gold, 30 Sekunden. Grossboss (alle 50): 10-faches Leben, 40 Sekunden, dreifach Steine.
 - Erbstücke beim Umzug: (beste Tiefe − 30) ÷ 10, im Quadrat, abgerundet. Tiefe 60 gibt 9, Tiefe 100 gibt 49, Tiefe 150 gibt 144.
 - Durchgerechnet mit 3 Tipps pro Sekunde und klugem Einkauf (Umzug ab Tiefe 60, wenn 10 Minuten kein neuer Rekord): Tiefe 50 nach ca. 2 Minuten, Tiefe 100 nach ca. 30 Minuten, Tiefe 150 (erster Block geschafft) nach ca. 2,3 Stunden. Mit 6 Tipps pro Sekunde ca. 1,4 Stunden, mit 1 Tipp pro Sekunde ca. 3,6 Stunden. Weitere Blöcke gehen schneller, weil Steine und ihre Verbesserungen bleiben.
