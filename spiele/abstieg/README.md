@@ -229,6 +229,12 @@ Der Abstieg ist eine Show, und die Show hat Geldgeber.
 - **Tageswunsch:** Jeden Tag wünscht sich ein Gönner etwas für einen Lauf (50 Gegner, 3 Elite-Gegner, bis Ebene 6, 2 Kisten, ein Welt-Boss oder Heimkehren). Wer es schafft, bekommt einmal am Tag +2 Fans und +30 Seelenfunken, mit Banner mitten im Lauf (stellt sich dadurch ein neuer Gönner vor, kommt danach «Neuer Gönner!»). Auch ein Lauf über Mitternacht kann den Wunsch des neuen Tages erfüllen. Der Wunsch steht in der Heldenwahl und im Lager, der Ende-Bildschirm zeigt «Tageswunsch erfüllt».
 - Spielstand: neu in `meta` `patron` (letzte Wahl) und `wish` (`{ day, sp, w, done }`), im Durchlauf `patron`, `patKills`, `bossKills`, `sparksPatron`, `sparksWish`, `wishDone`. Alte Stände laden ohne diese Felder (kein Gönner).
 
+## Tageswelt (06.11.2026)
+- **Tageswelt:** Ab dem zweiten Lauf steht in der Heldenwahl die Reihe «Lauf» mit «Normal» und «Tageswelt». Die Tageswelt hat 4 Ebenen, auf Ebene 4 wartet der Boss. Die Ebenen bauen sich aus dem Tag: Alle bekommen an einem Tag dieselben Räume, dieselben Gegner in jedem Raum (mit Elite, Champion und Goldwicht), denselben Auftrag, Käfig und Pakt-Altar; auch «Nochmal» würfelt nichts neu. Die Beute, Läden und Schreine bleiben Zufall. Ohne Grad.
+- **Dreh:** Jeden Tag gilt ein Dreh mit einem Haken und einem Vorteil, zum Beispiel «Glaskanone» (+30 % Schaden, Gegner treffen 25 % härter) oder «Kistentag» (das Auge füllt sich doppelt so schnell, Tränke heilen 30 % weniger). Zwei Tage hintereinander nie derselbe.
+- **Geschafft:** Nach dem Boss auf Ebene 4 führt die Treppe nur noch heim. Wer heimkehrt, bekommt +10 % fürs Heimkehren und einmal am Tag +50 % Seelenfunken für die Tageswelt. «Nochmal» startet wieder die Tageswelt von heute. Steht die Heldenwahl über Mitternacht offen, zeigt «Los» zuerst den neuen Dreh. Im Lager steht der Dreh von heute bei den Gönnern.
+- **Spielstand:** neu in `meta` `daily` (`days`: die letzten geschafften Tage, `n`: wie oft geschafft); im Durchlauf `daily` (Tag und Dreh), `dailyWon`, `sparksDaily`. Alte Stände laden ohne diese Felder und spielen wie bisher. Eine Tageswelt, die eine ältere Version über Ebene 4 hinaus getragen hat, läuft als normaler Lauf weiter.
+
 ## Schrift (06.11.2026)
 - Die Pixel-Schrift setzte «fi» und «fl» zu einem Zeichen zusammen, das wie ein «A» aussah («GräAn Gemetzel», «Anden», «Aiegt»). Jetzt sind diese Verbindungen überall aus (`font-variant-ligatures: none` in `index.html`, gilt auch für den Text im Canvas). Die Zierschrift sieht gleich aus wie vorher.
 

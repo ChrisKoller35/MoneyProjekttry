@@ -185,7 +185,7 @@ window.A = window.A || {};
   }
 
   // ---------- Grad: was gilt (Regel des Grads, die Namen der Regeln davor, mehr Leben und Schaden, mehr Funken) ----------
-  let selGrade = null, selPat = '';   // selPat: gewählter Gönner (v43), '' = keiner
+  let selGrade = null, selPat = '', selDaily = false, dailyShown = '';   // selPat: gewählter Gönner (v43), '' = keiner; selDaily: Tageswelt (v45)
   function gradeText(g) {
     if (!g) return `<b>${L('Normal', 'Normal')}:</b> ${L('Ohne Grad. So wie immer.', 'No grade. Business as usual.')}`;
     const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
@@ -203,6 +203,7 @@ window.A = window.A || {};
       <div class="stage"><canvas id="stage"></canvas><div class="who"><b id="whoName"></b><span id="whoSub"></span></div></div>
       <h3>${t(U.race)}</h3><div class="chips">${races}</div><div class="perk" id="racePerk"></div>
       <h3>${t(U.cls)}</h3><div class="chips">${classes}</div><div class="perk" id="clsPerk"></div>
+      <div id="dailyBox"></div>
       <div id="gradeBox"></div>
       <div id="patronBox"></div>
       <button class="btn primary" id="bStart">${t(U.start)}</button><button class="btn" id="bBack">${t(U.back)}</button>
@@ -216,17 +217,26 @@ window.A = window.A || {};
       $('#racePerk').innerHTML = `<b>${esc(t(race.name))}:</b> ${esc(t(race.perk))}`;
       const pc = peekCls || cls;
       $('#clsPerk').innerHTML = `<b>${esc(t(pc.name))}:</b> ${esc(t(pc.perk))}`;
-      gradeRow(); patronRow();
+      dailyRow(); gradeRow(); patronRow();
       A.Scenes.stage($('#stage'), selRace, selCls);
     };
     // Grade (v39): erst nach dem ersten Sieg mit dieser Klasse; jeder Grad bringt eine Regel dazu, die von davor gelten weiter
     const gradeRow = () => {
       const gm = G.gradeMax(selCls), box = $('#gradeBox'); if (!box) return;
+      if (selDaily) { box.innerHTML = ''; return; }   // Tageswelt: ohne Grad, für alle gleich
       if (!gm) { box.innerHTML = ''; selGrade = 0; return; }
       if (selGrade == null || selGrade > gm) selGrade = G.gradePick(selCls);
       const chips = Array.from({ length: gm + 1 }, (_, g) => `<button class="chip gchip ${g === selGrade ? 'sel' : ''}" data-grade="${g}" aria-label="${esc(g ? L('Grad ' + g, 'Grade ' + g) : L('Normal', 'Normal'))}">${g ? ic('crown', 12) + g : L('Normal', 'Normal')}</button>`).join('');
       box.innerHTML = `<h3>${L('Grad', 'Grade')}</h3><div class="chips grades">${chips}</div><div class="perk" id="gradePerk">${gradeText(selGrade)}</div>`;
       box.querySelectorAll('[data-grade]').forEach(el => el.onclick = () => { const g = +el.dataset.grade; if (g === selGrade) return; selGrade = g; S.click(); gradeRow(); });
+    };
+    // Tageswelt (v45): erst nach dem ersten Lauf; 4 Ebenen mit Boss, ohne Grad, für alle gleich gebaut
+    const dailyRow = () => {
+      const box = $('#dailyBox'); if (!box) return;
+      if (!(G.meta.runs > 0)) { box.innerHTML = ''; selDaily = false; return; }
+      dailyShown = G.dailyToday().day;   // der Tag, dessen Dreh hier steht (nach Mitternacht neu zeigen, bevor es losgeht)
+      box.innerHTML = `<h3>${L('Lauf', 'Run')}</h3><div class="chips dailies"><button class="chip dchip ${selDaily ? '' : 'sel'}" data-daily="0">${L('Normal', 'Normal')}</button><button class="chip dchip ${selDaily ? 'sel' : ''}" data-daily="1">${ic('crown', 14)}<span>${L('Tageswelt', 'Daily world')}</span></button></div><div class="perk" id="dailyPerk">${selDaily ? dailyText(true) : L('Normal: so tief, wie du kommst.', 'Normal: as deep as you can go.')}</div>`;
+      box.querySelectorAll('[data-daily]').forEach(el => el.onclick = () => { const v = el.dataset.daily === '1'; if (v === selDaily) return; selDaily = v; S.click(); dailyRow(); gradeRow(); });
     };
     // Gönner (v43): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit; «Keiner» = wie bisher
     const patronRow = () => {
@@ -237,10 +247,11 @@ window.A = window.A || {};
       box.innerHTML = `<h3>${L('Gönner', 'Sponsor')}</h3><div class="chips pats">${chips}</div><div class="perk" id="patPerk">${S0 ? `<b>${esc(t(S0.name))}:</b> ${esc(t(A.PATRON_RULES[S0.id].rule))} ${L('Schickt alle Kisten dieses Laufs.', 'Sends every crate this run.')}` : L('Ohne Gönner: Die Kisten kommen von allen, keine Regel.', 'No sponsor: crates come from anyone, no rule.')}</div><div class="perk wishl">${wishHtml()}</div>`;
       box.querySelectorAll('[data-pat]').forEach(el => el.onclick = () => { const v = el.dataset.pat; if (v === selPat) return; selPat = v; S.click(); patronRow(); });
     };
-    selGrade = null; selPat = typeof G.meta.patron === 'string' ? G.meta.patron : '';
+    selGrade = null; selPat = typeof G.meta.patron === 'string' ? G.meta.patron : ''; selDaily = false;
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { S.click(); camp(); return; } if (selRace === r.id) return; selRace = r.id; S.click(); upd(); });
     screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; selGrade = null; S.click(); upd(); });
-    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, G.gradeMax(selCls) ? selGrade : undefined, selPat || ''); Portal.gameplayStart(); dungeon(true); };
+    $('#bStart').onclick = () => { if (selDaily && G.dailyToday().day !== dailyShown) { S.click(); dailyRow(); return; }   // inzwischen ein neuer Tag: erst den neuen Dreh zeigen
+      S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, !selDaily && G.gradeMax(selCls) ? selGrade : undefined, selPat || '', selDaily); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { S.click(); title(); };
     upd();
   }
@@ -472,6 +483,11 @@ window.A = window.A || {};
       if (fresh) setTimeout(() => when(() => A.FX.banner(L('Neuer Gönner!', 'New sponsor!'), fresh, '#fee761', 2.4), 0), 3000);   // die Fans des Wunsches haben jemanden Neues angelockt
     }, 0), 300);
   }
+  // Tageswelt (v45): Dreh von heute und ob sie heute schon geschafft ist
+  function dailyText(long) {
+    const dt = G.dailyToday();
+    return `<b>${L('Tageswelt', 'Daily world')}: ${esc(t(dt.tw.name))}.</b> ${esc(t(dt.tw.text))}${long ? ' ' + L('4 Ebenen mit Boss, für alle gleich gebaut, ohne Grad.', '4 floors with a boss, built the same for everyone, no grade.') : ''} ${dt.done ? '<b class="goldc">' + L('Heute schon geschafft.', 'Already done today.') + '</b>' : L(`Geschafft: einmal am Tag +${Math.round(A.DAILY_SPARKS * 100)} % Seelenfunken.`, `Beat it: +${Math.round(A.DAILY_SPARKS * 100)}% soul sparks once a day.`)}${dt.n ? ' ' + L(`Bisher ${dt.n}-mal geschafft.`, `Done ${dt.n} time${dt.n === 1 ? '' : 's'} so far.`) : ''}`;
+  }
   // Tageswunsch (v43): wer sich heute etwas wünscht und ob es schon erfüllt ist
   function wishHtml() {
     const wt = G.wishToday(), txt = t(wt.w.text).replace('{n}', wt.w.n);
@@ -484,7 +500,7 @@ window.A = window.A || {};
       return `<div class="spon ${open ? '' : 'locked'}">${ic('crate', 30)}<div class="sb"><b>${open ? esc(t(x.name)) : '???'}</b><div>${open ? '«' + esc(t(x.note)) + '»' : L(`Stellt sich ab ${x.fans} Fans vor.`, `Introduces themselves at ${x.fans} fans.`)}</div></div></div>`;
     }).join('');
     const info = L(`Der Abstieg ist eine Show. Spektakel füllt das Auge oben (mehrere Gegner kurz nacheinander, Elite, Hauptleute, Bosse, Räume ohne Kratzer, knapp überlebt). Ist es voll, kracht nach dem Kampf eine Kiste von einem Gönner herunter. Jede Kiste bringt einen Fan, und mit mehr Fans melden sich neue Gönner.`, `The descent is a show. Spectacle fills the eye at the top (several enemies in quick succession, elites, captains, bosses, rooms without a scratch, close calls). When it is full, a crate from a sponsor crashes down after the fight. Every crate brings a fan, and with more fans new sponsors get in touch.`);
-    return `<h3>${L('Gönner', 'Sponsors')} ${on}/${A.SPONSORS.length}</h3><div class="card flags"><div class="mini wishl">${wishHtml()}</div><div class="mini">${info} <b class="goldc">${L(`Fans: ${f}`, `Fans: ${f}`)}</b>${nextSponsor() ? ' · ' + esc(nextSponsor()) : ''}</div><div class="sponsors">${rows}</div></div>`;
+    return `<h3>${L('Gönner', 'Sponsors')} ${on}/${A.SPONSORS.length}</h3><div class="card flags"><div class="mini wishl">${wishHtml()}</div>${G.meta.runs > 0 ? `<div class="mini dayl">${dailyText(false)} ${L('In der Heldenwahl unter «Lauf».', 'Pick it in hero select under «Run».')}</div>` : ''}<div class="mini">${info} <b class="goldc">${L(`Fans: ${f}`, `Fans: ${f}`)}</b>${nextSponsor() ? ' · ' + esc(nextSponsor()) : ''}</div><div class="sponsors">${rows}</div></div>`;
   }
 
   // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
@@ -542,7 +558,8 @@ window.A = window.A || {};
     buildControls(); pads(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
     const wfx = A.Weather.nameOf(Wd.W);
-    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
+    const dw = A.dailyOf(r);   // Tageswelt (v45): «Tageswelt 2/4 · Glaskanone»
+    A.FX.banner(A.isDaily(r) ? L('Tageswelt', 'Daily world') + ' ' + Math.min(r.floor, A.DAILY_FLOORS) + '/' + A.DAILY_FLOORS : t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (dw ? ' · ' + t(dw.name) : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
     // Mitbringsel von der Expedition (v41): einmal nach dem Ebenen-Schild zeigen, dann vergessen
     if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); let tries = 0; const say = () => { if (Wd.W !== w2 || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && tries++ < 60) { setTimeout(say, 600); return; } A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : '', gn.item > 0 ? (gn.item === 1 ? (gn.worn ? L('ein seltenes Stück, gleich angelegt', 'a rare item, already equipped') : L('ein seltenes Stück im Beutel', 'a rare item in your bag')) : (gn.worn ? L(`${gn.item} seltene Stücke (${gn.worn} angelegt)`, `${gn.item} rare items (${gn.worn} equipped)`) : L(`${gn.item} seltene Stücke im Beutel`, `${gn.item} rare items in your bag`))) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }; setTimeout(say, 2800); }   // wartet, bis kein Fenster offen ist (z. B. die Segen-Wahl am Start) und kein anderes Banner läuft
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
@@ -774,6 +791,14 @@ window.A = window.A || {};
     if (!G.goHome()) { Wd.pause(false); hudUpdate(); return; }
     S.level(); fadeOut(() => { runOver(); fadeIn(); }, 120);
   }
+  // Tageswelt geschafft (v45): nach dem Boss auf Ebene 4 gibt es keine Treppe tiefer, nur Heimkehren
+  function dailyScene() {
+    const r = G.run, dw = A.dailyOf(r), first = !(G.meta.daily && Array.isArray(G.meta.daily.days) && G.meta.daily.days.includes(r.daily.day)), pc = Math.round((A.HOME_SPARKS + (first ? A.DAILY_SPARKS : 0)) * 100), past = r.daily.day !== G.dailyToday().day;   // past: nach Mitternacht wartet schon die nächste
+    ov(`<div class="center"><div class="bigicon">${ic('crown', 60)}</div><h2 class="mid">${L('Tageswelt geschafft!', 'Daily world cleared!')}</h2><div class="sub">${dw ? `<b class="goldc">${esc(t(dw.name))}</b><br>` : ''}${past ? L('Die Tageswelt von heute wartet schon: andere Räume, anderer Dreh.', 'Today\'s daily world is already waiting: other rooms, another twist.') : L('Morgen gibt es eine neue: andere Räume, anderer Dreh.', 'Tomorrow brings a new one: other rooms, another twist.')}</div>
+      <button class="btn two primary" id="bHome"><span class="bl">${ic('u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${first ? L('Mit dem Bonus der Tageswelt', 'With the daily world bonus') : L('Schon geschafft', 'Already done')} · ${spark('+' + pc + ' %', 12)}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+    $('#bHome').onclick = () => goHomeNow();
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
+  }
   // Der Ausgang auf Ebene 24 (48, 72 ...): eine grosse Tür mit Schild; sie geht auf, dahinter hängt das zweite Schild
   function exitScene() {
     const r = G.run, k = Math.max(1, Math.round(r.floor / A.MAX_FLOOR)), X = A.EXITS[Math.min(A.EXITS.length, k) - 1], next = r.floor + A.MAX_FLOOR, nf = r.floor + 1;
@@ -793,6 +818,7 @@ window.A = window.A || {};
     if (!r || r.over) return;   // Lauf schon vorbei (gestorben oder heimgekehrt): keine Treppe, keine Truhe mehr
     if (p.kind === 'stairs') {
       if (Wd.W && Wd.W.sinkT != null) return;   // schon auf dem Weg nach unten: sonst springt ein zweites «Tiefer» über eine ganze Ebene
+      if (A.isDaily(r) && r.floor >= A.DAILY_FLOORS) { if (G.canGoHome()) dailyScene(); return; }   // Tageswelt (v45): nach dem Boss nur noch heim
       if (A.isExitFloor(r.floor) && G.canGoHome()) { exitScene(); return; }   // Ebene 24, 48 ...: der Ausgang (v39)
       const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor), home = G.canGoHome();   // nach einem Welt-Boss: Heimkehren
       ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button>${home ? homeBtn(false) : ''}<button class="btn" id="bClose">${t(U.back)}</button></div>`);
@@ -1166,26 +1192,26 @@ window.A = window.A || {};
     overlay.classList.remove('on'); overlay.innerHTML = '';
     const won = r.won, home = r.home, g = A.gradeOf(r), Cl = A.CLASSES.find(c => c.id === r.cls);   // home: 'boss' = nach einem Welt-Boss heimgekehrt, 'exit' = am Ausgang (v39)
     const died = !home, cause = died ? A.Achieve.causeText({ by: r.deathBy }) : '', next = campNext();   // Fairer Tod (v40)
-    const head = home === 'exit' || (home && won) ? L('Sieg! Heimgekehrt.', 'Victory! Home again.') : home ? L('Heimgekehrt!', 'Home again!') : won ? t(U.victory) : t(U.runOver);   // schon am Ausgang vorbei und später nach einem Boss heim: auch ein Sieg
+    const head = r.dailyWon ? L('Tageswelt geschafft!', 'Daily world cleared!') : home === 'exit' || (home && won) ? L('Sieg! Heimgekehrt.', 'Victory! Home again.') : home ? L('Heimgekehrt!', 'Home again!') : won ? t(U.victory) : t(U.runOver);   // schon am Ausgang vorbei und später nach einem Boss heim: auch ein Sieg
     const msg = home === 'exit' ? L(`Der Ausgang war zu. Also bist du die Treppe hoch. Alle ${r.floor} Ebenen. Zu Fuss.`, `The exit was closed. So you took the stairs. All ${r.floor} floors. On foot.`)
       : home && won ? L(`Am Ausgang vorbei, noch tiefer, noch ein Boss. Dann die Treppe hoch, alle ${r.floor} Ebenen. Sieger dürfen das.`, `Past the exit, deeper still, one more boss. Then up the stairs, all ${r.floor} floors. Winners get to do that.`)
       : home ? L('Boss besiegt, Beute eingesteckt, ab nach Hause. Vernünftig.', 'Boss down, loot pocketed, off home. Sensible.') : won ? t(U.win) : '';
     show(`<div class="center fade-in" style="padding-top:5vh">
       <div class="bigicon">${won || home === 'exit' ? ic('crown', 63) : home ? ic('u_tent', 60) : ic('u_skull', 60)}</div>
       <h2 class="mid">${head}</h2>
-      ${msg ? `<div class="msg">${msg}</div>` : ''}<div class="sub">${home ? L(`Heimgekehrt von Ebene ${r.floor}`, `Went home from floor ${r.floor}`) : `${t(U.dead)} ${r.floor}`} (${esc(A.worldName(r.floor))}).${g ? ` ${L('Grad', 'Grade')} ${g}.` : ''}</div>
+      ${msg ? `<div class="msg">${msg}</div>` : ''}<div class="sub">${home ? L(`Heimgekehrt von Ebene ${r.floor}`, `Went home from floor ${r.floor}`) : `${t(U.dead)} ${r.floor}`} (${esc(A.worldName(r.floor))}).${g ? ` ${L('Grad', 'Grade')} ${g}.` : ''}${A.isDaily(r) ? ` ${L('Tageswelt', 'Daily world')}${A.dailyOf(r) ? ': ' + esc(t(A.dailyOf(r).name)) : ''}.` : ''}</div>
       ${died ? `<div class="deathbox"><div class="dby">${ic('u_skull', 20)}<b>${esc(cause.charAt(0).toUpperCase() + cause.slice(1))}.</b></div>${deathTips(r).map(x => `<div class="tip">${esc(x)}</div>`).join('')}</div>` : ''}
       ${r.gradeNew ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L(`Neu: Grad ${r.gradeNew}`, `New: grade ${r.gradeNew}`)}</b> ${L('für', 'for')} ${esc(Cl ? t(Cl.name) : r.cls)}. <i>${esc(t(A.GRADES[r.gradeNew - 1].name))}</i>: ${esc(t(A.GRADES[r.gradeNew - 1].text))} ${L('Wähle ihn beim nächsten Helden.', 'Pick it with your next hero.')}</div>` : r.gradeTop ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L('Grad 10 geschafft!', 'Grade 10 done!')}</b> ${L('Mehr Grade gibt es nicht. Noch nicht.', 'There are no more grades. Not yet.')}</div>` : ''}
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow || r.sparksPatron || r.sparksWish ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : '', r.sparksPatron ? L(`Rampenlicht: +${r.sparksPatron}`, `Spotlight: +${r.sparksPatron}`) : '', r.sparksWish ? L(`Tageswunsch: +${r.sparksWish}`, `Daily wish: +${r.sparksWish}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksDaily || r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow || r.sparksPatron || r.sparksWish ? `<div class="mini extra">${[r.sparksDaily ? L(`Tageswelt: +${r.sparksDaily}`, `Daily world: +${r.sparksDaily}`) : '', r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : '', r.sparksPatron ? L(`Rampenlicht: +${r.sparksPatron}`, `Spotlight: +${r.sparksPatron}`) : '', r.sparksWish ? L(`Tageswunsch: +${r.sparksWish}`, `Daily wish: +${r.sparksWish}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}${A.patronOf(r) ? ' · ' + L('Gönner', 'Sponsor') + ': ' + esc(t(A.SPONSORS.find(s => s.id === r.patron).name)) : ''}${r.wishDone ? ' · <b class="goldc">' + L('Tageswunsch erfüllt', 'Daily wish granted') + '</b>' + ((r.wishDone.fresh || []).length ? ' · ' + L('Neuer Gönner', 'New sponsor') + ': ' + r.wishDone.fresh.map(id => { const x = A.SPONSORS.find(s => s.id === id); return x ? esc(t(x.name)) : ''; }).filter(Boolean).join(', ') : '') : ''}</div>
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
       ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}
       <div class="endbtns"><button class="btn ${died && !next ? 'primary' : ''}" id="bAgain">${ic('u_down', 26)}${L('Nochmal', 'Again')}</button><button class="btn ${died && !next ? '' : 'primary'}" id="bCamp">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>
-      <div class="mini">${L('Nochmal: derselbe Held', 'Again: the same hero')}${g ? L(`, Grad ${g}`, `, grade ${g}`) : ''}.</div></div>`);
+      <div class="mini">${L('Nochmal: derselbe Held', 'Again: the same hero')}${A.isDaily(r) ? L(', Tageswelt von heute', ', today\'s daily world') : g ? L(`, Grad ${g}`, `, grade ${g}`) : ''}.</div></div>`);
     let left = false; const once = (f) => () => { if (left) return; left = true; f(); };   // nur ein Knopf, nur einmal
     $('#bCamp').onclick = once(() => { S.click(); G.clearRun(); Portal.showAd(() => camp()); });
     // Nochmal (v40): gleich der nächste Lauf mit Volk, Klasse und Grad von eben (Begleiter wie zuletzt gewählt)
@@ -1193,7 +1219,7 @@ window.A = window.A || {};
       S.buy(); const race = A.RACES.find(x => x.id === r.race), cls = A.CLASSES.find(x => x.id === r.cls), gr = cls && G.gradeMax(cls.id) ? Math.min(g, G.gradeMax(cls.id)) : undefined;
       G.clearRun();
       if (!race || !cls || !G.raceUnlocked(race) || !G.classUnlocked(cls)) { Portal.showAd(() => heroSelect()); return; }
-      Portal.showAd(() => { A.Scenes.stage(null); G.newRun(race.id, cls.id, gr, A.patronOf(r) || ''); Portal.gameplayStart(); dungeon(true); });
+      Portal.showAd(() => { A.Scenes.stage(null); G.newRun(race.id, cls.id, A.isDaily(r) ? undefined : gr, A.patronOf(r) || '', A.isDaily(r)); Portal.gameplayStart(); dungeon(true); });   // Tageswelt (v45): wieder die von heute
     });
   }
 

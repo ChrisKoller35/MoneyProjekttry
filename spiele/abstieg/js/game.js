@@ -159,9 +159,10 @@ A.Game = (function () {
 
   // ---------- Durchlauf ----------
   let run = null;
-  function newRun(raceId, classId, grade, patron) {
+  function newRun(raceId, classId, grade, patron, daily) {
     const race = A.RACES.find(r => r.id === raceId), cls = A.CLASSES.find(c => c.id === classId);
-    const g = Math.max(0, Math.min(gradeMax(cls.id), Math.floor(+grade) || 0));   // Grad (v39): nur, was die Klasse schon freigeschaltet hat
+    const dw = daily ? dailyToday() : null;   // Tageswelt (v45): ohne Grad, für alle gleich gebaut
+    const g = dw ? 0 : Math.max(0, Math.min(gradeMax(cls.id), Math.floor(+grade) || 0));   // Grad (v39): nur, was die Klasse schon freigeschaltet hat
     const me = metaEffects();
     const skills = cls.startSkills.slice();
     if (me.extraStartSkill) skills.push(cls.skills.find(s => !skills.includes(s)));
@@ -175,7 +176,8 @@ A.Game = (function () {
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
       log: [], reviveUsed: false, over: false, won: false, grade: g,
     };
-    if (grade != null) { (meta.gradeSel || (meta.gradeSel = {}))[cls.id] = g; saveMeta(); }
+    if (dw) run.daily = { day: dw.day, tw: dw.tw.id };   // der Dreh bleibt beim Lauf, auch über Mitternacht
+    if (grade != null && !dw) { (meta.gradeSel || (meta.gradeSel = {}))[cls.id] = g; saveMeta(); }
     // Gönner (v43): nur einer, der sich schon vorgestellt hat; gemerkt für die nächste Heldenwahl
     const sp = typeof patron === 'string' ? A.SPONSORS.find(s => s.id === patron) : null, pat = sp && A.PATRON_RULES[sp.id] && (Math.floor(+meta.fans) || 0) >= (sp.fans || 0) ? sp.id : null;
     run.patron = pat;
@@ -207,6 +209,13 @@ A.Game = (function () {
     save();
     return run;
   }
+  // Tageswelt (v45): Dreh von heute; geschafft = heute schon einmal nach dem Boss auf Ebene 4 heimgekehrt (meta.daily.days: die letzten geschafften Tage)
+  const dailyDays = () => { const d = meta.daily; return d && typeof d === 'object' && Array.isArray(d.days) ? d.days.filter(x => typeof x === 'string') : []; };
+  function dailyToday() { const day = dayKey(new Date()), d = meta.daily; return { day, tw: A.dailyTwistOf(day), done: dailyDays().includes(day), n: d && typeof d === 'object' ? Math.min(1e6, Math.max(0, Math.floor(+d.n) || 0)) : 0 }; }
+  function dailyWin() {   // einmal je Tag (der Tag des Laufs, auch wenn er über Mitternacht ging): true = zum ersten Mal
+    const day = run.daily.day, days = dailyDays(); if (days.includes(day)) return false;
+    const d = meta.daily; meta.daily = { days: days.concat(day).slice(-3), n: (d && typeof d === 'object' ? Math.min(1e6, Math.max(0, Math.floor(+d.n) || 0)) : 0) + 1 }; return true;
+  }
   // Kerzen am Lagerfeuer (v41): an wie vielen Tagen hintereinander (eigene Uhr) ein Lauf zu Ende ging, höchstens A.CANDLE_MAX
   const dayKey = (d) => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
   function candles(tick) {
@@ -226,7 +235,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0);   // om: Regel des Gönners (v43)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, dm = (A.dailyOf(r) || {}).p || {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0) + (+dm[k] || 0);   // om: Regel des Gönners (v43); dm: Dreh der Tageswelt (v45)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
     const d = {
@@ -491,15 +500,17 @@ A.Game = (function () {
 
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
-    run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
+    run.floorSeed = A.isDaily(run) ? A.dailySeed(run.daily.day, run.floor) : run.rng.int(1, 2e9); run.rooms = null;   // Tageswelt (v45): Räume aus Tag und Ebene, für alle gleich
     run.lvVer = 8;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5), neuen Gegnern (6), Pakt-Altären (7) und Krügen mit Mimik (8); ältere Spielstände bauen ihre laufende Ebene wie bisher
-    run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
-    run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
+    dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
+    dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
     if (!run || run.over) return null;   // ein vorbeier Lauf geht nicht mehr tiefer (sonst zählte ein Tod auf Ebene 24 als Sieg)
+    if (A.isDaily(run) && run.floor >= A.DAILY_FLOORS) return goHome() ? 'won' : null;   // Tageswelt (v45): nach dem Boss auf Ebene 4 geht es nur noch heim
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
     A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
     if (run.floor === A.MAX_FLOOR) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } gradeWin(); saveMeta(); }   // am Ausgang weiter nach unten: auch ein Sieg
@@ -667,8 +678,9 @@ A.Game = (function () {
     const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run));   // Pakte: je Pakt +15 %
     const cd = candles(true), candle = Math.round(base * A.CANDLE_SPARKS * cd.n);
     const patron = Math.round(base * A.patronVal('sparks', run));   // Herr Ruhm als Gönner (v43)
-    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle + patron;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
-    run.sparksPatron = patron; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
+    const daily = run.dailyWon && A.isDaily(run) && dailyWin() ? Math.round(base * A.DAILY_SPARKS) : 0;   // Tageswelt (v45): einmal am Tag +50 %
+    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle + patron + daily;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
+    run.sparksPatron = patron; run.sparksDaily = daily; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
     run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
@@ -687,6 +699,7 @@ A.Game = (function () {
     const exit = A.isExitFloor(run.floor);
     if (exit) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } if (run.floor === A.MAX_FLOOR) gradeWin(); }
     run.home = exit ? 'exit' : 'boss';
+    if (A.isDaily(run) && run.floor >= A.DAILY_FLOORS) run.dailyWon = true;   // Tageswelt geschafft (v45)
     A.Achieve.onFloorDone(run);   // die Ebene ist geschafft wie über die Treppe (Erfolg «Tänzer»)
     run.over = true; finishRun();
     return true;
@@ -698,14 +711,14 @@ A.Game = (function () {
   // ---------- Speichern ----------
   function save() { if (!run) return; const Wd = A.World && A.World.W; if (Wd && Wd.seed === run.floorSeed && Wd.floor === run.floor && A.World.savePicks) { run.picks = A.World.savePicks(); run.rooms = A.World.saveRooms(); }   // Beute am Boden (v40): genau so, wie sie jetzt liegt (nur die Welt dieses Laufs)
     try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); if (A.isDaily(run) && !(run.floor <= A.DAILY_FLOORS)) delete run.daily; run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
 
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
