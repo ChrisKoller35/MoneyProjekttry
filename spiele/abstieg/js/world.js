@@ -35,7 +35,12 @@ A.World = (function () {
       }
     }
     // Käfig mit einem Begleiter (pets.js): steht versteckt in einem Kampfraum, bis der gesäubert ist; immer als letztes Ding im Raum
-    if (v >= 5 && G().run.cage) { const r = A.Pets.cageRoom(rooms, seed); if (r) r.props.push({ kind: 'cage', x: (r.anchor.tx + 0.5) * TS, y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
+    let cageR = null;
+    if (v >= 5 && G().run.cage) { const r = cageR = A.Pets.cageRoom(rooms, seed); if (r) r.props.push({ kind: 'cage', x: (r.anchor.tx + 0.5) * TS, y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
+    // Pakt-Altar (pacts.js): genauso versteckt, möglichst in einem anderen Kampfraum; teilt er den Raum mit dem Käfig, steht er daneben
+    if (v >= 7 && G().run.pact) { const r = A.Pacts.room(rooms, seed, cageR); if (r) { let tx = r.anchor.tx, ty = r.anchor.ty;
+      if (r === cageR) { const o = [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, 2], [2, -2], [-2, -2], [1, 1], [-1, 1]].find(([dx, dy]) => tiles[ty + dy] && A.Levels.walk(tiles[ty + dy][tx + dx]) && tx + dx > r.x && ty + dy > r.y && tx + dx < r.x + r.w - 1 && ty + dy < r.y + r.h - 1) || [2, 0]; tx += o[0]; ty += o[1]; }   // neben dem Käfig, nie in einer Wand (ohne Zufall)
+      r.props.push({ kind: 'pact', x: (tx + 0.5) * TS, y: (ty + 0.5) * TS, room: r.i, used: false, hidden: true }); } }
     let reach = lv.reach;
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
@@ -144,12 +149,13 @@ A.World = (function () {
     } else {
       const pool = A.monsterPool(f, run.lvVer || 0);   // ab lvVer 6 mit den neuen Gegnern (ab der 2. Ebene einer Welt)
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
-      const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0);
+      const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0) + A.Pacts.extra();   // Hordenruf (pacts.js)
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
       const champ = r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
     }
     list.forEach((m, i) => {
+      const pm = A.Pacts.hpMul(m); if (pm !== 1) { m.maxHp = Math.round(m.maxHp * pm); m.hp = m.maxHp; if (m.shieldCap) m.shieldCap = Math.round(m.shieldCap * pm); }   // Gierschlund, Schicksalswette (pacts.js)
       let x, y, tries = 0;
       do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < (W.big ? 160 : 130) || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });
@@ -280,7 +286,8 @@ A.World = (function () {
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
     const fg = A.Foes.guard(from, to, opts); if (fg != null) return fg;   // Panzer (foes.js)
-    if (!opts.noDodge && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) { float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
+    if (!opts.noDodge && !(to === W.hero && A.Pacts.val('noDodge')) && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) {   // Glasknochen (pacts.js): auch kein Ausweichen durch Zauber
+     float(to.x, to.y - to.r - 8, A.LANG === 'de' ? 'daneben' : 'miss', '#c0cbdc', 12); fx('miss', { to }); if (to === W.hero) { A.Gear.onDodge(to); A.Combos.onDodge(to); } return -1; }
     let dmg = raw * (0.9 + Math.random() * 0.2);
     if (from.tal && from.tal.berserker && from.maxHp) dmg *= 1 + 0.6 * clamp(1 - from.hp / from.maxHp, 0, 1);
     if (opts.basic && from.tal && from.tal.pulver && Math.random() < 0.25) W.marks.push({ kind: 'boom', x: to.x, y: to.y, r: 62, at: W.t + 0.05, dmg: raw * 0.6, col: '#feae34' });
@@ -289,6 +296,7 @@ A.World = (function () {
     const lp = A.Legends.pre(from, to, opts); if (lp) dmg *= lp.mul;   // Würfel, Prahlhans (legends.js)
     const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     const fp = A.Foes.pre(from, to, opts); if (fp) dmg *= fp.mul;   // Sandaks Panzer gegen dein Element (foes.js)
+    if (to === W.hero && from.side === 'enemy') dmg *= A.Pacts.hurtMul();   // Dornenkrone (pacts.js)
     const wp = A.Weather.pre(from, to, opts); if (wp) dmg *= wp.mul;   // Wolkenbruch: Blitze treffen härter (weather.js)
     const fp2 = A.Build.pre(from, to, opts, W.t); if (fp2) dmg *= fp2.mul;   // Schicksalspunkte (build.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
@@ -675,7 +683,7 @@ A.World = (function () {
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
-      a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); } });
+      a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); else if (p.kind === 'pact') A.Pacts.reveal(p, { float }); } });
       if (hooks.onCleared) hooks.onCleared(a); }
     // In der Nähe von etwas?
     W.near = null;

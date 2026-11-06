@@ -167,6 +167,12 @@ Jeder Welt-Boss und jeder Hauptmann gibt einen **Schicksalspunkt** («+1 Schicks
 - Jeder Punkt zählt **2 Punkte** für die Richtung: Build-Name, Beute, Händler, Truhen und Schrein lehnen sich stärker daran an. Du bestimmst die Richtung, der Zufall liefert die Teile.
 - Steht im Durchlauf (`run.fate`, `run.fatePts`); alte Spielstände laden ohne Punkte. Daten `data.js` A.FATE, Rechnung `build.js` (fateMods, pre, boomMul), Fenster `ui.js` fatePick.
 
+## Pakte (06.11.2026)
+Ab Ebene 3 steht manchmal (35 %, nie auf Boss-Ebenen) ein **Pakt-Altar** versteckt in einem Kampfraum; er taucht auf, wenn der Raum gesäubert ist («Ein Pakt-Altar!»). Er bietet 3 Pakte an, jeder mit **Fluch und Lohn** bis zum Ende des Durchlaufs, und jeder Pakt bringt am Ende **+15 % Seelenfunken**. Höchstens 3 Pakte je Durchlauf; «Lieber nicht» lässt den Altar stehen.
+- **Blutvertrag:** -25 % Leben, +30 % Schaden. **Gierschlund:** Gegner +30 % Leben, +80 % Gold und öfter Beute. **Glasknochen:** nie mehr ausweichen, +5 % Lebensraub, +8 % Volltreffer. **Hordenruf:** in jedem Kampf ein Gegner mehr, +50 % Erfahrung, +25 % Gold.
+- **Trockener Hals:** Tränke heilen halb, +3 Tempo, +12 % Schaden. **Dornenkrone:** Gegner treffen 20 % härter, +25 % Dornen, +4 Rüstung. **Schicksalswette:** Bosse und Hauptleute +40 % Leben, sofort 2 Schicksalspunkte. **Kurzschluss:** Zauber laden 30 % langsamer, +40 % Magie.
+- Heldenblatt zeigt «Pakte n/3», der Endbildschirm «Pakte: +n». Steht im Durchlauf (`run.pacts`, `run.pact`); der Altar kommt erst ab Ebenen-Bau 7, eine laufende Ebene aus einem älteren Stand bleibt ohne. Daten `data.js` A.PACTS, Regeln `js/pacts.js`, Fenster `ui.js` pactWin.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 

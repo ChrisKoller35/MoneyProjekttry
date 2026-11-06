@@ -926,6 +926,7 @@ window.A = window.A || {};
           break;
         }
         case 'cage': top = A.Pets.drawCage(this, p, near, x, y); break;   // Käfig mit einem Begleiter (pets.js)
+        case 'pact': top = A.Pacts.draw(this, p, near, x, y); break;   // Pakt-Altar (pacts.js)
         case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
       if (near && !p.used || (near && (p.kind === 'merchant' || p.kind === 'forge' || p.kind === 'stairs'))) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
@@ -1023,6 +1024,7 @@ window.A = window.A || {};
       A.Legends.lights(W, L);
       A.Combos.lights(W, L);
       A.Pets.lights(W, L);
+      A.Pacts.lights(W, L);
       A.Wild.lights(W, L);
       A.Weather.lights(W, L);
       for (const m of W.mons) {

@@ -932,6 +932,37 @@ A.BUILD_DIRS = {
 // Schicksalspunkte (build.js, ui.js fatePick): je Welt-Boss und Hauptmann ein Punkt, frei auf eine Build-Richtung zu setzen, höchstens A.FATE_MAX je Richtung.
 // Jeder Punkt gibt den festen Bonus m (Werte je Punkt, Schlüssel wie bei Talenten; vsBurn/vsSlow/vsPoison/zap/ally/boom in Prozent wirken in build.js pre/boomMul)
 // und zählt A.FATE_W Punkte für die Richtung: Build-Name, Beute, Händler, Truhen und Schrein lehnen sich stärker daran an. Steht im Durchlauf (run.fate, run.fatePts).
+// Pakte (js/pacts.js): ab Ebene 3 steht manchmal ein Pakt-Altar versteckt in einem Kampfraum (taucht auf, wenn der Raum gesäubert ist).
+// Ein Pakt gilt bis zum Ende des Durchlaufs: ein Fluch (x) und ein Lohn (m, wie Segen in Game.derived), dazu je Pakt +15 % Seelenfunken am Ende.
+// x: mhp = Gegner mehr Leben, bossHp = Bosse und Hauptleute mehr Leben, extra = Gegner mehr je Kampfraum, potMul = Tränke heilen nur so viel,
+// hurt = Gegner treffen härter, cd = Zauber laden langsamer, noDodge = kein Ausweichen; fate = so viele Schicksalspunkte beim Unterschreiben
+A.PACT_MAX = 3; A.PACT_FROM = 3; A.PACT_CHANCE = 0.35; A.PACT_SPARKS = 0.15;
+A.PACTS = {
+  blut: { col: '#e43b44', m: { hpPct: -25, dmgPct: 30 },
+    name: { de: 'Blutvertrag', en: 'Blood Contract' }, curse: { de: '-25 % Leben', en: '-25% health' }, gift: { de: '+30 % Schaden', en: '+30% damage' },
+    flavor: { de: 'Unterschrift mit Blut. Tinte war aus.', en: 'Signed in blood. They were out of ink.' } },
+  gier: { col: '#feae34', m: { goldPct: 80, dropPct: 4 }, x: { mhp: 0.3 },
+    name: { de: 'Gierschlund', en: 'Greedmaw' }, curse: { de: 'Gegner haben +30 % Leben', en: 'Enemies have +30% health' }, gift: { de: '+80 % Gold, Gegner lassen öfter Beute fallen', en: '+80% gold, enemies drop loot more often' },
+    flavor: { de: 'Reich sterben ist auch sterben. Aber reich.', en: 'Dying rich is still dying. But rich.' } },
+  glas: { col: '#c0f8ff', m: { lifesteal: 5, crit: 8 }, x: { noDodge: 1 },
+    name: { de: 'Glasknochen', en: 'Glass Bones' }, curse: { de: 'Du weichst nie mehr aus', en: 'You never dodge again' }, gift: { de: '+5 % Lebensraub, +8 % Volltreffer', en: '+5% life steal, +8% crit' },
+    flavor: { de: 'Ausweichen ist was für Leute mit Plan.', en: 'Dodging is for people with a plan.' } },
+  horde: { col: '#a2e05a', m: { xpPct: 50, goldPct: 25 }, x: { extra: 1 },
+    name: { de: 'Hordenruf', en: 'Horde Call' }, curse: { de: 'In jedem Kampf ein Gegner mehr', en: 'One more enemy in every fight' }, gift: { de: '+50 % Erfahrung, +25 % Gold', en: '+50% experience, +25% gold' },
+    flavor: { de: 'Du hast gerufen. Sie haben Freunde mitgebracht.', en: 'You called. They brought friends.' } },
+  durst: { col: '#9be8ff', m: { spd: 3, dmgPct: 12 }, x: { potMul: 0.5 },
+    name: { de: 'Trockener Hals', en: 'Dry Throat' }, curse: { de: 'Tränke heilen nur halb so viel', en: 'Potions heal only half as much' }, gift: { de: '+3 Tempo, +12 % Schaden', en: '+3 speed, +12% damage' },
+    flavor: { de: 'Der Trank schmeckt nach Staub. Du auch.', en: 'The potion tastes of dust. So do you.' } },
+  dorn: { col: '#63c74d', m: { thorns: 25, def: 4 }, x: { hurt: 0.2 },
+    name: { de: 'Dornenkrone', en: 'Crown of Thorns' }, curse: { de: 'Gegner treffen 20 % härter', en: 'Enemies hit 20% harder' }, gift: { de: '+25 % Dornen, +4 Rüstung', en: '+25% thorns, +4 armor' },
+    flavor: { de: 'Es tut weh. Allen. Das ist der Trick.', en: 'It hurts. Everyone. That is the trick.' } },
+  wette: { col: '#fee761', x: { bossHp: 0.4 }, fate: 2,
+    name: { de: 'Schicksalswette', en: 'Fate Wager' }, curse: { de: 'Bosse und Hauptleute haben +40 % Leben', en: 'Bosses and captains have +40% health' }, gift: { de: 'Sofort 2 Schicksalspunkte', en: '2 fate points right away' },
+    flavor: { de: 'Das Schicksal setzt dagegen. Es hat noch nie verloren. Bisher.', en: 'Fate bets against you. It has never lost. So far.' } },
+  kurz: { col: '#c77dff', m: { magPct: 40 }, x: { cd: 0.3 },
+    name: { de: 'Kurzschluss', en: 'Short Circuit' }, curse: { de: 'Zauber laden 30 % langsamer', en: 'Spells recharge 30% slower' }, gift: { de: '+40 % Magie', en: '+40% magic' },
+    flavor: { de: 'Mehr Saft, weniger Sicherung.', en: 'More juice, fewer fuses.' } },
+};
 A.FATE_MAX = 3;
 A.FATE_W = 2;
 A.FATE = {
