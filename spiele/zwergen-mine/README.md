@@ -27,6 +27,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **Besondere Felsen (5.11.2026):** ab Tiefe 5 ab und zu Goldader (×4 Gold), Kristall mit wandernder Schwachstelle (×8 Schaden auf den Punkt, +1 Stein) oder Panzerfels (nur Dynamit, ×6 Gold, verwittert nach 30 s).
 - Zwischendurch taucht eine Schatztruhe auf (Gold oder 15 Sekunden dreifacher Hacken-Schaden).
 - Kommt man zurück, bekommt man das Gold, das die Zwerge in der Zwischenzeit gegraben haben (bis 8 Stunden), mit Werbung doppelt.
+- **Maulwurf (6.11.2026):** alle 2-4 Minuten klaut ein Maulwurf einen kleinen Sack Gold und rennt unten durch; antippen bringt den Sack doppelt zurück, sonst ist er weg.
 
 ## Dateien
 
