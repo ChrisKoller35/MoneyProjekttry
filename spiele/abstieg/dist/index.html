@@ -14484,7 +14484,7 @@ window.A = window.A || {};
       onItem: (it) => foundItem(it),
       onProp: (p) => useProp(p),
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
-      onDeath: () => { S.lose(); setTimeout(() => runOver(), 1100); },
+      onDeath: () => { S.lose(); if (!G.run.over) { G.run.over = true; G.finishRun(); } setTimeout(() => runOver(), 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
       onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
       onElite: (list) => eliteNews(list),
       onBook: (ids) => bookNews(ids),
