@@ -243,6 +243,22 @@ const T = DE ? {
 const DWARF_NAMES = DE
   ? ['Gräber', 'Steinbeisser', 'Sprengmeister', 'Bohrmeister', 'Dampfbohrer', 'Erzkönig', 'Lavabohrer', 'Leerenschürfer']
   : ['Digger', 'Rockbiter', 'Blaster', 'Drill Master', 'Steam Drill', 'Ore King', 'Lava Driller', 'Void Prospector'];
+// Texte für die besonderen Felsen (Goldader, Kristall, Panzerfels)
+const TS = DE ? {
+  gold: 'Goldader!', goldSub: 'vierfach Gold',
+  kristall: 'Kristall!', kristallSub: 'Triff die Schwachstelle',
+  weak: 'Schwachstelle!',
+  panzer: 'Panzerfels!', panzerSub: 'Nur Dynamit hilft (D)', panzerLbl: 'Nur Dynamit',
+  panzerGone: 'Der Panzerfels verwittert', panzerGoneSub: 'Zu spät. Er war schüchtern.',
+  klonk: 'Klonk', gem: 'Kristall zerbrochen',
+} : {
+  gold: 'Gold vein!', goldSub: 'quadruple gold',
+  kristall: 'Crystal!', kristallSub: 'Hit the weak spot',
+  weak: 'Weak spot!',
+  panzer: 'Armored rock!', panzerSub: 'Only dynamite works (D)', panzerLbl: 'Dynamite only',
+  panzerGone: 'The armored rock crumbles', panzerGoneSub: 'Too late. It was shy.',
+  klonk: 'Clank', gem: 'Crystal shattered',
+};
 
 // ---------- Spielformeln ----------
 // FORMELN_START (wird vom Balancing-Test gelesen)
@@ -414,7 +430,7 @@ function freshState() {
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {},
-    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {} };
+    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, special: null, specialT: 0 };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -521,7 +537,14 @@ function rockCenter() { return { x: CW / 2, y: CH * 0.52, r: Math.min(CW * 0.27,
 function spawnRock() {
   bossActive = F.isBoss(S.depth) && !S.farm && !S.blockDone;
   hpMax = F.rockHp(S.depth);
+  const keep = rockN === 0 && S.special && S.hp > 0 && !bossActive && !S.farm;   // geladener Felsen läuft weiter
   S.hp = hpMax;
+  if (!keep) {
+    S.special = (rockN > 0 && !bossActive && !S.farm && S.depth >= 5) ? rollSpecial() : null;
+    S.specialT = S.special === 'panzer' ? 30 : 0;
+    if (S.special) showBanner({ text: TS[S.special], sub: TS[S.special + 'Sub'], life: 2, color: SPECIAL_COL[S.special] });
+  }
+  rockN++;
   bossTimer = F.bossTime(S.depth, S);
   rockSeed = (S.depth * 9301 + 49297) % 233280;
   const LK = Math.floor((S.depth - 1) / 10);
@@ -537,13 +560,19 @@ function spawnRock() {
 
 function damage(amount, fromTap, x, y) {
   if (S.hp <= 0) return;
-  let crit = false;
-  if (fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult(S); crit = true; }
+  if (S.special === 'panzer') {   // Panzerfels: nur Dynamit hilft, auch Zwerge machen nichts
+    if (fromTap) { const c = rockCenter(); floats.push({ x: x ?? c.x, y: (y ?? c.y) - 20, text: TS.klonk, life: 0.8 }); sfx.hit(); }
+    return;
+  }
+  let crit = false, weak = false;
+  if (S.special === 'kristall' && fromTap && x != null) { const w = weakSpot(); if (Math.hypot(x - w.x, y - w.y) <= 26) { amount *= 8; crit = weak = true; } }
+  if (!weak && fromTap && Math.random() < F.critChance(S)) { amount *= F.critMult(S); crit = true; }
   S.hp -= amount;
   if (fromTap) {
     shake = Math.min(1, shake + (crit ? 0.6 : 0.25)); hitFlash = 1;
     const c = rockCenter();
-    floats.push({ x: (x ?? c.x) + (Math.random() - 0.5) * 30, y: (y ?? c.y) - 20, text: fmt(amount), life: 1, crit });
+    floats.push({ x: (x ?? c.x) + (Math.random() - 0.5) * 30, y: (y ?? c.y) - 20, text: fmt(amount), life: 1, crit, color: weak ? SPECIAL_COL.kristall : undefined });
+    if (weak) floats.push({ x, y: y - 50, text: TS.weak, life: 1.2, color: SPECIAL_COL.kristall });
     const col = layerAt(S.depth);
     for (let i = 0; i < (crit ? 10 : 4); i++) chips.push(chip(x ?? c.x, y ?? c.y, Math.random() < 0.35 ? col.ore : col.rock));
     crit ? sfx.crit() : sfx.hit();
@@ -558,8 +587,9 @@ function chip(x, y, color) {
 
 function breakRock() {
   const c = rockCenter();
-  const gold = F.rockGold(S.depth, S);
+  const gold = F.rockGold(S.depth, S) * specialGoldMult();
   S.gold += gold;
+  if (S.special === 'kristall') { S.gems += 1; showBanner({ text: TS.gem, sub: '💎 +1', life: 2, color: SPECIAL_COL.kristall }); sfx.chest(); }
   for (let i = 0; i < 26; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, layerAt(S.depth)[Math.random() < 0.4 ? 'ore' : 'rock']));
   const n = Math.min(10, 3 + Math.floor(Math.log10(gold + 1) * 2));
   for (let i = 0; i < n; i++) coins.push({ x: c.x + (Math.random() - 0.5) * c.r, y: c.y + (Math.random() - 0.5) * c.r * 0.6, t: -i * 0.04, sx: 0, sy: 0 });
@@ -578,6 +608,7 @@ function breakRock() {
     S.depth++;
     if (S.depth > S.maxDepth) { S.maxDepth = S.depth; onNewMax(); }
   }
+  S.special = null;
   spawnRock();
   refreshPanel(true);
 }
@@ -686,6 +717,77 @@ function bossPower() { const d = S.maxDepth; return F.totalDps(S) * Math.max(1, 
 function movePct() { return Math.round((F.heirMult({ heir: S.heir + F.heirGain(S) }) / F.heirMult(S) - 1) * 100); }
 function moveWorth() { return F.canPrestige(S) && movePct() >= 15 && S.runTime - S.lastMaxAt >= (S.farm ? 60 : 300); }
 
+// ---------- Besondere Felsen: Goldader, Kristall, Panzerfels ----------
+let rockN = 0;   // Felsen in dieser Sitzung (der erste nach dem Laden ist immer normal)
+const SPECIAL_COL = { gold: '#f5c542', kristall: '#7fe7ff', panzer: '#c7ccd6' };
+function rollSpecial() {
+  if (window.__mineSpecial && window.__mineSpecial.off) return null;
+  if (F.isBoss(S.depth)) return null;
+  if (S.up.dyn && S.cdDyn <= 0 && Math.random() < 1 / 25) return 'panzer';   // nur, wenn Dynamit bereit ist
+  if (Math.random() < 1 / 40) return 'kristall';
+  if (Math.random() < 1 / 18) return 'gold';
+  return null;
+}
+function specialGoldMult() { return S.special === 'gold' ? 4 : S.special === 'panzer' ? 6 : 1; }
+// Schwachstelle des Kristalls: wandert in rund 25 s einmal um den Mittelpunkt
+function weakSpot() {
+  const c = rockCenter(), a = t * 0.25;
+  return { x: c.x + Math.cos(a) * 0.55 * c.r, y: c.y + Math.sin(a) * 0.55 * c.r };
+}
+function specialStep(dt) {
+  if (S.special !== 'panzer') return;
+  S.specialT -= dt;
+  if (S.specialT <= 0) {
+    S.special = null; S.specialT = 0;
+    hpMax = F.rockHp(S.depth); S.hp = hpMax;
+    showBanner({ text: TS.panzerGone, sub: TS.panzerGoneSub, life: 2.4, color: SPECIAL_COL.panzer });
+  }
+}
+function drawSpecial(t) {
+  if (!S.special || S.hp <= 0) return;
+  const c = rockCenter();
+  ctx.save();
+  if (S.special === 'gold') {
+    const R = rng(rockSeed + 11);
+    for (let i = 0; i < 12; i++) {
+      const a = R() * Math.PI * 2, d = Math.sqrt(R()) * c.r * 0.7, s = 3 + R() * 4;
+      const x = c.x + Math.cos(a) * d, y = c.y + Math.sin(a) * d * 0.9;
+      ctx.globalAlpha = Math.max(0, Math.sin(t * 4 + i * 1.7));
+      ctx.fillStyle = i % 2 ? '#fff' : '#f5c542';
+      ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s * 0.6, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s * 0.6, y); ctx.closePath(); ctx.fill();
+    }
+  } else if (S.special === 'kristall') {
+    const R = rng(rockSeed + 13);
+    ctx.strokeStyle = '#7fe7ff'; ctx.lineWidth = 2; ctx.globalAlpha = 0.75; ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + R() * 0.6, x0 = c.x + (R() - 0.5) * c.r * 0.3, y0 = c.y + (R() - 0.5) * c.r * 0.3;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(c.x + Math.cos(a) * c.r * 0.78, c.y + Math.sin(a) * c.r * 0.72); ctx.stroke();
+    }
+    const w = weakSpot(), pr = 12 + Math.sin(t * 6) * 2;   // pulsierender Ring 10–14 px
+    ctx.globalAlpha = 1; ctx.shadowColor = '#7fe7ff'; ctx.shadowBlur = 12;
+    ctx.fillStyle = '#eafcff'; ctx.beginPath(); ctx.arc(w.x, w.y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#bff4ff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(w.x, w.y, pr, 0, Math.PI * 2); ctx.stroke();
+  } else if (S.special === 'panzer') {
+    for (const [px, py] of [[-0.55, -0.45], [0.05, -0.55], [-0.25, 0]]) {   // drei Nietenplatten
+      const x = c.x + px * c.r, y = c.y + py * c.r, w = c.r * 0.5, h = c.r * 0.36;
+      ctx.fillStyle = '#8b8f99'; roundRect(x, y, w, h, 5); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#c7ccd6';
+      for (const [rx, ry] of [[0.12, 0.18], [0.88, 0.18], [0.12, 0.82], [0.88, 0.82]]) { ctx.beginPath(); ctx.arc(x + rx * w, y + ry * h, 3, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.font = '800 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lw = ctx.measureText(TS.panzerLbl).width + 16, ly = c.y + c.r * 0.55;
+    ctx.fillStyle = 'rgba(20,16,26,0.85)'; roundRect(c.x - lw / 2, ly - 10, lw, 20, 6); ctx.fill();
+    ctx.fillStyle = '#ff8a3d'; ctx.fillText(TS.panzerLbl, c.x, ly + 1);
+    const bw = Math.min(CW * 0.6, 260), bx = CW / 2 - bw / 2, by = c.y + c.r * 1.12 - 2;   // Zeitbalken direkt über dem Lebensbalken
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; roundRect(bx, by, bw, 5, 2.5); ctx.fill();
+    ctx.fillStyle = '#ff6b6b'; roundRect(bx, by, Math.max(0, S.specialT / 30) * bw, 5, 2.5); ctx.fill();
+  }
+  ctx.restore();
+}
+// Für den Browser-Test: eine Art erzwingen oder alles abschalten
+window.__mineSpecial = { off: false, spawn(kind) { S.special = kind; S.specialT = kind === 'panzer' ? 30 : 0; }, get kind() { return S.special; }, weakSpot };
+
 // ---------- Eingabe ----------
 let lastTap = 0;
 cv.addEventListener('pointerdown', (e) => {
@@ -715,7 +817,8 @@ function useDyn() {
   if (!S.up.dyn || S.cdDyn > 0 || S.hp <= 0) return;
   S.cdDyn = F.dynCd; const c = rockCenter(); swingT = 1; shake = 1;
   for (let i = 0; i < 18; i++) chips.push(chip(c.x + (Math.random() - 0.5) * c.r, c.y + (Math.random() - 0.5) * c.r, '#ff8a3d'));
-  damage(F.pickDmg(S.pick, S) * F.dynTaps * tapMult(), true, c.x, c.y - 10);
+  if (S.special === 'panzer') { S.hp = 0; breakRock(); }   // Panzerfels platzt sofort
+  else damage(F.pickDmg(S.pick, S) * F.dynTaps * tapMult(), true, c.x, c.y - 10);
   sfx.boss(); updateSkillBtns();
 }
 function useBeer() {
@@ -984,7 +1087,7 @@ function drawFx(dt) {
     ctx.font = `900 ${f.crit ? 30 : f.gold ? 24 : 18}px system-ui, sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.strokeText(f.text, f.x, f.y);
-    ctx.fillStyle = f.crit ? '#ff8a3d' : f.gold ? '#f5c542' : '#fff'; ctx.fillText(f.text, f.x, f.y);
+    ctx.fillStyle = f.color || (f.crit ? '#ff8a3d' : f.gold ? '#f5c542' : '#fff'); ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
   if (banner && toast.style.display !== 'block') {
@@ -1448,7 +1551,7 @@ function frame(now) {
   // Zeichnen
   drawBackground(t);
   drawDwarves(t);
-  drawRock(t);
+  drawRock(t); specialStep(dt); drawSpecial(t);
   drawPlayerPick();
   drawChest(t);
   drawFx(dt);

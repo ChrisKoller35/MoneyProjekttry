@@ -24,6 +24,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **Boss zu stark:** Nach einem verlorenen Boss steht oben in jeder Liste eine rote Karte «Boss auf Tiefe N zu stark». Sie zeigt, wie viel vom Boss die Zwerge allein in der Zeit schaffen, und hat den Knopf «Nochmal». Bei 100 % greifen die Zwerge von selbst an («Jetzt schaffen sie es!»).
 - **Umzug lohnt sich:** Hängt man fest (eine Minute nach einem verlorenen Boss oder 5 Minuten ohne neue Tiefe) und macht ein Umzug mindestens 15 % stärker, zeigt ein Tipp auf den Reiter «Ziele», die rote Karte nennt das Plus, und die Karte «Neue Mine» sagt «Lohnt sich jetzt!».
 - **Effekte:** Funken und ein kleiner Hüpfer beim Kaufen, roter Blitz mit Trommel, wenn ein Boss kommt, Ticken in den letzten 5 Sekunden, Konfetti beim Sieg, absteigende Töne bei «Zeit um!».
+- **Besondere Felsen (5.11.2026):** ab Tiefe 5 ab und zu Goldader (×4 Gold), Kristall mit wandernder Schwachstelle (×8 Schaden auf den Punkt, +1 Stein) oder Panzerfels (nur Dynamit, ×6 Gold, verwittert nach 30 s).
 - Zwischendurch taucht eine Schatztruhe auf (Gold oder 15 Sekunden dreifacher Hacken-Schaden).
 - Kommt man zurück, bekommt man das Gold, das die Zwerge in der Zwischenzeit gegraben haben (bis 8 Stunden), mit Werbung doppelt.
 
