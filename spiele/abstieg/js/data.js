@@ -973,6 +973,36 @@ A.PACTS = {
     name: { de: 'Kurzschluss', en: 'Short Circuit' }, curse: { de: 'Zauber laden 30 % langsamer', en: 'Spells recharge 30% slower' }, gift: { de: '+40 % Magie', en: '+40% magic' },
     flavor: { de: 'Mehr Saft, weniger Sicherung.', en: 'More juice, fewer fuses.' } },
 };
+// ---------- Grade und Heimkehren (v39): die Leiter nach dem ersten Sieg ----------
+// Wer mit einer Klasse den Ausgang auf Ebene 24 erreicht, schaltet für sie den nächsten Grad frei (meta.grade[Klasse] = höchster geschaffter Grad, 0 = normal).
+// Ein Grad gilt für den ganzen Durchlauf (run.grade, fehlt = 0): je Grad haben Gegner mehr Leben und Schaden, dazu kommt seine Regel; die Regeln der Grade davor gelten weiter.
+// x: mhp, bossHp, extra, hurt wie bei den Pakten (pacts.js zählt sie mit); eliteTr = Elite eine Eigenschaft mehr; potCut = Tränke heilen so viel weniger;
+// heroHp = Held so viel weniger Leben; mspd = Gegner so viel schneller; champ = in jedem Kampfraum ein Champion; restCut = Rasten heilt so viel weniger
+A.GRADE_MAX = 10; A.GRADE_HP = 0.12; A.GRADE_ATK = 0.08; A.GRADE_SPARKS = 0.2;
+A.HOME_SPARKS = 0.1; A.EXIT_SPARKS = 0.25;   // Heimkehren nach einem Welt-Boss / am Ausgang: so viel mehr Seelenfunken
+A.GRADES = [
+  { x: { mhp: 0.2 }, name: { de: 'Die Gegner haben gefrühstückt', en: 'The enemies had breakfast' }, text: { de: 'Gegner haben 20 % mehr Leben.', en: 'Enemies have 20% more health.' } },
+  { x: { eliteTr: 1 }, name: { de: 'Zäher Adel', en: 'Tough nobility' }, text: { de: 'Elite-Gegner haben eine Eigenschaft mehr.', en: 'Elite enemies have one more trait.' } },
+  { x: { extra: 1 }, name: { de: 'Besuch', en: 'Visitors' }, text: { de: 'In jedem Kampf ein Gegner mehr.', en: 'One more enemy in every fight.' } },
+  { x: { potCut: 0.3 }, name: { de: 'Wasser im Trank', en: 'Watered potions' }, text: { de: 'Tränke heilen 30 % weniger.', en: 'Potions heal 30% less.' } },
+  { x: { bossHp: 0.4 }, name: { de: 'Bosse im Training', en: 'Bosses in training' }, text: { de: 'Bosse und Hauptleute haben 40 % mehr Leben.', en: 'Bosses and captains have 40% more health.' } },
+  { x: { heroHp: 0.1 }, name: { de: 'Dünne Haut', en: 'Thin skin' }, text: { de: 'Du hast 10 % weniger Leben.', en: 'You have 10% less health.' } },
+  { x: { mspd: 0.15 }, name: { de: 'Eilige Gegner', en: 'Hasty enemies' }, text: { de: 'Gegner laufen 15 % schneller.', en: 'Enemies move 15% faster.' } },
+  { x: { champ: 1 }, name: { de: 'Champions überall', en: 'Champions everywhere' }, text: { de: 'In jedem Kampfraum steckt ein Champion.', en: 'Every fight room hides a champion.' } },
+  { x: { restCut: 0.5 }, name: { de: 'Harte Pritsche', en: 'Hard cot' }, text: { de: 'Rasten heilt nur halb so viel.', en: 'Resting heals only half as much.' } },
+  { x: { hurt: 0.25 }, name: { de: 'Der Abgrund schaut zurück', en: 'The abyss looks back' }, text: { de: 'Gegner treffen 25 % härter.', en: 'Enemies hit 25% harder.' } },
+];
+A.gradeOf = (r) => Math.max(0, Math.min(A.GRADE_MAX, Math.floor(+((r && r.grade) || 0)) || 0));
+A.gradeVal = (k, r) => { let v = 0; for (let i = 0, g = A.gradeOf(r); i < g; i++) v += A.GRADES[i].x[k] || 0; return v; };
+// Ausgänge auf Ebene 24, 48, 72 ...: je ein Schild an der Tür und eins dahinter (danach immer das letzte, {n} = nächster Ausgang)
+A.isExitFloor = (f) => f > 0 && f % A.MAX_FLOOR === 0;
+A.EXITS = [
+  { sign: { de: 'AUSGANG', en: 'EXIT' }, note: { de: 'Wegen Umbau geschlossen. Umleitung über Ebene {n}.', en: 'Closed for renovation. Detour via floor {n}.' } },
+  { sign: { de: 'AUSGANG (wirklich)', en: 'EXIT (for real)' }, note: { de: 'Umleitung über Ebene {n}. Wir bitten um Verständnis.', en: 'Detour via floor {n}. We apologise for any inconvenience.' } },
+  { sign: { de: 'AUSGANG. Ehrenwort.', en: 'EXIT. Pinky promise.' }, note: { de: 'Heute Ruhetag. Nächster Ausgang: Ebene {n}.', en: 'Closed today. Next exit: floor {n}.' } },
+  { sign: { de: 'AUSGANG?', en: 'EXIT?' }, note: { de: 'Der Abgrund ist beeindruckt. Nächster Ausgang: Ebene {n}.', en: 'The abyss is impressed. Next exit: floor {n}.' } },
+];
+
 // ---------- Überraschungen in der Welt (surprise.js, ab Ebenen-Bau 8) ----------
 // Krüge zum Zerschlagen: je Welt eigenes Bild (art.js), Farben (C Grundfarbe, D dunkel, H hell), Scherben-Farben und das Tier, das manchmal herausflitzt
 A.POTS = {

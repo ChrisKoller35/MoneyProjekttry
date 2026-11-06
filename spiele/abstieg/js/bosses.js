@@ -98,6 +98,33 @@ A.Bosses = (function () {
     }
   }
 
+  // ---------- Phasen-Pause (v39): bei halbem und viertel Leben fällt kein Boss in einem Zug durch ----------
+  // Er bleibt knapp unter der Schwelle stehen, ist kurz unverwundbar (goldener Schild) und holt sofort zu seinem grossen Angriff aus.
+  // So zeigt jeder Boss, was er kann, und man muss einmal ausweichen. world.js ruft gate nach jedem Treffer am Boss (hp0 = Leben vor dem Treffer) und guardHit, wenn ein Treffer am Schild abprallt.
+  // Lag er schon vor dem Treffer unter einer Schwelle (Schaden, der nicht über world.hit lief), zählt die Schwelle als vorbei: nie wird ein Boss dabei wieder hochgeheilt
+  const GATES = [0.5, 0.25], GUARD = 1.4;
+  function gate(m, hp0) {
+    if (!m.boss || !(m.maxHp > 0)) return;
+    const w = W(), s = m.bs || (m.bs = { t: 2.2, t2: 6, busy: 0 });
+    let i = s.gate || 0;
+    if (hp0 != null) while (i < GATES.length && hp0 < m.maxHp * GATES[i]) i++;
+    s.gate = i;
+    if (i >= GATES.length) return;
+    const lim = m.maxHp * GATES[i];
+    if (m.hp >= lim) return;
+    s.gate = i + 1;
+    m.hp = Math.max(m.hp, Math.min(hp0 != null ? hp0 : Infinity, Math.max(1, Math.ceil(lim) - 1)));   // knapp darunter: Wut und Endphase beginnen im nächsten Schritt
+    m.guardT = w.t + GUARD;
+    s.t = Math.min(s.t, 0.25); s.t2 = Math.min(s.t2, 0.8);   // gleich der grosse Angriff
+    api.float(m.x, m.y - 86, L('Unverwundbar!', 'Invulnerable!'), '#fee761', 18);
+    if (A.FX) { A.FX.shake(0.4); A.FX.part({ kind: 'ring', x: m.x, y: m.y - 10, life: 0.6, size: 90, color: '#fee761', add: true }); }
+    if (A.Sound && A.Sound.roar) A.Sound.roar();
+  }
+  function guardHit(m) {
+    const w = W(); if ((m.guardFloat || 0) > w.t) return;
+    m.guardFloat = w.t + 0.5; api.float(m.x, m.y - 70, L('Schild!', 'Shield!'), '#fee761', 13);
+  }
+
   // ---------- Verhalten je Boss (true = steht still, keine normalen Angriffe) ----------
   function step(m, dt, d) {
     const w = W(), h = w.hero;
@@ -155,7 +182,7 @@ A.Bosses = (function () {
       }
       case 'kraken': {   // Tentakel unter dem Helden, Flut: nur in den hellen Kreisen ist man sicher
         if (s.t <= 0 && d < 640) { s.t = 3.6 * k; tele(m, h.x, h.y, 46, 0.85, m.atk * 1.2, { col: '#b55088', slow: true, tentacle: true }); }
-        if (s.t2 <= 0) {
+        if (s.t2 <= 0 && !(w.bfx || []).some(o => o.kind === 'flood' && !o.fired)) {   // nie zwei Fluten gleichzeitig (die Boss-Pause zieht den Angriff vor)
           s.t2 = s.p2 ? 10 : 13;
           const safes = [];
           for (let i = 0; i < 30 && safes.length < (s.p2 ? 2 : 3) + (w.big ? 1 : 0); i++) { const p = roomSpot(20); if (p && safes.every(o => Math.hypot(o.x - p.x, o.y - p.y) > 170)) safes.push({ x: p.x, y: p.y, r: 66 }); }
@@ -303,5 +330,5 @@ A.Bosses = (function () {
     }
   }
 
-  return { bind, step, tick, drawGround, drawTop, lights };
+  return { bind, step, tick, gate, guardHit, GATES, drawGround, drawTop, lights };
 })();

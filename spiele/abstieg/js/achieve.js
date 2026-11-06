@@ -104,6 +104,8 @@ A.Achieve = (function () {
     const m = G().meta;
     const e = { t: Date.now(), race: r.race, cls: r.cls, floor: r.floor, level: r.level, kills: r.kills, gold: r.gold, won: !!r.won, by: quit ? null : (r.deathBy || null), quit: !!quit,
       sparks: quit ? 0 : (r.sparksEarned || 0), dur: Math.round(r.playT || 0), pets: (r.pets || []).slice(0, 2), ach: (r.achIds || []).slice(), bd: A.Build.ids(A.Build.profile(r)) };
+    if (A.gradeOf(r)) e.grade = A.gradeOf(r);   // Grad und Heimkehren (v39); fehlt bei älteren Einträgen
+    if (r.home && !quit) { e.home = r.home; e.by = null; }
     m.chron = m.chron || []; m.chron.unshift(e); if (m.chron.length > A.ACH_CHRON) m.chron.length = A.ACH_CHRON;
     return e;
   }
@@ -119,6 +121,8 @@ A.Achieve = (function () {
   // Woran ein Durchlauf endete, als Satz
   function causeText(e) {
     if (e.quit) return L('aufgegeben', 'abandoned');
+    if (e.home === 'exit') return L('durch den Ausgang heimgekehrt', 'went home through the exit');
+    if (e.home) return L('heimgekehrt', 'went home');
     const by = e.by;
     if (by && by.kind === 'burn') return L('in Flammen aufgegangen', 'went up in flames');
     if (by && by.kind === 'poison') return L('am Gift gestorben', 'died of poison');

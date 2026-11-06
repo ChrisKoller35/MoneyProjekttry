@@ -743,7 +743,8 @@ window.A = window.A || {};
       if (m.ef && !(m.spawn > 0)) A.Elites.drawUnder(this, m, spr, cx, cy, sc, lift);   // Nachbilder (Flink)
       const slip = m.slipUntil > W.t;   // auf einer Bananenschale ausgerutscht: überschlägt sich (wild.js)
       if ((m.elite || m.mirror) && !(m.spawn > 0) && !slip) this.outlineGlow(spr, dx, dy, flip, A.Elites.col(m, this.t), sc);
-      if (m.boss && !slip) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
+      const guard = m.boss && m.guardT > W.t;   // Phasen-Pause (bosses.js gate): goldener Schild
+      if (m.boss && !slip) this.outlineGlow(spr, dx, dy, flip, guard ? (Math.sin(this.t * 12) > 0 ? '#fee761' : '#feae34') : Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
       const frozen = m.frozenUntil > W.t && !slip, sand = m.sandUntil > W.t && !slip;   // Zeitstopp der Totenmaske: golden und erstarrt
       if (frozen) this.outlineGlow(spr, dx, dy, flip, '#9be8ff', sc);
       else if (sand) this.outlineGlow(spr, dx, dy, flip, '#feae34', sc);
@@ -751,6 +752,7 @@ window.A = window.A || {};
       else this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
       if (m.state === 'windup' && !slip && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
       if (m.ef && !(m.spawn > 0)) A.Elites.drawOver(this, m, spr, dx, dy, sx, sy, cx, cy);   // Schildblase, kreisende Klingen
+      if (guard) { const g = this.g, hh = spr.h * sy, R = Math.max(spr.w * sx, hh) * 0.62, yy = dy - hh * 0.5; g.globalAlpha = 0.5 + Math.sin(this.t * 10) * 0.2; g.strokeStyle = '#fee761'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(dx), Math.round(yy), R, R * 0.95, 0, 0, TAU); g.stroke(); g.globalAlpha = 0.8; g.fillStyle = '#ffffff'; g.fillRect(Math.round(dx - R * 0.5), Math.round(yy - R * 0.6), 2, 1); g.globalAlpha = 1; }
       if (frozen) {   // eingefroren (Eis-Ausrüstung): blaues Eis über der Figur, ein paar helle Punkte
         const k = flip ? 'iceF' : 'ice'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#9be8ff');
         const w2 = Math.round(spr.w * sx), h2 = Math.round(spr.h * sy), x2 = Math.round(dx - w2 / 2), y2 = Math.round(dy - h2);
@@ -1261,6 +1263,10 @@ window.A = window.A || {};
         c.fillStyle = '#a22633'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh);
         c.fillStyle = '#e43b44'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh * 0.5);
         c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, d);
+        // Phasen-Pausen (v39): Kerben bei halbem und viertel Leben, verblasst, wenn vorbei; goldener Rahmen, solange der Schild steht
+        const gates = A.Bosses.GATES || [], gi = (boss.bs && boss.bs.gate) || 0;
+        gates.forEach((fx, k) => { c.fillStyle = k < gi ? 'rgba(24,20,37,0.35)' : '#181425'; c.fillRect(Math.round(x0 + bwid * fx - d), y0 - d, 2 * d, hh + 2 * d); });
+        if (boss.guardT > W.t) { c.strokeStyle = '#fee761'; c.lineWidth = 2 * d; c.strokeRect(x0 - 2 * d, y0 - 2 * d, bwid + 4 * d, hh + 4 * d); c.strokeStyle = '#181425'; }
         const bb = A.bossOf(W.floor), trick = A.t(bb && bb.trick);
         if (trick) { c.font = this.font(11 * d, 500); c.lineWidth = 3 * d; c.strokeText(trick, bx, y0 + hh + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(trick, bx, y0 + hh + 14 * d); }
       }

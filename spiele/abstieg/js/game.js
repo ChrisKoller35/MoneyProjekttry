@@ -11,9 +11,33 @@ A.Game = (function () {
   // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch;
   // pets: gefundene Begleiter mit ihrer Treue ({ xp, n }); petSel: wer aus der Tierhütte mitkommt;
   // stats: Zähler fürs Auftragsbrett; ach: erreichte Erfolge (Zeit); achNew: noch nicht angeschaut; chron: die letzten Durchläufe (achieve.js)
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [] });
+  // grade: höchster geschaffter Grad je Klasse (fehlt = noch nie am Ausgang); gradeSel: zuletzt gewählter Grad je Klasse (v39)
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [], grade: {}, gradeSel: {} });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; meta.capt = meta.capt || {}; fxCache = null; migrateCamp(); }
+  function loadMeta() { let d = null; try { d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; meta.capt = meta.capt || {}; if (!d || !d.grade || typeof d.grade !== 'object') meta.grade = gradeBackfill(); meta.gradeSel = meta.gradeSel || {}; fxCache = null; migrateCamp(); }
+  // Ältere Spielstände ohne Grade: wer mit einer Klasse schon über Ebene 24 hinaus kam (oder einen Sieg in der Chronik hat), hat den Ausgang geschafft
+  function gradeBackfill() {
+    const g = {}, best = (meta.stats && meta.stats.clsBest) || {};
+    for (const c of A.CLASSES) if ((best[c.id] || 0) > A.MAX_FLOOR) g[c.id] = 0;
+    for (const e of meta.chron || []) if (e && e.won && e.cls && g[e.cls] == null) g[e.cls] = 0;
+    if (!Object.keys(g).length && ((meta.won || 0) > 0 || (meta.best || 0) > A.MAX_FLOOR)) for (const c of A.CLASSES) if (classUnlocked(c)) g[c.id] = 0;   // Sieg aus der Zeit vor Chronik und Klassen-Zähler: welche Klasse, weiss niemand mehr, also alle
+    return g;
+  }
+  // ---------- Grade (v39, A.GRADES) ----------
+  const gradeWon = (cls) => { const v = meta.grade && meta.grade[cls]; return typeof v === 'number' ? v : null; };   // höchster geschaffter Grad, null = noch nie am Ausgang
+  const gradeMax = (cls) => { const w = gradeWon(cls); return w == null ? 0 : Math.min(A.GRADE_MAX, w + 1); };     // höchster wählbarer Grad
+  function gradePick(cls) { const v = (meta.gradeSel || {})[cls]; return Math.max(0, Math.min(gradeMax(cls), Math.floor(+v) || 0)); }
+  // Am Ausgang (Ebene 24): der Grad dieses Durchlaufs gilt als geschafft, der nächste ist frei (einmal je Durchlauf)
+  function gradeWin() {
+    if (!run || run.gradeDone) return;
+    run.gradeDone = true;
+    const g = A.gradeOf(run), before = gradeMax(run.cls), had = gradeWon(run.cls);
+    meta.grade = meta.grade || {}; if (had == null || g > had) meta.grade[run.cls] = g;
+    const after = gradeMax(run.cls);
+    if (after > before) run.gradeNew = after;
+    if (g >= A.GRADE_MAX) run.gradeTop = true;
+    saveMeta();
+  }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -135,8 +159,9 @@ A.Game = (function () {
 
   // ---------- Durchlauf ----------
   let run = null;
-  function newRun(raceId, classId) {
+  function newRun(raceId, classId, grade) {
     const race = A.RACES.find(r => r.id === raceId), cls = A.CLASSES.find(c => c.id === classId);
+    const g = Math.max(0, Math.min(gradeMax(cls.id), Math.floor(+grade) || 0));   // Grad (v39): nur, was die Klasse schon freigeschaltet hat
     const me = metaEffects();
     const skills = cls.startSkills.slice();
     if (me.extraStartSkill) skills.push(cls.skills.find(s => !skills.includes(s)));
@@ -148,8 +173,9 @@ A.Game = (function () {
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
       bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: me.startBoon || 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
-      log: [], reviveUsed: false, over: false, won: false,
+      log: [], reviveUsed: false, over: false, won: false, grade: g,
     };
+    if (grade != null) { (meta.gradeSel || (meta.gradeSel = {}))[cls.id] = g; saveMeta(); }
     run.rng = new A.RNG(run.seed);
     run.pets = A.Pets.startPets();   // Begleiter aus der Tierhütte
     A.Achieve.onRun(run);            // Zähler fürs Auftragsbrett (Völker, Klassen) und die Felder für die Chronik
@@ -175,7 +201,7 @@ A.Game = (function () {
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100;
     const d = {
-      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
+      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100) * (1 - A.gradeVal('heroHp', r))),   // Dünne Haut (Grad 6)
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
       mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
       def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def') + me.def),
@@ -196,8 +222,10 @@ A.Game = (function () {
   }
 
   // elite: true = Elite mit voller Anzahl Eigenschaften, Zahl = so viele Eigenschaften (Champion), Liste = genau diese Eigenschaften, false = normal
+  // Grad (v39): je Grad mehr Leben und Schaden; ab Ebene 25 (die Welten kommen wieder) je Runde mehr, damit es nach dem Ausgang nicht leichter wird
   function monsterEntity(m, floor, elite, idx) {
-    const hpM = 1 + 0.28 * (floor - 1), atkM = 1 + 0.18 * (floor - 1);
+    const gr = A.gradeOf(run), rd = A.worldRound(floor);
+    const hpM = (1 + 0.28 * (floor - 1)) * (1 + A.GRADE_HP * gr) * (1 + 0.5 * rd), atkM = (1 + 0.18 * (floor - 1)) * (1 + A.GRADE_ATK * gr) * (1 + 0.25 * rd);
     const e = {
       id: 'e' + idx, mid: m.id, name: A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
@@ -210,7 +238,7 @@ A.Game = (function () {
       charge: !!m.charge, curl: !!m.curl,   // Anlauf und Einrollen (world.js monSpecial)
     };
     e.hp = e.maxHp;
-    if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
+    if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) + A.gradeVal('eliteTr', run) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js); Zäher Adel (Grad 2): eine mehr
     return e;
   }
 
@@ -407,9 +435,10 @@ A.Game = (function () {
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
+    if (!run || run.over) return null;   // ein vorbeier Lauf geht nicht mehr tiefer (sonst zählte ein Tod auf Ebene 24 als Sieg)
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
     A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
-    if (run.floor === A.MAX_FLOOR) { run.won = true; meta.won = (meta.won || 0) + 1; saveMeta(); }
+    if (run.floor === A.MAX_FLOOR) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } gradeWin(); saveMeta(); }   // am Ausgang weiter nach unten: auch ein Sieg
     run.floor++; newFloor(); A.Achieve.onFloor(run); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
@@ -504,7 +533,7 @@ A.Game = (function () {
   function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
 
   // ---------- Räume ----------
-  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5)); else run.points++; save(); }
+  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else run.points++; save(); }   // Harte Pritsche (Grad 9)
   function doEvent(choiceIdx) {
     const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
     let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
@@ -557,12 +586,28 @@ A.Game = (function () {
   function finishRun() {
     A.Achieve.onEnd(run);   // Spielzeit, Anfängerpech, letzte Prüfung der Erfolge
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
-    const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run)), sparks = base + pact;   // Pakte: je Pakt +15 %
-    run.sparksPact = pact;
+    const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run));   // Pakte: je Pakt +15 %
+    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang)
+    run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home;
     run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
+  }
+  // Heimkehren (v39): nach einem Welt-Boss (seine Treppe ist erst offen, wenn er gefallen ist) oder am Ausgang (Ebene 24, 48 ...) den Durchlauf mit allen Funken und Bonus beenden
+  function canGoHome() {
+    if (!run || run.over || !A.isBossFloor(run.floor)) return false;
+    const W = A.World && A.World.W, b = W && W.floor === run.floor && W.rooms ? W.rooms.find(x => x.type === 'boss') : null;
+    return !b || !!b.cleared;
+  }
+  function goHome() {
+    if (!canGoHome()) return false;
+    const exit = A.isExitFloor(run.floor);
+    if (exit) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } if (run.floor === A.MAX_FLOOR) gradeWin(); }
+    run.home = exit ? 'exit' : 'boss';
+    A.Achieve.onFloorDone(run);   // die Ebene ist geschafft wie über die Treppe (Erfolg «Tänzer»)
+    run.over = true; finishRun();
+    return true;
   }
   // Laufenden Durchlauf aufgeben: kommt ohne Seelenfunken in die Chronik, dann weg damit
   function abandonRun() { if (run && !run.over) { A.Achieve.onEnd(run, true); A.Achieve.record(run, true); saveMeta(); } clearRun(); }
@@ -577,7 +622,7 @@ A.Game = (function () {
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
