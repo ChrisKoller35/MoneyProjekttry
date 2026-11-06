@@ -291,6 +291,16 @@ A.MONSTERS.push(
   { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
   { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
 );
+// Nachschub: ein neuer Gegner je Welt (ab der 2. Ebene einer Welt). charge = bleibt stehen, zeigt einen roten Streifen und rennt dann geradeaus los,
+// curl = rollt sich unter halbem Leben einmal 2,5 s unverwundbar ein, danach sofort Anlauf (world.js monSpecial)
+A.MONSTERS.push(
+  { id: 'fasswicht', name: { de: 'Fasswicht', en: 'Barrel Gremlin' }, hp: 20, atk: 7, def: 3, spd: 4, kind: 'melee', color: '#8a5a3c', shape: 'barrel', charge: true, steal: 1 },
+  { id: 'muecke', name: { de: 'Sumpfmücke', en: 'Swamp Mosquito' }, hp: 10, atk: 5, def: 0, spd: 10, kind: 'melee', color: '#9fd8a0', shape: 'mosquito', fly: true, dodge: 25, poisonOnHit: 1 },
+  { id: 'grabkaefer', name: { de: 'Grabkäfer', en: 'Tomb Beetle' }, hp: 45, atk: 8, def: 9, spd: 3, kind: 'melee', color: '#5c4a7a', shape: 'beetle', curl: true, charge: true },
+  { id: 'kugelfisch', name: { de: 'Kugelfisch', en: 'Pufferfish' }, hp: 26, atk: 8, def: 2, spd: 4, kind: 'magic', color: '#feae34', shape: 'puffer', fly: true, ring: 8, ringCd: 7, shotCol: '#feae34' },
+  { id: 'schlackenhund', name: { de: 'Schlackenhund', en: 'Slag Hound' }, hp: 30, atk: 9, def: 2, spd: 8, kind: 'melee', color: '#f77622', shape: 'hound', leap: true, burn: 0.5 },
+  { id: 'fluesterer', name: { de: 'Flüsterer', en: 'Whisperer' }, hp: 28, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#68386c', shape: 'whisperer', fly: true, teleport: true, summon: 'fledermaus', summonCd: 11 },
+);
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
 // Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
 // Rache haben alle: fällt ein Kumpel daneben, werden sie kurz schneller und stärker
@@ -650,17 +660,17 @@ A.PET_CAGE = 0.45;                      // Chance auf einen Käfig je Ebene (ab 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
 A.WORLDS = [
-  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
+  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'fasswicht', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
     pit: null, hazard: null, obst: ['pillar'], corner: ['barrel', 'crate', 'pot', 'barrel'], favor: ['pillars', 'octagon', 'cross'] },
-  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
+  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'muecke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
     pit: 'water', hazard: 'mud', obst: ['tree', 'bush', 'tree'], corner: ['bush', 'pot', 'bush'], favor: ['garden', 'garden', 'island'], dense: 3 },
-  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
+  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'grabkaefer', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
     pit: null, hazard: 'quicksand', obst: ['cactus', 'obelisk', 'urn'], corner: ['urn', 'pot', 'urn'], favor: ['pool', 'pillars', 'garden'], dense: 1 },
-  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
+  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'kugelfisch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
     pit: 'water', hazard: 'shallow', obst: ['coral', 'column'], corner: ['barrel', 'crate', 'coral'], favor: ['island', 'stripes', 'ring'] },
-  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
+  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'schlackenhund', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
     pit: 'lava', hazard: 'embers', obst: ['obsidian', 'anvil'], corner: ['barrel', 'crate', 'anvil'], favor: ['stripes', 'pool', 'ring'] },
-  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
+  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'fluesterer', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
     pit: 'void', hazard: 'shadow', obst: ['crystal'], corner: ['crystal', 'pot'], favor: ['island', 'stripes', 'cross'] },
 ];
 // Gefahr-Boden: slow = Tempo-Faktor, burn = brennt
@@ -694,7 +704,8 @@ A.isBossFloor = (f) => f % A.FLOORS_PER_WORLD === 0;
 A.bossOf = (f) => A.isBossFloor(f) ? A.BOSSES[A.worldOf(f).boss] : null;
 A.worldName = (f) => { const n = A.t(A.worldOf(f).name), r = A.worldRound(f); return r ? n + ' ' + ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][Math.min(r, 7)] : n; };
 // Gegner-Auswahl: auf der ersten Ebene einer Welt die ersten drei Arten, dann je Ebene eine mehr
-A.monsterPool = (f) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return w.mons.slice(0, 3 + k).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
+// lvVer: Ebenen-Bau des Spielstands; ab 6 kommt der neue Gegner der Welt ab ihrer 2. Ebene dazu (ältere laufende Ebenen ohne)
+A.monsterPool = (f, lvVer) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return (lvVer >= 6 ? w.mons.slice(0, 3 + k + (k >= 1 ? 1 : 0)) : w.mons.filter((_, i) => i !== 3).slice(0, 3 + k)).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
 
 // ---------- Ereignisse ----------
 A.EVENTS = [
