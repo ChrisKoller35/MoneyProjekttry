@@ -19,6 +19,7 @@
     --notch2: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
   }
   * { box-sizing: border-box; }
+  *, *::before, *::after { font-variant-ligatures: none; }   /* Pixelify Sans zeichnet «fi» und «fl» als Ligatur, die wie ein «A» aussieht («GräAn», «Anden»); gilt auch für den Text im Canvas */
   html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text); font-family: var(--ui); overflow: hidden; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
   body { user-select: none; -webkit-user-select: none; }
   button { font: inherit; color: inherit; }

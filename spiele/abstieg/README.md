@@ -229,6 +229,9 @@ Der Abstieg ist eine Show, und die Show hat Geldgeber.
 - **Tageswunsch:** Jeden Tag wünscht sich ein Gönner etwas für einen Lauf (50 Gegner, 3 Elite-Gegner, bis Ebene 6, 2 Kisten, ein Welt-Boss oder Heimkehren). Wer es schafft, bekommt einmal am Tag +2 Fans und +30 Seelenfunken, mit Banner mitten im Lauf. Der Wunsch steht in der Heldenwahl und im Lager, der Ende-Bildschirm zeigt «Tageswunsch erfüllt».
 - Spielstand: neu in `meta` `patron` (letzte Wahl) und `wish` (`{ day, sp, w, done }`), im Durchlauf `patron`, `patKills`, `bossKills`, `sparksPatron`, `sparksWish`, `wishDone`. Alte Stände laden ohne diese Felder (kein Gönner).
 
+## Schrift (06.11.2026)
+- Die Pixel-Schrift setzte «fi» und «fl» zu einem Zeichen zusammen, das wie ein «A» aussah («GräAn Gemetzel», «Anden», «Aiegt»). Jetzt sind diese Verbindungen überall aus (`font-variant-ligatures: none` in `index.html`, gilt auch für den Text im Canvas). Die Zierschrift sieht gleich aus wie vorher.
+
 ## Look (18.10.2026)
 Pixel-Grafik komplett aus Code (keine Bilddateien, keine KI-Bilder): feste Palette mit 32 Farben (Endesga 32), dunkle Umrisse, Licht und Schatten (Fackeln, Lichtkreis um den Helden, leuchtende Beute), Treffer-Gefühl (kurzes Anhalten, Wackeln, Funken, Zahlen, Töne). 4 Farbwelten nach Tiefe. Titelbild mit Tor in die Tiefe, Heldenwahl auf einer Bühne. Kommt ein Gerät nicht mit, schaltet das Spiel selbst auf eine einfachere Licht-Darstellung um. Begründung, Vorher/Nachher-Bilder und offene Grenzen: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/LOOK.md` (Projekt-Ordner).
 
