@@ -52,6 +52,22 @@
   #hptext { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: #fff; text-shadow: 1px 0 var(--ink), -1px 0 var(--ink), 0 1px var(--ink), 0 -1px var(--ink); }
   #xpbar { height: 6px; background: var(--ink); box-shadow: 0 0 0 1px #3a4466; }
   #xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(#e0a4ff 0 2px, #9b55d6 2px); transition: width 0.3s; }
+  /* Zuschauer (v42): Auge, Balken bis zur nächsten Kiste, Zahl */
+  #hypebar { display: flex; align-items: center; gap: 4px; height: 12px; margin-top: -1px; font-size: 11px; line-height: 1; }
+  #hypebar .ey { display: flex; width: 14px; height: 14px; flex: none; }
+  #hypebar .ey img { width: 14px; height: 14px; }
+  #hypebar .hb { flex: 1; height: 5px; background: var(--ink); box-shadow: 0 0 0 1px #3a4466; }
+  #hypebar .hb i { display: block; height: 100%; width: 0; background: linear-gradient(#9ff8ff 0 2px, #2ce8f5 2px); transition: width 0.3s; }
+  #hypebar.full .hb i { background: #fee761; animation: hypeBlink 0.5s steps(2) infinite; }
+  @keyframes hypeBlink { 50% { background: #feae34; } }
+  #hypebar .vw { flex: none; font-weight: 700; color: #c0cbdc; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+  .crate .note { background: #ead4aa; color: #3e2731; border: 3px solid var(--ink); padding: 10px 12px; margin: 10px 0; text-align: left; font-size: 15px; line-height: 1.4; transform: rotate(-1deg); box-shadow: 0 3px 0 rgba(0,0,0,0.35); }
+  .crate .note .from { font-size: 13px; margin-bottom: 4px; color: #8a4836; }
+  .sponsors { display: grid; gap: 6px; margin-top: 8px; }
+  .spon { display: flex; align-items: center; gap: 10px; background: rgba(24,20,37,0.45); border: 2px solid #3a4466; padding: 7px 9px; text-align: left; }
+  .spon.locked { filter: saturate(0.2) brightness(0.7); }
+  .spon .sb { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
+  .spon .sb b { font-size: 14px; }
   .pill { display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 7px 0 5px; background: rgba(24,20,37,0.85); border: 2px solid var(--line); clip-path: var(--notch); font-size: 15px; font-weight: 700; white-space: nowrap; line-height: 1; }
   .pill.gold { color: var(--gold2); }
   .pill.bump { animation: bump 0.25s; }
@@ -506,7 +522,7 @@
 <div id="app">
   <div id="hud">
     <button id="heroBtn" aria-label="Held"><img class="px" alt=""><span class="lv"></span><span class="plus">+</span></button>
-    <div id="bars"><div id="hpbar"><b></b><i></i><span id="hptext"></span></div><div id="xpbar"><i></i></div></div>
+    <div id="bars"><div id="hpbar"><b></b><i></i><span id="hptext"></span></div><div id="xpbar"><i></i></div><div id="hypebar" title="Zuschauer"><span class="ey"></span><span class="hb"><i></i></span><span class="vw"></span></div></div>
     <div class="pill gold" id="hudGold"></div>
     <div class="pill" id="hudPot"></div>
     <div class="pill" id="hudFloor"></div>
@@ -542,6 +558,7 @@
 <script src="js/build.js"></script>
 <script src="js/pacts.js"></script>
 <script src="js/surprise.js"></script>
+<script src="js/show.js"></script>
 <script src="js/compare.js"></script>
 <script src="js/world.js"></script>
 <script src="js/draw.js"></script>

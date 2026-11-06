@@ -52,6 +52,22 @@
   #hptext { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: #fff; text-shadow: 1px 0 var(--ink), -1px 0 var(--ink), 0 1px var(--ink), 0 -1px var(--ink); }
   #xpbar { height: 6px; background: var(--ink); box-shadow: 0 0 0 1px #3a4466; }
   #xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(#e0a4ff 0 2px, #9b55d6 2px); transition: width 0.3s; }
+  /* Zuschauer (v42): Auge, Balken bis zur nächsten Kiste, Zahl */
+  #hypebar { display: flex; align-items: center; gap: 4px; height: 12px; margin-top: -1px; font-size: 11px; line-height: 1; }
+  #hypebar .ey { display: flex; width: 14px; height: 14px; flex: none; }
+  #hypebar .ey img { width: 14px; height: 14px; }
+  #hypebar .hb { flex: 1; height: 5px; background: var(--ink); box-shadow: 0 0 0 1px #3a4466; }
+  #hypebar .hb i { display: block; height: 100%; width: 0; background: linear-gradient(#9ff8ff 0 2px, #2ce8f5 2px); transition: width 0.3s; }
+  #hypebar.full .hb i { background: #fee761; animation: hypeBlink 0.5s steps(2) infinite; }
+  @keyframes hypeBlink { 50% { background: #feae34; } }
+  #hypebar .vw { flex: none; font-weight: 700; color: #c0cbdc; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+  .crate .note { background: #ead4aa; color: #3e2731; border: 3px solid var(--ink); padding: 10px 12px; margin: 10px 0; text-align: left; font-size: 15px; line-height: 1.4; transform: rotate(-1deg); box-shadow: 0 3px 0 rgba(0,0,0,0.35); }
+  .crate .note .from { font-size: 13px; margin-bottom: 4px; color: #8a4836; }
+  .sponsors { display: grid; gap: 6px; margin-top: 8px; }
+  .spon { display: flex; align-items: center; gap: 10px; background: rgba(24,20,37,0.45); border: 2px solid #3a4466; padding: 7px 9px; text-align: left; }
+  .spon.locked { filter: saturate(0.2) brightness(0.7); }
+  .spon .sb { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
+  .spon .sb b { font-size: 14px; }
   .pill { display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 7px 0 5px; background: rgba(24,20,37,0.85); border: 2px solid var(--line); clip-path: var(--notch); font-size: 15px; font-weight: 700; white-space: nowrap; line-height: 1; }
   .pill.gold { color: var(--gold2); }
   .pill.bump { animation: bump 0.25s; }
@@ -506,7 +522,7 @@
 <div id="app">
   <div id="hud">
     <button id="heroBtn" aria-label="Held"><img class="px" alt=""><span class="lv"></span><span class="plus">+</span></button>
-    <div id="bars"><div id="hpbar"><b></b><i></i><span id="hptext"></span></div><div id="xpbar"><i></i></div></div>
+    <div id="bars"><div id="hpbar"><b></b><i></i><span id="hptext"></span></div><div id="xpbar"><i></i></div><div id="hypebar" title="Zuschauer"><span class="ey"></span><span class="hb"><i></i></span><span class="vw"></span></div></div>
     <div class="pill gold" id="hudGold"></div>
     <div class="pill" id="hudPot"></div>
     <div class="pill" id="hudFloor"></div>
@@ -1279,6 +1295,25 @@ A.EXP_LINES = {
 };
 // Kerzen am Lagerfeuer (v41): an wie vielen Tagen hintereinander ein Lauf zu Ende ging; jede Kerze +5 % Seelenfunken, höchstens 5
 A.CANDLE_MAX = 5; A.CANDLE_SPARKS = 0.05;
+
+// ---------- Zuschauer und Gönner (v42, show.js) ----------
+// Spektakel füllt das Auge: ist es voll, kommt nach dem Kampf eine Kiste von einem Gönner
+A.HYPE_MAX = 100;
+A.HYPE_MULTI_T = 1.6;   // so viele Sekunden zwischen den Kills zählen als «kurz nacheinander»
+A.HYPE = { multi3: 10, multi5: 15, multi8: 25, elite: 10, captain: 25, boss: 25, bossClean: 30, clean: 6, close: 15, goldimp: 15, mimic: 12 };
+A.SPONSOR_KNALL = 8;     // Baron von Knall: so viele Besiegte explodieren
+A.SPONSOR_RAGE = 0.3;    // Gräfin Gemetzel: mehr Schaden auf der Ebene
+// fans: ab so vielen Fans (eine je Kiste, für immer) schickt dieser Gönner Kisten
+A.SPONSORS = [
+  { id: 'trudi', fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
+  { id: 'geier', fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
+  { id: 'knall', fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
+  { id: 'pilz', fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
+  { id: 'gemetzel', fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
+  { id: 'mops', fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
+  { id: 'kiste', fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
+  { id: 'ruhm', fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+];
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
@@ -2318,7 +2353,8 @@ A.Game = (function () {
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
-    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100;
+    const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100) * (1 - A.gradeVal('heroHp', r))),   // Dünne Haut (Grad 6)
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
@@ -2609,6 +2645,7 @@ A.Game = (function () {
     if (room.type === 'fight' || room.type === 'elite') { const wl = wildLegend('room'); if (wl) items.push(wl); }
     if (room.type === 'elite' || room.type === 'boss') run.pendingBoon = (run.pendingBoon || 0) + 1;   // zweite Wahl nach Elite- und Boss-Kämpfen
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
+    A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
     if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
     save();
@@ -2722,8 +2759,9 @@ A.Game = (function () {
     const cd = candles(true), candle = Math.round(base * A.CANDLE_SPARKS * cd.n);
     const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
-    meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
   }
@@ -11248,6 +11286,127 @@ A.Surprise = (function () {
 
 </script>
 <script>
+// Der Abstieg – Zuschauer und Gönner (v42): Der Abstieg ist eine Show.
+// - Spektakel füllt das Auge oben im Bild (run.hype bis A.HYPE_MAX): mehrere Gegner kurz nacheinander, Elite, Hauptmann, Boss,
+//   ein Raum ohne Kratzer, knapp überlebt, Goldwicht erwischt, Mimik gezähmt (Werte A.HYPE in data.js).
+// - Ist es voll, kracht nach dem Kampf eine Kiste von oben herunter (Beute am Boden, kind 'crate', bleibt beim Schliessen liegen).
+//   Drin: ein Zettel von einem Gönner (A.SPONSORS) und sein Geschenk. Jede Kiste bringt einen Fan (meta.fans, für immer);
+//   bei bestimmten Fan-Zahlen stellt sich ein neuer Gönner vor.
+// world.js ruft onKill, onRoom (über game.js roomCleared), step und meldet eine aufgehobene Kiste an ui.js (hooks.onCrate) → open.
+// Auge und Wahl des Gönners ziehen keine Zahlen aus run.rng (nur ein Geschenk mit Stück würfelt wie jeder Fund).
+'use strict';
+window.A = window.A || {};
+
+A.Show = (function () {
+  const L = (de, en) => (A.LANG === 'de' ? de : en);
+  const G = () => A.Game;
+  let api = null;   // Werkzeuge aus world.js: float, fx, drop, freeSpot, heroPower, refreshHero
+  const W = () => api && api.W;
+  function bind(a) { api = a; }
+  const run = () => G() && G().run;
+  const live = (r) => !!(r && !r.over);
+
+  // ---------- Gönner ----------
+  const fans = () => Math.max(0, Math.floor(+(G().meta.fans) || 0));
+  const open_ = (S) => fans() >= (S.fans || 0);
+  const sponsors = () => A.SPONSORS.filter(open_);
+  // Wer schickt diese Kiste? Fest aus Startwert, Kisten-Zahl und Ebene (nie zweimal derselbe hintereinander, wenn es mehr gibt)
+  function pickSponsor(r) {
+    const list = sponsors(); if (!list.length) return A.SPONSORS[0];
+    let k = (((r.seed >>> 0) ^ Math.imul((r.crates || 0) + 1, 0x9e3779b1) ^ Math.imul(r.floor, 7919)) >>> 0) % list.length;
+    if (list.length > 1 && list[k].id === r.lastSp) k = (k + 1) % list.length;
+    return list[k];
+  }
+
+  // ---------- Spektakel ----------
+  // n Punkte fürs Auge; text schwebt über dem Helden («Dreifach! +10»)
+  function hype(n, text) {
+    const r = run(), w = W(); if (!live(r) || !w || !(n > 0)) return;
+    r.hype = Math.min(A.HYPE_MAX, (r.hype || 0) + n);
+    r.hypeTot = (r.hypeTot || 0) + n;
+    const h = w.hero; if (h && text && api) api.float(h.x, h.y - 92, text + ' +' + n, '#2ce8f5', 13);
+    if (r.hype >= A.HYPE_MAX && !r.crateDue) { r.crateDue = true; if (h && api) api.float(h.x, h.y - 112, L('Die Zuschauer toben!', 'The crowd goes wild!'), '#fee761', 16); if (A.Sound.level) A.Sound.level(); }
+  }
+  // Gegner besiegt (world.js checkDeath): Mehrfach-Kills (eine Serie ohne lange Pause; 3, 5 und 8 zählen je Serie einmal), Elite, Hauptmann, Boss, Goldwicht, Mimik; Knall-Ladung des Barons
+  function onKill(e) {
+    const r = run(), w = W(); if (!live(r) || !w || !e || e.side !== 'enemy') return;
+    const s = w.show || (w.show = {});
+    s.n = s.last != null && w.t - s.last <= A.HYPE_MULTI_T ? (s.n || 0) + 1 : 1; s.last = w.t;   // Serie: reisst ab, wenn eine Pause länger ist
+    const n = s.n, H = A.HYPE;
+    if (n === 3) hype(H.multi3, L('Dreifach!', 'Triple!'));
+    else if (n === 5) hype(H.multi5, L('Gemetzel!', 'Carnage!'));
+    else if (n === 8) hype(H.multi8, L('Wahnsinn!', 'Madness!'));
+    if (e.boss) hype(H.boss, L('Boss!', 'Boss!'));
+    else if (e.captain) hype(H.captain, L('Hauptmann!', 'Captain!'));
+    else if (e.elite) hype(H.elite, L('Elite!', 'Elite!'));
+    if (e.gw) hype(H.goldimp, L('Erwischt!', 'Caught!'));
+    if (e.mimicOf) hype(H.mimic, L('Gezähmt!', 'Tamed!'));
+    // Baron von Knall: die nächsten Besiegten gehen hoch (wie das Talent Kettenreaktion)
+    if ((r.knall || 0) > 0 && !e.boss && w.hero && w.hero.alive) {
+      r.knall--; w.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: w.t + 0.15, dmg: api.heroPower(w.hero) * 0.6, col: '#f77622', opts: { kette: true } });
+      if (!r.knall) api.float(w.hero.x, w.hero.y - 70, L('Knall-Ladung leer', 'Bang charge empty'), '#f77622', 13);
+    }
+  }
+  // Raum gesäubert (game.js roomCleared, bevor das Auftragsbrett die Werte zurücksetzt)
+  function onRoom(room, st) {
+    if (!st || !room || !['fight', 'elite', 'boss'].includes(room.type)) return;
+    const H = A.HYPE;
+    if (st.dmgRoom === 0) { if (room.type === 'boss') hype(H.bossClean, L('Ohne Kratzer!', 'Not a scratch!')); else hype(H.clean, L('Sauber!', 'Clean!')); }
+    if (st.low) hype(H.close, L('Knapp!', 'Close call!'));
+  }
+
+  // ---------- Die Kiste ----------
+  // Jedes Bild (world.js step): ist das Auge voll und kein Kampf, kracht die Kiste neben dem Helden herunter
+  function step() {
+    const r = run(), w = W(); if (!live(r) || !w || !w.hero || !w.hero.alive || w.paused) return;
+    if (r.crateDue && !w.active && !w.picks.some(p => p.kind === 'crate')) {
+      const S = pickSponsor(r), h = w.hero;
+      const [x, y] = api.freeSpot(h.x + (h.fx >= 0 ? 44 : -44), h.y - 8, 15);
+      w.picks.push({ kind: 'crate', sp: S.id, x, y, vx: 0, vy: 0, z: 420, vz: -60, t: 0 });
+      r.crateDue = false; r.hype = 0; r.lastSp = S.id; G().save();
+      api.float(h.x, h.y - 100, L(`Eine Kiste von ${A.t(S.name)}!`, `A crate from ${A.t(S.name)}!`), '#fee761', 15);
+    }
+    for (const p of w.picks) if (p.kind === 'crate' && !p.landed && p.z <= 0 && p.t > 0.1) {   // gelandet: Staub und Wackeln
+      p.landed = true;
+      if (A.FX) { A.FX.shake(0.35); A.FX.smoke(p.x, p.y - 4, 12, '#8b9bb4', 6); A.FX.part({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: 70, color: '#c0cbdc', add: false }); }
+      if (A.Sound.thud) A.Sound.thud(); else if (A.Sound.open) A.Sound.open();
+    }
+  }
+  // Aufgehoben (ui.js): Zettel lesen, Geschenk bekommen, Fan dazu. Gibt zurück, was das Fenster zeigt.
+  function open(p) {
+    const r = run(), w = W(), m = G().meta; if (!r || !p) return null;
+    const S = A.SPONSORS.find(s => s.id === p.sp) || A.SPONSORS[0], h = w && w.hero;
+    r.crates = (r.crates || 0) + 1;
+    const before = sponsors().map(s => s.id);
+    m.fans = fans() + 1;
+    const fresh = sponsors().filter(s => !before.includes(s.id));
+    let got = '';
+    const x = p.x, y = p.y;
+    switch (S.gift) {
+      case 'pots': r.potions += 2; got = L('+2 Tränke', '+2 potions'); break;
+      case 'gold': { const g = 30 + 12 * r.floor; for (let i = 0; i < 6; i++) api.drop({ kind: 'gold', val: Math.ceil(g / 6) }, x, y, 70 + i * 12); got = L(`${g} Gold`, `${g} gold`); break; }
+      case 'knall': r.knall = (r.knall || 0) + A.SPONSOR_KNALL; got = L(`Die nächsten ${A.SPONSOR_KNALL} Besiegten explodieren`, `The next ${A.SPONSOR_KNALL} you defeat explode`); break;
+      case 'item': { const ord = ['common', 'good', 'rare', 'epic', 'legendary'], min = (S.tier || 1) >= 2 ? 'rare' : 'good'; let rar = G().rollRarity(S.tier || 1); if (!ord.includes(rar)) rar = min; if (ord.indexOf(rar) < ord.indexOf(min)) rar = min;   // ein Geschenk ist nie gewöhnlich und nie verflucht
+        const it = G().randomItem(rar); api.drop({ kind: 'item', it }, x, y, 40); got = L('ein Stück', 'an item'); break; }
+      case 'rage': r.rageFloor = r.floor; if (api.refreshHero) api.refreshHero(); got = L(`+${Math.round(A.SPONSOR_RAGE * 100)} % Schaden auf dieser und der nächsten Ebene`, `+${Math.round(A.SPONSOR_RAGE * 100)}% damage on this floor and the next`); break;
+      case 'heal': if (h) { h.hp = h.maxHp; r.hp = h.hp; } for (let i = 0; i < 8; i++) api.drop({ kind: 'candy' }, x, y, 60 + i * 10); got = L('volles Leben und Bonbons', 'full health and candy'); break;
+      case 'sparks': { const n = 10 + 2 * r.floor; r.showSparks = (r.showSparks || 0) + n; got = L(`+${n} Seelenfunken am Ende`, `+${n} soul sparks at the end`); break; }
+      default: r.potions += 1; got = L('+1 Trank', '+1 potion');
+    }
+    if (A.FX && w) { A.FX.burst(x, y - 10, 18, { color: ['#c28569', '#8a4836', '#fee761'], smin: 40, smax: 160, life: 0.6, kind: 'spark', add: true }); A.FX.smoke(x, y - 6, 8, '#c0cbdc', 5); }
+    G().saveMeta(); G().save();
+    return { S, got, fresh, fans: m.fans };
+  }
+
+  // ---------- Anzeige ----------
+  // Zuschauer: reine Show-Zahl aus Tiefe und Spektakel
+  function viewers(r) { r = r || run(); if (!r) return 0; return Math.round((180 + r.floor * 140) * (1 + (r.hypeTot || 0) / 90)); }
+  const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, A.LANG === 'de' ? '’' : ',');
+  return { bind, hype, onKill, onRoom, step, open, viewers, fmt, sponsors, pickSponsor, fans };
+})();
+
+</script>
+<script>
 // Der Abstieg – Vergleich: Was ändert sich am Helden, wenn er ein Stück anlegt?
 // Rechnet die Heldenwerte (game.js derived) einmal wie jetzt und einmal mit dem neuen Stück am Platz, also mit Element-Boni (gear.js),
 // Kräften, Trophäen, Legenden (legends.js) und Kombos (combos.js), und fällt ein Urteil: besser, schlechter, anders (Vor- und Nachteile) oder gleich.
@@ -11455,10 +11614,10 @@ A.World = (function () {
   }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
   // Beute am Boden (v40): Stücke, Gold, Tränke und Bonbons, die noch herumliegen, dazu ein Fund, dessen Fenster gerade offen ist. Nach dem Neuladen liegen sie wieder da (enter)
-  const PICK_KEEP = { item: 1, gold: 1, potion: 1, candy: 1 };
+  const PICK_KEEP = { item: 1, gold: 1, potion: 1, candy: 1, crate: 1 };   // crate: Kiste eines Gönners (v42, show.js)
   function savePicks() {
     if (!W) return null;
-    const l = []; for (const p of W.picks) if (!p.done && PICK_KEEP[p.kind] && (p.kind !== 'item' || p.it)) l.push(p.kind === 'item' ? { kind: p.kind, it: p.it, x: Math.round(p.x), y: Math.round(p.y) } : { kind: p.kind, val: p.val, x: Math.round(p.x), y: Math.round(p.y) });
+    const l = []; for (const p of W.picks) if (!p.done && PICK_KEEP[p.kind] && (p.kind !== 'item' || p.it)) l.push(p.kind === 'item' ? { kind: p.kind, it: p.it, x: Math.round(p.x), y: Math.round(p.y) } : p.kind === 'crate' ? { kind: p.kind, sp: p.sp, x: Math.round(p.x), y: Math.round(p.y) } : { kind: p.kind, val: p.val, x: Math.round(p.x), y: Math.round(p.y) });
     if (W.held && W.held.it) l.push({ kind: 'item', it: W.held.it, x: Math.round(W.held.x), y: Math.round(W.held.y) });
     return l.length ? { f: W.floor, l } : null;
   }
@@ -11475,9 +11634,9 @@ A.World = (function () {
     // Beute am Boden (v40): was beim Schliessen noch herumlag, liegt wieder da (nur beim Weiterspielen derselben Ebene; ältere Stände haben keine)
     const rp = G().run.picks;
     if (saved && rp && rp.f === floor && Array.isArray(rp.l)) for (const p of rp.l) {
-      if (!p || !PICK_KEEP[p.kind] || (p.kind === 'item' && !p.it) || (p.kind === 'gold' && !(p.val > 0)) || !isFinite(p.x) || !isFinite(p.y)) continue;
+      if (!p || !PICK_KEEP[p.kind] || (p.kind === 'item' && !p.it) || (p.kind === 'gold' && !(p.val > 0)) || (p.kind === 'crate' && typeof p.sp !== 'string') || !isFinite(p.x) || !isFinite(p.y)) continue;
       const [x, y] = freeSpot(p.x, p.y, 13);
-      W.picks.push({ kind: p.kind, it: p.it, val: p.val, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1 });
+      W.picks.push(p.kind === 'crate' ? { kind: p.kind, sp: p.sp, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1, landed: true } : { kind: p.kind, it: p.it, val: p.val, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1 });
     }
     return W;
   }
@@ -11805,6 +11964,7 @@ A.World = (function () {
     A.Pets.onKill(e, rw);   // Treue für die Begleiter
     A.Wild.onKill(e);       // Piñata
     A.Surprise.onDeath(e);  // Goldwicht, Mimik (surprise.js)
+    A.Show.onKill(e);       // Zuschauer (v42): Spektakel, Knall-Ladung
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34', opts: { kette: true } });
@@ -12104,8 +12264,11 @@ A.World = (function () {
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; W.held = { it: p.it, x: p.x, y: p.y }; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }   // held: Fenster offen, Stück noch nicht verstaut (savePicks)
       }
+      if (p.kind === 'crate' && !p.done && p.landed && !W.paused && h.alive && !G().run.over && d < h.r + 22 && hooks.onCrate) { p.done = true; W.paused = true; hooks.onCrate(p); }   // Kiste eines Gönners (show.js): Zettel und Geschenk
+
     }
     W.picks = W.picks.filter(p => !p.done);
+    A.Show.step();   // Zuschauer (v42): volle Kiste nach dem Kampf herunterkrachen lassen
     for (const f of W.floats) { f.y -= 28 * dt; f.life -= dt; } W.floats = W.floats.filter(f => f.life > 0);
     for (const f of W.fx) f.life -= dt; W.fx = W.fx.filter(f => f.life > 0);
     // Raum-Logik
@@ -12153,6 +12316,7 @@ A.World = (function () {
   A.Pets.bind({ get W() { return W; }, hit, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
   A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot, fightStart, slowMul, hazardSlow });
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
+  A.Show.bind({ get W() { return W; }, float, fx, drop, freeSpot, heroPower, refreshHero: () => refreshHero() });
 
   return {
     get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, savePicks, statOf, float, dist, nearestMon, addMon, kill, castSkill, hit, addEffect,
@@ -13009,6 +13173,13 @@ window.A = window.A || {};
       } else if (p.kind === 'potion') {
         const s = A.Art.sprite('potion'); const bob = Math.round(Math.sin(this.t * 4 + p.x) * 1.5);
         this.shadow(x, y + 2, 3); b.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h - 2 + bob - z));
+      } else if (p.kind === 'crate') {   // Kiste eines Gönners (show.js): kracht von oben herunter, Zettel mit rotem Siegel
+        const s = A.Art.sprite('crate'), k = Math.max(0.3, 1 - z / 160);
+        this.shadow(x, y + 2, 7 * k);
+        const top = Math.round(y - s.h + 2 - z), lx = Math.round(x - s.w / 2);
+        b.drawImage(s.img, lx, top);
+        b.fillStyle = '#181425'; b.fillRect(Math.round(x + 1), top + 2, 7, 6); b.fillStyle = '#ead4aa'; b.fillRect(Math.round(x + 2), top + 3, 5, 4); b.fillStyle = '#e43b44'; b.fillRect(Math.round(x + 4), top + 4, 2, 2);
+        if (p.landed && Math.floor(this.t * 2.5 + p.x) % 3 === 0) { this.g.fillStyle = '#fee761'; this.g.fillRect(Math.round(x - 1), top - 4, 2, 2); }   // blinkt: hier ist etwas
       } else {
         const it = p.it, col = A.RARITY[it.rarity].color, s = A.Art.sprite(A.Art.itemIcon(it));
         const bob = Math.round(Math.sin(this.t * 3 + p.x) * 2);
@@ -14385,7 +14556,7 @@ window.A = window.A || {};
   let selRace = 'mensch', selCls = 'klinge';
 
   // ---------- Anzeige oben ----------
-  const H = { btn: $('#heroBtn'), img: $('#heroBtn img'), lv: $('#heroBtn .lv'), hp: $('#hpbar i'), trail: $('#hpbar b'), bar: $('#hpbar'), hpt: $('#hptext'), xp: $('#xpbar i'), gold: $('#hudGold'), pot: $('#hudPot'), floor: $('#hudFloor') };
+  const H = { btn: $('#heroBtn'), img: $('#heroBtn img'), lv: $('#heroBtn .lv'), hp: $('#hpbar i'), trail: $('#hpbar b'), bar: $('#hpbar'), hpt: $('#hptext'), xp: $('#xpbar i'), gold: $('#hudGold'), pot: $('#hudPot'), floor: $('#hudFloor'), hyb: $('#hypebar'), hy: $('#hypebar .hb i'), vw: $('#hypebar .vw'), ey: $('#hypebar .ey') };
   const hudLast = {};
   function setH(key, el, html, bump) {
     if (hudLast[key] === html) return;
@@ -14409,6 +14580,12 @@ window.A = window.A || {};
     const src = Art.heroPortrait(r.race, r.cls); if (hudLast.src !== src) { hudLast.src = src; H.img.src = src; }
     setH('lv', H.lv, String(r.level));
     H.btn.classList.toggle('pts', r.points > 0 || r.pendingSkillPick > 0);
+    // Zuschauer (v42): Auge, Balken bis zur nächsten Kiste, Zahl
+    if (!H.ey.firstChild) H.ey.innerHTML = ic('eye', 14);
+    const hy = clamp((r.hype || 0) / A.HYPE_MAX * 100, 0, 100) + '%';
+    if (hudLast.hy !== hy) { hudLast.hy = hy; H.hy.style.width = hy; }
+    H.hyb.classList.toggle('full', !!r.crateDue);
+    setH('vw', H.vw, A.Show.fmt(A.Show.viewers(r)));
   }
   H.btn.addEventListener('click', () => { S.click(); showSheet(); });
 
@@ -14719,6 +14896,7 @@ window.A = window.A || {};
       <h3>${L('Chronik', 'Chronicle')}</h3><div class="card flags"><div class="life">${lifeHtml}</div>${rows ? `<div class="runs">${rows}</div>` : `<div class="mini" style="margin-top:8px">${L('Noch kein Durchlauf. Die Chronik füllt sich mit jedem Abstieg.', 'No run yet. The chronicle fills up with every descent.')}</div>`}</div>
       <h3>${L('Neue Völker', 'New peoples')}</h3><div class="card folks"><div class="mini">${L('Jedes Volk zieht ins Lager und kann danach mit in die Tiefe.', 'Each people moves into the camp and can then join the descent.')}</div><div class="frow">${folks}</div></div>
       <h3>${L('Begleiter', 'Pets')} ${pn}/${PN}</h3><div class="card flags"><div class="mini">${petInfo} ${L(`Treue wächst mit jedem Sieg, den ein Tier miterlebt, und bleibt für immer. Treue 3 und 5 bringen neue Tricks. Jedes neue Tier bringt ${A.PET_SPARKS} Seelenfunken.`, `Loyalty grows with every win a pet sees and stays forever. Loyalty 3 and 5 bring new tricks. Every new pet gives ${A.PET_SPARKS} soul sparks.`)}</div><div class="fgrid one">${petCards}</div></div>
+      ${sponsorHtml()}
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
       <h3>${L('Hauptleute', 'Captains')} ${capN}/${A.CAPTAINS.length}</h3><div class="card flags"><div class="mini">${L(`Auf der dritten Ebene jeder Welt wartet ihr Offizier im Elite-Raum: eigene Masche, grosse Klappe, ${A.CAPTAIN_SPARKS} Seelenfunken und ein Stück extra.`, `On the third floor of every world its officer waits in the elite room: own trick, big mouth, ${A.CAPTAIN_SPARKS} soul sparks and an extra item.`)}</div><div class="caplist">${capts}</div></div>
@@ -14775,6 +14953,33 @@ window.A = window.A || {};
     return `<h3>${L('Expeditionen', 'Expeditions')} ${busy}/${A.EXP_MAX}</h3><div class="card flags"><div class="mini">${info}</div>${news}<div class="exps">${cards}</div></div>`;
   }
 
+  // ---------- Zuschauer und Gönner (v42, show.js) ----------
+  // Die Kiste ist aufgehoben: Zettel des Gönners, was drin war, neuer Gönner bei genug Fans
+  function crateWin(p) {
+    const res = A.Show.open(p); if (!res) { Wd.pause(false); return; }
+    const Sp = res.S; S.level();
+    ov(`<div class="center crate"><div class="bigicon">${ic('crate', 58)}</div><h2 class="mid">${L('Eine Kiste von oben!', 'A crate from above!')}</h2>
+      <div class="note"><div class="from">${L('Von', 'From')} <b>${esc(t(Sp.name))}</b>:</div>«${esc(t(Sp.note))}»</div>
+      <div class="msg">${L('Drin', 'Inside')}: <b class="goldc">${esc(res.got)}</b></div>
+      ${res.fresh.length ? `<div class="msg gradenew">${ic('eye', 20)} <b>${L('Neuer Gönner', 'New sponsor')}: ${res.fresh.map(x => esc(t(x.name))).join(', ')}</b>. ${L(`Du hast jetzt ${res.fans} Fans.`, `You now have ${res.fans} fans.`)}</div>` : `<div class="mini">${L(`Fans: ${res.fans}`, `Fans: ${res.fans}`)}${nextSponsor() ? ' · ' + nextSponsor() : ''}</div>`}
+      <button class="btn primary" id="bOk">${L('Danke!', 'Thanks!')}</button></div>`);
+    $('#bOk').onclick = () => { S.click(); ovClose(); };
+  }
+  // Wer kommt als Nächstes dazu? («Noch 2 Fans bis Professor Pilz»)
+  function nextSponsor() {
+    const f = A.Show.fans(), nx = A.SPONSORS.filter(x => (x.fans || 0) > f).sort((a, b) => a.fans - b.fans)[0];
+    return nx ? L(`noch ${nx.fans - f} bis ${t(nx.name)}`, `${nx.fans - f} more until ${t(nx.name)}`) : '';
+  }
+  function sponsorHtml() {
+    const f = A.Show.fans(), on = A.Show.sponsors().length;
+    const rows = A.SPONSORS.map(x => {
+      const open = f >= (x.fans || 0);
+      return `<div class="spon ${open ? '' : 'locked'}">${ic('crate', 30)}<div class="sb"><b>${open ? esc(t(x.name)) : '???'}</b><div>${open ? '«' + esc(t(x.note)) + '»' : L(`Stellt sich ab ${x.fans} Fans vor.`, `Introduces themselves at ${x.fans} fans.`)}</div></div></div>`;
+    }).join('');
+    const info = L(`Der Abstieg ist eine Show. Spektakel füllt das Auge oben (mehrere Gegner kurz nacheinander, Elite, Hauptleute, Bosse, Räume ohne Kratzer, knapp überlebt). Ist es voll, kracht nach dem Kampf eine Kiste von einem Gönner herunter. Jede Kiste bringt einen Fan, und mit mehr Fans melden sich neue Gönner.`, `The descent is a show. Spectacle fills the eye at the top (several enemies in quick succession, elites, captains, bosses, rooms without a scratch, close calls). When it is full, a crate from a sponsor crashes down after the fight. Every crate brings a fan, and with more fans new sponsors get in touch.`);
+    return `<h3>${L('Gönner', 'Sponsors')} ${on}/${A.SPONSORS.length}</h3><div class="card flags"><div class="mini">${info} <b class="goldc">${L(`Fans: ${f}`, `Fans: ${f}`)}</b>${nextSponsor() ? ' · ' + esc(nextSponsor()) : ''}</div><div class="sponsors">${rows}</div></div>`;
+  }
+
   // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
   function campNews() {
     const r = G.run, n = r && r.campNews; if (!n) return; r.campNews = null; G.save();
@@ -14817,6 +15022,7 @@ window.A = window.A || {};
     screen.style.display = 'none'; dungeonEl.classList.add('on'); document.body.classList.add('play'); hudUpdate();
     const hooks = {
       onItem: (it) => { if (!calmLoot(it)) foundItem(it); },   // Ruhige Beute (v40): schwächere Funde ohne Fenster
+      onCrate: (p) => crateWin(p),   // Kiste eines Gönners (v42)
       onProp: (p) => useProp(p),
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
@@ -15466,7 +15672,8 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}</div>
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
       ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}

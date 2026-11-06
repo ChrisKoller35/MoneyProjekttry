@@ -212,7 +212,8 @@ A.Game = (function () {
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
-    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100;
+    const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100) * (1 - A.gradeVal('heroHp', r))),   // Dünne Haut (Grad 6)
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
@@ -503,6 +504,7 @@ A.Game = (function () {
     if (room.type === 'fight' || room.type === 'elite') { const wl = wildLegend('room'); if (wl) items.push(wl); }
     if (room.type === 'elite' || room.type === 'boss') run.pendingBoon = (run.pendingBoon || 0) + 1;   // zweite Wahl nach Elite- und Boss-Kämpfen
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
+    A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
     if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
     save();
@@ -616,8 +618,9 @@ A.Game = (function () {
     const cd = candles(true), candle = Math.round(base * A.CANDLE_SPARKS * cd.n);
     const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home + candle;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang); Kerzen je Tag in Folge +5 % (v41)
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
-    meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
   }

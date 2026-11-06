@@ -845,6 +845,13 @@ window.A = window.A || {};
       } else if (p.kind === 'potion') {
         const s = A.Art.sprite('potion'); const bob = Math.round(Math.sin(this.t * 4 + p.x) * 1.5);
         this.shadow(x, y + 2, 3); b.drawImage(s.img, Math.round(x - s.w / 2), Math.round(y - s.h - 2 + bob - z));
+      } else if (p.kind === 'crate') {   // Kiste eines Gönners (show.js): kracht von oben herunter, Zettel mit rotem Siegel
+        const s = A.Art.sprite('crate'), k = Math.max(0.3, 1 - z / 160);
+        this.shadow(x, y + 2, 7 * k);
+        const top = Math.round(y - s.h + 2 - z), lx = Math.round(x - s.w / 2);
+        b.drawImage(s.img, lx, top);
+        b.fillStyle = '#181425'; b.fillRect(Math.round(x + 1), top + 2, 7, 6); b.fillStyle = '#ead4aa'; b.fillRect(Math.round(x + 2), top + 3, 5, 4); b.fillStyle = '#e43b44'; b.fillRect(Math.round(x + 4), top + 4, 2, 2);
+        if (p.landed && Math.floor(this.t * 2.5 + p.x) % 3 === 0) { this.g.fillStyle = '#fee761'; this.g.fillRect(Math.round(x - 1), top - 4, 2, 2); }   // blinkt: hier ist etwas
       } else {
         const it = p.it, col = A.RARITY[it.rarity].color, s = A.Art.sprite(A.Art.itemIcon(it));
         const bob = Math.round(Math.sin(this.t * 3 + p.x) * 2);
