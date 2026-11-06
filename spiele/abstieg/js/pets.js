@@ -117,8 +117,9 @@ A.Pets = (function () {
       for (let i = 0; i < n; i++) api.drop({ kind: 'gold', val: Math.ceil(rw.gold / n) }, e.x, e.y, 60 + Math.random() * 90);
       if (!(w.langT > w.t)) { w.langT = w.t + 1.2; api.float(e.x, e.y - e.r - 40, L('Langfinger!', 'Sticky fingers!'), '#f77622', 12); }   // nicht öfter als alle 1.2 Sekunden
     }
-    // Moppel (Goldnase): der letzte Gegner im Raum ist gefallen, er buddelt 2-4 Münzen aus
-    if (list.includes('moppel') && T('moppel', 3) && w && w.active && !w.mons.some(m => m.alive)) {
+    // Moppel (Goldnase): der letzte Gegner im Raum ist gefallen, er buddelt 2-4 Münzen aus (einmal je Raum, auch wenn danach noch Gegner nachkommen)
+    if (list.includes('moppel') && T('moppel', 3) && w && w.active && w.moleRoom !== w.active && !w.mons.some(m => m.alive)) {
+      w.moleRoom = w.active;
       const a = w.allies.find(x => x.pet === 'moppel' && !x.gone) || e, n = 2 + Math.floor(Math.random() * 3), val = Math.max(2, Math.round(2 + w.floor * 0.8));
       for (let i = 0; i < n; i++) api.drop({ kind: 'gold', val }, a.x, a.y, 50 + Math.random() * 80);
       api.float(a.x, a.y - 34, L('Goldnase!', 'Gold nose!'), '#fee761', 13);

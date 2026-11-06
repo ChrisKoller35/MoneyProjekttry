@@ -299,7 +299,7 @@ A.MONSTERS.push(
   { id: 'grabkaefer', name: { de: 'Grabkäfer', en: 'Tomb Beetle' }, hp: 45, atk: 8, def: 9, spd: 3, kind: 'melee', color: '#5c4a7a', shape: 'beetle', curl: true, charge: true },
   { id: 'kugelfisch', name: { de: 'Kugelfisch', en: 'Pufferfish' }, hp: 26, atk: 8, def: 2, spd: 4, kind: 'magic', color: '#feae34', shape: 'puffer', fly: true, ring: 8, ringCd: 7, shotCol: '#feae34' },
   { id: 'schlackenhund', name: { de: 'Schlackenhund', en: 'Slag Hound' }, hp: 30, atk: 9, def: 2, spd: 8, kind: 'melee', color: '#f77622', shape: 'hound', leap: true, burn: 0.5 },
-  { id: 'fluesterer', name: { de: 'Flüsterer', en: 'Whisperer' }, hp: 28, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#68386c', shape: 'whisperer', fly: true, teleport: true, summon: 'fledermaus', summonCd: 11 },
+  { id: 'wisperling', name: { de: 'Wisperling', en: 'Whisperling' }, hp: 28, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#68386c', shape: 'whisperer', fly: true, teleport: true, summon: 'fledermaus', summonCd: 11 },
 );
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
 // Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
@@ -720,7 +720,7 @@ A.WORLDS = [
     pit: 'water', hazard: 'shallow', obst: ['coral', 'column'], corner: ['barrel', 'crate', 'coral'], favor: ['island', 'stripes', 'ring'] },
   { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'schlackenhund', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
     pit: 'lava', hazard: 'embers', obst: ['obsidian', 'anvil'], corner: ['barrel', 'crate', 'anvil'], favor: ['stripes', 'pool', 'ring'] },
-  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'fluesterer', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
+  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'wisperling', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
     pit: 'void', hazard: 'shadow', obst: ['crystal'], corner: ['crystal', 'pot'], favor: ['island', 'stripes', 'cross'] },
 ];
 // Gefahr-Boden: slow = Tempo-Faktor, burn = brennt

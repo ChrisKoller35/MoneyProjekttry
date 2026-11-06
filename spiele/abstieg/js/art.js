@@ -3451,7 +3451,7 @@ A.Art = (function () {
     grabkaefer: { spr: 'beetle', C: '#5c4a7a', D: '#2e2a4a', H: '#9a86c0' }, grabkaefer_ball: { spr: 'beetleball', C: '#5c4a7a', D: '#2e2a4a', H: '#9a86c0' },
     kugelfisch: { spr: 'puffer', C: '#feae34', D: '#be4a2f', H: '#fee761' }, kugelfisch_big: { spr: 'pufferbig', C: '#feae34', D: '#be4a2f', H: '#fee761' },
     schlackenhund: { spr: 'sloghound', C: '#733e39', D: '#3e2731', H: '#be4a2f', Y: '#fee761' },
-    fluesterer: { spr: 'whisperer', C: '#68386c', D: '#262b44', H: '#b55088', c: '#2ce8f5' },
+    wisperling: { spr: 'whisperer', C: '#68386c', D: '#262b44', H: '#b55088', c: '#2ce8f5' },
     diener_skel: { spr: 'skeleton', s: '#e6dcf2', '0': '#2a1836', '5': '#c0cbdc' },
     diener_geist: { spr: 'ghost', C: '#e0a4ff', D: '#b55088', H: '#ffffff', '0': '#68386c' },
   };
