@@ -26,6 +26,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **Effekte:** Funken und ein kleiner Hüpfer beim Kaufen, roter Blitz mit Trommel, wenn ein Boss kommt, Ticken in den letzten 5 Sekunden, Konfetti beim Sieg, absteigende Töne bei «Zeit um!».
 - Zwischendurch taucht eine Schatztruhe auf (Gold oder 15 Sekunden dreifacher Hacken-Schaden).
 - Kommt man zurück, bekommt man das Gold, das die Zwerge in der Zwischenzeit gegraben haben (bis 8 Stunden), mit Werbung doppelt.
+- **Maulwurf (6.11.2026):** alle 2-4 Minuten klaut ein Maulwurf einen kleinen Sack Gold und rennt unten durch; antippen bringt den Sack doppelt zurück, sonst ist er weg.
 
 ## Dateien
 
