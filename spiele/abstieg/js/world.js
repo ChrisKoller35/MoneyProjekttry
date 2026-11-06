@@ -44,7 +44,8 @@ A.World = (function () {
     // Krüge zum Zerschlagen und die Truhe mit Zähnen (surprise.js): ab Ebenen-Bau 8, immer als letzte Dinge im Raum
     if (v >= 8) A.Surprise.place(rooms, tiles, lv.reach, seed, floor);
     let reach = lv.reach;
-    if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
+    // Ein Kampf, der beim Schliessen der Seite noch lief, beginnt beim Wiederkommen von vorn (sonst bliebe der Raum leer und auf Boss-Ebenen die Treppe versteckt)
+    if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited && (s.cleared || !['fight', 'elite', 'boss'].includes(r.type)); r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
     return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach, big: lv.big };
   }
@@ -149,20 +150,24 @@ A.World = (function () {
   function reachable(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return !W.reach || !!W.reach[ty * MW + tx]; }
   function spawnRoom(r) {
     const run = G().run, rng = run.rng, f = run.floor;
+    // Derselbe Kampf nach dem Neuladen (die Seite war mitten im Kampf zu, run.fight): nur so viele Gegner, wie noch lebten,
+    // und der Anführer (Boss, Hauptmann, Elite, Champion) nur, wenn er noch nicht gefallen war. Sonst gäbe es seine Beute zweimal.
+    const re = run.fight && run.fight.f === f && run.fight.r === r.i ? run.fight : null, lead = !(re && re.e);
     const list = [];
     const cap = A.Foes.captainFor(f);
-    if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
+    if (r.type === 'boss') { if (lead) list.push(G().monsterEntity(A.bossOf(f), f, false, 1)); }
     else if (cap && r === A.Foes.captainRoom(W)) {   // Hauptmann der Welt (foes.js), ab der zweiten Runde mit einem Begleiter
-      list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f, run.lvVer || 0)), f, false, 2));
+      if (lead) list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f, run.lvVer || 0)), f, false, 2));
     } else {
       const pool = A.monsterPool(f, run.lvVer || 0);   // ab lvVer 6 mit den neuen Gegnern (ab der 2. Ebene einer Welt)
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
       const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0) + A.Pacts.extra();   // Hordenruf (pacts.js)
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
-      const champ = r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
-      for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
+      const champ = lead && r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
+      for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? lead : champ) : false, i + 1));
     }
-    A.Surprise.extra(r, f, list);   // vielleicht ein Goldwicht (surprise.js)
+    if (re) { list.length = Math.min(list.length, Math.max(0, re.n - re.k)); W.stats.dmgRoom = 1; }   // ein neu begonnener Kampf zählt nie als «ohne Schaden»
+    else { A.Surprise.extra(r, f, list); run.fight = { f, r: r.i, n: list.length, k: 0, e: 0 }; }   // vielleicht ein Goldwicht (surprise.js)
     list.forEach((m, i) => {
       const pm = A.Pacts.hpMul(m); if (pm !== 1) { m.maxHp = Math.round(m.maxHp * pm); m.hp = m.maxHp; if (m.shieldCap) m.shieldCap = Math.round(m.shieldCap * pm); }   // Gierschlund, Schicksalswette (pacts.js)
       let x, y, tries = 0;
@@ -312,7 +317,7 @@ A.World = (function () {
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
-    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || (bp && bp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + (gp ? gp.critAdd : 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
+    if (!opts.noCrit && ((gp && gp.force) || (cp && cp.force) || (bp && bp.force) || Math.random() < clamp(statOf(from, 'crit') + (opts.critBonus || 0) + (lp ? lp.crit : 0), 0, 90) / 100)) { dmg *= 1.75 * (1 + ((gp && gp.critAdd) || 0)); crit = true; if (from.side === 'hero') { W.stats.crits++; G().questEvent('crit'); } }
     if (opts.execute && to.hp / to.maxHp < opts.execute && !to.boss) dmg = to.hp + 1;
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
@@ -344,7 +349,7 @@ A.World = (function () {
       if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
     if (from === W.hero && to.side === 'enemy') { A.Gear.onHit(from, to, dmg, crit, opts); A.Legends.onHit(from, to, dmg, crit, opts); }
-    if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
+    if (to.split && !to.didSplit && to.hp <= to.maxHp / 2) { to.didSplit = true; const base = A.MONSTERS.find(m => m.id === (to.splitInto || 'schleimer')); for (let i = 0; i < 2; i++) { const s = G().monsterEntity(base, W.floor, false, 90 + i); s.extra = true; addMon(s, to.x + (i ? 40 : -40), to.y + 20); } float(to.x, to.y - 50, A.LANG === 'de' ? 'Teilt sich!' : 'Splits!', '#9be37a', 16); }
     // Boss-Trophäen (data.js A.TROPHIES)
     if (to.side === 'hero' && to.tro && to.alive && to.hp > 0) {
       if (to.tro.schleim && to.hp < to.maxHp * 0.3 && W.active && to.slimeRoom !== W.active) { to.slimeRoom = W.active; to.shield = Math.max(to.shield, Math.round(to.maxHp * 0.35)); float(to.x, to.y - 44, A.LANG === 'de' ? 'Schleimhülle!' : 'Slime shell!', '#9be37a', 15); fx('shield', { e: to }); }
@@ -368,6 +373,7 @@ A.World = (function () {
       e.alive = false; e.hp = 0; W.paused = true; if (hooks.onDeath) hooks.onDeath(); return;
     }
     e.alive = false; e.hp = 0;
+    const fr = G().run.fight; if (fr && W.active && fr.r === W.active.i && fr.f === W.floor && !e.summoned && !e.mirror && !e.extra) { fr.k++; if (e.boss || e.captain || e.elite) fr.e = 1; }   // für den Neustart nach dem Neuladen (spawnRoom)
     const rw = G().killReward(e);
     for (let i = 0; i < rw.coins; i++) drop({ kind: 'gold', val: Math.ceil(rw.gold / rw.coins) }, e.x, e.y, 60 + Math.random() * 90);
     for (const it of rw.items) drop({ kind: 'item', it }, e.x, e.y, 50);
@@ -694,6 +700,7 @@ A.World = (function () {
     if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; W.stats.low = false; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
       fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
+      const run = G().run; if (run.fight && run.fight.r === a.i) run.fight = null; run.rooms = saveRooms();   // vor dem Speichern in roomCleared: der Raum gilt schon als frei
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
       a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); else if (p.kind === 'pact') A.Pacts.reveal(p, { float }); } });
