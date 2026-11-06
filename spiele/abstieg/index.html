@@ -316,6 +316,26 @@
   .chip.locked { filter: grayscale(0.9) brightness(0.6); }
   .chip .cost { position: absolute; top: 3px; right: 3px; display: flex; align-items: center; gap: 1px; color: var(--spark); font-size: 11px; }
   .chip .lock { position: absolute; top: 4px; left: 0; right: 0; font-size: 10px; color: var(--mist); }
+  /* Grade (v39): Krone auf der Klasse, Grad-Knöpfe, Ausgang */
+  .chip .crown { position: absolute; top: 2px; right: 3px; display: flex; align-items: center; gap: 1px; color: var(--gold2); font-size: 11px; line-height: 1; }
+  .chips.grades { grid-template-columns: repeat(6, 1fr); }
+  .chip.gchip { min-height: 38px; padding: 6px 2px; flex-direction: row; gap: 2px; font-size: 14px; }
+  .msg.gradenew { border-left-color: var(--gold); text-align: left; }
+  .msg.gradenew img.px { vertical-align: -4px; }
+  .exitdoor { position: relative; width: 150px; height: 176px; margin: 34px auto 14px; background: #262b44; border: 4px solid var(--ink); box-shadow: 0 0 0 4px #5a6988, 0 0 0 8px var(--ink), inset 0 0 0 3px #3a4466; perspective: 360px; }
+  .exitdoor .ed-sign { position: absolute; left: 50%; top: -34px; transform: translateX(-50%); white-space: nowrap; padding: 3px 9px 4px; background: #3e8948; color: #fff; border: 3px solid var(--ink); box-shadow: inset 0 0 0 2px #63c74d, 0 0 18px rgba(99,199,77,0.55); font-size: 15px; font-weight: 700; letter-spacing: 1px; z-index: 3; animation: exitBlink 1.1s steps(2) infinite; }
+  @keyframes exitBlink { 50% { box-shadow: inset 0 0 0 2px #63c74d, 0 0 6px rgba(99,199,77,0.25); } }
+  .exitdoor .ed-in { position: absolute; inset: 3px; background: radial-gradient(circle at 50% 42%, #fff6c8 0%, #fee761 18%, #feae34 38%, #3e2731 78%); display: flex; align-items: center; justify-content: center; }
+  .exitdoor .ed-note { width: 82%; padding: 9px 6px 10px; background: #ead4aa; color: #3e2731; border: 2px solid var(--ink); box-shadow: 0 3px 0 #8a6a4a; font-size: 13px; font-weight: 700; line-height: 1.25; transform: rotate(-4deg) scale(0.6); opacity: 0; transition: opacity .35s .55s, transform .45s .55s cubic-bezier(.2,1.6,.4,1); }
+  .exitdoor.open .ed-note { opacity: 1; transform: rotate(-4deg) scale(1); }
+  .exitdoor .ed-l, .exitdoor .ed-r { position: absolute; top: 3px; bottom: 3px; width: calc(50% - 3px); background: repeating-linear-gradient(90deg, #8a4b2f 0 9px, #733e39 9px 11px); box-shadow: inset 0 14px 0 -10px #3e2731, inset 0 -14px 0 -10px #3e2731, inset 0 0 0 2px #3e2731; transition: transform .6s cubic-bezier(.5,0,.3,1); z-index: 2; }
+  .exitdoor .ed-l { left: 3px; transform-origin: left center; }
+  .exitdoor .ed-r { right: 3px; transform-origin: right center; }
+  .exitdoor .ed-l::after, .exitdoor .ed-r::after { content: ''; position: absolute; top: 50%; width: 5px; height: 9px; background: var(--gold); box-shadow: 0 0 0 2px var(--ink); }
+  .exitdoor .ed-l::after { right: 7px; } .exitdoor .ed-r::after { left: 7px; }
+  .exitdoor.open .ed-l { transform: rotateY(-78deg); } .exitdoor.open .ed-r { transform: rotateY(78deg); }
+  .exitwin .exbtns { animation: exitBtns .3s 1.1s both; }
+  @keyframes exitBtns { from { opacity: 0.25; transform: translateY(6px); } }
   .stage { position: relative; height: clamp(170px, 28vh, 250px); margin: 0 -4px 6px; border: 3px solid var(--ink); clip-path: var(--notch2); box-shadow: inset 0 0 0 3px #333b5c; overflow: hidden; background: #120f1c; }
   .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .stage .who { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 12px 9px; background: linear-gradient(rgba(18,15,28,0), rgba(18,15,28,0.92) 55%); }

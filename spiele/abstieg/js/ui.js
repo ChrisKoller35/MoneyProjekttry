@@ -177,15 +177,26 @@ window.A = window.A || {};
     $('#bReset').onclick = () => { S.click(); ask(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'), L('Alles löschen', 'Delete everything'), () => { G.resetAll(); title(); }); };
   }
 
+  // ---------- Grad: was gilt (Regel des Grads, die Namen der Regeln davor, mehr Leben und Schaden, mehr Funken) ----------
+  let selGrade = null;
+  function gradeText(g) {
+    if (!g) return `<b>${L('Normal', 'Normal')}:</b> ${L('Ohne Grad. So wie immer.', 'No grade. Business as usual.')}`;
+    const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
+    return `<b>${L('Grad', 'Grade')} ${g}: ${esc(t(R.name))}.</b> ${esc(t(R.text))}`
+      + (before.length ? ` <span class="mini">${L('Dazu gilt weiter', 'Still in force')}: ${esc(before.join(' · '))}.</span>` : '')
+      + `<br><span class="mini">${L(`Alle Gegner +${pc(A.GRADE_HP * g)} % Leben und +${pc(A.GRADE_ATK * g)} % Schaden.`, `All enemies +${pc(A.GRADE_HP * g)}% health and +${pc(A.GRADE_ATK * g)}% damage.`)}</span> ${spark('+' + pc(A.GRADE_SPARKS * g) + ' %', 12)}`;
+  }
+
   // ---------- Held wählen ----------
   function heroSelect() {
     const races = A.RACES.map(r => { const ok = G.raceUnlocked(r); return `<button class="chip" data-race="${r.id}" aria-label="${esc(t(r.name))}">${ok ? '' : `<span class="cost">${spark(r.unlock, 11)}</span>`}<img class="px hero" src="${Art.heroUrl(r.id, selCls, 2)}" width="36" height="36" alt=""></button>`; }).join('');
-    const classes = A.CLASSES.map(c => { const ok = G.classUnlocked(c); return `<button class="chip" data-cls="${c.id}" aria-label="${esc(t(c.name))}">${ok ? '' : `<span class="lock">${L('bald', 'soon')}</span>`}${ic(WEAPON_ICON[c.id] || 'i_schwert', 36)}</button>`; }).join('');
+    const classes = A.CLASSES.map(c => { const ok = G.classUnlocked(c), gw = G.gradeWon(c.id); return `<button class="chip" data-cls="${c.id}" aria-label="${esc(t(c.name))}">${ok ? '' : `<span class="lock">${L('bald', 'soon')}</span>`}${gw != null ? `<span class="crown" title="${esc(gw ? L('Grad ' + gw + ' geschafft', 'Grade ' + gw + ' done') : L('Ausgang geschafft', 'Exit reached'))}">${ic('crown', 12)}${gw || ''}</span>` : ''}${ic(WEAPON_ICON[c.id] || 'i_schwert', 36)}</button>`; }).join('');   // Krone: Ausgang geschafft, Zahl = höchster geschaffter Grad
     show(`<div class="fade-in">
       <h2>${L('Wähle deinen Helden', 'Choose your hero')}</h2>
       <div class="stage"><canvas id="stage"></canvas><div class="who"><b id="whoName"></b><span id="whoSub"></span></div></div>
       <h3>${t(U.race)}</h3><div class="chips">${races}</div><div class="perk" id="racePerk"></div>
       <h3>${t(U.cls)}</h3><div class="chips">${classes}</div><div class="perk" id="clsPerk"></div>
+      <div id="gradeBox"></div>
       <button class="btn primary" id="bStart">${t(U.start)}</button><button class="btn" id="bBack">${t(U.back)}</button>
     </div>`, { stage: true });
     const upd = (peekCls) => {
@@ -197,11 +208,22 @@ window.A = window.A || {};
       $('#racePerk').innerHTML = `<b>${esc(t(race.name))}:</b> ${esc(t(race.perk))}`;
       const pc = peekCls || cls;
       $('#clsPerk').innerHTML = `<b>${esc(t(pc.name))}:</b> ${esc(t(pc.perk))}`;
+      gradeRow();
       A.Scenes.stage($('#stage'), selRace, selCls);
     };
+    // Grade (v39): erst nach dem ersten Sieg mit dieser Klasse; jeder Grad bringt eine Regel dazu, die von davor gelten weiter
+    const gradeRow = () => {
+      const gm = G.gradeMax(selCls), box = $('#gradeBox'); if (!box) return;
+      if (!gm) { box.innerHTML = ''; selGrade = 0; return; }
+      if (selGrade == null || selGrade > gm) selGrade = G.gradePick(selCls);
+      const chips = Array.from({ length: gm + 1 }, (_, g) => `<button class="chip gchip ${g === selGrade ? 'sel' : ''}" data-grade="${g}" aria-label="${esc(g ? L('Grad ' + g, 'Grade ' + g) : L('Normal', 'Normal'))}">${g ? ic('crown', 12) + g : L('Normal', 'Normal')}</button>`).join('');
+      box.innerHTML = `<h3>${L('Grad', 'Grade')}</h3><div class="chips grades">${chips}</div><div class="perk" id="gradePerk">${gradeText(selGrade)}</div>`;
+      box.querySelectorAll('[data-grade]').forEach(el => el.onclick = () => { const g = +el.dataset.grade; if (g === selGrade) return; selGrade = g; S.click(); gradeRow(); });
+    };
+    selGrade = null;
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { S.click(); camp(); return; } if (selRace === r.id) return; selRace = r.id; S.click(); upd(); });
-    screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; S.click(); upd(); });
-    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls); Portal.gameplayStart(); dungeon(true); };
+    screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; selGrade = null; S.click(); upd(); });
+    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, G.gradeMax(selCls) ? selGrade : undefined); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { S.click(); title(); };
     upd();
   }
@@ -332,7 +354,7 @@ window.A = window.A || {};
     const rows = AC.chron().map(e => {
       const R = A.RACES.find(x => x.id === e.race), Cl = A.CLASSES.find(x => x.id === e.cls);
       const achs = (e.ach || []).map(id => A.ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).map(a => t(a.name));
-      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length && A.BUILD_DIRS[e.bd[0]] ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
+      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.grade ? ` · ${L('Grad', 'Grade')} ${e.grade}` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length && A.BUILD_DIRS[e.bd[0]] ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
         <div class="mini">${esc(AC.causeText(e))} · ${e.kills} ${L('Gegner', 'enemies')} · ${e.gold} ${t(U.gold)} · ${esc(AC.timeText(e.dur))}${achs.length ? ` · ${L('Erfolg', 'Achievement')}: ${esc(achs.join(', '))}` : ''}</div></div>
         <div class="rs">${e.quit ? '' : spark('+' + e.sparks, 14)}<div class="mini">${esc(AC.whenText(e.t))}</div></div></div>`;
     }).join('');
@@ -418,7 +440,7 @@ window.A = window.A || {};
     buildControls(); pads(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
     const wfx = A.Weather.nameOf(Wd.W);
-    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : ''), '#fee761', 2.6);
+    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
@@ -611,14 +633,42 @@ window.A = window.A || {};
     const r = G.run, inBag = r.bag.includes(it), worn = A.SLOTS.some(s => r.gear[s] === it);
     return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '', !inBag && !worn);
   }
+  // Treppe hinunter (auch am Ausgang: «Weiter nach unten»)
+  function goDown() { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won' || res == null) { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); }
+  // Heimkehren (v39): der Durchlauf endet mit allen Funken und Bonus (am Ausgang als Sieg), ab ins Lager
+  function homeBtn(exit) {
+    const pc = Math.round((exit ? A.EXIT_SPARKS : A.HOME_SPARKS) * 100);
+    return `<button class="btn two ${exit ? 'primary' : ''}" id="bHome"><span class="bl">${ic(exit ? 'crown' : 'u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${exit ? L('Als Sieger die Treppe hoch. Zu Fuss.', 'Back up the stairs as a winner. On foot.') : L('Lauf beenden, alle Funken behalten', 'End the run, keep all sparks')} · ${spark('+' + pc + ' %', 12)}</span></button>`;
+  }
+  function goHomeNow() {
+    S.click(); overlay.classList.remove('on'); overlay.innerHTML = '';
+    if (!G.goHome()) { Wd.pause(false); hudUpdate(); return; }
+    S.level(); fadeOut(() => { runOver(); fadeIn(); }, 120);
+  }
+  // Der Ausgang auf Ebene 24 (48, 72 ...): eine grosse Tür mit Schild; sie geht auf, dahinter hängt das zweite Schild
+  function exitScene() {
+    const r = G.run, k = Math.max(1, Math.round(r.floor / A.MAX_FLOOR)), X = A.EXITS[Math.min(A.EXITS.length, k) - 1], next = r.floor + A.MAX_FLOOR, nf = r.floor + 1;
+    ov(`<div class="center exitwin"><div class="exitdoor" id="exDoor"><div class="ed-sign">${esc(t(X.sign))}</div><div class="ed-in"><div class="ed-note">${esc(t(X.note).replace('{n}', next))}</div></div><div class="ed-l"></div><div class="ed-r"></div></div>
+      <h2 class="mid">${k === 1 ? L('Der Ausgang!', 'The exit!') : L('Noch ein Ausgang!', 'Another exit!')}</h2>
+      <div class="sub">${k === 1 ? L('Unten ist der Ausgang. Angeblich. Hier ist er. Fast.', 'The exit is at the bottom. Allegedly. Here it is. Almost.') : L('Du hast den Umweg geschafft. Der Abgrund hat noch mehr Umwege.', 'You survived the detour. The abyss has more detours.')}</div>
+      <div class="exbtns">${homeBtn(true)}<button class="btn two" id="bOk"><span class="bl">${ic('u_down', 24)}${L('Weiter nach unten', 'Keep descending')}</span><span class="bs">${L('Umleitung: Ebene', 'Detour: floor')} ${nf} · ${esc(A.worldName(nf))}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div></div>`, 'exitbox');
+    const door = $('#exDoor'); S.open && S.open();
+    setTimeout(() => { if (door && door.isConnected) { door.classList.add('open'); if (A.FX) A.FX.shake(0.2); } }, 650);
+    $('#bHome').onclick = () => goHomeNow();
+    $('#bOk').onclick = () => goDown();
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
+  }
   // Dinge im Raum
   function useProp(p) {
     const r = G.run;
+    if (!r || r.over) return;   // Lauf schon vorbei (gestorben oder heimgekehrt): keine Treppe, keine Truhe mehr
     if (p.kind === 'stairs') {
       if (Wd.W && Wd.W.sinkT != null) return;   // schon auf dem Weg nach unten: sonst springt ein zweites «Tiefer» über eine ganze Ebene
-      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor);
-      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
-      $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
+      if (A.isExitFloor(r.floor) && G.canGoHome()) { exitScene(); return; }   // Ebene 24, 48 ...: der Ausgang (v39)
+      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor), home = G.canGoHome();   // nach einem Welt-Boss: Heimkehren
+      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button>${home ? homeBtn(false) : ''}<button class="btn" id="bClose">${t(U.back)}</button></div>`);
+      $('#bOk').onclick = () => goDown();
+      if (home) $('#bHome').onclick = () => goHomeNow();
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
     else if (p.kind === 'chest') { if (p.hidden || (p.mimic && A.Surprise.wake(p))) return; Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
@@ -865,7 +915,7 @@ window.A = window.A || {};
   // ---------- Räume ----------
   function rest() {
     ov(`<div class="bigicon">${ic('flame', 60)}</div><h2 class="mid">${t(U.node.rest)}</h2><div class="sub center">${L('Ein Feuer. Endlich. Niemand will dich fressen. Vorerst.', 'A fire. Finally. Nothing wants to eat you. For now.')}</div>
-      <button class="btn primary" id="bHeal">${ic('u_heart', 22)}${t(U.heal)}</button><button class="btn" id="bTrain">${ic('u_star', 22)}${t(U.train)}</button>`);
+      <button class="btn primary" id="bHeal">${ic('u_heart', 22)}${L(`Ausruhen (+${Math.round(50 * (1 - A.gradeVal('restCut', G.run)))} % Leben)`, `Rest (+${Math.round(50 * (1 - A.gradeVal('restCut', G.run)))}% health)`)}</button><button class="btn" id="bTrain">${ic('u_star', 22)}${t(U.train)}</button>`);
     $('#bHeal').onclick = () => { G.doRest('heal'); Wd.W.hero.hp = G.run.hp; S.heal(); ovClose(); };
     $('#bTrain').onclick = () => { G.doRest('train'); S.buy(); ovClose(); };
   }
@@ -957,15 +1007,20 @@ window.A = window.A || {};
     if (!r.over) { r.over = true; G.finishRun(); }
     Portal.gameplayStop();
     overlay.classList.remove('on'); overlay.innerHTML = '';
-    const won = r.won;
+    const won = r.won, home = r.home, g = A.gradeOf(r), Cl = A.CLASSES.find(c => c.id === r.cls);   // home: 'boss' = nach einem Welt-Boss heimgekehrt, 'exit' = am Ausgang (v39)
+    const head = home === 'exit' || (home && won) ? L('Sieg! Heimgekehrt.', 'Victory! Home again.') : home ? L('Heimgekehrt!', 'Home again!') : won ? t(U.victory) : t(U.runOver);   // schon am Ausgang vorbei und später nach einem Boss heim: auch ein Sieg
+    const msg = home === 'exit' ? L(`Der Ausgang war zu. Also bist du die Treppe hoch. Alle ${r.floor} Ebenen. Zu Fuss.`, `The exit was closed. So you took the stairs. All ${r.floor} floors. On foot.`)
+      : home && won ? L(`Am Ausgang vorbei, noch tiefer, noch ein Boss. Dann die Treppe hoch, alle ${r.floor} Ebenen. Sieger dürfen das.`, `Past the exit, deeper still, one more boss. Then up the stairs, all ${r.floor} floors. Winners get to do that.`)
+      : home ? L('Boss besiegt, Beute eingesteckt, ab nach Hause. Vernünftig.', 'Boss down, loot pocketed, off home. Sensible.') : won ? t(U.win) : '';
     show(`<div class="center fade-in" style="padding-top:5vh">
-      <div class="bigicon">${won ? ic('crown', 63) : ic('u_skull', 60)}</div>
-      <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
-      ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
+      <div class="bigicon">${won || home === 'exit' ? ic('crown', 63) : home ? ic('u_tent', 60) : ic('u_skull', 60)}</div>
+      <h2 class="mid">${head}</h2>
+      ${msg ? `<div class="msg">${msg}</div>` : ''}<div class="sub">${home ? L(`Heimgekehrt von Ebene ${r.floor}`, `Went home from floor ${r.floor}`) : `${t(U.dead)} ${r.floor}`} (${esc(A.worldName(r.floor))}).${g ? ` ${L('Grad', 'Grade')} ${g}.` : ''}</div>
+      ${r.gradeNew ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L(`Neu: Grad ${r.gradeNew}`, `New: grade ${r.gradeNew}`)}</b> ${L('für', 'for')} ${esc(Cl ? t(Cl.name) : r.cls)}. <i>${esc(t(A.GRADES[r.gradeNew - 1].name))}</i>: ${esc(t(A.GRADES[r.gradeNew - 1].text))} ${L('Wähle ihn beim nächsten Helden.', 'Pick it with your next hero.')}</div>` : r.gradeTop ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L('Grad 10 geschafft!', 'Grade 10 done!')}</b> ${L('Mehr Grade gibt es nicht. Noch nicht.', 'There are no more grades. Not yet.')}</div>` : ''}
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);

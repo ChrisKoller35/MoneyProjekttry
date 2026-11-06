@@ -316,6 +316,26 @@
   .chip.locked { filter: grayscale(0.9) brightness(0.6); }
   .chip .cost { position: absolute; top: 3px; right: 3px; display: flex; align-items: center; gap: 1px; color: var(--spark); font-size: 11px; }
   .chip .lock { position: absolute; top: 4px; left: 0; right: 0; font-size: 10px; color: var(--mist); }
+  /* Grade (v39): Krone auf der Klasse, Grad-Knöpfe, Ausgang */
+  .chip .crown { position: absolute; top: 2px; right: 3px; display: flex; align-items: center; gap: 1px; color: var(--gold2); font-size: 11px; line-height: 1; }
+  .chips.grades { grid-template-columns: repeat(6, 1fr); }
+  .chip.gchip { min-height: 38px; padding: 6px 2px; flex-direction: row; gap: 2px; font-size: 14px; }
+  .msg.gradenew { border-left-color: var(--gold); text-align: left; }
+  .msg.gradenew img.px { vertical-align: -4px; }
+  .exitdoor { position: relative; width: 150px; height: 176px; margin: 34px auto 14px; background: #262b44; border: 4px solid var(--ink); box-shadow: 0 0 0 4px #5a6988, 0 0 0 8px var(--ink), inset 0 0 0 3px #3a4466; perspective: 360px; }
+  .exitdoor .ed-sign { position: absolute; left: 50%; top: -34px; transform: translateX(-50%); white-space: nowrap; padding: 3px 9px 4px; background: #3e8948; color: #fff; border: 3px solid var(--ink); box-shadow: inset 0 0 0 2px #63c74d, 0 0 18px rgba(99,199,77,0.55); font-size: 15px; font-weight: 700; letter-spacing: 1px; z-index: 3; animation: exitBlink 1.1s steps(2) infinite; }
+  @keyframes exitBlink { 50% { box-shadow: inset 0 0 0 2px #63c74d, 0 0 6px rgba(99,199,77,0.25); } }
+  .exitdoor .ed-in { position: absolute; inset: 3px; background: radial-gradient(circle at 50% 42%, #fff6c8 0%, #fee761 18%, #feae34 38%, #3e2731 78%); display: flex; align-items: center; justify-content: center; }
+  .exitdoor .ed-note { width: 82%; padding: 9px 6px 10px; background: #ead4aa; color: #3e2731; border: 2px solid var(--ink); box-shadow: 0 3px 0 #8a6a4a; font-size: 13px; font-weight: 700; line-height: 1.25; transform: rotate(-4deg) scale(0.6); opacity: 0; transition: opacity .35s .55s, transform .45s .55s cubic-bezier(.2,1.6,.4,1); }
+  .exitdoor.open .ed-note { opacity: 1; transform: rotate(-4deg) scale(1); }
+  .exitdoor .ed-l, .exitdoor .ed-r { position: absolute; top: 3px; bottom: 3px; width: calc(50% - 3px); background: repeating-linear-gradient(90deg, #8a4b2f 0 9px, #733e39 9px 11px); box-shadow: inset 0 14px 0 -10px #3e2731, inset 0 -14px 0 -10px #3e2731, inset 0 0 0 2px #3e2731; transition: transform .6s cubic-bezier(.5,0,.3,1); z-index: 2; }
+  .exitdoor .ed-l { left: 3px; transform-origin: left center; }
+  .exitdoor .ed-r { right: 3px; transform-origin: right center; }
+  .exitdoor .ed-l::after, .exitdoor .ed-r::after { content: ''; position: absolute; top: 50%; width: 5px; height: 9px; background: var(--gold); box-shadow: 0 0 0 2px var(--ink); }
+  .exitdoor .ed-l::after { right: 7px; } .exitdoor .ed-r::after { left: 7px; }
+  .exitdoor.open .ed-l { transform: rotateY(-78deg); } .exitdoor.open .ed-r { transform: rotateY(78deg); }
+  .exitwin .exbtns { animation: exitBtns .3s 1.1s both; }
+  @keyframes exitBtns { from { opacity: 0.25; transform: translateY(6px); } }
   .stage { position: relative; height: clamp(170px, 28vh, 250px); margin: 0 -4px 6px; border: 3px solid var(--ink); clip-path: var(--notch2); box-shadow: inset 0 0 0 3px #333b5c; overflow: hidden; background: #120f1c; }
   .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .stage .who { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 12px 9px; background: linear-gradient(rgba(18,15,28,0), rgba(18,15,28,0.92) 55%); }
@@ -1456,6 +1476,36 @@ A.PACTS = {
     name: { de: 'Kurzschluss', en: 'Short Circuit' }, curse: { de: 'Zauber laden 30 % langsamer', en: 'Spells recharge 30% slower' }, gift: { de: '+40 % Magie', en: '+40% magic' },
     flavor: { de: 'Mehr Saft, weniger Sicherung.', en: 'More juice, fewer fuses.' } },
 };
+// ---------- Grade und Heimkehren (v39): die Leiter nach dem ersten Sieg ----------
+// Wer mit einer Klasse den Ausgang auf Ebene 24 erreicht, schaltet für sie den nächsten Grad frei (meta.grade[Klasse] = höchster geschaffter Grad, 0 = normal).
+// Ein Grad gilt für den ganzen Durchlauf (run.grade, fehlt = 0): je Grad haben Gegner mehr Leben und Schaden, dazu kommt seine Regel; die Regeln der Grade davor gelten weiter.
+// x: mhp, bossHp, extra, hurt wie bei den Pakten (pacts.js zählt sie mit); eliteTr = Elite eine Eigenschaft mehr; potCut = Tränke heilen so viel weniger;
+// heroHp = Held so viel weniger Leben; mspd = Gegner so viel schneller; champ = in jedem Kampfraum ein Champion; restCut = Rasten heilt so viel weniger
+A.GRADE_MAX = 10; A.GRADE_HP = 0.12; A.GRADE_ATK = 0.08; A.GRADE_SPARKS = 0.2;
+A.HOME_SPARKS = 0.1; A.EXIT_SPARKS = 0.25;   // Heimkehren nach einem Welt-Boss / am Ausgang: so viel mehr Seelenfunken
+A.GRADES = [
+  { x: { mhp: 0.2 }, name: { de: 'Die Gegner haben gefrühstückt', en: 'The enemies had breakfast' }, text: { de: 'Gegner haben 20 % mehr Leben.', en: 'Enemies have 20% more health.' } },
+  { x: { eliteTr: 1 }, name: { de: 'Zäher Adel', en: 'Tough nobility' }, text: { de: 'Elite-Gegner haben eine Eigenschaft mehr.', en: 'Elite enemies have one more trait.' } },
+  { x: { extra: 1 }, name: { de: 'Besuch', en: 'Visitors' }, text: { de: 'In jedem Kampf ein Gegner mehr.', en: 'One more enemy in every fight.' } },
+  { x: { potCut: 0.3 }, name: { de: 'Wasser im Trank', en: 'Watered potions' }, text: { de: 'Tränke heilen 30 % weniger.', en: 'Potions heal 30% less.' } },
+  { x: { bossHp: 0.4 }, name: { de: 'Bosse im Training', en: 'Bosses in training' }, text: { de: 'Bosse und Hauptleute haben 40 % mehr Leben.', en: 'Bosses and captains have 40% more health.' } },
+  { x: { heroHp: 0.1 }, name: { de: 'Dünne Haut', en: 'Thin skin' }, text: { de: 'Du hast 10 % weniger Leben.', en: 'You have 10% less health.' } },
+  { x: { mspd: 0.15 }, name: { de: 'Eilige Gegner', en: 'Hasty enemies' }, text: { de: 'Gegner laufen 15 % schneller.', en: 'Enemies move 15% faster.' } },
+  { x: { champ: 1 }, name: { de: 'Champions überall', en: 'Champions everywhere' }, text: { de: 'In jedem Kampfraum steckt ein Champion.', en: 'Every fight room hides a champion.' } },
+  { x: { restCut: 0.5 }, name: { de: 'Harte Pritsche', en: 'Hard cot' }, text: { de: 'Rasten heilt nur halb so viel.', en: 'Resting heals only half as much.' } },
+  { x: { hurt: 0.25 }, name: { de: 'Der Abgrund schaut zurück', en: 'The abyss looks back' }, text: { de: 'Gegner treffen 25 % härter.', en: 'Enemies hit 25% harder.' } },
+];
+A.gradeOf = (r) => Math.max(0, Math.min(A.GRADE_MAX, Math.floor(+((r && r.grade) || 0)) || 0));
+A.gradeVal = (k, r) => { let v = 0; for (let i = 0, g = A.gradeOf(r); i < g; i++) v += A.GRADES[i].x[k] || 0; return v; };
+// Ausgänge auf Ebene 24, 48, 72 ...: je ein Schild an der Tür und eins dahinter (danach immer das letzte, {n} = nächster Ausgang)
+A.isExitFloor = (f) => f > 0 && f % A.MAX_FLOOR === 0;
+A.EXITS = [
+  { sign: { de: 'AUSGANG', en: 'EXIT' }, note: { de: 'Wegen Umbau geschlossen. Umleitung über Ebene {n}.', en: 'Closed for renovation. Detour via floor {n}.' } },
+  { sign: { de: 'AUSGANG (wirklich)', en: 'EXIT (for real)' }, note: { de: 'Umleitung über Ebene {n}. Wir bitten um Verständnis.', en: 'Detour via floor {n}. We apologise for any inconvenience.' } },
+  { sign: { de: 'AUSGANG. Ehrenwort.', en: 'EXIT. Pinky promise.' }, note: { de: 'Heute Ruhetag. Nächster Ausgang: Ebene {n}.', en: 'Closed today. Next exit: floor {n}.' } },
+  { sign: { de: 'AUSGANG?', en: 'EXIT?' }, note: { de: 'Der Abgrund ist beeindruckt. Nächster Ausgang: Ebene {n}.', en: 'The abyss is impressed. Next exit: floor {n}.' } },
+];
+
 // ---------- Überraschungen in der Welt (surprise.js, ab Ebenen-Bau 8) ----------
 // Krüge zum Zerschlagen: je Welt eigenes Bild (art.js), Farben (C Grundfarbe, D dunkel, H hell), Scherben-Farben und das Tier, das manchmal herausflitzt
 A.POTS = {
@@ -2003,9 +2053,33 @@ A.Game = (function () {
   // efBook: Elite-Buch (besiegte Elite-Gegner je Eigenschaft); efSeen: Eigenschaften, die schon einmal vorgestellt wurden; legFound/comboFound: Sammlung und Kombo-Buch;
   // pets: gefundene Begleiter mit ihrer Treue ({ xp, n }); petSel: wer aus der Tierhütte mitkommt;
   // stats: Zähler fürs Auftragsbrett; ach: erreichte Erfolge (Zeit); achNew: noch nicht angeschaut; chron: die letzten Durchläufe (achieve.js)
-  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [] });
+  // grade: höchster geschaffter Grad je Klasse (fehlt = noch nie am Ausgang); gradeSel: zuletzt gewählter Grad je Klasse (v39)
+  const freshMeta = () => ({ sparks: 0, unlocked: [], runs: 0, best: 0, sound: true, totalKills: 0, camp: {}, troph: {}, efBook: {}, efSeen: [], legFound: {}, comboFound: {}, pets: {}, petSel: [], stats: {}, ach: {}, achNew: [], chron: [], grade: {}, gradeSel: {} });
   let meta = freshMeta(), fxCache = null;
-  function loadMeta() { try { const d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; meta.capt = meta.capt || {}; fxCache = null; migrateCamp(); }
+  function loadMeta() { let d = null; try { d = JSON.parse(localStorage.getItem(META)); if (d) meta = Object.assign(meta, d); } catch (e) {} meta.camp = meta.camp || {}; meta.troph = meta.troph || {}; meta.efBook = meta.efBook || {}; meta.efSeen = meta.efSeen || []; meta.legFound = meta.legFound || {}; meta.comboFound = meta.comboFound || {}; meta.pets = meta.pets || {}; meta.petSel = meta.petSel || []; meta.stats = meta.stats || {}; meta.ach = meta.ach || {}; meta.achNew = meta.achNew || []; meta.chron = meta.chron || []; meta.capt = meta.capt || {}; if (!d || !d.grade || typeof d.grade !== 'object') meta.grade = gradeBackfill(); meta.gradeSel = meta.gradeSel || {}; fxCache = null; migrateCamp(); }
+  // Ältere Spielstände ohne Grade: wer mit einer Klasse schon über Ebene 24 hinaus kam (oder einen Sieg in der Chronik hat), hat den Ausgang geschafft
+  function gradeBackfill() {
+    const g = {}, best = (meta.stats && meta.stats.clsBest) || {};
+    for (const c of A.CLASSES) if ((best[c.id] || 0) > A.MAX_FLOOR) g[c.id] = 0;
+    for (const e of meta.chron || []) if (e && e.won && e.cls && g[e.cls] == null) g[e.cls] = 0;
+    if (!Object.keys(g).length && ((meta.won || 0) > 0 || (meta.best || 0) > A.MAX_FLOOR)) for (const c of A.CLASSES) if (classUnlocked(c)) g[c.id] = 0;   // Sieg aus der Zeit vor Chronik und Klassen-Zähler: welche Klasse, weiss niemand mehr, also alle
+    return g;
+  }
+  // ---------- Grade (v39, A.GRADES) ----------
+  const gradeWon = (cls) => { const v = meta.grade && meta.grade[cls]; return typeof v === 'number' ? v : null; };   // höchster geschaffter Grad, null = noch nie am Ausgang
+  const gradeMax = (cls) => { const w = gradeWon(cls); return w == null ? 0 : Math.min(A.GRADE_MAX, w + 1); };     // höchster wählbarer Grad
+  function gradePick(cls) { const v = (meta.gradeSel || {})[cls]; return Math.max(0, Math.min(gradeMax(cls), Math.floor(+v) || 0)); }
+  // Am Ausgang (Ebene 24): der Grad dieses Durchlaufs gilt als geschafft, der nächste ist frei (einmal je Durchlauf)
+  function gradeWin() {
+    if (!run || run.gradeDone) return;
+    run.gradeDone = true;
+    const g = A.gradeOf(run), before = gradeMax(run.cls), had = gradeWon(run.cls);
+    meta.grade = meta.grade || {}; if (had == null || g > had) meta.grade[run.cls] = g;
+    const after = gradeMax(run.cls);
+    if (after > before) run.gradeNew = after;
+    if (g >= A.GRADE_MAX) run.gradeTop = true;
+    saveMeta();
+  }
   function saveMeta() { fxCache = null; try { localStorage.setItem(META, JSON.stringify(meta)); } catch (e) {} }
   // Altes Lager (Einmal-Käufe) als Gebäude-Stufen mit mindestens gleicher Wirkung übernehmen; für Bosse, die man schon besiegt hat, hängen die Wimpel gleich
   function migrateCamp() {
@@ -2127,8 +2201,9 @@ A.Game = (function () {
 
   // ---------- Durchlauf ----------
   let run = null;
-  function newRun(raceId, classId) {
+  function newRun(raceId, classId, grade) {
     const race = A.RACES.find(r => r.id === raceId), cls = A.CLASSES.find(c => c.id === classId);
+    const g = Math.max(0, Math.min(gradeMax(cls.id), Math.floor(+grade) || 0));   // Grad (v39): nur, was die Klasse schon freigeschaltet hat
     const me = metaEffects();
     const skills = cls.startSkills.slice();
     if (me.extraStartSkill) skills.push(cls.skills.find(s => !skills.includes(s)));
@@ -2140,8 +2215,9 @@ A.Game = (function () {
       gear: { weapon: null, armor: null, helm: null, boots: null, trinket: null, trinket2: null },
       bag: [], known: skills, active: skills.slice(0, 4), talents: [], upg: {}, pendingBoon: me.startBoon || 0, boonOffer: null,
       kills: 0, quest: null, questProg: 0, questDone: false, pendingSkillPick: null, floorSeed: 0, rooms: null,
-      log: [], reviveUsed: false, over: false, won: false,
+      log: [], reviveUsed: false, over: false, won: false, grade: g,
     };
+    if (grade != null) { (meta.gradeSel || (meta.gradeSel = {}))[cls.id] = g; saveMeta(); }
     run.rng = new A.RNG(run.seed);
     run.pets = A.Pets.startPets();   // Begleiter aus der Tierhütte
     A.Achieve.onRun(run);            // Zähler fürs Auftragsbrett (Völker, Klassen) und die Felder für die Chronik
@@ -2167,7 +2243,7 @@ A.Game = (function () {
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100;
     const d = {
-      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
+      maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100) * (1 - A.gradeVal('heroHp', r))),   // Dünne Haut (Grad 6)
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
       mag: Math.round((4 + s.mind * 2 + sum('mag')) * (1 + magPct)),
       def: Math.round(s.tou * 0.5 + sum('def') + (mod.def || 0) + tv('def') + me.def),
@@ -2188,8 +2264,10 @@ A.Game = (function () {
   }
 
   // elite: true = Elite mit voller Anzahl Eigenschaften, Zahl = so viele Eigenschaften (Champion), Liste = genau diese Eigenschaften, false = normal
+  // Grad (v39): je Grad mehr Leben und Schaden; ab Ebene 25 (die Welten kommen wieder) je Runde mehr, damit es nach dem Ausgang nicht leichter wird
   function monsterEntity(m, floor, elite, idx) {
-    const hpM = 1 + 0.28 * (floor - 1), atkM = 1 + 0.18 * (floor - 1);
+    const gr = A.gradeOf(run), rd = A.worldRound(floor);
+    const hpM = (1 + 0.28 * (floor - 1)) * (1 + A.GRADE_HP * gr) * (1 + 0.5 * rd), atkM = (1 + 0.18 * (floor - 1)) * (1 + A.GRADE_ATK * gr) * (1 + 0.25 * rd);
     const e = {
       id: 'e' + idx, mid: m.id, name: A.t(m.name), side: 'enemy', kind: m.kind,
       maxHp: Math.round(m.hp * hpM * (elite ? 1.8 : 1) * (m.boss ? 1 : 1)), atk: Math.round(m.atk * atkM * (elite ? 1.3 : 1)), mag: Math.round(m.atk * atkM * (elite ? 1.3 : 1)),
@@ -2202,7 +2280,7 @@ A.Game = (function () {
       charge: !!m.charge, curl: !!m.curl,   // Anlauf und Einrollen (world.js monSpecial)
     };
     e.hp = e.maxHp;
-    if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
+    if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) + A.gradeVal('eliteTr', run) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js); Zäher Adel (Grad 2): eine mehr
     return e;
   }
 
@@ -2399,9 +2477,10 @@ A.Game = (function () {
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
+    if (!run || run.over) return null;   // ein vorbeier Lauf geht nicht mehr tiefer (sonst zählte ein Tod auf Ebene 24 als Sieg)
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
     A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
-    if (run.floor === A.MAX_FLOOR) { run.won = true; meta.won = (meta.won || 0) + 1; saveMeta(); }
+    if (run.floor === A.MAX_FLOOR) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } gradeWin(); saveMeta(); }   // am Ausgang weiter nach unten: auch ein Sieg
     run.floor++; newFloor(); A.Achieve.onFloor(run); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
@@ -2496,7 +2575,7 @@ A.Game = (function () {
   function setActive(ids) { run.active = ids.slice(0, derived().skillSlots); save(); }
 
   // ---------- Räume ----------
-  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5)); else run.points++; save(); }
+  function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else run.points++; save(); }   // Harte Pritsche (Grad 9)
   function doEvent(choiceIdx) {
     const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
     let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
@@ -2549,12 +2628,28 @@ A.Game = (function () {
   function finishRun() {
     A.Achieve.onEnd(run);   // Spielzeit, Anfängerpech, letzte Prüfung der Erfolge
     const record = Math.max(0, run.floor - meta.best) * 5, banners = run.bannerSparks || 0, elite = run.eliteSparks || 0, book = run.bookSparks || 0, legend = run.legSparks || 0, combo = run.comboSparks || 0, pet = run.petSparks || 0, ach = run.achSparks || 0;
-    const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run)), sparks = base + pact;   // Pakte: je Pakt +15 %
-    run.sparksPact = pact;
+    const base = run.floor * 8 + Math.floor(run.kills * 1.2) + (run.won ? 60 : 0) + run.level * 2 + record + elite, pact = Math.round(base * A.Pacts.sparkPct(run));   // Pakte: je Pakt +15 %
+    const grade = Math.round(base * A.GRADE_SPARKS * A.gradeOf(run)), home = Math.round(base * (run.home === 'exit' ? A.EXIT_SPARKS : run.home === 'boss' ? A.HOME_SPARKS : 0)), sparks = base + pact + grade + home;   // Grad: je Grad +20 %; Heimkehren +10 % (Boss) oder +25 % (Ausgang)
+    run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home;
     run.sparksEarned = sparks + banners + book + legend + combo + pet + ach; run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
     meta.sparks += sparks; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
+  }
+  // Heimkehren (v39): nach einem Welt-Boss (seine Treppe ist erst offen, wenn er gefallen ist) oder am Ausgang (Ebene 24, 48 ...) den Durchlauf mit allen Funken und Bonus beenden
+  function canGoHome() {
+    if (!run || run.over || !A.isBossFloor(run.floor)) return false;
+    const W = A.World && A.World.W, b = W && W.floor === run.floor && W.rooms ? W.rooms.find(x => x.type === 'boss') : null;
+    return !b || !!b.cleared;
+  }
+  function goHome() {
+    if (!canGoHome()) return false;
+    const exit = A.isExitFloor(run.floor);
+    if (exit) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } if (run.floor === A.MAX_FLOOR) gradeWin(); }
+    run.home = exit ? 'exit' : 'boss';
+    A.Achieve.onFloorDone(run);   // die Ebene ist geschafft wie über die Treppe (Erfolg «Tänzer»)
+    run.over = true; finishRun();
+    return true;
   }
   // Laufenden Durchlauf aufgeben: kommt ohne Seelenfunken in die Chronik, dann weg damit
   function abandonRun() { if (run && !run.over) { A.Achieve.onEnd(run, true); A.Achieve.record(run, true); saveMeta(); } clearRun(); }
@@ -2569,7 +2664,7 @@ A.Game = (function () {
   loadMeta();
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
-    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
+    newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
@@ -7088,6 +7183,33 @@ A.Bosses = (function () {
     }
   }
 
+  // ---------- Phasen-Pause (v39): bei halbem und viertel Leben fällt kein Boss in einem Zug durch ----------
+  // Er bleibt knapp unter der Schwelle stehen, ist kurz unverwundbar (goldener Schild) und holt sofort zu seinem grossen Angriff aus.
+  // So zeigt jeder Boss, was er kann, und man muss einmal ausweichen. world.js ruft gate nach jedem Treffer am Boss (hp0 = Leben vor dem Treffer) und guardHit, wenn ein Treffer am Schild abprallt.
+  // Lag er schon vor dem Treffer unter einer Schwelle (Schaden, der nicht über world.hit lief), zählt die Schwelle als vorbei: nie wird ein Boss dabei wieder hochgeheilt
+  const GATES = [0.5, 0.25], GUARD = 1.4;
+  function gate(m, hp0) {
+    if (!m.boss || !(m.maxHp > 0)) return;
+    const w = W(), s = m.bs || (m.bs = { t: 2.2, t2: 6, busy: 0 });
+    let i = s.gate || 0;
+    if (hp0 != null) while (i < GATES.length && hp0 < m.maxHp * GATES[i]) i++;
+    s.gate = i;
+    if (i >= GATES.length) return;
+    const lim = m.maxHp * GATES[i];
+    if (m.hp >= lim) return;
+    s.gate = i + 1;
+    m.hp = Math.max(m.hp, Math.min(hp0 != null ? hp0 : Infinity, Math.max(1, Math.ceil(lim) - 1)));   // knapp darunter: Wut und Endphase beginnen im nächsten Schritt
+    m.guardT = w.t + GUARD;
+    s.t = Math.min(s.t, 0.25); s.t2 = Math.min(s.t2, 0.8);   // gleich der grosse Angriff
+    api.float(m.x, m.y - 86, L('Unverwundbar!', 'Invulnerable!'), '#fee761', 18);
+    if (A.FX) { A.FX.shake(0.4); A.FX.part({ kind: 'ring', x: m.x, y: m.y - 10, life: 0.6, size: 90, color: '#fee761', add: true }); }
+    if (A.Sound && A.Sound.roar) A.Sound.roar();
+  }
+  function guardHit(m) {
+    const w = W(); if ((m.guardFloat || 0) > w.t) return;
+    m.guardFloat = w.t + 0.5; api.float(m.x, m.y - 70, L('Schild!', 'Shield!'), '#fee761', 13);
+  }
+
   // ---------- Verhalten je Boss (true = steht still, keine normalen Angriffe) ----------
   function step(m, dt, d) {
     const w = W(), h = w.hero;
@@ -7145,7 +7267,7 @@ A.Bosses = (function () {
       }
       case 'kraken': {   // Tentakel unter dem Helden, Flut: nur in den hellen Kreisen ist man sicher
         if (s.t <= 0 && d < 640) { s.t = 3.6 * k; tele(m, h.x, h.y, 46, 0.85, m.atk * 1.2, { col: '#b55088', slow: true, tentacle: true }); }
-        if (s.t2 <= 0) {
+        if (s.t2 <= 0 && !(w.bfx || []).some(o => o.kind === 'flood' && !o.fired)) {   // nie zwei Fluten gleichzeitig (die Boss-Pause zieht den Angriff vor)
           s.t2 = s.p2 ? 10 : 13;
           const safes = [];
           for (let i = 0; i < 30 && safes.length < (s.p2 ? 2 : 3) + (w.big ? 1 : 0); i++) { const p = roomSpot(20); if (p && safes.every(o => Math.hypot(o.x - p.x, o.y - p.y) > 170)) safes.push({ x: p.x, y: p.y, r: 66 }); }
@@ -7293,7 +7415,7 @@ A.Bosses = (function () {
     }
   }
 
-  return { bind, step, tick, drawGround, drawTop, lights };
+  return { bind, step, tick, gate, guardHit, GATES, drawGround, drawTop, lights };
 })();
 
 </script>
@@ -10399,6 +10521,8 @@ A.Achieve = (function () {
     const m = G().meta;
     const e = { t: Date.now(), race: r.race, cls: r.cls, floor: r.floor, level: r.level, kills: r.kills, gold: r.gold, won: !!r.won, by: quit ? null : (r.deathBy || null), quit: !!quit,
       sparks: quit ? 0 : (r.sparksEarned || 0), dur: Math.round(r.playT || 0), pets: (r.pets || []).slice(0, 2), ach: (r.achIds || []).slice(), bd: A.Build.ids(A.Build.profile(r)) };
+    if (A.gradeOf(r)) e.grade = A.gradeOf(r);   // Grad und Heimkehren (v39); fehlt bei älteren Einträgen
+    if (r.home && !quit) { e.home = r.home; e.by = null; }
     m.chron = m.chron || []; m.chron.unshift(e); if (m.chron.length > A.ACH_CHRON) m.chron.length = A.ACH_CHRON;
     return e;
   }
@@ -10414,6 +10538,8 @@ A.Achieve = (function () {
   // Woran ein Durchlauf endete, als Satz
   function causeText(e) {
     if (e.quit) return L('aufgegeben', 'abandoned');
+    if (e.home === 'exit') return L('durch den Ausgang heimgekehrt', 'went home through the exit');
+    if (e.home) return L('heimgekehrt', 'went home');
     const by = e.by;
     if (by && by.kind === 'burn') return L('in Flammen aufgegangen', 'went up in flames');
     if (by && by.kind === 'poison') return L('am Gift gestorben', 'died of poison');
@@ -10595,9 +10721,9 @@ A.Pacts = (function () {
   function has(id, r) { return list(r).includes(id); }
   // Lohn: Werte wie die Segen (Game.derived)
   function mods(r) { const o = {}; for (const id of list(r)) for (const k in (A.PACTS[id].m || {})) o[k] = (o[k] || 0) + A.PACTS[id].m[k]; return o; }
-  // Fluch: Summe eines Werts
-  function val(k, r) { let v = 0; for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x[k]) v += x[k]; } return v; }
-  function potMul(r) { let m = 1; for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x.potMul) m *= x.potMul; } return m; }
+  // Fluch: Summe eines Werts; die Regeln des Grads (data.js A.GRADES: mhp, bossHp, extra, hurt) zählen mit
+  function val(k, r) { r = run(r); let v = A.gradeVal(k, r); for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x[k]) v += x[k]; } return v; }
+  function potMul(r) { r = run(r); let m = 1 - A.gradeVal('potCut', r); for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x.potMul) m *= x.potMul; } return m; }   // Wasser im Trank (Grad 4)
   const cdMul = (r) => 1 + val('cd', r);
   const hurtMul = (r) => 1 + val('hurt', r);
   // Lebens-Faktor für einen Gegner, der beim Betreten eines Raums erscheint
@@ -11312,7 +11438,7 @@ A.World = (function () {
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
       const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0) + A.Pacts.extra();   // Hordenruf (pacts.js)
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
-      const champ = lead && r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
+      const champ = lead && r.type === 'fight' && (A.gradeVal('champ', run) > 0 || (f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)))) ? Math.max(1, A.Elites.count(f) - 1) : 0;   // Champions überall (Grad 8)
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? lead : champ) : false, i + 1));
     }
     if (re) { list.length = Math.min(list.length, Math.max(0, re.n - re.k)); W.stats.dmgRoom = 1; }   // ein neu begonnener Kampf zählt nie als «ohne Schaden»
@@ -11335,7 +11461,7 @@ A.World = (function () {
   function addMon(m, x, y) {
     const rr = m.boss ? 24 : m.giant ? 22 : m.elite ? 17 : 14;
     [x, y] = freeSpot(x, y, rr);
-    Object.assign(m, { x, y, r: rr, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
+    Object.assign(m, { x, y, r: rr, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : ((m.kind === 'melee' ? 62 : 55) + m.spd * 7) * (1 + A.gradeVal('mspd', G().run)), inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
     A.Elites.onAdd(m);   // Zeitgeber und Schild der Elite-Eigenschaften
     W.mons.push(m); return m;
   }
@@ -11448,6 +11574,7 @@ A.World = (function () {
     opts = opts || {};
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
+    if (to.boss && to.guardT > W.t) { A.Bosses.guardHit(to); return 0; }   // Boss in der Pause bei halbem und viertel Leben (bosses.js gate)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
     const fg = A.Foes.guard(from, to, opts); if (fg != null) return fg;   // Panzer (foes.js)
     if (!opts.noDodge && !(to === W.hero && A.Pacts.val('noDodge')) && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) {   // Glasknochen (pacts.js): auch kein Ausweichen durch Zauber
@@ -11471,7 +11598,8 @@ A.World = (function () {
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
     if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; if (to.shield <= 0 && to === W.hero) A.Gear.onShieldBreak(to); }
-    to.hp -= dmg; to.flash = 0.12;
+    const hp0 = to.hp; to.hp -= dmg; to.flash = 0.12;
+    if (to.boss && to.side === 'enemy') A.Bosses.gate(to, hp0);   // nicht in einem Zug durch halbes oder viertel Leben (bosses.js)
     if (to.side === 'enemy' && from.pet) (to.bit || (to.bit = {}))[from.pet] = W.t;   // von welchem Begleiter zuletzt gebissen (Flitz: Langfinger)
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
@@ -11492,8 +11620,8 @@ A.World = (function () {
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
       if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
-      if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
-      if (to.healOnPhys && opts.kind !== 'magic') heal(to, Math.round(to.maxHp * to.healOnPhys));
+      if (to.thorns && opts.kind !== 'magic' && from.alive && !(from.boss && from.guardT > W.t)) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)), fh0 = from.hp; from.hp -= back; from.flash = 0.1; if (from.boss && from.side === 'enemy') A.Bosses.gate(from, fh0); float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
+      if (to.healOnPhys && opts.kind !== 'magic' && !(to.guardT > W.t)) heal(to, Math.round(to.maxHp * to.healOnPhys));   // in der Phasen-Pause heilt der Boss nicht (sonst rutscht er wieder über die Schwelle)
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }
@@ -12641,7 +12769,8 @@ window.A = window.A || {};
       if (m.ef && !(m.spawn > 0)) A.Elites.drawUnder(this, m, spr, cx, cy, sc, lift);   // Nachbilder (Flink)
       const slip = m.slipUntil > W.t;   // auf einer Bananenschale ausgerutscht: überschlägt sich (wild.js)
       if ((m.elite || m.mirror) && !(m.spawn > 0) && !slip) this.outlineGlow(spr, dx, dy, flip, A.Elites.col(m, this.t), sc);
-      if (m.boss && !slip) this.outlineGlow(spr, dx, dy, flip, Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
+      const guard = m.boss && m.guardT > W.t;   // Phasen-Pause (bosses.js gate): goldener Schild
+      if (m.boss && !slip) this.outlineGlow(spr, dx, dy, flip, guard ? (Math.sin(this.t * 12) > 0 ? '#fee761' : '#feae34') : Math.sin(this.t * 4) > 0 ? '#e43b44' : '#a22633', sc);
       const frozen = m.frozenUntil > W.t && !slip, sand = m.sandUntil > W.t && !slip;   // Zeitstopp der Totenmaske: golden und erstarrt
       if (frozen) this.outlineGlow(spr, dx, dy, flip, '#9be8ff', sc);
       else if (sand) this.outlineGlow(spr, dx, dy, flip, '#feae34', sc);
@@ -12649,6 +12778,7 @@ window.A = window.A || {};
       else this.blit(spr, dx, dy, flip, { sx, sy, alpha, white: m.flash > 0 });
       if (m.state === 'windup' && !slip && Math.floor(this.t * 16) % 2 === 0) this.blit(spr, dx, dy, flip, { sx, sy, alpha: 0.45, white: true });
       if (m.ef && !(m.spawn > 0)) A.Elites.drawOver(this, m, spr, dx, dy, sx, sy, cx, cy);   // Schildblase, kreisende Klingen
+      if (guard) { const g = this.g, hh = spr.h * sy, R = Math.max(spr.w * sx, hh) * 0.62, yy = dy - hh * 0.5; g.globalAlpha = 0.5 + Math.sin(this.t * 10) * 0.2; g.strokeStyle = '#fee761'; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(dx), Math.round(yy), R, R * 0.95, 0, 0, TAU); g.stroke(); g.globalAlpha = 0.8; g.fillStyle = '#ffffff'; g.fillRect(Math.round(dx - R * 0.5), Math.round(yy - R * 0.6), 2, 1); g.globalAlpha = 1; }
       if (frozen) {   // eingefroren (Eis-Ausrüstung): blaues Eis über der Figur, ein paar helle Punkte
         const k = flip ? 'iceF' : 'ice'; if (!spr[k]) spr[k] = A.Art.silhouette(flip ? A.Art.flipped(spr) : spr.img, '#9be8ff');
         const w2 = Math.round(spr.w * sx), h2 = Math.round(spr.h * sy), x2 = Math.round(dx - w2 / 2), y2 = Math.round(dy - h2);
@@ -13159,6 +13289,10 @@ window.A = window.A || {};
         c.fillStyle = '#a22633'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh);
         c.fillStyle = '#e43b44'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, hh * 0.5);
         c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(x0, y0, bwid * boss.hp / boss.maxHp, d);
+        // Phasen-Pausen (v39): Kerben bei halbem und viertel Leben, verblasst, wenn vorbei; goldener Rahmen, solange der Schild steht
+        const gates = A.Bosses.GATES || [], gi = (boss.bs && boss.bs.gate) || 0;
+        gates.forEach((fx, k) => { c.fillStyle = k < gi ? 'rgba(24,20,37,0.35)' : '#181425'; c.fillRect(Math.round(x0 + bwid * fx - d), y0 - d, 2 * d, hh + 2 * d); });
+        if (boss.guardT > W.t) { c.strokeStyle = '#fee761'; c.lineWidth = 2 * d; c.strokeRect(x0 - 2 * d, y0 - 2 * d, bwid + 4 * d, hh + 4 * d); c.strokeStyle = '#181425'; }
         const bb = A.bossOf(W.floor), trick = A.t(bb && bb.trick);
         if (trick) { c.font = this.font(11 * d, 500); c.lineWidth = 3 * d; c.strokeText(trick, bx, y0 + hh + 14 * d); c.fillStyle = '#ead4aa'; c.fillText(trick, bx, y0 + hh + 14 * d); }
       }
@@ -14253,15 +14387,26 @@ window.A = window.A || {};
     $('#bReset').onclick = () => { S.click(); ask(L('Wirklich alles löschen? Auch die Seelenfunken.', 'Really delete everything? Including soul sparks.'), L('Alles löschen', 'Delete everything'), () => { G.resetAll(); title(); }); };
   }
 
+  // ---------- Grad: was gilt (Regel des Grads, die Namen der Regeln davor, mehr Leben und Schaden, mehr Funken) ----------
+  let selGrade = null;
+  function gradeText(g) {
+    if (!g) return `<b>${L('Normal', 'Normal')}:</b> ${L('Ohne Grad. So wie immer.', 'No grade. Business as usual.')}`;
+    const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
+    return `<b>${L('Grad', 'Grade')} ${g}: ${esc(t(R.name))}.</b> ${esc(t(R.text))}`
+      + (before.length ? ` <span class="mini">${L('Dazu gilt weiter', 'Still in force')}: ${esc(before.join(' · '))}.</span>` : '')
+      + `<br><span class="mini">${L(`Alle Gegner +${pc(A.GRADE_HP * g)} % Leben und +${pc(A.GRADE_ATK * g)} % Schaden.`, `All enemies +${pc(A.GRADE_HP * g)}% health and +${pc(A.GRADE_ATK * g)}% damage.`)}</span> ${spark('+' + pc(A.GRADE_SPARKS * g) + ' %', 12)}`;
+  }
+
   // ---------- Held wählen ----------
   function heroSelect() {
     const races = A.RACES.map(r => { const ok = G.raceUnlocked(r); return `<button class="chip" data-race="${r.id}" aria-label="${esc(t(r.name))}">${ok ? '' : `<span class="cost">${spark(r.unlock, 11)}</span>`}<img class="px hero" src="${Art.heroUrl(r.id, selCls, 2)}" width="36" height="36" alt=""></button>`; }).join('');
-    const classes = A.CLASSES.map(c => { const ok = G.classUnlocked(c); return `<button class="chip" data-cls="${c.id}" aria-label="${esc(t(c.name))}">${ok ? '' : `<span class="lock">${L('bald', 'soon')}</span>`}${ic(WEAPON_ICON[c.id] || 'i_schwert', 36)}</button>`; }).join('');
+    const classes = A.CLASSES.map(c => { const ok = G.classUnlocked(c), gw = G.gradeWon(c.id); return `<button class="chip" data-cls="${c.id}" aria-label="${esc(t(c.name))}">${ok ? '' : `<span class="lock">${L('bald', 'soon')}</span>`}${gw != null ? `<span class="crown" title="${esc(gw ? L('Grad ' + gw + ' geschafft', 'Grade ' + gw + ' done') : L('Ausgang geschafft', 'Exit reached'))}">${ic('crown', 12)}${gw || ''}</span>` : ''}${ic(WEAPON_ICON[c.id] || 'i_schwert', 36)}</button>`; }).join('');   // Krone: Ausgang geschafft, Zahl = höchster geschaffter Grad
     show(`<div class="fade-in">
       <h2>${L('Wähle deinen Helden', 'Choose your hero')}</h2>
       <div class="stage"><canvas id="stage"></canvas><div class="who"><b id="whoName"></b><span id="whoSub"></span></div></div>
       <h3>${t(U.race)}</h3><div class="chips">${races}</div><div class="perk" id="racePerk"></div>
       <h3>${t(U.cls)}</h3><div class="chips">${classes}</div><div class="perk" id="clsPerk"></div>
+      <div id="gradeBox"></div>
       <button class="btn primary" id="bStart">${t(U.start)}</button><button class="btn" id="bBack">${t(U.back)}</button>
     </div>`, { stage: true });
     const upd = (peekCls) => {
@@ -14273,11 +14418,22 @@ window.A = window.A || {};
       $('#racePerk').innerHTML = `<b>${esc(t(race.name))}:</b> ${esc(t(race.perk))}`;
       const pc = peekCls || cls;
       $('#clsPerk').innerHTML = `<b>${esc(t(pc.name))}:</b> ${esc(t(pc.perk))}`;
+      gradeRow();
       A.Scenes.stage($('#stage'), selRace, selCls);
     };
+    // Grade (v39): erst nach dem ersten Sieg mit dieser Klasse; jeder Grad bringt eine Regel dazu, die von davor gelten weiter
+    const gradeRow = () => {
+      const gm = G.gradeMax(selCls), box = $('#gradeBox'); if (!box) return;
+      if (!gm) { box.innerHTML = ''; selGrade = 0; return; }
+      if (selGrade == null || selGrade > gm) selGrade = G.gradePick(selCls);
+      const chips = Array.from({ length: gm + 1 }, (_, g) => `<button class="chip gchip ${g === selGrade ? 'sel' : ''}" data-grade="${g}" aria-label="${esc(g ? L('Grad ' + g, 'Grade ' + g) : L('Normal', 'Normal'))}">${g ? ic('crown', 12) + g : L('Normal', 'Normal')}</button>`).join('');
+      box.innerHTML = `<h3>${L('Grad', 'Grade')}</h3><div class="chips grades">${chips}</div><div class="perk" id="gradePerk">${gradeText(selGrade)}</div>`;
+      box.querySelectorAll('[data-grade]').forEach(el => el.onclick = () => { const g = +el.dataset.grade; if (g === selGrade) return; selGrade = g; S.click(); gradeRow(); });
+    };
+    selGrade = null;
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { S.click(); camp(); return; } if (selRace === r.id) return; selRace = r.id; S.click(); upd(); });
-    screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; S.click(); upd(); });
-    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls); Portal.gameplayStart(); dungeon(true); };
+    screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; selGrade = null; S.click(); upd(); });
+    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, G.gradeMax(selCls) ? selGrade : undefined); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { S.click(); title(); };
     upd();
   }
@@ -14408,7 +14564,7 @@ window.A = window.A || {};
     const rows = AC.chron().map(e => {
       const R = A.RACES.find(x => x.id === e.race), Cl = A.CLASSES.find(x => x.id === e.cls);
       const achs = (e.ach || []).map(id => A.ACHIEVEMENTS.find(a => a.id === id)).filter(Boolean).map(a => t(a.name));
-      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length && A.BUILD_DIRS[e.bd[0]] ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
+      return `<div class="runrow ${e.won ? 'won' : ''} ${e.quit ? 'quit' : ''}">${R && Cl ? portrait(e.race, e.cls) : ''}<div class="rb"><div><b>${t(U.floor)} ${e.floor}</b> · ${t(U.level)} ${e.level} · ${esc(Cl ? t(Cl.name) : e.cls)}${R ? ` (${esc(t(R.name))})` : ''}${e.grade ? ` · ${L('Grad', 'Grade')} ${e.grade}` : ''}${e.won ? ` <span class="goldc">${t(U.victory)}</span>` : ''}${e.bd && e.bd.length && A.BUILD_DIRS[e.bd[0]] ? ` · <span class="bdn">${esc(A.Build.nameOf(e.bd))}</span>` : ''}</div>
         <div class="mini">${esc(AC.causeText(e))} · ${e.kills} ${L('Gegner', 'enemies')} · ${e.gold} ${t(U.gold)} · ${esc(AC.timeText(e.dur))}${achs.length ? ` · ${L('Erfolg', 'Achievement')}: ${esc(achs.join(', '))}` : ''}</div></div>
         <div class="rs">${e.quit ? '' : spark('+' + e.sparks, 14)}<div class="mini">${esc(AC.whenText(e.t))}</div></div></div>`;
     }).join('');
@@ -14494,7 +14650,7 @@ window.A = window.A || {};
     buildControls(); pads(); fadeIn();
     S.music(A.Draw.themeOf(r.floor));
     const wfx = A.Weather.nameOf(Wd.W);
-    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : ''), '#fee761', 2.6);
+    A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
@@ -14687,14 +14843,42 @@ window.A = window.A || {};
     const r = G.run, inBag = r.bag.includes(it), worn = A.SLOTS.some(s => r.gear[s] === it);
     return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '', !inBag && !worn);
   }
+  // Treppe hinunter (auch am Ausgang: «Weiter nach unten»)
+  function goDown() { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won' || res == null) { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); }
+  // Heimkehren (v39): der Durchlauf endet mit allen Funken und Bonus (am Ausgang als Sieg), ab ins Lager
+  function homeBtn(exit) {
+    const pc = Math.round((exit ? A.EXIT_SPARKS : A.HOME_SPARKS) * 100);
+    return `<button class="btn two ${exit ? 'primary' : ''}" id="bHome"><span class="bl">${ic(exit ? 'crown' : 'u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${exit ? L('Als Sieger die Treppe hoch. Zu Fuss.', 'Back up the stairs as a winner. On foot.') : L('Lauf beenden, alle Funken behalten', 'End the run, keep all sparks')} · ${spark('+' + pc + ' %', 12)}</span></button>`;
+  }
+  function goHomeNow() {
+    S.click(); overlay.classList.remove('on'); overlay.innerHTML = '';
+    if (!G.goHome()) { Wd.pause(false); hudUpdate(); return; }
+    S.level(); fadeOut(() => { runOver(); fadeIn(); }, 120);
+  }
+  // Der Ausgang auf Ebene 24 (48, 72 ...): eine grosse Tür mit Schild; sie geht auf, dahinter hängt das zweite Schild
+  function exitScene() {
+    const r = G.run, k = Math.max(1, Math.round(r.floor / A.MAX_FLOOR)), X = A.EXITS[Math.min(A.EXITS.length, k) - 1], next = r.floor + A.MAX_FLOOR, nf = r.floor + 1;
+    ov(`<div class="center exitwin"><div class="exitdoor" id="exDoor"><div class="ed-sign">${esc(t(X.sign))}</div><div class="ed-in"><div class="ed-note">${esc(t(X.note).replace('{n}', next))}</div></div><div class="ed-l"></div><div class="ed-r"></div></div>
+      <h2 class="mid">${k === 1 ? L('Der Ausgang!', 'The exit!') : L('Noch ein Ausgang!', 'Another exit!')}</h2>
+      <div class="sub">${k === 1 ? L('Unten ist der Ausgang. Angeblich. Hier ist er. Fast.', 'The exit is at the bottom. Allegedly. Here it is. Almost.') : L('Du hast den Umweg geschafft. Der Abgrund hat noch mehr Umwege.', 'You survived the detour. The abyss has more detours.')}</div>
+      <div class="exbtns">${homeBtn(true)}<button class="btn two" id="bOk"><span class="bl">${ic('u_down', 24)}${L('Weiter nach unten', 'Keep descending')}</span><span class="bs">${L('Umleitung: Ebene', 'Detour: floor')} ${nf} · ${esc(A.worldName(nf))}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div></div>`, 'exitbox');
+    const door = $('#exDoor'); S.open && S.open();
+    setTimeout(() => { if (door && door.isConnected) { door.classList.add('open'); if (A.FX) A.FX.shake(0.2); } }, 650);
+    $('#bHome').onclick = () => goHomeNow();
+    $('#bOk').onclick = () => goDown();
+    $('#bClose').onclick = () => { S.click(); ovClose(); };
+  }
   // Dinge im Raum
   function useProp(p) {
     const r = G.run;
+    if (!r || r.over) return;   // Lauf schon vorbei (gestorben oder heimgekehrt): keine Treppe, keine Truhe mehr
     if (p.kind === 'stairs') {
       if (Wd.W && Wd.W.sinkT != null) return;   // schon auf dem Weg nach unten: sonst springt ein zweites «Tiefer» über eine ganze Ebene
-      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor);
-      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
-      $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
+      if (A.isExitFloor(r.floor) && G.canGoHome()) { exitScene(); return; }   // Ebene 24, 48 ...: der Ausgang (v39)
+      const nf = r.floor + 1, newWorld = A.worldIndex(nf) !== A.worldIndex(r.floor), home = G.canGoHome();   // nach einem Welt-Boss: Heimkehren
+      ov(`<div class="center"><div class="bigicon">${ic('u_down', 60)}</div><h2 class="mid">${t(U.floor)} ${nf}</h2><div class="sub"><b class="goldc">${esc(A.worldName(nf))}</b><br>${newWorld ? L('Eine neue Welt. Andere Gegner, anderer Boden, andere Regeln.', 'A new world. New enemies, new ground, new rules.') : A.isBossFloor(nf) ? L('Unten wartet der Boss dieser Welt.', 'The boss of this world waits below.') : L('Neue Schicht, neue Gegner, neue Aufgabe.', 'New layer, new enemies, new quest.')}</div><button class="btn primary" id="bOk">${t(U.descend)}</button>${home ? homeBtn(false) : ''}<button class="btn" id="bClose">${t(U.back)}</button></div>`);
+      $('#bOk').onclick = () => goDown();
+      if (home) $('#bHome').onclick = () => goHomeNow();
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
     else if (p.kind === 'chest') { if (p.hidden || (p.mimic && A.Surprise.wake(p))) return; Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
@@ -14941,7 +15125,7 @@ window.A = window.A || {};
   // ---------- Räume ----------
   function rest() {
     ov(`<div class="bigicon">${ic('flame', 60)}</div><h2 class="mid">${t(U.node.rest)}</h2><div class="sub center">${L('Ein Feuer. Endlich. Niemand will dich fressen. Vorerst.', 'A fire. Finally. Nothing wants to eat you. For now.')}</div>
-      <button class="btn primary" id="bHeal">${ic('u_heart', 22)}${t(U.heal)}</button><button class="btn" id="bTrain">${ic('u_star', 22)}${t(U.train)}</button>`);
+      <button class="btn primary" id="bHeal">${ic('u_heart', 22)}${L(`Ausruhen (+${Math.round(50 * (1 - A.gradeVal('restCut', G.run)))} % Leben)`, `Rest (+${Math.round(50 * (1 - A.gradeVal('restCut', G.run)))}% health)`)}</button><button class="btn" id="bTrain">${ic('u_star', 22)}${t(U.train)}</button>`);
     $('#bHeal').onclick = () => { G.doRest('heal'); Wd.W.hero.hp = G.run.hp; S.heal(); ovClose(); };
     $('#bTrain').onclick = () => { G.doRest('train'); S.buy(); ovClose(); };
   }
@@ -15033,15 +15217,20 @@ window.A = window.A || {};
     if (!r.over) { r.over = true; G.finishRun(); }
     Portal.gameplayStop();
     overlay.classList.remove('on'); overlay.innerHTML = '';
-    const won = r.won;
+    const won = r.won, home = r.home, g = A.gradeOf(r), Cl = A.CLASSES.find(c => c.id === r.cls);   // home: 'boss' = nach einem Welt-Boss heimgekehrt, 'exit' = am Ausgang (v39)
+    const head = home === 'exit' || (home && won) ? L('Sieg! Heimgekehrt.', 'Victory! Home again.') : home ? L('Heimgekehrt!', 'Home again!') : won ? t(U.victory) : t(U.runOver);   // schon am Ausgang vorbei und später nach einem Boss heim: auch ein Sieg
+    const msg = home === 'exit' ? L(`Der Ausgang war zu. Also bist du die Treppe hoch. Alle ${r.floor} Ebenen. Zu Fuss.`, `The exit was closed. So you took the stairs. All ${r.floor} floors. On foot.`)
+      : home && won ? L(`Am Ausgang vorbei, noch tiefer, noch ein Boss. Dann die Treppe hoch, alle ${r.floor} Ebenen. Sieger dürfen das.`, `Past the exit, deeper still, one more boss. Then up the stairs, all ${r.floor} floors. Winners get to do that.`)
+      : home ? L('Boss besiegt, Beute eingesteckt, ab nach Hause. Vernünftig.', 'Boss down, loot pocketed, off home. Sensible.') : won ? t(U.win) : '';
     show(`<div class="center fade-in" style="padding-top:5vh">
-      <div class="bigicon">${won ? ic('crown', 63) : ic('u_skull', 60)}</div>
-      <h2 class="mid">${won ? t(U.victory) : t(U.runOver)}</h2>
-      ${won ? `<div class="msg">${t(U.win)}</div>` : ''}<div class="sub">${t(U.dead)} ${r.floor} (${esc(A.worldName(r.floor))}).</div>
+      <div class="bigicon">${won || home === 'exit' ? ic('crown', 63) : home ? ic('u_tent', 60) : ic('u_skull', 60)}</div>
+      <h2 class="mid">${head}</h2>
+      ${msg ? `<div class="msg">${msg}</div>` : ''}<div class="sub">${home ? L(`Heimgekehrt von Ebene ${r.floor}`, `Went home from floor ${r.floor}`) : `${t(U.dead)} ${r.floor}`} (${esc(A.worldName(r.floor))}).${g ? ` ${L('Grad', 'Grade')} ${g}.` : ''}</div>
+      ${r.gradeNew ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L(`Neu: Grad ${r.gradeNew}`, `New: grade ${r.gradeNew}`)}</b> ${L('für', 'for')} ${esc(Cl ? t(Cl.name) : r.cls)}. <i>${esc(t(A.GRADES[r.gradeNew - 1].name))}</i>: ${esc(t(A.GRADES[r.gradeNew - 1].text))} ${L('Wähle ihn beim nächsten Helden.', 'Pick it with your next hero.')}</div>` : r.gradeTop ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L('Grad 10 geschafft!', 'Grade 10 done!')}</b> ${L('Mehr Grade gibt es nicht. Noch nicht.', 'There are no more grades. Not yet.')}</div>` : ''}
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact ? `<div class="mini extra">${[r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
       <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);

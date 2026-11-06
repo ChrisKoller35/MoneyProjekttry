@@ -163,7 +163,7 @@ A.World = (function () {
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
       const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0) + A.Pacts.extra();   // Hordenruf (pacts.js)
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
-      const champ = lead && r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
+      const champ = lead && r.type === 'fight' && (A.gradeVal('champ', run) > 0 || (f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)))) ? Math.max(1, A.Elites.count(f) - 1) : 0;   // Champions überall (Grad 8)
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? lead : champ) : false, i + 1));
     }
     if (re) { list.length = Math.min(list.length, Math.max(0, re.n - re.k)); W.stats.dmgRoom = 1; }   // ein neu begonnener Kampf zählt nie als «ohne Schaden»
@@ -186,7 +186,7 @@ A.World = (function () {
   function addMon(m, x, y) {
     const rr = m.boss ? 24 : m.giant ? 22 : m.elite ? 17 : 14;
     [x, y] = freeSpot(x, y, rr);
-    Object.assign(m, { x, y, r: rr, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : (m.kind === 'melee' ? 62 : 55) + m.spd * 7, inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
+    Object.assign(m, { x, y, r: rr, hp: m.hp, shield: 0, effects: [], buffs: {}, stun: 0, flash: 0, alive: true, state: 'idle', st: 0, cd: 1 + Math.random(), fx: -1, fy: 0, speed: m.rooted ? 0 : ((m.kind === 'melee' ? 62 : 55) + m.spd * 7) * (1 + A.gradeVal('mspd', G().run)), inv: 0, swing: 0, alpha: 1, skT: 2.5 + Math.random() * 2, sumT: 4 });
     A.Elites.onAdd(m);   // Zeitgeber und Schild der Elite-Eigenschaften
     W.mons.push(m); return m;
   }
@@ -299,6 +299,7 @@ A.World = (function () {
     opts = opts || {};
     if (!to.alive || to.spawn > 0) return 0;
     if (to.side === 'hero' && to.inv > 0 && !opts.noDodge) return 0;   // unverwundbar (Blitzschritt, Zweite Chance)
+    if (to.boss && to.guardT > W.t) { A.Bosses.guardHit(to); return 0; }   // Boss in der Pause bei halbem und viertel Leben (bosses.js gate)
     const lgd = A.Legends.guard(from, to, opts); if (lgd != null) return lgd;   // Tintenwolke, Bratpfannen (legends.js)
     const fg = A.Foes.guard(from, to, opts); if (fg != null) return fg;   // Panzer (foes.js)
     if (!opts.noDodge && !(to === W.hero && A.Pacts.val('noDodge')) && Math.random() < clamp(statOf(to, 'dodge'), 0, 75) / 100) {   // Glasknochen (pacts.js): auch kein Ausweichen durch Zauber
@@ -322,7 +323,8 @@ A.World = (function () {
     dmg = Math.max(1, Math.round(dmg));
     let absorbed = 0;
     if (to.shield > 0) { absorbed = Math.min(to.shield, dmg); to.shield -= absorbed; dmg -= absorbed; if (to.shield <= 0 && to === W.hero) A.Gear.onShieldBreak(to); }
-    to.hp -= dmg; to.flash = 0.12;
+    const hp0 = to.hp; to.hp -= dmg; to.flash = 0.12;
+    if (to.boss && to.side === 'enemy') A.Bosses.gate(to, hp0);   // nicht in einem Zug durch halbes oder viertel Leben (bosses.js)
     if (to.side === 'enemy' && from.pet) (to.bit || (to.bit = {}))[from.pet] = W.t;   // von welchem Begleiter zuletzt gebissen (Flitz: Langfinger)
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
@@ -343,8 +345,8 @@ A.World = (function () {
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
       if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
-      if (to.thorns && opts.kind !== 'magic' && from.alive) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)); from.hp -= back; from.flash = 0.1; float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
-      if (to.healOnPhys && opts.kind !== 'magic') heal(to, Math.round(to.maxHp * to.healOnPhys));
+      if (to.thorns && opts.kind !== 'magic' && from.alive && !(from.boss && from.guardT > W.t)) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)), fh0 = from.hp; from.hp -= back; from.flash = 0.1; if (from.boss && from.side === 'enemy') A.Bosses.gate(from, fh0); float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
+      if (to.healOnPhys && opts.kind !== 'magic' && !(to.guardT > W.t)) heal(to, Math.round(to.maxHp * to.healOnPhys));   // in der Phasen-Pause heilt der Boss nicht (sonst rutscht er wieder über die Schwelle)
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
     }

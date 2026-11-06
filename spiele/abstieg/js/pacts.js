@@ -13,9 +13,9 @@ A.Pacts = (function () {
   function has(id, r) { return list(r).includes(id); }
   // Lohn: Werte wie die Segen (Game.derived)
   function mods(r) { const o = {}; for (const id of list(r)) for (const k in (A.PACTS[id].m || {})) o[k] = (o[k] || 0) + A.PACTS[id].m[k]; return o; }
-  // Fluch: Summe eines Werts
-  function val(k, r) { let v = 0; for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x[k]) v += x[k]; } return v; }
-  function potMul(r) { let m = 1; for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x.potMul) m *= x.potMul; } return m; }
+  // Fluch: Summe eines Werts; die Regeln des Grads (data.js A.GRADES: mhp, bossHp, extra, hurt) zählen mit
+  function val(k, r) { r = run(r); let v = A.gradeVal(k, r); for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x[k]) v += x[k]; } return v; }
+  function potMul(r) { r = run(r); let m = 1 - A.gradeVal('potCut', r); for (const id of list(r)) { const x = A.PACTS[id].x; if (x && x.potMul) m *= x.potMul; } return m; }   // Wasser im Trank (Grad 4)
   const cdMul = (r) => 1 + val('cd', r);
   const hurtMul = (r) => 1 + val('hurt', r);
   // Lebens-Faktor für einen Gegner, der beim Betreten eines Raums erscheint
