@@ -58,10 +58,10 @@ A.World = (function () {
   }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
   // Beute am Boden (v40): Stücke, Gold, Tränke und Bonbons, die noch herumliegen, dazu ein Fund, dessen Fenster gerade offen ist. Nach dem Neuladen liegen sie wieder da (enter)
-  const PICK_KEEP = { item: 1, gold: 1, potion: 1, candy: 1 };
+  const PICK_KEEP = { item: 1, gold: 1, potion: 1, candy: 1, crate: 1 };   // crate: Kiste eines Gönners (v42, show.js)
   function savePicks() {
     if (!W) return null;
-    const l = []; for (const p of W.picks) if (!p.done && PICK_KEEP[p.kind] && (p.kind !== 'item' || p.it)) l.push(p.kind === 'item' ? { kind: p.kind, it: p.it, x: Math.round(p.x), y: Math.round(p.y) } : { kind: p.kind, val: p.val, x: Math.round(p.x), y: Math.round(p.y) });
+    const l = []; for (const p of W.picks) if (!p.done && PICK_KEEP[p.kind] && (p.kind !== 'item' || p.it)) l.push(p.kind === 'item' ? { kind: p.kind, it: p.it, x: Math.round(p.x), y: Math.round(p.y) } : p.kind === 'crate' ? { kind: p.kind, sp: p.sp, x: Math.round(p.x), y: Math.round(p.y) } : { kind: p.kind, val: p.val, x: Math.round(p.x), y: Math.round(p.y) });
     if (W.held && W.held.it) l.push({ kind: 'item', it: W.held.it, x: Math.round(W.held.x), y: Math.round(W.held.y) });
     return l.length ? { f: W.floor, l } : null;
   }
@@ -78,9 +78,9 @@ A.World = (function () {
     // Beute am Boden (v40): was beim Schliessen noch herumlag, liegt wieder da (nur beim Weiterspielen derselben Ebene; ältere Stände haben keine)
     const rp = G().run.picks;
     if (saved && rp && rp.f === floor && Array.isArray(rp.l)) for (const p of rp.l) {
-      if (!p || !PICK_KEEP[p.kind] || (p.kind === 'item' && !p.it) || (p.kind === 'gold' && !(p.val > 0)) || !isFinite(p.x) || !isFinite(p.y)) continue;
+      if (!p || !PICK_KEEP[p.kind] || (p.kind === 'item' && !p.it) || (p.kind === 'gold' && !(p.val > 0)) || (p.kind === 'crate' && typeof p.sp !== 'string') || !isFinite(p.x) || !isFinite(p.y)) continue;
       const [x, y] = freeSpot(p.x, p.y, 13);
-      W.picks.push({ kind: p.kind, it: p.it, val: p.val, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1 });
+      W.picks.push(p.kind === 'crate' ? { kind: p.kind, sp: p.sp, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1, landed: true } : { kind: p.kind, it: p.it, val: p.val, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1 });
     }
     return W;
   }
@@ -408,6 +408,7 @@ A.World = (function () {
     A.Pets.onKill(e, rw);   // Treue für die Begleiter
     A.Wild.onKill(e);       // Piñata
     A.Surprise.onDeath(e);  // Goldwicht, Mimik (surprise.js)
+    A.Show.onKill(e);       // Zuschauer (v42): Spektakel, Knall-Ladung
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34', opts: { kette: true } });
@@ -707,8 +708,11 @@ A.World = (function () {
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; W.held = { it: p.it, x: p.x, y: p.y }; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }   // held: Fenster offen, Stück noch nicht verstaut (savePicks)
       }
+      if (p.kind === 'crate' && !p.done && p.landed && !W.paused && h.alive && !G().run.over && d < h.r + 22 && hooks.onCrate) { p.done = true; W.paused = true; hooks.onCrate(p); }   // Kiste eines Gönners (show.js): Zettel und Geschenk
+
     }
     W.picks = W.picks.filter(p => !p.done);
+    A.Show.step();   // Zuschauer (v42): volle Kiste nach dem Kampf herunterkrachen lassen
     for (const f of W.floats) { f.y -= 28 * dt; f.life -= dt; } W.floats = W.floats.filter(f => f.life > 0);
     for (const f of W.fx) f.life -= dt; W.fx = W.fx.filter(f => f.life > 0);
     // Raum-Logik
@@ -756,6 +760,7 @@ A.World = (function () {
   A.Pets.bind({ get W() { return W; }, hit, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
   A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot, fightStart, slowMul, hazardSlow });
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
+  A.Show.bind({ get W() { return W; }, float, fx, drop, freeSpot, heroPower, refreshHero: () => refreshHero() });
 
   return {
     get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, savePicks, statOf, float, dist, nearestMon, addMon, kill, castSkill, hit, addEffect,

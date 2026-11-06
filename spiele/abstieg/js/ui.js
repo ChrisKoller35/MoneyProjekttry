@@ -37,7 +37,7 @@ window.A = window.A || {};
   let selRace = 'mensch', selCls = 'klinge';
 
   // ---------- Anzeige oben ----------
-  const H = { btn: $('#heroBtn'), img: $('#heroBtn img'), lv: $('#heroBtn .lv'), hp: $('#hpbar i'), trail: $('#hpbar b'), bar: $('#hpbar'), hpt: $('#hptext'), xp: $('#xpbar i'), gold: $('#hudGold'), pot: $('#hudPot'), floor: $('#hudFloor') };
+  const H = { btn: $('#heroBtn'), img: $('#heroBtn img'), lv: $('#heroBtn .lv'), hp: $('#hpbar i'), trail: $('#hpbar b'), bar: $('#hpbar'), hpt: $('#hptext'), xp: $('#xpbar i'), gold: $('#hudGold'), pot: $('#hudPot'), floor: $('#hudFloor'), hyb: $('#hypebar'), hy: $('#hypebar .hb i'), vw: $('#hypebar .vw'), ey: $('#hypebar .ey') };
   const hudLast = {};
   function setH(key, el, html, bump) {
     if (hudLast[key] === html) return;
@@ -61,6 +61,12 @@ window.A = window.A || {};
     const src = Art.heroPortrait(r.race, r.cls); if (hudLast.src !== src) { hudLast.src = src; H.img.src = src; }
     setH('lv', H.lv, String(r.level));
     H.btn.classList.toggle('pts', r.points > 0 || r.pendingSkillPick > 0);
+    // Zuschauer (v42): Auge, Balken bis zur nächsten Kiste, Zahl
+    if (!H.ey.firstChild) H.ey.innerHTML = ic('eye', 14);
+    const hy = clamp((r.hype || 0) / A.HYPE_MAX * 100, 0, 100) + '%';
+    if (hudLast.hy !== hy) { hudLast.hy = hy; H.hy.style.width = hy; }
+    H.hyb.classList.toggle('full', !!r.crateDue);
+    setH('vw', H.vw, A.Show.fmt(A.Show.viewers(r)));
   }
   H.btn.addEventListener('click', () => { S.click(); showSheet(); });
 
@@ -371,6 +377,7 @@ window.A = window.A || {};
       <h3>${L('Chronik', 'Chronicle')}</h3><div class="card flags"><div class="life">${lifeHtml}</div>${rows ? `<div class="runs">${rows}</div>` : `<div class="mini" style="margin-top:8px">${L('Noch kein Durchlauf. Die Chronik füllt sich mit jedem Abstieg.', 'No run yet. The chronicle fills up with every descent.')}</div>`}</div>
       <h3>${L('Neue Völker', 'New peoples')}</h3><div class="card folks"><div class="mini">${L('Jedes Volk zieht ins Lager und kann danach mit in die Tiefe.', 'Each people moves into the camp and can then join the descent.')}</div><div class="frow">${folks}</div></div>
       <h3>${L('Begleiter', 'Pets')} ${pn}/${PN}</h3><div class="card flags"><div class="mini">${petInfo} ${L(`Treue wächst mit jedem Sieg, den ein Tier miterlebt, und bleibt für immer. Treue 3 und 5 bringen neue Tricks. Jedes neue Tier bringt ${A.PET_SPARKS} Seelenfunken.`, `Loyalty grows with every win a pet sees and stays forever. Loyalty 3 and 5 bring new tricks. Every new pet gives ${A.PET_SPARKS} soul sparks.`)}</div><div class="fgrid one">${petCards}</div></div>
+      ${sponsorHtml()}
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
       <h3>${L('Hauptleute', 'Captains')} ${capN}/${A.CAPTAINS.length}</h3><div class="card flags"><div class="mini">${L(`Auf der dritten Ebene jeder Welt wartet ihr Offizier im Elite-Raum: eigene Masche, grosse Klappe, ${A.CAPTAIN_SPARKS} Seelenfunken und ein Stück extra.`, `On the third floor of every world its officer waits in the elite room: own trick, big mouth, ${A.CAPTAIN_SPARKS} soul sparks and an extra item.`)}</div><div class="caplist">${capts}</div></div>
@@ -427,6 +434,33 @@ window.A = window.A || {};
     return `<h3>${L('Expeditionen', 'Expeditions')} ${busy}/${A.EXP_MAX}</h3><div class="card flags"><div class="mini">${info}</div>${news}<div class="exps">${cards}</div></div>`;
   }
 
+  // ---------- Zuschauer und Gönner (v42, show.js) ----------
+  // Die Kiste ist aufgehoben: Zettel des Gönners, was drin war, neuer Gönner bei genug Fans
+  function crateWin(p) {
+    const res = A.Show.open(p); if (!res) { Wd.pause(false); return; }
+    const Sp = res.S; S.level();
+    ov(`<div class="center crate"><div class="bigicon">${ic('crate', 58)}</div><h2 class="mid">${L('Eine Kiste von oben!', 'A crate from above!')}</h2>
+      <div class="note"><div class="from">${L('Von', 'From')} <b>${esc(t(Sp.name))}</b>:</div>«${esc(t(Sp.note))}»</div>
+      <div class="msg">${L('Drin', 'Inside')}: <b class="goldc">${esc(res.got)}</b></div>
+      ${res.fresh.length ? `<div class="msg gradenew">${ic('eye', 20)} <b>${L('Neuer Gönner', 'New sponsor')}: ${res.fresh.map(x => esc(t(x.name))).join(', ')}</b>. ${L(`Du hast jetzt ${res.fans} Fans.`, `You now have ${res.fans} fans.`)}</div>` : `<div class="mini">${L(`Fans: ${res.fans}`, `Fans: ${res.fans}`)}${nextSponsor() ? ' · ' + nextSponsor() : ''}</div>`}
+      <button class="btn primary" id="bOk">${L('Danke!', 'Thanks!')}</button></div>`);
+    $('#bOk').onclick = () => { S.click(); ovClose(); };
+  }
+  // Wer kommt als Nächstes dazu? («Noch 2 Fans bis Professor Pilz»)
+  function nextSponsor() {
+    const f = A.Show.fans(), nx = A.SPONSORS.filter(x => (x.fans || 0) > f).sort((a, b) => a.fans - b.fans)[0];
+    return nx ? L(`noch ${nx.fans - f} bis ${t(nx.name)}`, `${nx.fans - f} more until ${t(nx.name)}`) : '';
+  }
+  function sponsorHtml() {
+    const f = A.Show.fans(), on = A.Show.sponsors().length;
+    const rows = A.SPONSORS.map(x => {
+      const open = f >= (x.fans || 0);
+      return `<div class="spon ${open ? '' : 'locked'}">${ic('crate', 30)}<div class="sb"><b>${open ? esc(t(x.name)) : '???'}</b><div>${open ? '«' + esc(t(x.note)) + '»' : L(`Stellt sich ab ${x.fans} Fans vor.`, `Introduces themselves at ${x.fans} fans.`)}</div></div></div>`;
+    }).join('');
+    const info = L(`Der Abstieg ist eine Show. Spektakel füllt das Auge oben (mehrere Gegner kurz nacheinander, Elite, Hauptleute, Bosse, Räume ohne Kratzer, knapp überlebt). Ist es voll, kracht nach dem Kampf eine Kiste von einem Gönner herunter. Jede Kiste bringt einen Fan, und mit mehr Fans melden sich neue Gönner.`, `The descent is a show. Spectacle fills the eye at the top (several enemies in quick succession, elites, captains, bosses, rooms without a scratch, close calls). When it is full, a crate from a sponsor crashes down after the fight. Every crate brings a fan, and with more fans new sponsors get in touch.`);
+    return `<h3>${L('Gönner', 'Sponsors')} ${on}/${A.SPONSORS.length}</h3><div class="card flags"><div class="mini">${info} <b class="goldc">${L(`Fans: ${f}`, `Fans: ${f}`)}</b>${nextSponsor() ? ' · ' + esc(nextSponsor()) : ''}</div><div class="sponsors">${rows}</div></div>`;
+  }
+
   // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
   function campNews() {
     const r = G.run, n = r && r.campNews; if (!n) return; r.campNews = null; G.save();
@@ -469,6 +503,7 @@ window.A = window.A || {};
     screen.style.display = 'none'; dungeonEl.classList.add('on'); document.body.classList.add('play'); hudUpdate();
     const hooks = {
       onItem: (it) => { if (!calmLoot(it)) foundItem(it); },   // Ruhige Beute (v40): schwächere Funde ohne Fenster
+      onCrate: (p) => crateWin(p),   // Kiste eines Gönners (v42)
       onProp: (p) => useProp(p),
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
@@ -1118,7 +1153,8 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}</div>
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
       ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}

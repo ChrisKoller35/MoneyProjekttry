@@ -741,6 +741,25 @@ A.EXP_LINES = {
 // Kerzen am Lagerfeuer (v41): an wie vielen Tagen hintereinander ein Lauf zu Ende ging; jede Kerze +5 % Seelenfunken, höchstens 5
 A.CANDLE_MAX = 5; A.CANDLE_SPARKS = 0.05;
 
+// ---------- Zuschauer und Gönner (v42, show.js) ----------
+// Spektakel füllt das Auge: ist es voll, kommt nach dem Kampf eine Kiste von einem Gönner
+A.HYPE_MAX = 100;
+A.HYPE_MULTI_T = 1.6;   // so viele Sekunden zwischen den Kills zählen als «kurz nacheinander»
+A.HYPE = { multi3: 10, multi5: 15, multi8: 25, elite: 10, captain: 25, boss: 25, bossClean: 30, clean: 6, close: 15, goldimp: 15, mimic: 12 };
+A.SPONSOR_KNALL = 8;     // Baron von Knall: so viele Besiegte explodieren
+A.SPONSOR_RAGE = 0.3;    // Gräfin Gemetzel: mehr Schaden auf der Ebene
+// fans: ab so vielen Fans (eine je Kiste, für immer) schickt dieser Gönner Kisten
+A.SPONSORS = [
+  { id: 'trudi', fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
+  { id: 'geier', fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
+  { id: 'knall', fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
+  { id: 'pilz', fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
+  { id: 'gemetzel', fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
+  { id: 'mops', fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
+  { id: 'kiste', fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
+  { id: 'ruhm', fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+];
+
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
 A.WORLDS = [
