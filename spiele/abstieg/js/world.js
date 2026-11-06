@@ -38,7 +38,9 @@ A.World = (function () {
     let cageR = null;
     if (v >= 5 && G().run.cage) { const r = cageR = A.Pets.cageRoom(rooms, seed); if (r) r.props.push({ kind: 'cage', x: (r.anchor.tx + 0.5) * TS, y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
     // Pakt-Altar (pacts.js): genauso versteckt, möglichst in einem anderen Kampfraum; teilt er den Raum mit dem Käfig, steht er daneben
-    if (v >= 7 && G().run.pact) { const r = A.Pacts.room(rooms, seed, cageR); if (r) r.props.push({ kind: 'pact', x: (r.anchor.tx + 0.5) * TS + (r === cageR ? TS * 2 : 0), y: (r.anchor.ty + 0.5) * TS, room: r.i, used: false, hidden: true }); }
+    if (v >= 7 && G().run.pact) { const r = A.Pacts.room(rooms, seed, cageR); if (r) { let tx = r.anchor.tx, ty = r.anchor.ty;
+      if (r === cageR) { const o = [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, 2], [2, -2], [-2, -2], [1, 1], [-1, 1]].find(([dx, dy]) => tiles[ty + dy] && A.Levels.walk(tiles[ty + dy][tx + dx]) && tx + dx > r.x && ty + dy > r.y && tx + dx < r.x + r.w - 1 && ty + dy < r.y + r.h - 1) || [2, 0]; tx += o[0]; ty += o[1]; }   // neben dem Käfig, nie in einer Wand (ohne Zufall)
+      r.props.push({ kind: 'pact', x: (tx + 0.5) * TS, y: (ty + 0.5) * TS, room: r.i, used: false, hidden: true }); } }
     let reach = lv.reach;
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
@@ -153,7 +155,7 @@ A.World = (function () {
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
     }
     list.forEach((m, i) => {
-      const pm = A.Pacts.hpMul(m); if (pm !== 1) { m.maxHp = Math.round(m.maxHp * pm); m.hp = m.maxHp; }   // Gierschlund, Schicksalswette (pacts.js)
+      const pm = A.Pacts.hpMul(m); if (pm !== 1) { m.maxHp = Math.round(m.maxHp * pm); m.hp = m.maxHp; if (m.shieldCap) m.shieldCap = Math.round(m.shieldCap * pm); }   // Gierschlund, Schicksalswette (pacts.js)
       let x, y, tries = 0;
       do { x = (r.x + 1 + rng.next() * (r.w - 2)) * TS; y = (r.y + 1 + rng.next() * (r.h - 2)) * TS; } while ((dist({ x, y }, W.hero) < (W.big ? 160 : 130) || blocked(x, y, 26) || !reachable(x, y)) && tries++ < 60);
       const mm = addMon(m, x, y); mm.spawn = 0.5 + i * 0.12; fx('spawn', { m: mm });

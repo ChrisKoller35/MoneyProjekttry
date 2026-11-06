@@ -43,6 +43,7 @@ A.Pacts = (function () {
     const r = run(); if (!r || !A.PACTS[id] || has(id, r) || list(r).length >= A.PACT_MAX) return false;
     r.pacts = list(r).concat(id);
     const P = A.PACTS[id]; if (P.fate) { r.fatePts = (r.fatePts || 0) + P.fate; r.fateLater = false; }
+    const d = G().derived(r); if (d && r.hp > d.maxHp) r.hp = d.maxHp;   // Blutvertrag: nicht mit zu viel Leben speichern
     G().save(); return true;
   }
   // Der Raum ist gesäubert: der Altar taucht auf
