@@ -775,7 +775,27 @@ A.PATRON_RULES = {
   ruhm: { fx: { sparks: 0.2, monHp: 0.15 }, rule: { de: 'Rampenlicht: +20 % Seelenfunken. Die Gegner haben 15 % mehr Leben, fürs Publikum.', en: 'Spotlight: +20% soul sparks. Enemies have 15% more health, for the audience.' } },
 };
 A.patronOf = (r) => (r && typeof r.patron === 'string' && A.PATRON_RULES[r.patron] ? r.patron : null);
-A.patronVal = (k, r) => { const p = A.patronOf(r); return p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0; };
+A.patronVal = (k, r) => { const p = A.patronOf(r), d = A.dailyOf(r); return (p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0) + (d && d.p ? (+d.p[k] || 0) : 0); };   // dazu der Dreh der Tageswelt (v45)
+// ---------- Tageswelt (v45): jeden Tag eine kurze Welt (4 Ebenen, Boss auf Ebene 4) mit einem Dreh, für alle gleich gebaut ----------
+// run.daily = { day: 'J-M-T', tw: Id des Drehs } (fehlt = normaler Lauf). Die Ebenen bauen sich aus Tag und Ebene (A.dailySeed), nicht aus dem Zufall des Laufs.
+// Dreh: g wirkt wie die Regeln der Grade (A.gradeVal zählt sie mit), p wie die Regeln der Gönner (A.patronVal und die Werte des Helden zählen sie mit).
+// Wer sie schafft (Boss auf Ebene 4, dann Heimkehren), bekommt einmal am Tag +50 % Seelenfunken (A.DAILY_SPARKS); meta.daily = { days: geschaffte Tage, n: wie oft }.
+A.DAILY_FLOORS = 4; A.DAILY_SPARKS = 0.5;
+A.DAILY_TWISTS = [
+  { id: 'brunch', g: { mhp: 0.25 }, p: { goldPct: 50 }, name: { de: 'Brunch', en: 'Brunch' }, text: { de: 'Die Gegner haben ausgiebig gebruncht: 25 % mehr Leben. Dafür haben sie 50 % mehr Gold dabei.', en: 'The enemies had a long brunch: 25% more health. They also carry 50% more gold.' } },
+  { id: 'glas', g: { hurt: 0.25 }, p: { dmgPct: 30 }, name: { de: 'Glaskanone', en: 'Glass cannon' }, text: { de: 'Du machst 30 % mehr Schaden. Die Gegner treffen 25 % härter. Fair ist anders.', en: 'You deal 30% more damage. Enemies hit 25% harder. Fair is something else.' } },
+  { id: 'rush', g: { mspd: 0.2 }, p: { xpPct: 40 }, name: { de: 'Stosszeit', en: 'Rush hour' }, text: { de: 'Die Gegner laufen 20 % schneller. Du lernst 40 % schneller. Alle haben es eilig.', en: 'Enemies move 20% faster. You learn 40% faster. Everyone is in a hurry.' } },
+  { id: 'adel', g: { champ: 1 }, p: { goldPct: 30, xpPct: 20 }, name: { de: 'Adelstreffen', en: 'Nobility meetup' }, text: { de: 'In jedem Kampfraum steckt ein Champion. Dafür +30 % Gold und +20 % Erfahrung.', en: 'Every fight room hides a champion. In return +30% gold and +20% experience.' } },
+  { id: 'kisten', g: { potCut: 0.3 }, p: { hype: 1 }, name: { de: 'Kistentag', en: 'Crate day' }, text: { de: 'Das Auge füllt sich doppelt so schnell. Die Tränke sind verdünnt: 30 % weniger Heilung.', en: 'The eye fills twice as fast. The potions are watered down: 30% less healing.' } },
+  { id: 'gaeste', g: { extra: 1 }, p: { pots: 2 }, name: { de: 'Tag der offenen Tür', en: 'Open house' }, text: { de: 'In jedem Kampf ein Gegner mehr. Dafür 2 Tränke mehr am Start.', en: 'One more enemy in every fight. You get 2 extra potions at the start.' } },
+  { id: 'boss', g: { bossHp: 0.5 }, p: { hpPct: 20 }, name: { de: 'Bosstraining', en: 'Boss training' }, text: { de: 'Bosse und Hauptleute haben 50 % mehr Leben. Du hast 20 % mehr. Viel Glück.', en: 'Bosses and captains have 50% more health. You have 20% more. Good luck.' } },
+];
+A.isDaily = (r) => !!(r && r.daily && typeof r.daily === 'object' && typeof r.daily.day === 'string' && r.daily.day);
+A.dailyOf = (r) => (A.isDaily(r) && A.DAILY_TWISTS.find(x => x.id === r.daily.tw)) || null;
+// Zahl aus Tag und Ebene: alle bekommen an einem Tag dieselben Räume
+A.dailySeed = (day, floor) => { let h = 2166136261; const s = 'abstieg:' + day + ':' + floor; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 2e9) + 1; };
+// Dreh des Tages: zwei Tage hintereinander nie derselbe, und jede Woche rutscht die Reihe weiter
+A.dailyTwistOf = (day) => { const p = String(day).split('-').map(Number), n = Math.floor(Date.UTC(p[0] || 2026, (p[1] || 1) - 1, p[2] || 1) / 864e5) || 0, k = A.DAILY_TWISTS.length; return A.DAILY_TWISTS[(((3 * n + Math.floor(n / 7)) % k) + k) % k]; };
 // Tageswunsch (v43): jeden Tag wünscht sich ein Gönner etwas für einen Lauf; einmal am Tag erfüllbar, dann Fans und Seelenfunken
 A.WISH_FANS = 2; A.WISH_SPARKS = 30;
 A.WISHES = [
@@ -1067,7 +1087,7 @@ A.GRADES = [
   { x: { hurt: 0.25 }, name: { de: 'Der Abgrund schaut zurück', en: 'The abyss looks back' }, text: { de: 'Gegner treffen 25 % härter.', en: 'Enemies hit 25% harder.' } },
 ];
 A.gradeOf = (r) => Math.max(0, Math.min(A.GRADE_MAX, Math.floor(+((r && r.grade) || 0)) || 0));
-A.gradeVal = (k, r) => { let v = 0; for (let i = 0, g = A.gradeOf(r); i < g; i++) v += A.GRADES[i].x[k] || 0; return v; };
+A.gradeVal = (k, r) => { let v = 0; for (let i = 0, g = A.gradeOf(r); i < g; i++) v += A.GRADES[i].x[k] || 0; const d = A.dailyOf(r); if (d && d.g) v += +d.g[k] || 0; return v; };   // dazu der Dreh der Tageswelt (v45)
 // Ausgänge auf Ebene 24, 48, 72 ...: je ein Schild an der Tür und eins dahinter (danach immer das letzte, {n} = nächster Ausgang)
 A.isExitFloor = (f) => f > 0 && f % A.MAX_FLOOR === 0;
 A.EXITS = [
