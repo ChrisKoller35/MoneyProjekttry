@@ -206,6 +206,7 @@ A.Game = (function () {
       leap: !!m.leap, rooted: !!m.rooted, spread: m.spread || 0, ring: m.ring || 0, ringCd: m.ringCd || 0, summon: m.summon || null, summonCd: m.summonCd || 0,
       teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
       flee: !!m.flee, spores: !!m.spores, shell: !!m.shell,   // Reaktionen (foes.js)
+      charge: !!m.charge, curl: !!m.curl,   // Anlauf und Einrollen (world.js monSpecial)
     };
     e.hp = e.maxHp;
     if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
@@ -398,7 +399,7 @@ A.Game = (function () {
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
-    run.lvVer = 5;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4) und Käfigen (5); ältere Spielstände bauen ihre laufende Ebene wie bisher
+    run.lvVer = 6;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5) und neuen Gegnern (6); ältere Spielstände bauen ihre laufende Ebene wie bisher
     run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;

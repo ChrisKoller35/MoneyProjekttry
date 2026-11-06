@@ -291,6 +291,16 @@ A.MONSTERS.push(
   { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
   { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
 );
+// Nachschub: ein neuer Gegner je Welt (ab der 2. Ebene einer Welt). charge = bleibt stehen, zeigt einen roten Streifen und rennt dann geradeaus los,
+// curl = rollt sich unter halbem Leben einmal 2,5 s unverwundbar ein, danach sofort Anlauf (world.js monSpecial)
+A.MONSTERS.push(
+  { id: 'fasswicht', name: { de: 'Fasswicht', en: 'Barrel Gremlin' }, hp: 20, atk: 7, def: 3, spd: 4, kind: 'melee', color: '#8a5a3c', shape: 'barrel', charge: true, steal: 1 },
+  { id: 'muecke', name: { de: 'Sumpfmücke', en: 'Swamp Mosquito' }, hp: 10, atk: 5, def: 0, spd: 10, kind: 'melee', color: '#9fd8a0', shape: 'mosquito', fly: true, dodge: 25, poisonOnHit: 1 },
+  { id: 'grabkaefer', name: { de: 'Grabkäfer', en: 'Tomb Beetle' }, hp: 45, atk: 8, def: 9, spd: 3, kind: 'melee', color: '#5c4a7a', shape: 'beetle', curl: true, charge: true },
+  { id: 'kugelfisch', name: { de: 'Kugelfisch', en: 'Pufferfish' }, hp: 26, atk: 8, def: 2, spd: 4, kind: 'magic', color: '#feae34', shape: 'puffer', fly: true, ring: 8, ringCd: 7, shotCol: '#feae34' },
+  { id: 'schlackenhund', name: { de: 'Schlackenhund', en: 'Slag Hound' }, hp: 30, atk: 9, def: 2, spd: 8, kind: 'melee', color: '#f77622', shape: 'hound', leap: true, burn: 0.5 },
+  { id: 'wisperling', name: { de: 'Wisperling', en: 'Whisperling' }, hp: 28, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#68386c', shape: 'whisperer', fly: true, teleport: true, summon: 'fledermaus', summonCd: 11 },
+);
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
 // Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
 // Rache haben alle: fällt ein Kumpel daneben, werden sie kurz schneller und stärker
@@ -513,7 +523,7 @@ A.LEGEND_DMG = 0.01;     // jede Legende in der Sammlung: +1 % Schaden, für imm
 
 // Kombos (Regeln in js/combos.js): zwei passende Teile wecken am Schrein eine neue Kraft, die es nur zusammen gibt.
 // need: die zwei Teile. tal = passiver Segen, el = mindestens 2 Ausrüstungs-Teile dieses Elements, spell = Zauber (im Zauberbuch reicht),
-// leg = getragene Legende, tro = getragene Trophäe dieses Bosses, cls = Klasse. col: Farbe der Kombo
+// leg = getragene Legende, tro = getragene Trophäe dieses Bosses, cls = Klasse, pet = Begleiter ist dabei. col: Farbe der Kombo
 A.COMBOS = {
   feuerwerk: { need: [{ tal: 'kette' }, { el: 'feuer' }], col: '#f77622',
     name: { de: 'Feuerwerk', en: 'Fireworks' },
@@ -595,6 +605,38 @@ A.COMBOS = {
     name: { de: 'Todesmut', en: 'Death Wish' },
     text: { de: 'Unter 35 % Leben ist jeder deiner Treffer ein Volltreffer.', en: 'Below 35% health, every hit you land is a critical hit.' },
     flavor: { de: 'Glas bricht. Du nicht. Noch nicht.', en: 'Glass breaks. You don\'t. Not yet.' } },
+  eissplitter: { need: [{ tal: 'wucht' }, { el: 'eis' }], col: '#9be8ff',
+    name: { de: 'Eissplitter', en: 'Ice Shards' },
+    text: { de: 'Triffst du einen gebremsten oder eingefrorenen Gegner, zerspringt der Frost in 6 Splitter rundum (je 35 % Stärke, bremsen 2 Sekunden, höchstens alle 1,2 Sekunden).', en: 'Hitting a slowed or frozen enemy shatters the frost into 6 shards all around (35% power each, slow for 2 seconds, at most every 1.2 seconds).' },
+    flavor: { de: 'Kalt erwischt. In sechs Richtungen.', en: 'Caught cold. In six directions.' } },
+  magnetsturm: { need: [{ tal: 'gold' }, { el: 'blitz' }], col: '#fee761',
+    name: { de: 'Magnetsturm', en: 'Magnet Storm' },
+    text: { de: 'Jede Münze, die du aufhebst, schlägt als kleiner Blitz in den nächsten Gegner ein (30 % Stärke, bis 8 Blitze pro Sekunde).', en: 'Every coin you pick up strikes the nearest enemy as a small bolt of lightning (30% power, up to 8 bolts per second).' },
+    flavor: { de: 'Geld regiert die Welt. Jetzt auch das Wetter.', en: 'Money rules the world. Now the weather too.' } },
+  schattenschritt: { need: [{ spell: 'blitzschritt' }, { el: 'schatten' }], col: '#b55088',
+    name: { de: 'Schattenschritt', en: 'Shadow Step' },
+    text: { de: 'Nach einem Blitzschritt bist du 1,5 Sekunden ein Schatten: Gegner treffen dich nicht, und dein nächster Treffer ist ein Volltreffer mit doppeltem Schaden (höchstens alle 3 Sekunden).', en: 'After a flash step you are a shadow for 1.5 seconds: enemies cannot hit you, and your next hit is a critical hit for double damage (at most every 3 seconds).' },
+    flavor: { de: 'Du warst nie hier. Die Delle im Gegner schon.', en: 'You were never here. The dent in the enemy was.' } },
+  blitzpanzer: { need: [{ tal: 'eisen' }, { el: 'blitz' }], col: '#7fd8ff',
+    name: { de: 'Blitzpanzer', en: 'Storm Plate' },
+    text: { de: 'Wirst du getroffen, schlägt ein Blitz in den Angreifer (150 % Stärke) und springt auf bis zu 2 weitere Gegner (je 100 %, höchstens alle 1,5 Sekunden).', en: 'When you are hit, lightning strikes the attacker (150% power) and jumps to up to 2 more enemies (100% each, at most every 1.5 seconds).' },
+    flavor: { de: 'Bitte nicht berühren. Steht auch auf dem Schild. Das du nicht gelesen hast.', en: 'Please do not touch. It says so on the sign. The one you did not read.' } },
+  amok: { need: [{ tal: 'berserker' }, { tal: 'rausch' }], col: '#e43b44',
+    name: { de: 'Amok', en: 'Amok' },
+    text: { de: 'Unter 50 % Leben hält der Blutrausch doppelt so lang, und jeder Sieg im Rausch heilt 2 % deines Lebens.', en: 'Below 50% health, bloodlust lasts twice as long, and every kill while in the frenzy heals 2% of your health.' },
+    flavor: { de: 'Therapie ist teuer. Das hier ist gratis.', en: 'Therapy is expensive. This is free.' } },
+  dampfkessel: { need: [{ spell: 'feuerball' }, { spell: 'eisnova' }], col: '#c0f8ff',
+    name: { de: 'Dampfkessel', en: 'Steam Boiler' },
+    text: { de: 'Trifft ein Feuerball gebremste oder eingefrorene Gegner, zischt Dampf: +50 % Schaden, und sie stehen 1 Sekunde betäubt in einer weissen Wolke.', en: 'When a fireball hits slowed or frozen enemies, steam hisses: +50% damage, and they stand stunned for 1 second in a white cloud.' },
+    flavor: { de: 'Physik, Kapitel 1: heiss plus kalt gleich aua.', en: 'Physics, chapter 1: hot plus cold equals ouch.' } },
+  drachenfeuer: { need: [{ pet: 'glut' }, { spell: 'feuerball' }], col: '#f77622',
+    name: { de: 'Drachenfeuer', en: 'Dragonfire' },
+    text: { de: 'Ist Glut dabei, sind deine Feuerball-Explosionen 40 % grösser und hinterlassen 3 Sekunden eine Glutlache, in der Gegner brennen.', en: 'With Ember at your side, your fireball blasts are 40% bigger and leave a pool of embers for 3 seconds that sets enemies on fire.' },
+    flavor: { de: 'Glut hat dir zugeschaut. Glut hat Notizen gemacht.', en: 'Ember watched you. Ember took notes.' } },
+  sprengmeister: { need: [{ tal: 'pulver' }, { spell: 'meteor' }], col: '#feae34',
+    name: { de: 'Sprengmeister', en: 'Demolition Expert' },
+    text: { de: 'Jeder Meteor zündet kurz danach 3 kleine Nachschläge rundum (je 80 % Stärke).', en: 'Every meteor sets off 3 small aftershocks around it shortly after (80% power each).' },
+    flavor: { de: 'Ein Meteor ist gut. Ein Meteor mit Zugabe ist Kunst.', en: 'One meteor is good. A meteor with an encore is art.' } },
 };
 A.COMBO_SPARKS = 15;   // Seelenfunken für jede Kombo, die zum ersten Mal ins Kombo-Buch kommt
 
@@ -640,6 +682,24 @@ A.PETS = {
     t3: { de: 'Doppeldotter: aus jedem Ei schlüpfen zwei Küken.', en: 'Double yolk: two chicks hatch from every egg.' },
     t5: { de: 'Goldenes Ei: jedes 4. Ei ist aus Gold und platzt in einen Haufen Münzen.', en: 'Golden egg: every 4th egg is made of gold and bursts into a pile of coins.' },
     flavor: { de: 'Das Ei war zuerst da. Sagt das Huhn.', en: 'The egg came first. Says the hen.' } },
+  moppel: { spr: 'pet_mole', col: '#8a5a3c', pow: 0.5, rate: 1.6, spd: 0.9,
+    name: { de: 'Moppel', en: 'Mopsy' }, kind: { de: 'Maulwurf', en: 'Mole' },
+    text: { de: 'Buddelt sich unter der Erde zum nächsten Gegner, taucht unter ihm auf, beisst und betäubt ihn kurz. Unter der Erde trifft ihn nichts.', en: 'Tunnels underground to the nearest enemy, pops up beneath it, bites and stuns it briefly. Nothing can hit him underground.' },
+    t3: { de: 'Goldnase: ist ein Raum gesäubert, buddelt Moppel ein paar Münzen aus.', en: 'Gold nose: when a room is cleared, Mopsy digs up a few coins.' },
+    t5: { de: 'Erdrutsch: alle 9 Sekunden taucht er nacheinander unter bis zu 3 Gegnern auf und beisst doppelt so fest.', en: 'Landslide: every 9 seconds he pops up under up to 3 enemies in a row and bites twice as hard.' },
+    flavor: { de: 'Hat die Mine von unten gesehen. Fand sie überbewertet.', en: 'Has seen the mine from below. Found it overrated.' } },
+  lotte: { spr: 'pet_goat', col: '#e4e4e4', pow: 0.7, rate: 2.2, spd: 1.0,
+    name: { de: 'Lotte', en: 'Lottie' }, kind: { de: 'Ziege', en: 'Goat' },
+    text: { de: 'Senkt den Kopf, nimmt Anlauf und rennt in gerader Linie durch alle Gegner. Wer im Weg steht, fliegt.', en: 'Lowers her head, takes a run-up and charges straight through every enemy. Whoever is in the way goes flying.' },
+    t3: { de: 'Dickschädel: rammt Lotte einen Gegner gegen Wand oder Säule, trifft sie doppelt so hart.', en: 'Thick skull: when Lottie rams an enemy into a wall or pillar, she hits twice as hard.' },
+    t5: { de: 'Doppelbock: alle 10 Sekunden rennt sie hin und sofort wieder zurück.', en: 'Double buck: every 10 seconds she charges there and straight back again.' },
+    flavor: { de: 'Frisst alles. Auch Rechnungen.', en: 'Eats everything. Bills included.' } },
+  pfeffer: { spr: 'pet_parrot', col: '#63c74d', pow: 0.35, rate: 0.9, spd: 1.2, fly: true, range: true,
+    name: { de: 'Pfeffer', en: 'Pepper' }, kind: { de: 'Papagei', en: 'Parrot' },
+    text: { de: 'Fliegt Kreise um dich und spuckt Sonnenblumenkerne auf Gegner.', en: 'Circles around you and spits sunflower seeds at enemies.' },
+    t3: { de: 'Kernfächer: spuckt 3 Kerne auf einmal.', en: 'Seed fan: spits 3 seeds at once.' },
+    t5: { de: 'Sturzflug: alle 8 Sekunden stösst er auf den Gegner mit dem meisten Leben herab (400 % deiner Kraft) und betäubt ihn kurz.', en: 'Nosedive: every 8 seconds he dives at the enemy with the most health (400% of your power) and stuns it briefly.' },
+    flavor: { de: 'Wiederholt alles. Vor allem das Peinliche.', en: 'Repeats everything. Especially the embarrassing bits.' } },
 };
 A.PET_TREUE = [0, 40, 120, 260, 480];   // Treue-Punkte für die Stufen 1 bis 5
 A.PET_GROW = 0.15;                      // jede Treue-Stufe über 1: +15 % Schaden
@@ -650,17 +710,17 @@ A.PET_CAGE = 0.45;                      // Chance auf einen Käfig je Ebene (ab 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
 A.WORLDS = [
-  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
+  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'fasswicht', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
     pit: null, hazard: null, obst: ['pillar'], corner: ['barrel', 'crate', 'pot', 'barrel'], favor: ['pillars', 'octagon', 'cross'] },
-  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
+  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'muecke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
     pit: 'water', hazard: 'mud', obst: ['tree', 'bush', 'tree'], corner: ['bush', 'pot', 'bush'], favor: ['garden', 'garden', 'island'], dense: 3 },
-  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
+  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'grabkaefer', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
     pit: null, hazard: 'quicksand', obst: ['cactus', 'obelisk', 'urn'], corner: ['urn', 'pot', 'urn'], favor: ['pool', 'pillars', 'garden'], dense: 1 },
-  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
+  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'kugelfisch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
     pit: 'water', hazard: 'shallow', obst: ['coral', 'column'], corner: ['barrel', 'crate', 'coral'], favor: ['island', 'stripes', 'ring'] },
-  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
+  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'schlackenhund', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
     pit: 'lava', hazard: 'embers', obst: ['obsidian', 'anvil'], corner: ['barrel', 'crate', 'anvil'], favor: ['stripes', 'pool', 'ring'] },
-  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
+  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'wisperling', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
     pit: 'void', hazard: 'shadow', obst: ['crystal'], corner: ['crystal', 'pot'], favor: ['island', 'stripes', 'cross'] },
 ];
 // Gefahr-Boden: slow = Tempo-Faktor, burn = brennt
@@ -694,7 +754,8 @@ A.isBossFloor = (f) => f % A.FLOORS_PER_WORLD === 0;
 A.bossOf = (f) => A.isBossFloor(f) ? A.BOSSES[A.worldOf(f).boss] : null;
 A.worldName = (f) => { const n = A.t(A.worldOf(f).name), r = A.worldRound(f); return r ? n + ' ' + ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][Math.min(r, 7)] : n; };
 // Gegner-Auswahl: auf der ersten Ebene einer Welt die ersten drei Arten, dann je Ebene eine mehr
-A.monsterPool = (f) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return w.mons.slice(0, 3 + k).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
+// lvVer: Ebenen-Bau des Spielstands; ab 6 kommt der neue Gegner der Welt ab ihrer 2. Ebene dazu (ältere laufende Ebenen ohne)
+A.monsterPool = (f, lvVer) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return (lvVer >= 6 ? w.mons.slice(0, 3 + k + (k >= 1 ? 1 : 0)) : w.mons.filter((_, i) => i !== 3).slice(0, 3 + k)).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
 
 // ---------- Ereignisse ----------
 A.EVENTS = [
