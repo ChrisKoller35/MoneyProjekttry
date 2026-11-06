@@ -750,15 +750,16 @@ A.HYPE = { multi3: 10, multi5: 15, multi8: 25, elite: 10, captain: 25, boss: 25,
 A.SPONSOR_KNALL = 8;     // Baron von Knall: so viele Besiegte explodieren
 A.SPONSOR_RAGE = 0.3;    // Gräfin Gemetzel: mehr Schaden auf der Ebene
 // fans: ab so vielen Fans (eine je Kiste, für immer) schickt dieser Gönner Kisten
+// von: der Name nach «von» (für Sätze wie «Eine Kiste vom Goldenen Geier!»)
 A.SPONSORS = [
-  { id: 'trudi', fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
-  { id: 'geier', fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
-  { id: 'knall', fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
-  { id: 'pilz', fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
-  { id: 'gemetzel', fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
-  { id: 'mops', fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
-  { id: 'kiste', fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
-  { id: 'ruhm', fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+  { id: 'trudi', von: { de: 'von Tante Trudi', en: 'from Aunt Trudi' }, fans: 0, gift: 'pots', name: { de: 'Tante Trudi', en: 'Aunt Trudi' }, note: { de: 'Iss was, Kind. Du siehst blass aus. Ich hab dir zwei Tränke eingepackt.', en: 'Eat something, dear. You look pale. I packed you two potions.' } },
+  { id: 'geier', von: { de: 'vom Goldenen Geier', en: 'from the Golden Vulture' }, fans: 0, gift: 'gold', name: { de: 'Der Goldene Geier', en: 'The Golden Vulture' }, note: { de: 'Ich habe auf dich gewettet. Enttäusch mich nicht. Oder doch, ich habe auf beides gewettet.', en: 'I bet on you. Do not disappoint me. Or do, I bet both ways.' } },
+  { id: 'knall', von: { de: 'von Baron von Knall', en: 'from Baron von Bang' }, fans: 0, gift: 'knall', name: { de: 'Baron von Knall', en: 'Baron von Bang' }, note: { de: 'Mehr Explosionen! Die Nächsten, die du umhaust, gehen hoch. Gern geschehen.', en: 'More explosions! The next ones you knock down go boom. You are welcome.' } },
+  { id: 'pilz', von: { de: 'von Professor Pilz', en: 'from Professor Fungus' }, fans: 3, gift: 'item', tier: 1, name: { de: 'Professor Pilz', en: 'Professor Fungus' }, note: { de: 'Für die Wissenschaft. Ich will nur sehen, was passiert, wenn du das anziehst.', en: 'For science. I just want to see what happens when you wear this.' } },
+  { id: 'gemetzel', von: { de: 'von Gräfin Gemetzel', en: 'from Countess Carnage' }, fans: 6, gift: 'rage', name: { de: 'Gräfin Gemetzel', en: 'Countess Carnage' }, note: { de: 'Mehr Blut! Auf dieser und der nächsten Ebene haust du fester zu. Ich schaue genau hin.', en: 'More blood! You hit harder on this floor and the next. I am watching closely.' } },
+  { id: 'mops', von: { de: 'vom Mops-Verein', en: 'from the Pug Club' }, fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
+  { id: 'kiste', von: { de: 'von der Kistenkönigin', en: 'from the Crate Queen' }, fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
+  { id: 'ruhm', von: { de: 'von Herrn Ruhm', en: 'from Mister Fame' }, fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
 ];
 // Gönner wählen (v43, Heldenwahl): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit.
 // fx: dmgPct/hpPct/goldPct/xpPct in Prozent wie die Pakte (game.js derived), pots: Tränke am Start, potHeal: Trank-Heilung,
@@ -783,7 +784,7 @@ A.WISHES = [
   { id: 'floor', n: 6, text: { de: 'Komm bis Ebene {n}.', en: 'Reach floor {n}.' } },
   { id: 'crates', n: 2, text: { de: 'Hol dir in einem Lauf {n} Kisten von oben.', en: 'Get {n} crates from above in one run.' } },
   { id: 'boss', n: 1, text: { de: 'Besiege einen Welt-Boss.', en: 'Defeat a world boss.' } },
-  { id: 'home', n: 1, text: { de: 'Komm heim: nach einem Welt-Boss «Heimkehren».', en: 'Come home: «Go home» after a world boss.' } },
+  { id: 'home', n: 1, text: { de: 'Komm nach einem Welt-Boss mit Heimkehren nach Hause.', en: 'Come back home with Go home after a world boss.' } },
 ];
 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------

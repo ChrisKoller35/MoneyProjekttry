@@ -33,13 +33,19 @@ A.Show = (function () {
 
   // ---------- Spektakel ----------
   // n Punkte fürs Auge; text schwebt über dem Helden («Dreifach! +10»)
+  // Show-Texte über dem Helden: was im selben Augenblick kommt, steht übereinander statt aufeinander
+  function sfloat(text, col, size) {
+    const w = W(), h = w && w.hero; if (!h || !api) return;
+    const s = w.show || (w.show = {}); s.ft = (s.ft || []).filter(t => w.t - t >= 0 && w.t - t < 0.7);
+    api.float(h.x, h.y - 92 - 18 * s.ft.length, text, col, size); s.ft.push(w.t);
+  }
   function hype(n, text) {
     const r = run(), w = W(); if (!live(r) || !w || !(n > 0)) return;
     n = Math.round(n * (1 + A.patronVal('hype', r)));   // Kistenregen (v43)
     r.hype = Math.min(A.HYPE_MAX, (r.hype || 0) + n);
     r.hypeTot = (r.hypeTot || 0) + n;
-    const h = w.hero; if (h && text && api) api.float(h.x, h.y - 92, text + ' +' + n, '#2ce8f5', 13);
-    if (r.hype >= A.HYPE_MAX && !r.crateDue) { r.crateDue = true; if (h && api) api.float(h.x, h.y - 112, L('Die Zuschauer toben!', 'The crowd goes wild!'), '#fee761', 16); if (A.Sound.level) A.Sound.level(); }
+    if (text) sfloat(text + ' +' + n, '#2ce8f5', 13);
+    if (r.hype >= A.HYPE_MAX && !r.crateDue) { r.crateDue = true; sfloat(L('Die Zuschauer toben!', 'The crowd goes wild!'), '#fee761', 16); if (A.Sound.level) A.Sound.level(); }
   }
   // Gegner besiegt (world.js checkDeath): Mehrfach-Kills (eine Serie ohne lange Pause; 3, 5 und 8 zählen je Serie einmal), Elite, Hauptmann, Boss, Goldwicht, Mimik; Knall-Ladung des Barons
   function onKill(e) {
@@ -59,7 +65,7 @@ A.Show = (function () {
     // Baron von Knall: die nächsten Besiegten gehen hoch (wie das Talent Kettenreaktion)
     if ((r.knall || 0) > 0 && !e.boss && w.hero && w.hero.alive) {
       r.knall--; w.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: w.t + 0.15, dmg: api.heroPower(w.hero) * 0.6, col: '#f77622', opts: { kette: true } });
-      if (!r.knall) api.float(w.hero.x, w.hero.y - 70, L('Knall-Ladung leer', 'Bang charge empty'), '#f77622', 13);
+      if (!r.knall) sfloat(L('Knall-Ladung leer', 'Bang charge empty'), '#f77622', 13);
     }
     // Feuerwerk (v43, Baron von Knall als Gönner): jeder n-te Besiegte geht hoch
     else if (A.patronVal('boom', r) > 0 && !e.boss && w.hero && w.hero.alive) {
@@ -84,7 +90,7 @@ A.Show = (function () {
       const [x, y] = api.freeSpot(h.x + (h.fx >= 0 ? 44 : -44), h.y - 8, 15);
       w.picks.push({ kind: 'crate', sp: S.id, x, y, vx: 0, vy: 0, z: 420, vz: -60, t: 0 });
       r.crateDue = false; r.hype = 0; r.lastSp = S.id; G().save();
-      api.float(h.x, h.y - 100, L(`Eine Kiste von ${A.t(S.name)}!`, `A crate from ${A.t(S.name)}!`), '#fee761', 15);
+      sfloat(L(`Eine Kiste ${A.t(S.von)}!`, `A crate ${A.t(S.von)}!`), '#fee761', 15);
     }
     for (const p of w.picks) if (p.kind === 'crate' && !p.landed && p.z <= 0 && p.t > 0.1) {   // gelandet: Staub und Wackeln
       p.landed = true;

@@ -193,14 +193,15 @@ A.Game = (function () {
     // Mitbringsel von den Expeditionen (v41, meta.gift): wird beim Start eingelöst, ui.js zeigt es als Banner
     const gf = meta.gift;
     if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0) || (gf.item > 0))) {
-      const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0), item = Math.max(0, Math.min(A.EXP_MAX * 2, Math.floor(gf.item) || 0));
+      const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0), want = Math.max(0, Math.floor(gf.item) || 0), item = Math.min(A.EXP_MAX * 2, want);   // höchstens 6 Stücke je Lauf, der Rest wartet auf den nächsten
       run.potions += pot; run.gold += gold;
       // seltene Stücke (v44): gleich angelegt, wenn besser als das Start-Stück an dem Platz, sonst in den Beutel
-      let worn = 0;
-      for (let i = 0; i < item; i++) { const it = randomItem('rare'), c = A.Compare ? A.Compare.all(it)[0] : null;
-        if (c && c.verdict === 'better') { const old = run.gear[c.slot]; run.gear[c.slot] = it; if (old) run.bag.push(old); worn++; } else run.bag.push(it); }
+      const made = [];
+      for (let i = 0; i < item; i++) { const it = randomItem('rare'), c = A.Compare ? A.Compare.all(it)[0] : null; made.push(it);
+        if (c && c.verdict === 'better') { const old = run.gear[c.slot]; run.gear[c.slot] = it; if (old) run.bag.push(old); } else run.bag.push(it); }
+      const worn = made.filter(x => Object.values(run.gear).includes(x)).length;   // ein späteres Stück kann ein früheres am selben Platz ersetzen
       if (item) { trimBag(); run.hp = derived().maxHp; }
-      run.giftNews = { pot, gold, item, worn }; meta.gift = null; saveMeta();
+      run.giftNews = { pot, gold, item, worn }; meta.gift = want > item ? { item: Math.min(A.EXP_MAX * 2, want - item) } : null; saveMeta();
     }
     newFloor();
     save();
@@ -277,10 +278,12 @@ A.Game = (function () {
   }
   // Prüft den Wunsch für den laufenden Durchlauf (end: am Ende, dann zählt auch Heimkehren). Erfüllt: Fans und Funken gleich, einmal am Tag
   function wishCheck(end) {
-    if (!run || (run.over && !end) || run.wishDone) return null;
+    if (!run || (run.over && !end)) return null;   // einmal am Tag: meta.wish.done (ein Lauf über Mitternacht kann auch den Wunsch des neuen Tages erfüllen)
     const wt = wishToday(); if (wt.done || wishProgress(wt.w) < wt.w.n) return null;
-    meta.wish.done = true; meta.fans = (Math.floor(+meta.fans) || 0) + A.WISH_FANS; meta.sparks += A.WISH_SPARKS;
-    run.sparksWish = A.WISH_SPARKS; run.wishDone = { sp: wt.S.id, w: wt.w.id };
+    const f0 = Math.max(0, Math.floor(+meta.fans) || 0);
+    meta.wish.done = true; meta.fans = f0 + A.WISH_FANS; meta.sparks += A.WISH_SPARKS;
+    wt.fresh = A.SPONSORS.filter(s => (s.fans || 0) > f0 && (s.fans || 0) <= meta.fans);   // stellen sich durch die neuen Fans vor
+    run.sparksWish = (run.sparksWish || 0) + A.WISH_SPARKS; run.wishDone = { day: wt.day, sp: wt.S.id, w: wt.w.id, fresh: wt.fresh.map(s => s.id) };
     saveMeta(); save();
     return wt;
   }

@@ -48,7 +48,7 @@ window.A = window.A || {};
     const r = G.run;
     if (!r || r.over || !document.body.classList.contains('play')) { hud.classList.remove('on'); return; }
     hud.classList.add('on');
-    const wd = G.wishCheck(); if (wd) { S.level(); A.FX.banner(L('Tageswunsch erfüllt!', 'Daily wish granted!'), L(`${t(wd.S.name)} freut sich: +${A.WISH_FANS} Fans, +${A.WISH_SPARKS} Seelenfunken`, `${t(wd.S.name)} is delighted: +${A.WISH_FANS} fans, +${A.WISH_SPARKS} soul sparks`), '#fee761', 2.8); }   // Tageswunsch (v43)
+    const wd = G.wishCheck(); if (wd) wishNews(wd);   // Tageswunsch (v43)
     const d = G.derived();
     const pct = clamp(r.hp / d.maxHp * 100, 0, 100) + '%';
     if (hudLast.hp !== pct) { hudLast.hp = pct; H.hp.style.width = pct; H.trail.style.width = pct; }
@@ -447,25 +447,35 @@ window.A = window.A || {};
 
   // ---------- Zuschauer und Gönner (v42, show.js) ----------
   // Die Kiste ist aufgehoben: Zettel des Gönners, was drin war, neuer Gönner bei genug Fans
+  const up = (s) => s.charAt(0).toUpperCase() + s.slice(1);   // «vom Goldenen Geier» am Satzanfang
   function crateWin(p) {
     const res = A.Show.open(p); if (!res) { Wd.pause(false); return; }
     const Sp = res.S; S.level();
     ov(`<div class="center crate"><div class="bigicon">${ic('crate', 58)}</div><h2 class="mid">${L('Eine Kiste von oben!', 'A crate from above!')}</h2>
-      <div class="note"><div class="from">${L('Von', 'From')} <b>${esc(t(Sp.name))}</b>:</div>«${esc(t(Sp.note))}»</div>
+      <div class="note"><div class="from"><b>${esc(up(t(Sp.von)))}</b>:</div>«${esc(t(Sp.note))}»</div>
       <div class="msg">${L('Drin', 'Inside')}: <b class="goldc">${esc(res.got)}</b></div>
       ${res.fresh.length ? `<div class="msg gradenew">${ic('eye', 20)} <b>${L('Neuer Gönner', 'New sponsor')}: ${res.fresh.map(x => esc(t(x.name))).join(', ')}</b>. ${L(`Du hast jetzt ${res.fans} Fans.`, `You now have ${res.fans} fans.`)}</div>` : `<div class="mini">${L(`Fans: ${res.fans}`, `Fans: ${res.fans}`)}${nextSponsor() ? ' · ' + nextSponsor() : ''}</div>`}
-      <button class="btn primary" id="bOk">${L('Danke!', 'Thanks!')}</button></div>`);
+      <button class="btn primary" id="bOk" data-esc>${L('Danke!', 'Thanks!')}</button></div>`);
     $('#bOk').onclick = () => { S.click(); ovClose(); };
   }
   // Wer kommt als Nächstes dazu? («Noch 2 Fans bis Professor Pilz»)
   function nextSponsor() {
     const f = A.Show.fans(), nx = A.SPONSORS.filter(x => (x.fans || 0) > f).sort((a, b) => a.fans - b.fans)[0];
-    return nx ? L(`noch ${nx.fans - f} bis ${t(nx.name)}`, `${nx.fans - f} more until ${t(nx.name)}`) : '';
+    return nx ? L(`noch ${nx.fans - f}, dann kommt ${t(nx.name)}`, `${nx.fans - f} more, then ${t(nx.name)} joins`) : '';
+  }
+  // Tageswunsch erfüllt: Banner erst, wenn kein Fenster offen ist und kein anderes Banner läuft (Kiste, «Ebene 6», «Raum gesäubert»)
+  function wishNews(wd) {
+    const run0 = G.run, fresh = (wd.fresh || []).map(s => t(s.name)).join(', ');
+    const when = (f, n) => { if (G.run !== run0 || !run0 || run0.over || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(f, n + 1), 500); return; } f(); };
+    setTimeout(() => when(() => {
+      S.level(); A.FX.banner(L('Tageswunsch erfüllt!', 'Daily wish granted!'), L(`${t(wd.S.name)} freut sich: +${A.WISH_FANS} Fans, +${A.WISH_SPARKS} Seelenfunken`, `${t(wd.S.name)} is delighted: +${A.WISH_FANS} fans, +${A.WISH_SPARKS} soul sparks`), '#fee761', 2.8);
+      if (fresh) setTimeout(() => when(() => A.FX.banner(L('Neuer Gönner!', 'New sponsor!'), fresh, '#fee761', 2.4), 0), 3000);   // die Fans des Wunsches haben jemanden Neues angelockt
+    }, 0), 300);
   }
   // Tageswunsch (v43): wer sich heute etwas wünscht und ob es schon erfüllt ist
   function wishHtml() {
     const wt = G.wishToday(), txt = t(wt.w.text).replace('{n}', wt.w.n);
-    return `${ic('crate', 16)} <b>${L('Tageswunsch', 'Daily wish')}</b> ${L('von', 'from')} ${esc(t(wt.S.name))}: «${esc(txt)}» ${wt.done ? `<b class="goldc">${L('Erfüllt!', 'Granted!')}</b>` : L(`(+${A.WISH_FANS} Fans, +${A.WISH_SPARKS} Funken)`, `(+${A.WISH_FANS} fans, +${A.WISH_SPARKS} sparks)`)}`;
+    return `${ic('crate', 16)} <b>${L('Tageswunsch', 'Daily wish')}</b> ${esc(t(wt.S.von))}: «${esc(txt)}» ${wt.done ? `<b class="goldc">${L('Erfüllt!', 'Granted!')}</b>` : L(`(+${A.WISH_FANS} Fans, +${A.WISH_SPARKS} Funken)`, `(+${A.WISH_FANS} fans, +${A.WISH_SPARKS} sparks)`)}`;
   }
   function sponsorHtml() {
     const f = A.Show.fans(), on = A.Show.sponsors().length;
@@ -534,7 +544,7 @@ window.A = window.A || {};
     const wfx = A.Weather.nameOf(Wd.W);
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
     // Mitbringsel von der Expedition (v41): einmal nach dem Ebenen-Schild zeigen, dann vergessen
-    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); setTimeout(() => { if (Wd.W === w2 && dungeonEl.classList.contains('on')) A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : '', gn.item > 0 ? (gn.item === 1 ? (gn.worn ? L('ein seltenes Stück, gleich angelegt', 'a rare item, already equipped') : L('ein seltenes Stück im Beutel', 'a rare item in your bag')) : (gn.worn ? L(`${gn.item} seltene Stücke (${gn.worn} angelegt)`, `${gn.item} rare items (${gn.worn} equipped)`) : L(`${gn.item} seltene Stücke im Beutel`, `${gn.item} rare items in your bag`))) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }, 2800); }
+    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); let tries = 0; const say = () => { if (Wd.W !== w2 || !dungeonEl.classList.contains('on')) return; if (overlay.classList.contains('on') && tries++ < 60) { setTimeout(say, 600); return; } A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : '', gn.item > 0 ? (gn.item === 1 ? (gn.worn ? L('ein seltenes Stück, gleich angelegt', 'a rare item, already equipped') : L('ein seltenes Stück im Beutel', 'a rare item in your bag')) : (gn.worn ? L(`${gn.item} seltene Stücke (${gn.worn} angelegt)`, `${gn.item} rare items (${gn.worn} equipped)`) : L(`${gn.item} seltene Stücke im Beutel`, `${gn.item} rare items in your bag`))) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }; setTimeout(say, 2800); }   // wartet, bis kein Fenster offen ist (z. B. die Segen-Wahl am Start)
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
@@ -1170,7 +1180,7 @@ window.A = window.A || {};
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow || r.sparksPatron || r.sparksWish ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : '', r.sparksPatron ? L(`Rampenlicht: +${r.sparksPatron}`, `Spotlight: +${r.sparksPatron}`) : '', r.sparksWish ? L(`Tageswunsch: +${r.sparksWish}`, `Daily wish: +${r.sparksWish}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
-      <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}${A.patronOf(r) ? ' · ' + L('Gönner', 'Sponsor') + ': ' + esc(t(A.SPONSORS.find(s => s.id === r.patron).name)) : ''}${r.wishDone ? ' · <b class="goldc">' + L('Tageswunsch erfüllt', 'Daily wish granted') + '</b>' : ''}</div>
+      <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}${A.patronOf(r) ? ' · ' + L('Gönner', 'Sponsor') + ': ' + esc(t(A.SPONSORS.find(s => s.id === r.patron).name)) : ''}${r.wishDone ? ' · <b class="goldc">' + L('Tageswunsch erfüllt', 'Daily wish granted') + '</b>' + ((r.wishDone.fresh || []).length ? ' · ' + L('Neuer Gönner', 'New sponsor') + ': ' + r.wishDone.fresh.map(id => { const x = A.SPONSORS.find(s => s.id === id); return x ? esc(t(x.name)) : ''; }).filter(Boolean).join(', ') : '') : ''}</div>
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
       ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}
