@@ -126,8 +126,8 @@ A.Combos = (function () {
   // Blitzschritt (world.js dash): Schattenschritt macht den Helden 1,5 Sekunden unverwundbar (h.inv wie beim Sprung selbst),
   // der nächste Treffer in 3 Sekunden ist ein Volltreffer mit doppeltem Schaden (pre)
   function onDash(h) {
-    const w = W(); if (!on(h, 'schattenschritt') || !h.alive) return;
-    h.cbShadeUntil = w.t + 1.5; h.cbShadeHit = w.t + 3; h.inv = Math.max(h.inv, 1.5);
+    const w = W(); if (!on(h, 'schattenschritt') || !h.alive || h.cbShadeCd > w.t) return;   // höchstens alle 3 Sekunden (mit Echo sonst fast immer unverwundbar)
+    h.cbShadeCd = w.t + 3; h.cbShadeUntil = w.t + 1.5; h.cbShadeHit = w.t + 3; h.inv = Math.max(h.inv, 1.5);
     api.float(h.x, h.y - 60, L('Schattenschritt!', 'Shadow step!'), '#e0a4ff', 13);
     if (A.FX) A.FX.burst(h.x, h.y - 10, 16, { color: ['#b55088', '#68386c', '#e0a4ff'], smin: 40, smax: 140, life: 0.5, add: true, kind: 'spark', drag: 3 });
   }

@@ -178,7 +178,7 @@ A.World = (function () {
     if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
     if (m.curled && m.pose) m.pose = null;   // Panzer vorbei: wieder das normale Bild
     // Einrollen (curl, Grabkäfer): unter halbem Leben einmal 2,5 s im Panzer (foes.js guard fängt jeden Treffer ab, keine Heilung danach), dann sofort Anlauf
-    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
+    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; m.chCd = 0; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
     if (m.charge && chargeStep(m, dt, d, nx, ny)) return true;
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)
@@ -217,7 +217,7 @@ A.World = (function () {
       else if (m.st <= 0) m.state = 'chase';
       return true;
     }
-    if ((m.chCd = (m.chCd ?? 1.5) - dt) > 0 || m.state === 'windup' || !h.alive || !(m.chNow || (d > 90 && d < 300 && clearLine(m, h)))) return false;
+    if ((m.chCd = (m.chCd ?? 1.5) - dt) > 0 || m.state === 'windup' || !h.alive || !(m.chNow ? clearLine(m, h) : (d > 90 && d < 300 && clearLine(m, h)))) return false;
     Object.assign(m, { state: 'windup', chPh: 'wind', st: 0.45, stMax: 0.45, chNow: false, chHit: false, chCd: 3.5, cdx: nx, cdy: ny, fx: nx, fy: ny });
     fx('windup', { m });
     if (A.FX) for (let k = 1; k <= 12; k++) {   // Warnung: Pfeil-Spitzen in Laufrichtung, bis zur ersten Wand
@@ -251,7 +251,7 @@ A.World = (function () {
     const sp = m.speed * slowMul(m) * hazardSlow(m) * A.Foes.speedMul(m);
     if (m.kind === 'melee') {
       if (d > m.r + h.r + 4) moveEnt(m, mx * sp * dt, my * sp * dt);
-      else if (m.cd <= 0) { m.state = 'windup'; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }
+      else if (m.cd <= 0) { m.state = 'windup'; m.chPh = null; m.st = m.stMax = m.boss ? 0.55 : 0.42; fx('windup', { m }); }   // chPh: ein abgebrochener Anlauf (Banane, Blase) macht aus dem Hieb sonst einen Anlauf
     } else {
       const want = 170, see = clearLine(m, h);
       if (!see) moveEnt(m, mx * sp * dt, my * sp * dt);

@@ -615,7 +615,7 @@ A.COMBOS = {
     flavor: { de: 'Geld regiert die Welt. Jetzt auch das Wetter.', en: 'Money rules the world. Now the weather too.' } },
   schattenschritt: { need: [{ spell: 'blitzschritt' }, { el: 'schatten' }], col: '#b55088',
     name: { de: 'Schattenschritt', en: 'Shadow Step' },
-    text: { de: 'Nach einem Blitzschritt bist du 1,5 Sekunden ein Schatten: Gegner treffen dich nicht, und dein nächster Treffer ist ein Volltreffer mit doppeltem Schaden.', en: 'After a flash step you are a shadow for 1.5 seconds: enemies cannot hit you, and your next hit is a critical hit for double damage.' },
+    text: { de: 'Nach einem Blitzschritt bist du 1,5 Sekunden ein Schatten: Gegner treffen dich nicht, und dein nächster Treffer ist ein Volltreffer mit doppeltem Schaden (höchstens alle 3 Sekunden).', en: 'After a flash step you are a shadow for 1.5 seconds: enemies cannot hit you, and your next hit is a critical hit for double damage (at most every 3 seconds).' },
     flavor: { de: 'Du warst nie hier. Die Delle im Gegner schon.', en: 'You were never here. The dent in the enemy was.' } },
   blitzpanzer: { need: [{ tal: 'eisen' }, { el: 'blitz' }], col: '#7fd8ff',
     name: { de: 'Blitzpanzer', en: 'Storm Plate' },

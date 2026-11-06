@@ -307,9 +307,9 @@ A.Pets = (function () {
     if (!a.under) dig(a);
     if (T('moppel', 5) && !a.slide && (a.slideT = (a.slideT == null ? 4 : a.slideT) - dt) <= 0) {
       const list = chainFrom(a, 3); a.slideT = list.length ? 9 : 0.5;
-      if (list.length) { a.slide = list; api.float(a.x, a.y - 30, L('Erdrutsch!', 'Landslide!'), '#8a5a3c', 14); }
+      if (list.length) { a.slide = list; a.slideEnd = w.t + 3; api.float(a.x, a.y - 30, L('Erdrutsch!', 'Landslide!'), '#8a5a3c', 14); }
     }
-    if (a.slide) { a.slide = a.slide.filter(live); if (!a.slide.length) a.slide = null; }
+    if (a.slide) { a.slide = a.slide.filter(live); if (!a.slide.length || w.t > a.slideEnd) a.slide = null; }   // nach 3 Sekunden Schluss (ein Ziel hinter Wasser erreicht er sonst nie)
     const big = !!a.slide, m = big ? a.slide[0] : target(a, 400) || h, d = dist(a, m) || 1, sp = (big ? 520 : 300) * (a.spd || 1) * dt;
     a.fx = (m.x - a.x) / d; a.fy = (m.y - a.y) / d; a.moving = d > 30;
     if (a.moving) api.moveEnt(a, a.fx * Math.min(sp, d), a.fy * Math.min(sp, d));
