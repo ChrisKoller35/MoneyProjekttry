@@ -435,12 +435,12 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++; A.Achieve.onKill(e);
     const items = []; let esparks = 0, book = null;
-    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); if (!e.mirror && !e.summoned) run.bossDown = run.floor; }   // bossDown/capDown: nach dem Neuladen kommt er auf dieser Ebene nicht wieder (world.js spawnRoom)
+    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); }
     else if (e.elite) {
       items.push(randomItem(rollRarity(nt)));
       const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
       if (nt >= 3 && run.rng.chance(0.25 + (nt - 3) * 0.25)) items.push(randomItem(rollRarity(1)));   // tiefe Elite: oft ein zweites Item
-      if (e.captain) { items.push(randomItem(rollRarity(2))); esparks += A.CAPTAIN_SPARKS; if (!e.mirror && !e.summoned) run.capDown = run.floor; }   // Hauptmann (foes.js): ein Stück mehr und Funken obendrauf
+      if (e.captain) { items.push(randomItem(rollRarity(2))); esparks += A.CAPTAIN_SPARKS; }   // Hauptmann (foes.js): ein Stück mehr und Funken obendrauf
       esparks += nt; run.eliteSparks = (run.eliteSparks || 0) + esparks; run.eliteKills = (run.eliteKills || 0) + 1;
       book = bookKill(e);
       questEvent('elite');
