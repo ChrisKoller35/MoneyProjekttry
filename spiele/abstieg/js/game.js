@@ -502,9 +502,10 @@ A.Game = (function () {
   function newFloor() {
     run.floorSeed = A.isDaily(run) ? A.dailySeed(run.daily.day, run.floor) : run.rng.int(1, 2e9); run.rooms = null;   // Tageswelt (v45): Räume aus Tag und Ebene, für alle gleich
     run.lvVer = 8;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5), neuen Gegnern (6), Pakt-Altären (7) und Krügen mit Mimik (8); ältere Spielstände bauen ihre laufende Ebene wie bisher
-    run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
-    run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
+    dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
+    dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
@@ -710,7 +711,7 @@ A.Game = (function () {
   // ---------- Speichern ----------
   function save() { if (!run) return; const Wd = A.World && A.World.W; if (Wd && Wd.seed === run.floorSeed && Wd.floor === run.floor && A.World.savePicks) { run.picks = A.World.savePicks(); run.rooms = A.World.saveRooms(); }   // Beute am Boden (v40): genau so, wie sie jetzt liegt (nur die Welt dieses Laufs)
     try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); if (A.isDaily(run) && !(run.floor <= A.DAILY_FLOORS)) delete run.daily; run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
 

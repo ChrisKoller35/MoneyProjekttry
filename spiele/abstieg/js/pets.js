@@ -90,7 +90,7 @@ A.Pets = (function () {
   // Gibt es auf der neuen Ebene einen Käfig? Ab Ebene 2; wer noch nie ein Tier gefunden hat, findet auf Ebene 2 sicher eins
   function cageOnFloor(r) {
     if (r.floor < 2) return false;
-    if (r.floor === 2 && !count()) return true;
+    if (r.floor === 2 && !count() && !A.isDaily(r)) return true;   // der erste Käfig ist sicher, ausser in der Tageswelt (dort für alle gleich)
     return r.rng.chance(A.PET_CAGE);
   }
   // Der Raum ist gesäubert: der Käfig taucht auf

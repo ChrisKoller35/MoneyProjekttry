@@ -185,7 +185,7 @@ window.A = window.A || {};
   }
 
   // ---------- Grad: was gilt (Regel des Grads, die Namen der Regeln davor, mehr Leben und Schaden, mehr Funken) ----------
-  let selGrade = null, selPat = '', selDaily = false;   // selPat: gewählter Gönner (v43), '' = keiner; selDaily: Tageswelt (v45)
+  let selGrade = null, selPat = '', selDaily = false, dailyShown = '';   // selPat: gewählter Gönner (v43), '' = keiner; selDaily: Tageswelt (v45)
   function gradeText(g) {
     if (!g) return `<b>${L('Normal', 'Normal')}:</b> ${L('Ohne Grad. So wie immer.', 'No grade. Business as usual.')}`;
     const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
@@ -234,6 +234,7 @@ window.A = window.A || {};
     const dailyRow = () => {
       const box = $('#dailyBox'); if (!box) return;
       if (!(G.meta.runs > 0)) { box.innerHTML = ''; selDaily = false; return; }
+      dailyShown = G.dailyToday().day;   // der Tag, dessen Dreh hier steht (nach Mitternacht neu zeigen, bevor es losgeht)
       box.innerHTML = `<h3>${L('Lauf', 'Run')}</h3><div class="chips dailies"><button class="chip dchip ${selDaily ? '' : 'sel'}" data-daily="0">${L('Normal', 'Normal')}</button><button class="chip dchip ${selDaily ? 'sel' : ''}" data-daily="1">${ic('crown', 14)}<span>${L('Tageswelt', 'Daily world')}</span></button></div><div class="perk" id="dailyPerk">${selDaily ? dailyText(true) : L('Normal: so tief, wie du kommst.', 'Normal: as deep as you can go.')}</div>`;
       box.querySelectorAll('[data-daily]').forEach(el => el.onclick = () => { const v = el.dataset.daily === '1'; if (v === selDaily) return; selDaily = v; S.click(); dailyRow(); gradeRow(); });
     };
@@ -249,7 +250,8 @@ window.A = window.A || {};
     selGrade = null; selPat = typeof G.meta.patron === 'string' ? G.meta.patron : ''; selDaily = false;
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { S.click(); camp(); return; } if (selRace === r.id) return; selRace = r.id; S.click(); upd(); });
     screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; selGrade = null; S.click(); upd(); });
-    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, !selDaily && G.gradeMax(selCls) ? selGrade : undefined, selPat || '', selDaily); Portal.gameplayStart(); dungeon(true); };
+    $('#bStart').onclick = () => { if (selDaily && G.dailyToday().day !== dailyShown) { S.click(); dailyRow(); return; }   // inzwischen ein neuer Tag: erst den neuen Dreh zeigen
+      S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, !selDaily && G.gradeMax(selCls) ? selGrade : undefined, selPat || '', selDaily); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { S.click(); title(); };
     upd();
   }
@@ -791,9 +793,9 @@ window.A = window.A || {};
   }
   // Tageswelt geschafft (v45): nach dem Boss auf Ebene 4 gibt es keine Treppe tiefer, nur Heimkehren
   function dailyScene() {
-    const r = G.run, dw = A.dailyOf(r), first = !(G.meta.daily && Array.isArray(G.meta.daily.days) && G.meta.daily.days.includes(r.daily.day)), pc = Math.round((A.HOME_SPARKS + (first ? A.DAILY_SPARKS : 0)) * 100);
-    ov(`<div class="center"><div class="bigicon">${ic('crown', 60)}</div><h2 class="mid">${L('Tageswelt geschafft!', 'Daily world cleared!')}</h2><div class="sub">${dw ? `<b class="goldc">${esc(t(dw.name))}</b><br>` : ''}${L('Morgen gibt es eine neue: andere Räume, anderer Dreh.', 'Tomorrow brings a new one: other rooms, another twist.')}</div>
-      <button class="btn two primary" id="bHome"><span class="bl">${ic('u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${first ? L('Mit dem Bonus der Tageswelt', 'With the daily world bonus') : L('Heute schon geschafft', 'Already done today')} · ${spark('+' + pc + ' %', 12)}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+    const r = G.run, dw = A.dailyOf(r), first = !(G.meta.daily && Array.isArray(G.meta.daily.days) && G.meta.daily.days.includes(r.daily.day)), pc = Math.round((A.HOME_SPARKS + (first ? A.DAILY_SPARKS : 0)) * 100), past = r.daily.day !== G.dailyToday().day;   // past: nach Mitternacht wartet schon die nächste
+    ov(`<div class="center"><div class="bigicon">${ic('crown', 60)}</div><h2 class="mid">${L('Tageswelt geschafft!', 'Daily world cleared!')}</h2><div class="sub">${dw ? `<b class="goldc">${esc(t(dw.name))}</b><br>` : ''}${past ? L('Die Tageswelt von heute wartet schon: andere Räume, anderer Dreh.', 'Today\'s daily world is already waiting: other rooms, another twist.') : L('Morgen gibt es eine neue: andere Räume, anderer Dreh.', 'Tomorrow brings a new one: other rooms, another twist.')}</div>
+      <button class="btn two primary" id="bHome"><span class="bl">${ic('u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${first ? L('Mit dem Bonus der Tageswelt', 'With the daily world bonus') : L('Schon geschafft', 'Already done')} · ${spark('+' + pc + ' %', 12)}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
     $('#bHome').onclick = () => goHomeNow();
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }

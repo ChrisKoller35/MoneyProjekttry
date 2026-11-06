@@ -74,7 +74,7 @@
   .chip.dchip { min-height: 40px; padding: 6px 4px; flex-direction: row; gap: 6px; font-size: 13px; }
   .wishl { margin: 6px 2px 0; }
   .perk.wishl, .mini.wishl { color: var(--gold2); }
-  .card .wishl { margin: 0 0 6px; }
+  .card .wishl, .card .dayl { margin: 0 0 6px; }
   .spon .sb { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
   .spon .sb b { font-size: 14px; }
   .pill { display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 7px 0 5px; background: rgba(24,20,37,0.85); border: 2px solid var(--line); clip-path: var(--notch); font-size: 15px; font-weight: 700; white-space: nowrap; line-height: 1; }
@@ -2699,9 +2699,10 @@ A.Game = (function () {
   function newFloor() {
     run.floorSeed = A.isDaily(run) ? A.dailySeed(run.daily.day, run.floor) : run.rng.int(1, 2e9); run.rooms = null;   // Tageswelt (v45): Räume aus Tag und Ebene, für alle gleich
     run.lvVer = 8;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5), neuen Gegnern (6), Pakt-Altären (7) und Krügen mit Mimik (8); ältere Spielstände bauen ihre laufende Ebene wie bisher
-    run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
-    run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
+    dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
+    dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
@@ -2907,7 +2908,7 @@ A.Game = (function () {
   // ---------- Speichern ----------
   function save() { if (!run) return; const Wd = A.World && A.World.W; if (Wd && Wd.seed === run.floorSeed && Wd.floor === run.floor && A.World.savePicks) { run.picks = A.World.savePicks(); run.rooms = A.World.saveRooms(); }   // Beute am Boden (v40): genau so, wie sie jetzt liegt (nur die Welt dieses Laufs)
     try { const { rng, ...rest } = run; localStorage.setItem(SAVE, JSON.stringify(Object.assign({}, rest, { rngState: rng.s }))); } catch (e) {} }
-  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
+  function load() { try { const d = JSON.parse(localStorage.getItem(SAVE)); if (!d || d.over) return null; run = d; run.rng = new A.RNG(d.rngState || d.seed); if (A.isDaily(run) && !(run.floor <= A.DAILY_FLOORS)) delete run.daily; run.talents = run.talents || []; run.upg = run.upg || {}; run.pets = run.pets || []; if (run.floorDmg == null) run.floorDmg = 1; return run; } catch (e) { return null; } }   // floorDmg fehlt im alten Spielstand: die laufende Ebene zählt nicht als «ohne Schaden»
   function clearRun() { run = null; try { localStorage.removeItem(SAVE); } catch (e) {} }
   function resetAll() { clearRun(); meta = Object.assign(freshMeta(), { campVer: 1 }); saveMeta(); }
 
@@ -9761,7 +9762,7 @@ A.Pets = (function () {
   // Gibt es auf der neuen Ebene einen Käfig? Ab Ebene 2; wer noch nie ein Tier gefunden hat, findet auf Ebene 2 sicher eins
   function cageOnFloor(r) {
     if (r.floor < 2) return false;
-    if (r.floor === 2 && !count()) return true;
+    if (r.floor === 2 && !count() && !A.isDaily(r)) return true;   // der erste Käfig ist sicher, ausser in der Tageswelt (dort für alle gleich)
     return r.rng.chance(A.PET_CAGE);
   }
   // Der Raum ist gesäubert: der Käfig taucht auf
@@ -11853,7 +11854,14 @@ A.World = (function () {
 
   // ---------- Gegner ----------
   function reachable(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return !W.reach || !!W.reach[ty * MW + tx]; }
+  // Tageswelt (v45): die Gegner eines Raums (Art, Zahl, Elite, Champion, Goldwicht) kommen aus Tag, Ebene und Raum, für alle gleich;
+  // sonst aus dem Zufall des Laufs. Danach gilt wieder der Zufall des Laufs (Beute, Läden, Schreine).
   function spawnRoom(r) {
+    const run = G().run; if (!A.isDaily(run)) return spawnRoomIn(r);
+    const keep = run.rng; run.rng = new A.RNG(((((W.seed >>> 0) ^ 0x6a09e667) >>> 0) + (r.i + 1) * 7919) >>> 0 || 9);
+    try { return spawnRoomIn(r); } finally { run.rng = keep; }
+  }
+  function spawnRoomIn(r) {
     const run = G().run, rng = run.rng, f = run.floor;
     // Derselbe Kampf nach dem Neuladen (die Seite war mitten im Kampf zu, run.fight): nur so viele Gegner, wie noch lebten,
     // und der Anführer (Boss, Hauptmann, Elite, Champion) nur, wenn er noch nicht gefallen war. Sonst gäbe es seine Beute zweimal.
@@ -14838,7 +14846,7 @@ window.A = window.A || {};
   }
 
   // ---------- Grad: was gilt (Regel des Grads, die Namen der Regeln davor, mehr Leben und Schaden, mehr Funken) ----------
-  let selGrade = null, selPat = '', selDaily = false;   // selPat: gewählter Gönner (v43), '' = keiner; selDaily: Tageswelt (v45)
+  let selGrade = null, selPat = '', selDaily = false, dailyShown = '';   // selPat: gewählter Gönner (v43), '' = keiner; selDaily: Tageswelt (v45)
   function gradeText(g) {
     if (!g) return `<b>${L('Normal', 'Normal')}:</b> ${L('Ohne Grad. So wie immer.', 'No grade. Business as usual.')}`;
     const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
@@ -14887,6 +14895,7 @@ window.A = window.A || {};
     const dailyRow = () => {
       const box = $('#dailyBox'); if (!box) return;
       if (!(G.meta.runs > 0)) { box.innerHTML = ''; selDaily = false; return; }
+      dailyShown = G.dailyToday().day;   // der Tag, dessen Dreh hier steht (nach Mitternacht neu zeigen, bevor es losgeht)
       box.innerHTML = `<h3>${L('Lauf', 'Run')}</h3><div class="chips dailies"><button class="chip dchip ${selDaily ? '' : 'sel'}" data-daily="0">${L('Normal', 'Normal')}</button><button class="chip dchip ${selDaily ? 'sel' : ''}" data-daily="1">${ic('crown', 14)}<span>${L('Tageswelt', 'Daily world')}</span></button></div><div class="perk" id="dailyPerk">${selDaily ? dailyText(true) : L('Normal: so tief, wie du kommst.', 'Normal: as deep as you can go.')}</div>`;
       box.querySelectorAll('[data-daily]').forEach(el => el.onclick = () => { const v = el.dataset.daily === '1'; if (v === selDaily) return; selDaily = v; S.click(); dailyRow(); gradeRow(); });
     };
@@ -14902,7 +14911,8 @@ window.A = window.A || {};
     selGrade = null; selPat = typeof G.meta.patron === 'string' ? G.meta.patron : ''; selDaily = false;
     screen.querySelectorAll('[data-race]').forEach(el => el.onclick = () => { const r = A.RACES.find(x => x.id === el.dataset.race); if (!G.raceUnlocked(r)) { S.click(); camp(); return; } if (selRace === r.id) return; selRace = r.id; S.click(); upd(); });
     screen.querySelectorAll('[data-cls]').forEach(el => el.onclick = () => { const c = A.CLASSES.find(x => x.id === el.dataset.cls); if (!G.classUnlocked(c)) { upd(c); return; } if (selCls === c.id) return; selCls = c.id; selGrade = null; S.click(); upd(); });
-    $('#bStart').onclick = () => { S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, !selDaily && G.gradeMax(selCls) ? selGrade : undefined, selPat || '', selDaily); Portal.gameplayStart(); dungeon(true); };
+    $('#bStart').onclick = () => { if (selDaily && G.dailyToday().day !== dailyShown) { S.click(); dailyRow(); return; }   // inzwischen ein neuer Tag: erst den neuen Dreh zeigen
+      S.buy(); A.Scenes.stage(null); G.newRun(selRace, selCls, !selDaily && G.gradeMax(selCls) ? selGrade : undefined, selPat || '', selDaily); Portal.gameplayStart(); dungeon(true); };
     $('#bBack').onclick = () => { S.click(); title(); };
     upd();
   }
@@ -15444,9 +15454,9 @@ window.A = window.A || {};
   }
   // Tageswelt geschafft (v45): nach dem Boss auf Ebene 4 gibt es keine Treppe tiefer, nur Heimkehren
   function dailyScene() {
-    const r = G.run, dw = A.dailyOf(r), first = !(G.meta.daily && Array.isArray(G.meta.daily.days) && G.meta.daily.days.includes(r.daily.day)), pc = Math.round((A.HOME_SPARKS + (first ? A.DAILY_SPARKS : 0)) * 100);
-    ov(`<div class="center"><div class="bigicon">${ic('crown', 60)}</div><h2 class="mid">${L('Tageswelt geschafft!', 'Daily world cleared!')}</h2><div class="sub">${dw ? `<b class="goldc">${esc(t(dw.name))}</b><br>` : ''}${L('Morgen gibt es eine neue: andere Räume, anderer Dreh.', 'Tomorrow brings a new one: other rooms, another twist.')}</div>
-      <button class="btn two primary" id="bHome"><span class="bl">${ic('u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${first ? L('Mit dem Bonus der Tageswelt', 'With the daily world bonus') : L('Heute schon geschafft', 'Already done today')} · ${spark('+' + pc + ' %', 12)}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
+    const r = G.run, dw = A.dailyOf(r), first = !(G.meta.daily && Array.isArray(G.meta.daily.days) && G.meta.daily.days.includes(r.daily.day)), pc = Math.round((A.HOME_SPARKS + (first ? A.DAILY_SPARKS : 0)) * 100), past = r.daily.day !== G.dailyToday().day;   // past: nach Mitternacht wartet schon die nächste
+    ov(`<div class="center"><div class="bigicon">${ic('crown', 60)}</div><h2 class="mid">${L('Tageswelt geschafft!', 'Daily world cleared!')}</h2><div class="sub">${dw ? `<b class="goldc">${esc(t(dw.name))}</b><br>` : ''}${past ? L('Die Tageswelt von heute wartet schon: andere Räume, anderer Dreh.', 'Today\'s daily world is already waiting: other rooms, another twist.') : L('Morgen gibt es eine neue: andere Räume, anderer Dreh.', 'Tomorrow brings a new one: other rooms, another twist.')}</div>
+      <button class="btn two primary" id="bHome"><span class="bl">${ic('u_tent', 24)}${L('Heimkehren', 'Go home')}</span><span class="bs">${first ? L('Mit dem Bonus der Tageswelt', 'With the daily world bonus') : L('Schon geschafft', 'Already done')} · ${spark('+' + pc + ' %', 12)}</span></button><button class="btn" id="bClose">${t(U.back)}</button></div>`);
     $('#bHome').onclick = () => goHomeNow();
     $('#bClose').onclick = () => { S.click(); ovClose(); };
   }

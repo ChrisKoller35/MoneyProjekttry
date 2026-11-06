@@ -163,7 +163,14 @@ A.World = (function () {
 
   // ---------- Gegner ----------
   function reachable(x, y) { const tx = Math.floor(x / TS), ty = Math.floor(y / TS); return !W.reach || !!W.reach[ty * MW + tx]; }
+  // Tageswelt (v45): die Gegner eines Raums (Art, Zahl, Elite, Champion, Goldwicht) kommen aus Tag, Ebene und Raum, für alle gleich;
+  // sonst aus dem Zufall des Laufs. Danach gilt wieder der Zufall des Laufs (Beute, Läden, Schreine).
   function spawnRoom(r) {
+    const run = G().run; if (!A.isDaily(run)) return spawnRoomIn(r);
+    const keep = run.rng; run.rng = new A.RNG(((((W.seed >>> 0) ^ 0x6a09e667) >>> 0) + (r.i + 1) * 7919) >>> 0 || 9);
+    try { return spawnRoomIn(r); } finally { run.rng = keep; }
+  }
+  function spawnRoomIn(r) {
     const run = G().run, rng = run.rng, f = run.floor;
     // Derselbe Kampf nach dem Neuladen (die Seite war mitten im Kampf zu, run.fight): nur so viele Gegner, wie noch lebten,
     // und der Anführer (Boss, Hauptmann, Elite, Champion) nur, wenn er noch nicht gefallen war. Sonst gäbe es seine Beute zweimal.
