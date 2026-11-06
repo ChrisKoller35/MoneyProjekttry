@@ -687,12 +687,34 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
     const bf = $('#bFocus'); if (bf) bf.onclick = () => { S.click(); focusPick(tab); };
+    const bft = $('#bFate'); if (bft) bft.onclick = () => { S.click(); fatePick(tab); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
   }
-  // Dein Build (build.js): Name, die stärksten Richtungen und der Fokus-Knopf
+  // Dein Build (build.js): Name, die stärksten Richtungen, der Fokus-Knopf und die Schicksalspunkte
   function buildLine(r, d) {
     const p = A.Build.profile(r, d), col = p.first ? A.BUILD_DIRS[p.first].col : 'var(--mist)';
-    return `<div class="mini bld">${L('Build', 'Build')}: <b style="color:${col}">${esc(A.Build.name(p))}</b>${p.top.length ? ` <span>(${esc(A.Build.summary(p))})</span>` : ''}<button id="bFocus">${r.focus ? L('Fokus: ', 'Focus: ') + esc(A.Build.dirName(r.focus)) : L('Fokus', 'Focus')} ▾</button></div>`;
+    const nf = Object.values(r.fate || {}).reduce((a, n) => a + n, 0), fb = (r.fatePts > 0 || nf) ? `<button id="bFate"${r.fatePts > 0 ? ' class="goldc"' : ''}>${L('Schicksal', 'Fate')} ${r.fatePts > 0 ? `<b>+${r.fatePts}</b>` : nf} ▾</button>` : '';
+    return `<div class="mini bld">${L('Build', 'Build')}: <b style="color:${col}">${esc(A.Build.name(p))}</b>${p.top.length ? ` <span>(${esc(A.Build.summary(p))})</span>` : ''}<button id="bFocus">${r.focus ? L('Fokus: ', 'Focus: ') + esc(A.Build.dirName(r.focus)) : L('Fokus', 'Focus')} ▾</button>${fb}</div>`;
+  }
+  // Schicksalspunkte (build.js, data.js A.FATE): je Welt-Boss und Hauptmann einer; eine Richtung wählen, höchstens 3 je Richtung
+  function fatePick(tab) {
+    const r = G.run, p = A.Build.profile(r), pts = r.fatePts || 0, mine = [p.first, p.second].filter(Boolean);
+    const keys = Object.keys(A.BUILD_DIRS).filter(k => A.FATE[k]).sort((a, b) => (mine.includes(b) - mine.includes(a)) || ((p.score[b] || 0) - (p.score[a] || 0)) || a.localeCompare(b));
+    const rows = keys.map(k => {
+      const D = A.BUILD_DIRS[k], n = A.Build.fateLv(k, r), full = n >= A.FATE_MAX, pips = Array.from({ length: A.FATE_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
+      const now = n ? `<b class="goldc">${L('Jetzt', 'Now')}:</b> ${esc(A.Build.fateText(k, n))}` : '';
+      return `<div class="skill ${full ? 'on' : ''} ${pts && !full ? '' : 'off'}" data-fate="${k}"><div class="si">${ic(D.icon, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${D.col}">${esc(t(D.name))}${mine.includes(k) ? ` <span class="mini goldc">${L('dein Build', 'your build')}</span>` : ''} <span class="pips fate">${pips}</span></div><div class="ds">${n ? now + (full ? ` <span class="mini">(${L('voll', 'maxed')})</span>` : '') : esc(A.Build.fateText(k, 1))}</div></div></div>`;
+    }).join('');
+    const sub = pts ? L(`Du hast <b class="goldc">${pts}</b> Schicksalspunkt${pts > 1 ? 'e' : ''}. Jeder gibt der Richtung einen festen Bonus und zählt ${A.FATE_W} Punkte für deinen Build: passende Beute kommt öfter. Höchstens ${A.FATE_MAX} je Richtung.`, `You have <b class="goldc">${pts}</b> fate point${pts > 1 ? 's' : ''}. Each gives the direction a fixed bonus and counts ${A.FATE_W} points for your build: fitting loot drops more often. At most ${A.FATE_MAX} per direction.`)
+      : L('Keine Punkte offen. Neue gibt es für jeden Welt-Boss und Hauptmann.', 'No points left. You get new ones for every world boss and captain.');
+    ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose" data-esc>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
+    overlay.querySelectorAll('[data-fate]').forEach(el => el.onclick = () => {
+      const k = el.dataset.fate; if (!G.fateSpend(k)) return;
+      S.buy(); A.FX.banner(L('Schicksal', 'Fate') + ': ' + t(A.BUILD_DIRS[k].name), A.Build.fateText(k, A.Build.fateLv(k)), A.BUILD_DIRS[k].col, 2);
+      if (Wd.W) Wd.refreshHero();
+      if (G.run.fatePts > 0) fatePick(tab); else if (tab) showSheet(tab); else { ovClose(); pendingPicks(); }
+    });
+    $('#bClose').onclick = () => { S.click(); if (G.run.fatePts > 0) G.fateLater(); if (tab) showSheet(tab); else { ovClose(); pendingPicks(); } };
   }
   // Fokus wählen: eine Richtung, die ab jetzt mehr zählt (Beute, Händler, Truhen, Schrein), oder automatisch
   function focusPick(tab) {
@@ -729,9 +751,10 @@ window.A = window.A || {};
   // Offene Wahlen nacheinander zeigen (Stufenaufstieg, dann Segen); wartet, solange ein anderes Fenster offen ist
   function pendingPicks() {
     const r = G.run; if (!r || r.over || !dungeonEl.classList.contains('on')) return;
-    if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0)) return;
+    const fate = G.fateOpen() && !r.fateLater && !(Wd.W && Wd.W.active);   // Schicksalspunkt: erst, wenn der Raum frei ist
+    if (!(r.pendingSkillPick > 0) && !(r.pendingBoon > 0) && !fate) return;
     if (overlay.classList.contains('on')) { setTimeout(pendingPicks, 600); return; }
-    if (r.pendingSkillPick > 0) skillPick(); else boonPick();
+    if (r.pendingSkillPick > 0) skillPick(); else if (r.pendingBoon > 0) boonPick(); else fatePick();
   }
   // Alle Zauber-Knöpfe belegt? Dann fragen, welcher Platz frei wird (der alte bleibt im Zauberbuch)
   function chooseSlot(id, done) {
@@ -927,6 +950,6 @@ window.A = window.A || {};
 
   // ---------- Start ----------
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.run) { G.save(); G.saveMeta(); } });
-  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin, petWin } };
+  window.__abstieg = { G, Wd, title, dungeon, draw, get overlay() { return overlay; }, screens: { heroSelect, camp, showSheet, skillPick, boonPick, pendingPicks, fatePick, shop, rest, eventScreen, treasure, secretTreasure, runOver, useProp, foundItem, compareView, forge, forgeElement, comboWin, petWin } };
   title();
 })();

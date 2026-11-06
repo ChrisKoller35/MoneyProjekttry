@@ -29,6 +29,7 @@ A.Build = (function () {
     for (const boss in A.TROPHIES) if (d.tro && d.tro[A.TROPHIES[boss].power]) add('tro', boss, W.tro);
     add('cls', r.cls, W.cls);
     if (r.focus && D()[r.focus]) sc[r.focus] = (sc[r.focus] || 0) + W.focus;
+    for (const k in (r.fate || {})) if (D()[k] && r.fate[k] > 0) sc[k] = (sc[k] || 0) + A.FATE_W * r.fate[k];   // Schicksalspunkte
     const top = Object.keys(sc).filter(k => sc[k] > 0).sort((a, b) => sc[b] - sc[a] || a.localeCompare(b));
     const first = top[0] && sc[top[0]] >= A.BUILD_MIN ? top[0] : null;
     const second = first && top[1] && sc[top[1]] >= A.BUILD_MIN && sc[top[1]] >= sc[first] * 0.5 ? top[1] : null;
@@ -51,7 +52,7 @@ A.Build = (function () {
   // els/pws: Element bzw. Kraft -> Punkte der Richtung; magnet: Element -> Kombo, der nur noch dieses Element fehlt
   // Merkzettel: derived() ist nicht billig, und Listen (Beutel, Händler) fragen je Stück; solange sich am Helden nichts ändert, gilt die letzte Antwort
   let memo = { r: null, sig: '', w: null };
-  function sig(r) { return [r.cls, r.focus || '', (r.known || []).join(), (r.talents || []).join(), (r.combos || []).join(), A.SLOTS.map(s => { const it = r.gear[s]; return it ? `${it.uid}:${it.el || ''}:${it.power ? it.power.id : ''}` : ''; }).join()].join('|'); }
+  function sig(r) { return [r.cls, r.focus || '', JSON.stringify(r.fate || {}), (r.known || []).join(), (r.talents || []).join(), (r.combos || []).join(), A.SLOTS.map(s => { const it = r.gear[s]; return it ? `${it.uid}:${it.el || ''}:${it.power ? it.power.id : ''}` : ''; }).join()].join('|'); }
   function wants(r, d) {
     r = r || A.Game.run; if (!r) return null;
     if (!d) { const g = sig(r); if (memo.r === r && memo.sig === g) return memo.w; memo = { r, sig: g, w: null }; }
@@ -95,5 +96,36 @@ A.Build = (function () {
     return L(`Passt zu deinem Build (${dirName(f.dir)})`, `Fits your build (${dirName(f.dir)})`);
   }
 
-  return { W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };
+  // ---------- Schicksalspunkte (data.js A.FATE) ----------
+  function fateLv(k, r) { r = r || A.Game.run; return (r && r.fate && r.fate[k]) || 0; }
+  // Summe der Boni aller gesetzten Punkte (crit, dodge, hpPct, def, thorns, lifesteal, spd, goldPct, atkPct, magPct, vsBurn …)
+  function fateMods(r) {
+    const m = {}; if (!r || !r.fate) return m;
+    for (const k in r.fate) { const F = A.FATE[k], n = Math.min(A.FATE_MAX, r.fate[k] || 0); if (!F || n <= 0) continue; for (const key in F.m) m[key] = (m[key] || 0) + F.m[key] * n; }
+    return m;
+  }
+  // Bonus-Text einer Richtung bei n Punkten
+  function fateText(k, n) {
+    const F = A.FATE[k]; if (!F) return ''; n = Math.max(1, n || 1);
+    const keys = Object.keys(F.m); let s = A.t(F.text).replace('{v}', F.m[keys[0]] * n);
+    for (const key of keys) s = s.replace('{' + key + '}', F.m[key] * n);
+    return s;
+  }
+  // Schaden (world.js hit): Held gegen brennende, gebremste oder vergiftete Gegner, Blitze; Helfer und Tiere
+  function pre(from, to, opts, t) {
+    const r = A.Game.run; if (!r || !r.fate || from.side !== 'hero' || to.side !== 'enemy' || (opts && (opts.kind === 'poison' || opts.kind === 'burn' || opts.kind === 'thorns'))) return null;
+    const m = fateMods(r); let pct = 0;
+    if (from.ally) pct += m.ally || 0;
+    else {
+      if (m.vsBurn && to.effects && to.effects.some(e => e.kind === 'burn')) pct += m.vsBurn;
+      if (m.vsPoison && to.effects && to.effects.some(e => e.kind === 'poison')) pct += m.vsPoison;
+      if (m.vsSlow && ((to.slowUntil && to.slowUntil > t) || to.stun > 0)) pct += m.vsSlow;
+      if (m.zap && opts && opts.zap) pct += m.zap;
+    }
+    return pct ? { mul: 1 + pct / 100 } : null;
+  }
+  // Explosionen des Helden (world.js boom)
+  function boomMul(r) { const m = fateMods(r || A.Game.run); return 1 + (m.boom || 0) / 100; }
+
+  return { fateLv, fateMods, fateText, pre, boomMul, W, dirsOf, profile, ids, nameOf, name, dirName, strong, summary, wants, elMul, pwMul, fits, boonFits, fitText };
 })();

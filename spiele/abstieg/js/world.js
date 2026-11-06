@@ -260,6 +260,7 @@ A.World = (function () {
     const bp = A.Combos.pre(from, to, opts); if (bp) dmg *= bp.mul;   // Vampirfürst, Todesmut (combos.js)
     const fp = A.Foes.pre(from, to, opts); if (fp) dmg *= fp.mul;   // Sandaks Panzer gegen dein Element (foes.js)
     const wp = A.Weather.pre(from, to, opts); if (wp) dmg *= wp.mul;   // Wolkenbruch: Blitze treffen härter (weather.js)
+    const fp2 = A.Build.pre(from, to, opts, W.t); if (fp2) dmg *= fp2.mul;   // Schicksalspunkte (build.js)
     if (to.elite && from === W.hero) dmg *= 1 + G().metaEffects().eliteDmg;   // Elite-Buch im Lager
     dmg = dmg * 100 / (100 + Math.max(0, statOf(to, 'def') - (to.shred || 0)) * 4);
     let crit = false;
@@ -324,7 +325,8 @@ A.World = (function () {
     for (const it of rw.items) drop({ kind: 'item', it }, e.x, e.y, 50);
     if (rw.potion) drop({ kind: 'potion' }, e.x, e.y, 50);
     float(e.x, e.y - e.r - 30, '+' + rw.xp + ' ' + A.t(A.UI.xp), '#e0a4ff', 12);
-    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');   // Seelenfunken der Elite (am Ende des Durchlaufs)
+    if (rw.esparks) float(e.x, e.y - e.r - 46, '+' + rw.esparks, '#c77dff', 13, 'u_spark');
+    if (rw.fate) float(e.x, e.y - e.r - 62, A.LANG === 'de' ? '+1 Schicksalspunkt' : '+1 fate point', '#fee761', 15, 'u_star');   // Schicksalspunkte (build.js)   // Seelenfunken der Elite (am Ende des Durchlaufs)
     if (e.traits) A.Elites.onDeath(e);
     A.Foes.onDeath(e);   // Hauptmann, Rache der Kumpels, fliehende Opfer (foes.js)
     fx('death', { e });
@@ -452,6 +454,7 @@ A.World = (function () {
   // Explosion: trifft alle Gegner im Umkreis
   // src: wer explodiert (Glut, der kleine Drache); sonst der Held
   function boom(x, y, r, dmg, opts, col, src) {
+    if (!src || src === W.hero) dmg *= A.Build.boomMul();   // Schicksalspunkte «Explosionen»
     for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col }, opts));
     fx('boom', { x, y, r, color: col });
     if (!src) A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)

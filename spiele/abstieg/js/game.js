@@ -172,8 +172,8 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0);   // passive Talente vom Schrein und Element-Boni der Ausrüstung
-    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100;
+    const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0);   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte
+    const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.atkPct || 0) / 100, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + (fm.magPct || 0) / 100;
     const d = {
       maxHp: Math.round((40 + s.tou * 8 + r.level * 6 + sum('hp')) * (mod.hpMul || 1) * (1 + me.hpMul) * (1 + tv('hpPct') / 100)),
       atk: Math.round((4 + s.str * 2 + sum('atk')) * (1 + atkPct)),
@@ -366,6 +366,14 @@ A.Game = (function () {
     return it;
   }
   function setFocus(dir) { run.focus = dir && A.BUILD_DIRS[dir] ? dir : null; save(); }
+  // Schicksalspunkt setzen (höchstens A.FATE_MAX je Richtung); später: Fenster nicht von selbst zeigen, bis der nächste Punkt kommt
+  function fateSpend(dir) {
+    if (!run || !(run.fatePts > 0) || !A.FATE[dir] || !A.BUILD_DIRS[dir]) return false;
+    run.fate = run.fate || {}; if ((run.fate[dir] || 0) >= A.FATE_MAX) return false;
+    run.fate[dir] = (run.fate[dir] || 0) + 1; run.fatePts--; save(); return true;
+  }
+  function fateLater() { if (run) { run.fateLater = true; save(); } }
+  function fateOpen() { return !!run && run.fatePts > 0 && Object.keys(A.FATE).some(k => A.BUILD_DIRS[k] && ((run.fate || {})[k] || 0) < A.FATE_MAX); }
   // slotIn: bei zwei vollen Schmuck-Plätzen wählt die Oberfläche, welcher ersetzt wird
   function equip(it, slotIn) {
     let slot = slotIn || it.slot;
@@ -435,10 +443,12 @@ A.Game = (function () {
       questEvent('elite');
     }
     else if (run.rng.chance(0.08 + d.itemLuck * 0.03 + d.dropPct / 100)) items.push(randomItem());
+    let fate = false;
+    if ((e.boss || e.captain) && !e.mirror && !e.summoned) { run.fatePts = (run.fatePts || 0) + 1; run.fateN = (run.fateN || 0) + 1; run.fateLater = false; fate = true; }   // Schicksalspunkt (build.js)
     const levels = addXp(xp);
     questEvent('kill');
     save();
-    return { gold, coins: e.boss ? 8 : e.elite ? 3 + nt : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(e.elite ? 0.25 : 0.04), esparks, book };
+    return { gold, coins: e.boss ? 8 : e.elite ? 3 + nt : Math.max(1, Math.round(gold / 4)), xp, items, levels, potion: !e.boss && run.rng.chance(e.elite ? 0.25 : 0.04), esparks, book, fate };
   }
   // Raum gesäubert: ein Item als Belohnung, Aufgabe prüfen
   function roomCleared(room, stats) {
@@ -564,7 +574,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
