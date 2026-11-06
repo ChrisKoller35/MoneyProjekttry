@@ -413,7 +413,7 @@ function freshState() {
   return { gold: 0, gems: 0, depth: 1, maxDepth: 1, farm: false, pick: 0, dw: DWARVES.map(() => 0),
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0 }, cdDyn: 0, cdBeer: 0,
-    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {},
+    best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
     blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {} };
 }
 let S = freshState(), migrated = 0;
@@ -430,6 +430,7 @@ function load() {
     if (!Array.isArray(S.runs)) S.runs = [];
     if (d.lastMaxAt == null) S.lastMaxAt = S.runTime;                     // Spielstand von vor den Tipps
     if (!S.tips || typeof S.tips !== 'object') S.tips = {};
+    if (!S.finds || typeof S.finds !== 'object') S.finds = {};
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
@@ -444,6 +445,55 @@ function load() {
   } catch (e) { return null; }
 }
 function save() { S.saved = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+// ---------- Fundstücke: drei je Schicht (Texte und Liste) ----------
+const TF = DE ? { title: 'Fundstücke', found: 'Fundstück!', layerDone: 'Schicht vollständig!', layerDoneSub: '+5 Steine', allDone: 'Alle Fundstücke!', allDoneSub: '+50 Steine. Du bist fertig. Grab trotzdem weiter.', unknown: '?' }
+  : { title: 'Finds', found: 'A find!', layerDone: 'Layer complete!', layerDoneSub: '+5 gems', allDone: 'All finds!', allDoneSub: "+50 gems. You're done. Keep digging anyway.", unknown: '?' };
+const FL = DE ? 'de' : 'en';
+const FINDS = [
+  { id: 'wurm', layer: 0, icon: '🪱', name: { de: 'Versteinerter Regenwurm', en: 'Fossilized earthworm' }, text: { de: 'Hat nie jemandem etwas getan. Jetzt ist er ein Briefbeschwerer.', en: "Never hurt anyone. Now it's a paperweight." } },
+  { id: 'gzwerg', layer: 0, icon: '🧔', name: { de: 'Gartenzwerg, vermisst', en: 'Garden gnome, missing' }, text: { de: 'Seit 1998 auf der Flucht. Die Zipfelmütze hat ihn verraten.', en: 'On the run since 1998. The pointy hat gave him away.' } },
+  { id: 'brot', layer: 0, icon: '🥪', name: { de: 'Zwergen-Pausenbrot', en: "Dwarf's packed lunch" }, text: { de: 'Seit 1874 im Boden. Noch essbar. Theoretisch.', en: 'In the ground since 1874. Still edible. Technically.' } },
+  { id: 'stein', layer: 1, icon: '🪨', name: { de: 'Gewöhnlicher Stein', en: 'Ordinary rock' }, text: { de: 'Du hast ihn aufgehoben. Das sagt mehr über dich als über ihn.', en: 'You picked it up. That says more about you than about it.' } },
+  { id: 'meissel', layer: 1, icon: '🔨', name: { de: 'Stumpfer Meissel', en: 'Blunt chisel' }, text: { de: 'Hat 40 Jahre gemeisselt. Sein Lebenswerk: dieser Kratzer.', en: "Forty years of chiselling. Life's work: this scratch." } },
+  { id: 'kopf', layer: 1, icon: '🗿', name: { de: 'Steinkopf, grimmig', en: 'Grumpy stone head' }, text: { de: 'Schaut dich an, als hättest du ihn geweckt. Hast du.', en: 'Looks at you like you woke him up. You did.' } },
+  { id: 'diamant', layer: 2, icon: '💎', name: { de: 'Diamant (fast)', en: 'Diamond (almost)' }, text: { de: 'Noch 3 Millionen Jahre Druck, dann wäre er was geworden.', en: 'Three million more years of pressure and it would have been somebody.' } },
+  { id: 'pfeife', layer: 2, icon: '🐤', name: { de: 'Kanarienvogel-Pfeife', en: 'Canary whistle' }, text: { de: 'Der Vogel ist weg. Die Pfeife pfeift nur noch Vorwürfe.', en: 'The bird is gone. The whistle only whistles accusations now.' } },
+  { id: 'socke', layer: 2, icon: '🧦', name: { de: 'Russige Socke', en: 'Sooty sock' }, text: { de: 'Eine Socke. Die andere ist noch tiefer. Viel Glück.', en: 'One sock. The other one is deeper. Good luck.' } },
+  { id: 'muenze', layer: 3, icon: '🪙', name: { de: 'Grüne Münze', en: 'Green coin' }, text: { de: 'Früher glänzte sie. Jetzt hat sie Persönlichkeit.', en: 'It used to shine. Now it has personality.' } },
+  { id: 'glocke', layer: 3, icon: '🔔', name: { de: 'Kupferglocke, stumm', en: 'Silent copper bell' }, text: { de: 'Läutet nicht mehr. Hat genug gesagt.', en: "Doesn't ring any more. It has said enough." } },
+  { id: 'kabel', layer: 3, icon: '🔌', name: { de: 'Uraltes Kabel', en: 'Ancient cable' }, text: { de: 'Führt ins Nichts. Wie jedes Kabel in jeder Schublade.', en: 'Leads nowhere. Like every cable in every drawer.' } },
+  { id: 'schraube', layer: 4, icon: '🔩', name: { de: 'Rostige Schraube', en: 'Rusty screw' }, text: { de: 'Hielt einst etwas Wichtiges zusammen. Was, weiss keiner mehr.', en: 'Once held something important together. Nobody remembers what.' } },
+  { id: 'loeffel', layer: 4, icon: '🥄', name: { de: 'Verbogener Löffel', en: 'Bent spoon' }, text: { de: 'Jemand hat sehr fest an ihn gedacht.', en: 'Someone thought about it very hard.' } },
+  { id: 'hufeisen', layer: 4, icon: '🧲', name: { de: 'Hufeisen, Glück leer', en: 'Horseshoe, luck used' }, text: { de: 'Das Glück ist aufgebraucht. Das Eisen ist noch da.', en: 'The luck is used up. The iron remains.' } },
+  { id: 'gabel', layer: 5, icon: '🍴', name: { de: 'Silbergabel', en: 'Silver fork' }, text: { de: 'Gehörte zu einem Besteck für zwölf. Die anderen elf feiern ohne sie.', en: 'Part of a set for twelve. The other eleven are partying without it.' } },
+  { id: 'spiegel', layer: 5, icon: '🪞', name: { de: 'Trüber Spiegel', en: 'Cloudy mirror' }, text: { de: 'Zeigt dich, nur müder. Ehrlich gesagt: realistisch.', en: 'Shows you, but more tired. Honestly: accurate.' } },
+  { id: 'medaille', layer: 5, icon: '🥈', name: { de: 'Medaille, Zweiter', en: 'Silver medal' }, text: { de: 'Zweiter Platz im Graben, 1912. Der Sieger liegt eine Schicht tiefer.', en: 'Second place, digging, 1912. The winner is one layer down.' } },
+  { id: 'goldzahn', layer: 6, icon: '🦷', name: { de: 'Goldzahn eines Riesen', en: "Giant's gold tooth" }, text: { de: 'Der Riese hat ihn nicht vermisst. Er hat noch 31.', en: "The giant didn't miss it. He has 31 more." } },
+  { id: 'ring', layer: 6, icon: '💍', name: { de: 'Ring, zu klein', en: 'Ring, too small' }, text: { de: 'Passt niemandem. Das macht ihn wertvoll und völlig nutzlos.', en: 'Fits nobody. That makes it precious and utterly useless.' } },
+  { id: 'pokal', layer: 6, icon: '🏆', name: { de: 'Pokal fürs Mitmachen', en: 'Participation trophy' }, text: { de: 'Fürs Dabeisein. Aus echtem Gold. Jemand hat übertrieben.', en: 'For showing up. Solid gold. Someone overdid it.' } },
+  { id: 'kugel', layer: 7, icon: '🔮', name: { de: 'Kristallkugel', en: 'Crystal ball' }, text: { de: 'Sie zeigt deine Zukunft: Graben. Sehr viel Graben.', en: 'It shows your future: digging. So much digging.' } },
+  { id: 'glas', layer: 7, icon: '🍷', name: { de: 'Weinglas, leer', en: 'Empty wine glass' }, text: { de: 'Jemand hat es bis zum letzten Tropfen genossen. Vor 400 Jahren.', en: 'Someone enjoyed it to the last drop. 400 years ago.' } },
+  { id: 'eis', layer: 7, icon: '🧊', name: { de: 'Ewiger Eiswürfel', en: 'Eternal ice cube' }, text: { de: 'Schmilzt nicht. Hat sich entschieden.', en: "Won't melt. It has made up its mind." } },
+  { id: 'ei', layer: 8, icon: '🍳', name: { de: 'Spiegelei, durch', en: 'Fried egg, well done' }, text: { de: 'Ganz durch. Sehr durch. Geologisch durch.', en: 'Well done. Very done. Geologically done.' } },
+  { id: 'stiefel', layer: 8, icon: '🥾', name: { de: 'Halber Stiefel', en: 'Half a boot' }, text: { de: 'Der Besitzer hat den Rest der Strecke barfuss gemacht.', en: 'The owner did the rest of the trip barefoot.' } },
+  { id: 'wurst', layer: 8, icon: '🌭', name: { de: 'Wurst am Spiess', en: 'Sausage on a stick' }, text: { de: 'Wollte nur kurz grillen. Stand zu nah am Kern.', en: 'Just wanted a quick barbecue. Stood too close to the core.' } },
+  { id: 'fisch', layer: 9, icon: '🐟', name: { de: 'Fisch ohne Augen', en: 'Eyeless fish' }, text: { de: 'Hat nie Licht gesehen. Will es auch jetzt nicht. Laterne aus, bitte.', en: "Has never seen light. Doesn't want to now. Lantern off, please." } },
+  { id: 'karte', layer: 9, icon: '📜', name: { de: 'Karte nach oben', en: 'Map to the surface' }, text: { de: 'Ein Pfeil nach oben, darunter «Raus». Du ignorierst sie.', en: "An arrow pointing up, labelled 'Out'. You ignore it." } },
+  { id: 'kerze', layer: 9, icon: '🕯️', name: { de: 'Kerzenstummel', en: 'Candle stub' }, text: { de: 'Brennt noch. Wer ihn angezündet hat, weiss niemand. Besser nicht fragen.', en: 'Still burning. Nobody knows who lit it. Best not to ask.' } },
+  { id: 'messer', layer: 10, icon: '🗡️', name: { de: 'Obsidianmesser', en: 'Obsidian knife' }, text: { de: 'Scharf genug, um Ausreden zu schneiden.', en: 'Sharp enough to cut through excuses.' } },
+  { id: 'orb', layer: 10, icon: '⚫', name: { de: 'Glatte schwarze Kugel', en: 'Smooth black orb' }, text: { de: 'Du hast hineingeschaut. Sie hat zurückgeschaut. Unentschieden.', en: 'You looked in. It looked back. A draw.' } },
+  { id: 'wuerfel', layer: 10, icon: '🎲', name: { de: 'Würfel, nur Einsen', en: 'Die, all ones' }, text: { de: 'Gezinkt. Aber in die falsche Richtung.', en: 'Loaded. In the wrong direction.' } },
+  { id: 'hemd', layer: 11, icon: '🧥', name: { de: 'Kettenhemd, Grösse S', en: 'Chainmail, size S' }, text: { de: 'Leicht wie eine Feder. Passt einem Hamster.', en: 'Light as a feather. Fits a hamster.' } },
+  { id: 'schluessel', layer: 11, icon: '🔑', name: { de: 'Schlüssel ohne Schloss', en: 'Key without a lock' }, text: { de: 'Das Schloss liegt in einer anderen Mine. Natürlich.', en: 'The lock is in another mine. Of course.' } },
+  { id: 'nadel', layer: 11, icon: '🪡', name: { de: 'Mithril-Nadel', en: 'Mithril needle' }, text: { de: 'Hat einmal einen Drachen genäht. Frag nicht, wozu.', en: 'Once stitched up a dragon. Do not ask why.' } },
+  { id: 'kartoffel', layer: 12, icon: '🥔', name: { de: 'Ewige Ofenkartoffel', en: 'Eternal baked potato' }, text: { de: 'Seit Jahrhunderten im Ofen. Immer noch zu heiss zum Essen.', en: 'In the oven for centuries. Still too hot to eat.' } },
+  { id: 'thermo', layer: 12, icon: '🌡️', name: { de: 'Thermometer, kaputt', en: 'Broken thermometer' }, text: { de: 'Zeigt «Ja».', en: "Reads 'Yes'." } },
+  { id: 'flamme', layer: 12, icon: '🔥', name: { de: 'Ewige Flamme, klein', en: 'Small eternal flame' }, text: { de: 'Ewig, ja. Gross, nein. Man kann nicht alles haben.', en: "Eternal, yes. Big, no. You can't have it all." } },
+  { id: 'nichts', layer: 13, icon: '🎁', name: { de: 'Ein Nichts in Geschenkpapier', en: 'Nothing, gift-wrapped' }, text: { de: 'Das Papier war das Geschenk.', en: 'The paper was the present.' } },
+  { id: 'brief', layer: 13, icon: '📭', name: { de: 'Brief an niemanden', en: 'Letter to nobody' }, text: { de: 'Absender: niemand. Inhalt: siehe Absender.', en: 'Sender: nobody. Contents: see sender.' } },
+  { id: 'loch', layer: 13, icon: '🕳️', name: { de: 'Loch zum Mitnehmen', en: 'Hole to go' }, text: { de: 'Ein Loch für unterwegs. Pass auf, wo du es abstellst.', en: 'A hole for the road. Mind where you put it down.' } },
+];
 
 // ---------- Zahlen schön schreiben ----------
 const SUFFIX = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc'];
@@ -657,6 +707,7 @@ function startLava() {
 // Neue Bestmarke in dieser Mine: Rekord, Ring-Belohnung, Rangliste
 function onNewMax() {
   S.lastMaxAt = S.runTime;
+  rollFind();
   if (S.st.prest > 0 && S.recBase > 0 && S.maxDepth === S.recBase + 1) { showBanner({ text: T.record, sub: T.recordSub.replace('{n}', S.recBase), life: 2.6, color: '#ffd447' }); sfx.chest(); }
   S.blkBest = Math.max(S.blkBest || 1, S.maxDepth);
   if (S.maxDepth > S.best) {
@@ -1078,6 +1129,7 @@ function buildPanel() {
     rows.push(makeRow({ icon: S.blockDone ? iconCanvas(emojiIcon('🏔️')) : iconCanvas(heirIcon), kind: 'prest' }));
     if (S.towers.length || S.blkBest >= 100) rows.push(makeRow({ icon: iconCanvas(emojiIcon('👑')), kind: 'realm' }));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🏆')), kind: 'rec' }));
+    rows.push(makeRow({ icon: iconCanvas(emojiIcon('🦴')), kind: 'finds' }));
     const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
     gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
   }
@@ -1121,6 +1173,9 @@ function rowData(r) {
   }
   if (r.kind === 'rec') {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
+  }
+  if (r.kind === 'finds') {
+    return { name: TF.title, lvl: '', eff: `<b>${findCount()} / ${FINDS.length}</b> · ${layerAt(S.depth).name}: ${layerFinds(F.layerOf(S.depth)).length} / 3`, cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'realm') {
     const st = storeInfo();
@@ -1179,6 +1234,7 @@ function buy(r) {
   if (r.kind === 'prest') { if (S.blockDone) showRealm(); else newMine(); return; }
   if (r.kind === 'realm') { showRealm(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
+  if (r.kind === 'finds') { showFinds(); return; }
   if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
@@ -1259,6 +1315,40 @@ function checkGoals() {
   sfx.boss();
   if (tab === 'goal') buildPanel();
   save();
+}
+
+// ---------- Fundstücke: finden und ansehen ----------
+function findCount() { return FINDS.filter(f => S.finds[f.id]).length; }
+function layerFinds(i) { return FINDS.filter(f => f.layer === i && S.finds[f.id]); }
+// Bei jeder neuen Tiefe: 22 % Chance auf ein noch fehlendes Fundstück dieser Schicht (Ringe zählen zur selben Schicht)
+function rollFind() {
+  if (S.maxDepth < 2) return;
+  const i = F.layerOf(S.maxDepth);
+  const open = FINDS.filter(f => f.layer === i && !S.finds[f.id]);
+  if (!open.length || Math.random() >= 0.22) return;
+  const f = open[Math.floor(Math.random() * open.length)];
+  S.finds[f.id] = 1; S.gems += 1;
+  showBanner({ text: TF.found, sub: f.icon + ' ' + f.name[FL] + '  💎 +1', life: 3, color: '#ffd447' });
+  sfx.chest();
+  const c = rockCenter();
+  for (let k = 0; k < 20; k++) { const p = chip(c.x, c.y - c.r * 0.3, CONFETTI[k % CONFETTI.length]); p.vx *= 1.7; p.vy -= 4; p.size = 5 + Math.random() * 4; chips.push(p); }
+  if (layerFinds(i).length === 3) { S.gems += 5; showBanner({ text: TF.layerDone, sub: T.layers[i] + ' · 💎 ' + TF.layerDoneSub, life: 2.6, color: '#57d2ff' }); }
+  if (findCount() === FINDS.length) { S.gems += 50; showBanner({ text: TF.allDone, sub: TF.allDoneSub, life: 3.2, color: '#ffd447' }); sfx.boss(); }
+  save();
+}
+function showFinds() {
+  if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
+  const esc = (x) => x.replace(/"/g, '&quot;');
+  const rows = T.layers.map((ln, i) => {
+    const cells = FINDS.filter(f => f.layer === i).map((f) => S.finds[f.id]
+      ? `<span title="${esc(f.text[FL])}" style="flex:1;min-width:0;background:#2a2238;border-radius:8px;padding:4px;font-size:12px"><b>${f.icon} ${f.name[FL]}</b><div class="small" style="font-size:10px;margin-top:2px">${f.text[FL]}</div></span>`
+      : `<span style="flex:1;min-width:0;background:#1c1726;border-radius:8px;padding:4px;color:#6f6680;font-weight:900;font-size:18px">${TF.unknown}</span>`).join('');
+    return `<div style="display:flex;gap:6px;align-items:center;margin-top:6px"><span style="width:64px;flex:none;text-align:left;font-size:12px;font-weight:800">${ln}<br><span class="small" style="font-size:11px">${layerFinds(i).length} / 3</span></span>${cells}</div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🦴 ${TF.title} ${findCount()} / ${FINDS.length}</div>
+    <div style="max-height:60vh;overflow:auto">${rows}</div>
+    <button id="tClose">${T.close}</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
 }
 
 // ---------- Neue Mine (Umzug) ----------
