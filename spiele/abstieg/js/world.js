@@ -16,7 +16,7 @@ A.World = (function () {
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
   function genFloor(floor, seed, saved) {
     const wd = A.worldOf(floor);
-    const v = G().run.lvVer || 0;   // Ebenen-Bau: 2 Schmiede, 3 geheime Räume, 4 grosse Räume, 5 Käfige (ältere Spielstände bauen ihre laufende Ebene wie bisher)
+    const v = G().run.lvVer || 0;   // Ebenen-Bau: 2 Schmiede, 3 geheime Räume, 4 grosse Räume, 5 Käfige, 6 neue Gegner, 7 Pakt-Altar, 8 Krüge und Mimik (ältere Spielstände bauen ihre laufende Ebene wie bisher)
     const lv = A.Levels.gen(floor, seed, wd, { forge: v >= 2, secret: v >= 3, big: v >= 4 });
     ({ CW, CH, MW, MH } = lv.dims);
     const { rooms, tiles, edges } = lv;
@@ -41,6 +41,8 @@ A.World = (function () {
     if (v >= 7 && G().run.pact) { const r = A.Pacts.room(rooms, seed, cageR); if (r) { let tx = r.anchor.tx, ty = r.anchor.ty;
       if (r === cageR) { const o = [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, 2], [2, -2], [-2, -2], [1, 1], [-1, 1]].find(([dx, dy]) => tiles[ty + dy] && A.Levels.walk(tiles[ty + dy][tx + dx]) && tx + dx > r.x && ty + dy > r.y && tx + dx < r.x + r.w - 1 && ty + dy < r.y + r.h - 1) || [2, 0]; tx += o[0]; ty += o[1]; }   // neben dem Käfig, nie in einer Wand (ohne Zufall)
       r.props.push({ kind: 'pact', x: (tx + 0.5) * TS, y: (ty + 0.5) * TS, room: r.i, used: false, hidden: true }); } }
+    // Krüge zum Zerschlagen und die Truhe mit Zähnen (surprise.js): ab Ebenen-Bau 8, immer als letzte Dinge im Raum
+    if (v >= 8) A.Surprise.place(rooms, tiles, lv.reach, seed, floor);
     let reach = lv.reach;
     if (saved) for (const s of saved) { const r = rooms[s.i]; if (!r) continue; r.cleared = s.cleared; r.used = s.used; r.visited = s.visited; r.props.forEach((p, k) => { if (s.props && s.props[k]) p.used = true; if (p.hidden && r.cleared) p.hidden = false; }); }
     for (const r of rooms) { const rb = r.secret && r.props.find(p => p.kind === 'rubble' && p.used); if (rb) { for (const [x, y] of rb.tiles) tiles[y][x] = 1; reach = reachFrom(tiles, lv.start); } }   // schon weggeräumt
@@ -154,6 +156,7 @@ A.World = (function () {
       const champ = r.type === 'fight' && f >= 3 && rng.chance(Math.min(0.3, 0.1 + f * 0.01)) ? Math.max(1, A.Elites.count(f) - 1) : 0;
       for (let i = 0; i < n; i++) list.push(G().monsterEntity(rng.pick(pool), f, i === 0 ? (r.type === 'elite' ? true : champ) : false, i + 1));
     }
+    A.Surprise.extra(r, f, list);   // vielleicht ein Goldwicht (surprise.js)
     list.forEach((m, i) => {
       const pm = A.Pacts.hpMul(m); if (pm !== 1) { m.maxHp = Math.round(m.maxHp * pm); m.hp = m.maxHp; if (m.shieldCap) m.shieldCap = Math.round(m.shieldCap * pm); }   // Gierschlund, Schicksalswette (pacts.js)
       let x, y, tries = 0;
@@ -181,6 +184,7 @@ A.World = (function () {
   function monSpecial(m, dt, d, nx, ny) {
     const h = W.hero;
     if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
+    if (m.gw) return A.Surprise.step(m, dt, d);   // Goldwicht: rennt mit dem Sack weg (surprise.js)
     if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
     if (m.curled && m.pose) m.pose = null;   // Panzer vorbei: wieder das normale Bild
     // Einrollen (curl, Grabkäfer): unter halbem Leben einmal 2,5 s im Panzer (foes.js guard fängt jeden Treffer ab, keine Heilung danach), dann sofort Anlauf
@@ -374,6 +378,7 @@ A.World = (function () {
     A.Combos.onKill(e);
     A.Pets.onKill(e, rw);   // Treue für die Begleiter
     A.Wild.onKill(e);       // Piñata
+    A.Surprise.onDeath(e);  // Goldwicht, Mimik (surprise.js)
     const h = W.hero;
     if (h && h.alive && h.tal) {
       if (h.tal.kette && !e.boss) W.marks.push({ kind: 'boom', x: e.x, y: e.y, r: 78, at: W.t + 0.15, dmg: heroPower(h) * 0.5, col: '#feae34', opts: { kette: true } });
@@ -407,6 +412,7 @@ A.World = (function () {
       if (dot < 0.2 && d > h.r + m.r + 6) continue;
       hit(h, m, (opts && opts.magic ? statOf(h, 'mag') : statOf(h, 'atk')) * pow, opts); n++;
     }
+    A.Surprise.arc(h, radius);   // Krüge im Hieb (surprise.js)
     W.fx.push({ kind: 'slash', x: h.x, y: h.y, fx: h.fx, fy: h.fy, r: radius, life: 0.18, color: opts && opts.magic ? '#7fd8ff' : '#fff' });
     fx('swing', { magic: opts && opts.magic });
     return n;
@@ -494,6 +500,7 @@ A.World = (function () {
   function boom(x, y, r, dmg, opts, col, src) {
     for (const m of W.mons) if (m.alive && !(m.spawn > 0) && Math.hypot(m.x - x, m.y - y) < r + m.r) hit(src || W.hero, m, dmg, Object.assign({ kind: 'magic', color: col, boom: true }, opts));   // boom: Schicksalspunkte «Explosionen» (build.js pre)
     fx('boom', { x, y, r, color: col });
+    A.Surprise.blast(x, y, r);   // Krüge gehen mit (surprise.js)
     if (!src) A.Combos.onBoom(x, y, r, dmg, opts || {});   // Feuerwerk, Plasmaball, Domino (combos.js)
   }
   // Kettenblitz: springt vom Helden zum nächsten Gegner und weiter
@@ -638,6 +645,7 @@ A.World = (function () {
     A.Combos.tick(dt);
     A.Pets.tick(dt);
     A.Wild.tick(dt);
+    A.Surprise.tick(dt);   // Krüge, Knallkrüge, Tiere (surprise.js)
     // Regeneration / Effekte
     if (!h.regenT || W.t > h.regenT) { h.regenT = W.t + 2; if (h.regen) { if (h.regen > 0) heal(h, Math.max(1, Math.round(h.maxHp * h.regen / 100))); else { h.hp = Math.max(1, h.hp - Math.max(1, Math.round(h.maxHp * -h.regen / 100))); float(h.x, h.y - 20, '−' + Math.round(h.maxHp * -h.regen / 100), '#ff5f5f', 12); } } }
     for (const e of [h, ...W.mons]) { if (!e.alive) continue; for (const ef of e.effects) { if (W.t >= ef.tick) { ef.tick += 1; hit({ side: ef.kind, crit: 0, alive: false }, e, ef.dmg, { kind: ef.kind, noDodge: true }); } } e.effects = e.effects.filter(ef => ef.until > W.t); }
@@ -650,7 +658,7 @@ A.World = (function () {
       if (s.side !== 'hero' && ls) continue;   // Zeitstopp: Geschosse der Gegner hängen in der Luft
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
       if (shotSolid(s.x, s.y)) { s.life = 0; if (s.opts.blast && s.side === 'hero') { s.boomed = true; boom(s.x - s.vx * dt, s.y - s.vy * dt, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); } else fx('wallhit', { x: s.x, y: s.y, color: s.color }); continue; }
-      if (s.side === 'hero') { for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); } else { hit(s.from, m, s.dmg, s.opts); A.Combos.onShotHit(s, m); } s.life = 0; break; } } }
+      if (s.side === 'hero') { A.Surprise.shot(s); for (const m of W.mons) { if (m.alive && !(m.spawn > 0) && dist(s, m) < m.r + s.r) { if (s.opts.blast) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); } else { hit(s.from, m, s.dmg, s.opts); A.Combos.onShotHit(s, m); } s.life = 0; break; } } }
       else if (h.alive && dist(s, h) < h.r + s.r) { hit(s.from, h, s.dmg, s.opts); s.life = 0; }
     }
     for (const s of W.shots) if (s.life <= 0 && s.opts.blast && s.side === 'hero' && !s.boomed) { s.boomed = true; boom(s.x, s.y, s.opts.blast, s.dmg, { burn: s.opts.burn, fb: true }, s.color, petOf(s)); }   // Feuerball verpufft nicht
@@ -687,7 +695,7 @@ A.World = (function () {
       if (hooks.onCleared) hooks.onCleared(a); }
     // In der Nähe von etwas?
     W.near = null;
-    for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign') continue; if (dist(p, h) < (p.rad || 46)) W.near = p; }
+    for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign' || p.kind === 'pot') continue; if (dist(p, h) < (p.rad || 46)) W.near = p; }
     if (W.near && W.near.kind === 'rubble' && !W.near.hinted) { W.near.hinted = true; float(W.near.x, W.near.y - 40, A.LANG === 'de' ? 'Hier zieht es. Wegräumen?' : 'There is a draft. Clear it?', '#fee761', 14); }
     G().run.hp = h.hp;
   }
@@ -716,6 +724,7 @@ A.World = (function () {
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
   A.Combos.bind({ get W() { return W; }, hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot });
   A.Pets.bind({ get W() { return W; }, hit, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
+  A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot });
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
 
   return {

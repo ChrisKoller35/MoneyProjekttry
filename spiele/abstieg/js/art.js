@@ -533,6 +533,145 @@ A.Art = (function () {
   ]];
 
   // ---------- Dinge im Raum ----------
+  // ---------- Überraschungen (surprise.js): Krüge je Welt (C Grundfarbe, D dunkel, H hell; Farben in data.js A.POTS), Scherben ----------
+  R.pot_krug = [[
+    '...DDDD...',
+    '...DHCD...',
+    '..DDDDDD..',
+    '.DHHCCCCD.',
+    'DHHCCCCCCD',
+    'DHCCCCCCCD',
+    'DHCCCCCCDD',
+    'DCCCCCCCDD',
+    '.DCCCCCDD.',
+    '..DDDDDD..',
+  ]];
+  R.pot_korb = [[
+    '..Y.YY.Y...',
+    '.YYyYYYyY..',
+    'DDDDDDDDDDD',
+    'DHCHCHCHCHD',
+    'DCHCHCHCHCD',
+    '.DHCHCHCHD.',
+    '.DCHCHCHCD.',
+    '.DHCHCHCHD.',
+    '..DDDDDDD..',
+  ]];
+  R.pot_urne = [[
+    '..DDDDDD..',
+    '..DyyyyD..',
+    '...DCCD...',
+    '..DHCCCD..',
+    '.DHCCCCCD.',
+    '.DyyyyyyD.',
+    '.DHCCCCCD.',
+    '.DHCCCCCD.',
+    '..DCCCCD..',
+    '...DCCD...',
+    '..DDDDDD..',
+  ]];
+  R.pot_amph = [[
+    '....DD....',
+    '...DHCD...',
+    '.DDDCCDDD.',
+    '.D.DCCD.D.',
+    '.DDHCCCDD.',
+    '.DHCCCCCD.',
+    'DHHCCCCCCD',
+    'DHCCCCCCDD',
+    '.DCCCCCDD.',
+    '..DCCCDD..',
+    '...DDDD...',
+  ]];
+  R.pot_kuebel = [[
+    '..fO.yO.f.',
+    '.OyfOfyOO.',
+    'DDDDDDDDDD',
+    'DHCCCCCCCD',
+    'D44444444D',
+    'DHCCCCCCCD',
+    'DHCCCCCCCD',
+    'D44444444D',
+    '.DCCCCCCD.',
+    '.DDDDDDDD.',
+  ]];
+  R.pot_glas = [[
+    '...NNNN...',
+    '...MmmM...',
+    '..DDDDDD..',
+    '.DH.cc..D.',
+    'DH.c66c..D',
+    'DH.cccc..D',
+    'D..cccc..D',
+    'D...cc...D',
+    '.D......D.',
+    '..DDDDDD..',
+  ]];
+  R.pot_bits = [[
+    '..D.......H.',
+    '.DCH..D..DC.',
+    'D.CD.DC.H..D',
+    '.D....D.DC..',
+  ]];
+  R.u_pot = [R.pot_krug[0].map(row => row.replace(/C/g, 'm').replace(/D/g, 'N').replace(/H/g, 'M'))];
+  // Mimik: Truhe mit Zähnen und Zunge (Maul auf, Maul zu)
+  R.mimic = [[
+    '..NNNNNNNNNNNN..',
+    '.NmMmmmmmmmmMmN.',
+    '.NmY0mmmmmmY0mN.',
+    '.yyyyyyyyyyyyyy.',
+    '.n606060060606n.',
+    '.n000000000000n.',
+    '.n00wwRRRRww00n.',
+    '.n060606606060n.',
+    '.yyyyyyyyyyyyyy.',
+    '.NmmmmmyYymmmmN.',
+    '.NmmmmmmmmmmmmN.',
+    '.NNNNNNNNNNNNNN.',
+    '..NN........NN..',
+  ], [
+    '..NNNNNNNNNNNN..',
+    '.NmMmmmmmmmmMmN.',
+    '.NmY0mmmmmmY0mN.',
+    '.yyyyyyyyyyyyyy.',
+    '.n606060060606n.',
+    '.n060606606060n.',
+    '.yyyyyyyyyyyyyy.',
+    '.NmmmmmyYymmmmN.',
+    '.NmmmmmmmmmmmmN.',
+    '.NmmmmmmmmmmmmN.',
+    '.NNNNNNNNNNNNNN.',
+    '...NN......NN...',
+    '..NN........NN..',
+  ]];
+  // Goldwicht: kleiner Wicht mit einem viel zu grossen Sack voll Gold
+  R.goldimp = [[
+    '..mmmm........',
+    '.mMMMMm.......',
+    'mMMYMMMm.yyyy.',
+    'mMYMMYMmyYYYYy',
+    'mMMMMMMmY0YY0y',
+    '.mMMMMm.yYwwYy',
+    '..mmmmyyyyyy..',
+    '.....yYYYYYy..',
+    '.....yYYYYYy..',
+    '......yYYYy...',
+    '......N...N...',
+    '.....NN...NN..',
+  ], [
+    '..mmmm........',
+    '.mMMMMm.......',
+    'mMMYMMMm.yyyy.',
+    'mMYMMYMmyYYYYy',
+    'mMMMMMMmY0YY0y',
+    '.mMMMMm.yYwwYy',
+    '..mmmmyyyyyy..',
+    '.....yYYYYYy..',
+    '.....yYYYYYy..',
+    '......yYYYy...',
+    '.......N.N....',
+    '......NN..NN..',
+  ]];
   R.chest = [[
     '..NNNNNNNNNNNN..',
     '.NmmmmmmmmmmmmN.',
@@ -3499,6 +3638,7 @@ A.Art = (function () {
     kugelfisch: { spr: 'puffer', C: '#feae34', D: '#be4a2f', H: '#fee761' }, kugelfisch_big: { spr: 'pufferbig', C: '#feae34', D: '#be4a2f', H: '#fee761' },
     schlackenhund: { spr: 'sloghound', C: '#733e39', D: '#3e2731', H: '#be4a2f', Y: '#fee761' },
     wisperling: { spr: 'whisperer', C: '#68386c', D: '#262b44', H: '#b55088', c: '#2ce8f5' },
+    mimik: { spr: 'mimic' }, goldwicht: { spr: 'goldimp' },
     diener_skel: { spr: 'skeleton', s: '#e6dcf2', '0': '#2a1836', '5': '#c0cbdc' },
     diener_geist: { spr: 'ghost', C: '#e0a4ff', D: '#b55088', H: '#ffffff', '0': '#68386c' },
   };

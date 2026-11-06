@@ -437,8 +437,10 @@ window.A = window.A || {};
       A.Combos.drawGround(this, W, cx, cy);    // Giftpilze
       A.Pets.drawGround(this, W, cx, cy);      // Eier, Zunge, Schrei
       A.Wild.drawGround(this, W, cx, cy);      // Bananenschalen
+      A.Surprise.drawGround(this, W, cx, cy);  // Scherben
       const list = [];
-      for (const r of W.rooms) for (const p of r.props) if (!p.hidden) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });
+      for (const r of W.rooms) for (const p of r.props) if (!p.hidden && !(p.kind === 'pot' && p.used)) list.push({ y: p.y / PX + (p.kind === 'stairs' ? -20 : 4), f: () => this.drawProp(p, W, cx, cy) });   // Scherben liegen am Boden (surprise.js drawGround)
+      A.Surprise.drawList(list, this, W, cx, cy);   // Tiere aus den Krügen
       for (const d of this.deco) list.push({ y: d.flat ? -1e9 : d.y, f: () => { b.drawImage(d.s.img, Math.round(d.x - d.s.w / 2 - cx), Math.round(d.y - d.s.h - cy)); } });
       for (const p of W.picks) list.push({ y: p.y / PX, f: () => this.drawPick(p, cx, cy) });
       for (const m of W.mons) list.push({ y: m.y / PX + 6, f: () => this.drawMon(m, W, cx, cy) });
@@ -871,6 +873,7 @@ window.A = window.A || {};
           if (p.secret && !p.used && A.FX && !A.FX.low && Math.random() < 0.2) A.FX.part({ kind: 'spark', add: true, x: p.x + (Math.random() - 0.5) * 30, y: p.y - 4 - Math.random() * 20, vx: 0, vy: -20, life: 0.5, color: Math.random() < 0.5 ? '#fee761' : '#ffffff', drag: 1 });
           const w = Math.round(spr.w * sx), hh = Math.round(spr.h * sy);
           b.drawImage(spr.img, Math.round(x + wob - w / 2), Math.round(y + 5 - hh), w, hh); top = y + 5 - hh;
+          if (p.mimic && !p.used) A.Surprise.tell(this, p, x + wob, top, t);   // Truhe mit Zähnen leckt sich ab und zu die Lippen
           if (p.used && oa < 2.5) { const gl = this.g; gl.globalAlpha = Math.max(0, 0.6 * (1 - oa / 2.5)); gl.fillStyle = '#fee761'; gl.fillRect(Math.round(x - 5), Math.round(y - 30 + oa * 4), 10, Math.round(26 - oa * 4)); gl.globalAlpha = 1; } if (!p.used && Math.floor(t * 2 + p.x) % 4 === 0) { this.g.fillStyle = '#fff'; this.g.fillRect(Math.round(x + 3), Math.round(y - 5), 1, 1); } break; }
         case 'fire': {
           const lg = S('logs'); b.drawImage(lg.img, Math.round(x - lg.w / 2), Math.round(y + 4 - lg.h));
@@ -927,6 +930,7 @@ window.A = window.A || {};
         }
         case 'cage': top = A.Pets.drawCage(this, p, near, x, y); break;   // Käfig mit einem Begleiter (pets.js)
         case 'pact': top = A.Pacts.draw(this, p, near, x, y); break;   // Pakt-Altar (pacts.js)
+        case 'pot': top = A.Surprise.draw(this, p, W, x, y); break;   // Krug zum Zerschlagen (surprise.js)
         case 'sign': spr = S('sign'); this.shadow(x, y + 4, 6); b.drawImage(spr.img, Math.round(x - spr.w / 2), Math.round(y + 4 - spr.h)); this.signAt = { sx: x * this.s, sy: (y + 4 - spr.h + 4) * this.s, text: p.text }; break;
       }
       if (near && !p.used || (near && (p.kind === 'merchant' || p.kind === 'forge' || p.kind === 'stairs'))) { const a = S('u_arrowdown'); b.drawImage(a.img, Math.round(x - a.w / 2), Math.round(top - a.h - 3 + Math.sin(t * 6) * 1.5)); }
@@ -1025,6 +1029,7 @@ window.A = window.A || {};
       A.Combos.lights(W, L);
       A.Pets.lights(W, L);
       A.Pacts.lights(W, L);
+      A.Surprise.lights(W, L);
       A.Wild.lights(W, L);
       A.Weather.lights(W, L);
       for (const m of W.mons) {

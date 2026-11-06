@@ -31,6 +31,8 @@ A.Achieve = (function () {
       captains: s.captains || 0, captKinds: A.Foes.count(), fleeKills: s.fleeKills || 0,
       // Dein Build (build.js): meiste Teile eines Elements, Kombos im laufenden Durchlauf, tiefste Ebene mit starkem Build
       elMax: r ? Math.max(0, ...Object.values(A.Gear.counts(r))) : 0, runCombos: r ? (r.combos || []).length : 0, buildBest: s.buildBest || 0,
+      // Überraschungen (surprise.js): zerschlagene Krüge, besiegte Mimiks, erwischte Goldwichte
+      pots: s.pots || 0, mimics: s.mimics || 0, gwicht: s.gwicht || 0,
     };
   }
   const done = (id) => !!(G().meta.ach || {})[id];
@@ -122,6 +124,7 @@ A.Achieve = (function () {
     if (by && by.kind === 'poison') return L('am Gift gestorben', 'died of poison');
     if (by && by.kind === 'rock') return L('vom Steinschlag erwischt', 'hit by falling rocks');
     if (by && by.kind === 'lava') return L('vom Vulkan geröstet', 'roasted by the volcano');
+    if (by && by.kind === 'pot') return L('von einem Knallkrug zerlegt', 'blown up by a jar');
     const B = by && by.mid && A.BOSSES[by.mid], M = by && by.mid && A.MONSTERS.find(x => x.id === by.mid);
     const name = by && by.cap ? A.Foes.nameOf(by.cap) : B ? A.t(B.name) : M ? (by.elite ? A.t(A.UI.elitePrefix) + '-' : '') + A.t(M.name) : null;
     return name ? L(`${name} hat dich erwischt`, `caught by ${name}`) : L('gefallen', 'fallen');
