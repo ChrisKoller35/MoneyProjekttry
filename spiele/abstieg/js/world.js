@@ -57,6 +57,14 @@ A.World = (function () {
     A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h);
   }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
+  // Beute am Boden (v40): Stücke, Gold, Tränke und Bonbons, die noch herumliegen, dazu ein Fund, dessen Fenster gerade offen ist. Nach dem Neuladen liegen sie wieder da (enter)
+  const PICK_KEEP = { item: 1, gold: 1, potion: 1, candy: 1 };
+  function savePicks() {
+    if (!W) return null;
+    const l = []; for (const p of W.picks) if (!p.done && PICK_KEEP[p.kind] && (p.kind !== 'item' || p.it)) l.push(p.kind === 'item' ? { kind: p.kind, it: p.it, x: Math.round(p.x), y: Math.round(p.y) } : { kind: p.kind, val: p.val, x: Math.round(p.x), y: Math.round(p.y) });
+    if (W.held && W.held.it) l.push({ kind: 'item', it: W.held.it, x: Math.round(W.held.x), y: Math.round(W.held.y) });
+    return l.length ? { f: W.floor, l } : null;
+  }
 
   // ---------- Start einer Ebene ----------
   function enter(floor, seed, saved, hooksIn) {
@@ -67,6 +75,13 @@ A.World = (function () {
     const sr = f.start;
     W.hero = mkHero((sr.anchor.tx + 0.5) * TS, (sr.anchor.ty + 1.5) * TS);
     sr.visited = true; W.room = sr;
+    // Beute am Boden (v40): was beim Schliessen noch herumlag, liegt wieder da (nur beim Weiterspielen derselben Ebene; ältere Stände haben keine)
+    const rp = G().run.picks;
+    if (saved && rp && rp.f === floor && Array.isArray(rp.l)) for (const p of rp.l) {
+      if (!p || !PICK_KEEP[p.kind] || (p.kind === 'item' && !p.it) || (p.kind === 'gold' && !(p.val > 0)) || !isFinite(p.x) || !isFinite(p.y)) continue;
+      const [x, y] = freeSpot(p.x, p.y, 13);
+      W.picks.push({ kind: p.kind, it: p.it, val: p.val, x, y, vx: 0, vy: 0, z: 0, vz: 0, t: 1 });
+    }
     return W;
   }
   function mkHero(x, y) {
@@ -690,7 +705,7 @@ A.World = (function () {
         if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
         else if (p.kind === 'candy') { p.done = true; heal(h, Math.max(1, Math.round(h.maxHp * 0.02))); if (A.Sound.pop) A.Sound.pop(); }   // Bonbon der Piñata
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
-        else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }
+        else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; W.held = { it: p.it, x: p.x, y: p.y }; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }   // held: Fenster offen, Stück noch nicht verstaut (savePicks)
       }
     }
     W.picks = W.picks.filter(p => !p.done);
@@ -703,7 +718,8 @@ A.World = (function () {
       fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const run = G().run; if (run.fight && run.fight.r === a.i) run.fight = null; run.rooms = saveRooms();   // vor dem Speichern in roomCleared: der Raum gilt schon als frei
-      const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
+      const lv0 = run.level, loot = G().roomCleared(a, W.stats); if (run.level !== lv0) refreshHero();   // Auftrag gab eine Stufe («Immer automatisch» hat schon verteilt)
+      for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
       a.props.forEach(p => { if (p.hidden) { p.hidden = false; if (p.kind === 'cage') A.Pets.reveal(p); else if (p.kind === 'pact') A.Pacts.reveal(p, { float }); } });
       if (hooks.onCleared) hooks.onCleared(a); }
@@ -742,7 +758,7 @@ A.World = (function () {
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
 
   return {
-    get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, statOf, float, dist, nearestMon, addMon, kill, castSkill, hit, addEffect,
+    get W() { return W; }, TS, get CW() { return CW; }, get CH() { return CH; }, get MW() { return MW; }, get MH() { return MH; }, enter, step, interact, markUsed, openRubble, heroAttack, useSkill, usePotion, refreshHero, saveRooms, savePicks, statOf, float, dist, nearestMon, addMon, kill, castSkill, hit, addEffect,
     pause(v) { if (W) W.paused = v; },
   };
 })();

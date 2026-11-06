@@ -427,11 +427,11 @@ window.A = window.A || {};
     A.Scenes.hideTitle(); A.Scenes.stage(null);
     screen.style.display = 'none'; dungeonEl.classList.add('on'); document.body.classList.add('play'); hudUpdate();
     const hooks = {
-      onItem: (it) => foundItem(it),
+      onItem: (it) => { if (!calmLoot(it)) foundItem(it); },   // Ruhige Beute (v40): schwächere Funde ohne Fenster
       onProp: (p) => useProp(p),
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
-      onDeath: () => { S.lose(); if (!G.run.over) { G.run.over = true; G.finishRun(); } setTimeout(() => runOver(), 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
-      onLevel: () => { if (Wd.W) A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); hudUpdate(); },
+      onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
+      onLevel: () => { if (Wd.W) { A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); if (G.meta.autoPts) { Wd.refreshHero(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 74, L('Punkte verteilt', 'Points spent'), '#fee761', 12, 'u_star'); } } hudUpdate(); },
       onElite: (list) => eliteNews(list),
       onBook: (ids) => bookNews(ids),
     };
@@ -456,7 +456,7 @@ window.A = window.A || {};
     if (sdt > 0) Wd.step(sdt, inp);
     A.Achieve.tick(dt, Wd.W.paused);   // Spielzeit, Gold, Erfolge prüfen und einblenden
     A.FX.update(sdt);
-    if (G.run) G.run.rooms = Wd.saveRooms();
+    if (G.run && Wd.W.seed === G.run.floorSeed && Wd.W.floor === G.run.floor) G.run.rooms = Wd.saveRooms();   // nur die Welt dieses Laufs (nicht die alte Ebene während der Werbung)
     draw.draw(Wd.W, dt);
     controlsTick();
     hudT += dt; if (hudT > 0.1) { hudT = 0; hudUpdate(); }
@@ -600,9 +600,10 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { S.click(); compareView(it, Object.assign({}, o, { slot: b.dataset.slot, again: true })); });
     const done = () => { if (o.back) o.back(); else ovClose(); };
     if (found) {
-      $('#bEq').onclick = () => { G.equip(it, c.slot); S.buy(); ovClose(); };
-      $('#bBag').onclick = () => { G.addToBag(it); S.click(); ovClose(); };
-      $('#bSell').onclick = () => { r.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
+      const letGo = () => { if (Wd.W) Wd.W.held = null; };   // Beute am Boden (v40): das Stück ist nicht mehr in der Hand
+      $('#bEq').onclick = () => { letGo(); G.equip(it, c.slot); S.buy(); ovClose(); };
+      $('#bBag').onclick = () => { letGo(); G.addToBag(it); S.click(); ovClose(); };
+      $('#bSell').onclick = () => { letGo(); r.gold += G.sellValue(it); G.save(); S.buy(); ovClose(); };
       return;
     }
     if (inShop) {
@@ -613,6 +614,30 @@ window.A = window.A || {};
       $('#bSell').onclick = () => { G.sell(it); S.buy(); done(); };
     }
     $('#bClose').onclick = () => { S.click(); done(); };
+  }
+  // Ruhige Beute (v40, Schalter im Heldenblatt unter «Ausrüstung», meta.calm === false = aus): Schwächere oder gleiche Funde gehen ohne Fenster gleich in Gold.
+  // Was zur Build-Richtung passt oder «anders, eher schwächer» ist, kommt still in den Beutel (ist er voll: Gold). Besseres, «anders» mit Tendenz nach oben,
+  // Kombo-Teile, Legenden und Trophäen zeigen die Karte wie bisher. Gibt true zurück, wenn kein Fenster nötig ist
+  const calmOn = () => G.meta.calm !== false;
+  function calmLoot(it) {
+    const r = G.run; if (!calmOn() || !r || !it || it.legend || it.trophy) return false;
+    const c = A.Compare.all(it)[0], fit = A.Build.fits(it, r);
+    if (!c || cmpTip(c) === 'equip' || (c.verdict === 'mixed' && c.lean !== 'down') || (fit && fit.kind === 'combo')) return false;
+    const h = Wd.W && Wd.W.hero, keep = (fit || c.verdict === 'mixed') && r.bag.length < G.BAG_MAX, q = r.quiet || (r.quiet = { n: 0, g: 0, b: 0 });
+    if (Wd.W) Wd.W.held = null;   // vor dem Speichern: nicht mehr in der Hand (sonst läge es nach dem Neuladen doppelt da)
+    q.n++;
+    if (keep) { q.b++; G.addToBag(it); if (h) Wd.float(h.x, h.y - 44, L('In den Beutel', 'Into the bag'), '#ead4aa', 12, 'u_bag'); }
+    else { const g = G.sellValue(it); q.g += g; r.gold += g; G.save(); if (h) Wd.float(h.x, h.y - 44, '+' + g, '#feae34', 13, 'coin'); }
+    if (Wd.W) Wd.pause(false);
+    // Der Hinweis einmal, aber nur ausserhalb eines Kampfs (sonst verdeckt er den Elite-Balken oder kommt im Boss-Raum gar nicht)
+    if (!G.meta.calmHint && Wd.W && !Wd.W.active) { G.meta.calmHint = 1; G.saveMeta(); const w = Wd.W, tx = L(`Ruhige Beute: Schwächere Funde gehen gleich in Gold. Ausschalten im Heldenblatt unter «${t(U.items)}».`, `Quiet loot: weaker finds turn straight into gold. Switch it off in the hero sheet under «${t(U.items)}».`); w.hint = tx; setTimeout(() => { if (Wd.W === w && w.hint === tx) w.hint = ''; }, 9000); }
+    hudUpdate(); return true;
+  }
+  function calmRow(r) {
+    const on = calmOn(), q = r.quiet;
+    const txt = on ? L('Schwächere Funde gehen gleich in Gold, nur Besseres zeigt eine Karte.', 'Weaker finds turn straight into gold, only better ones show a card.') + (q && q.n ? ' ' + L(`Bisher ${q.n} still verstaut (+${q.g} Gold).`, `So far ${q.n} handled quietly (+${q.g} gold).`) : '')
+      : L('Jeder Fund zeigt eine Karte.', 'Every find shows a card.');
+    return `<div class="optrow">${ic('u_bag', 20)}<span><b>${L('Ruhige Beute', 'Quiet loot')}: ${on ? L('an', 'on') : L('aus', 'off')}</b> ${txt}</span><button id="bCalm">${on ? L('Ausschalten', 'Switch off') : L('Einschalten', 'Switch on')}</button></div>`;
   }
   // Gefundenes Item: gleich der Vergleich mit dem angelegten Stück
   function foundItem(it) {
@@ -634,7 +659,7 @@ window.A = window.A || {};
     return itemHtml(it, inBag ? `<button class="cmpgo">${L('Vergleich', 'Compare')}</button>` : null, worn || inBag ? vChip(it) : `<span class="vchip sold">${L('Verkauft', 'Sold')}</span>`, inBag ? 'tap' : '', inBag ? `data-cmp="${it.uid}"` : '', !inBag && !worn);
   }
   // Treppe hinunter (auch am Ausgang: «Weiter nach unten»)
-  function goDown() { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won' || res == null) { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); }
+  function goDown() { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; const run0 = G.run; fadeOut(() => { if (!run0 || G.run !== run0 || run0.over) return; const res = G.descend(); if (res === 'won' || res == null) { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); }
   // Heimkehren (v39): der Durchlauf endet mit allen Funken und Bonus (am Ausgang als Sieg), ab ins Lager
   function homeBtn(exit) {
     const pc = Math.round((exit ? A.EXIT_SPARKS : A.HOME_SPARKS) * 100);
@@ -747,8 +772,10 @@ window.A = window.A || {};
     // Begleiter, die gerade dabei sind, mit Treue und dem, was sie schon können
     const pets = (r.pets || []).filter(id => A.PETS[id]).map(id => { const P = A.PETS[id], lv = A.Pets.treue(id), pr = A.Pets.progress(id);
       return `<div class="skill on" style="cursor:default"><div class="si">${petImg(id, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${P.col}">${esc(t(P.name))} ${petStars(lv)}</div><div class="ds">${A.Pets.tricks(id).filter(x => lv >= x.lv).map(x => esc(x.text)).join(' ')}${pr ? ` <span class="mini">${L(`(noch ${pr[1] - pr[0]} bis Treue ${lv + 1})`, `(${pr[1] - pr[0]} more to loyalty ${lv + 1})`)}</span>` : ''}</div></div></div>`; }).join('');
-    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span></div>` : ''}${statsHtml}${kv}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}${A.Pacts.list(r).length ? `<h3>${L('Pakte', 'Pacts')} <span class="mini">${A.Pacts.list(r).length}/${A.PACT_MAX}</span></h3>${A.Pacts.list(r).map(id => pactRow(id, false)).join('')}` : ''}` :
-      tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}` :
+    // Punkte automatisch verteilen (v40): einmal jetzt, oder immer (meta.autoPts)
+    const autoRow = `<div class="optrow">${ic('u_star', 20)}<span><b>${L('Immer automatisch', 'Always automatic')}: ${G.meta.autoPts ? L('an', 'on') : L('aus', 'off')}</b> ${L('Neue Punkte gehen gleich nach den Stärken deiner Klasse.', 'New points go straight to your class strengths.')}</span><button id="bAutoAll">${G.meta.autoPts ? L('Ausschalten', 'Switch off') : L('Einschalten', 'Switch on')}</button></div>`;
+    const content = tab === 'stats' ? `${quest}${r.points > 0 ? `<div class="q">${ic('u_star', 22)}<span><b class="goldc">${r.points}</b> ${t(U.points)}</span><button id="bAuto">${L('Automatisch', 'Auto')}</button></div>` : ''}${statsHtml}${kv}${autoRow}${pets ? `<h3>${L('Begleiter', 'Pets')}</h3>${pets}` : ''}${A.Pacts.list(r).length ? `<h3>${L('Pakte', 'Pacts')} <span class="mini">${A.Pacts.list(r).length}/${A.PACT_MAX}</span></h3>${A.Pacts.list(r).map(id => pactRow(id, false)).join('')}` : ''}` :
+      tab === 'gear' ? `${gear}<h3>${t(U.bag)} (${r.bag.length}/${G.BAG_MAX})</h3>${bag}${r.potions > 0 ? `<button class="btn" id="bPot">${ic('potion', 22)}${L('Trank trinken', 'Drink potion')} (+${Math.round(G.potionPct() * 100)} %)</button>` : ''}${calmRow(r)}` :
       tab === 'skills' ? `<div class="mini" style="margin-bottom:8px">${L(`Bis zu ${d.skillSlots} aktiv, auf den Knöpfen 1 bis ${d.skillSlots}. Antippen zum Wechseln.`, `Up to ${d.skillSlots} active, on buttons 1 to ${d.skillSlots}. Tap to switch.`)}</div>${skills}` :
       `<div class="mini" style="margin-bottom:8px">${L(`Passive Segen vom Schrein: ${(r.talents || []).length} von ${d.talentSlots} Plätzen belegt.`, `Passive blessings from shrines: ${(r.talents || []).length} of ${d.talentSlots} slots used.`)}</div>${tals || `<div class="mini">${L('Noch keine. Finde den Schrein auf jeder Ebene.', 'None yet. Find the shrine on every floor.')}</div>`}${cbSec}`;
     ov(`${head}<div class="tabs"><button data-tab="stats" class="${tab === 'stats' ? 'on' : ''}">${t(U.stats)}</button><button data-tab="gear" class="${tab === 'gear' ? 'on' : ''}">${t(U.items)}</button><button data-tab="skills" class="${tab === 'skills' ? 'on' : ''}">${t(U.skills)}</button><button data-tab="tal" class="${tab === 'tal' ? 'on' : ''}">${L('Segen', 'Blessings')}${nCb ? ` <b class="goldc">★${nCb}</b>` : ''}</button></div>${content}<button class="btn" id="bClose">${t(U.back)}</button>`);
@@ -760,6 +787,9 @@ window.A = window.A || {};
     overlay.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { G.sell(r.bag.find(x => x.uid === b.dataset.sell)); S.buy(); showSheet('gear'); });
     overlay.querySelectorAll('[data-sk]').forEach(el => el.onclick = () => { const id = el.dataset.sk; let a = r.active.slice(); if (a.includes(id)) a = a.filter(x => x !== id); else if (a.length < d.skillSlots) a.push(id); else return; G.setActive(a); S.click(); showSheet('skills'); });
     const bp = $('#bPot'); if (bp) bp.onclick = () => { G.usePotion(); if (Wd.W) Wd.W.hero.hp = r.hp; S.potion(); showSheet('gear'); };
+    const bc = $('#bCalm'); if (bc) bc.onclick = () => { G.meta.calm = !calmOn(); G.saveMeta(); S.click(); showSheet('gear'); };
+    const ba = $('#bAuto'); if (ba) ba.onclick = () => { G.autoSpend(); S.click(); showSheet('stats'); };
+    const baa = $('#bAutoAll'); if (baa) baa.onclick = () => { G.meta.autoPts = !G.meta.autoPts; G.saveMeta(); if (G.meta.autoPts && r.points > 0) G.autoSpend(); S.click(); showSheet('stats'); };
     const bf = $('#bFocus'); if (bf) bf.onclick = () => { S.click(); focusPick(tab); };
     const bft = $('#bFate'); if (bft) bft.onclick = () => { S.click(); fatePick(tab); };
     $('#bClose').onclick = () => { S.click(); ovClose(); buildControls(); pendingPicks(); };
@@ -1002,12 +1032,36 @@ window.A = window.A || {};
   }
 
   // ---------- Ende ----------
+  // Fairer Tod (v40): ein Tipp zu dem, was dich erwischt hat, dazu ein Hinweis auf Punkte oder Tränke, die noch übrig waren
+  function deathTips(r) {
+    const by = r.deathBy || {}, k = by.kind, tips = [];
+    tips.push(k === 'burn' ? L('Feuer brennt nach dem Treffer weiter. Raus aus den Flammen, dann trinken.', 'Fire keeps burning after the hit. Get out of the flames, then drink.')
+      : k === 'poison' ? L('Gift wirkt noch eine Weile nach. Lieber zu früh trinken als zu spät.', 'Poison lingers for a while. Better drink too early than too late.')
+      : k === 'rock' ? L('Wo Staub von der Decke rieselt, kommt gleich ein Stein. Kurz zur Seite.', 'Where dust trickles from the ceiling, a rock follows. Step aside.')
+      : k === 'lava' ? L('Glühender Boden wird gleich zu Lava. Nicht darauf stehen bleiben.', 'Glowing ground is about to turn into lava. Do not stand on it.')
+      : k === 'pot' ? L('Ein Knallkrug zischt eine Sekunde lang. Das ist dein Zeichen zu gehen.', 'A blast jar hisses for one second. That is your cue to leave.')
+      : by.boss ? L('Bosse halten bei halbem und bei viertel Leben kurz inne und holen dann zum grossen Angriff aus. Dann raus aus dem Warnkreis.', 'Bosses pause at half and at a quarter of their health, then wind up their big attack. Get out of the warning circle.')
+      : by.cap ? L('Hauptleute haben eine Masche, und ihr Spruch verrät sie meistens. Zuhören lohnt sich.', 'Captains have a trick, and their shout usually gives it away. Listen.')
+      : by.elite ? L('Die Eigenschaften einer Elite stehen oben im Balken. Erst lesen, dann reinlaufen.', 'An elite\'s traits are listed in the bar at the top. Read first, then charge in.')
+      : L('Warnkreise am Boden zeigen, wo gleich etwas einschlägt. Ausweichen lohnt sich.', 'Warning circles on the ground show where something is about to hit. Dodging pays off.'));
+    if (r.points > 0 && !G.meta.autoPts) tips.push(L(`Du hattest noch ${r.points} Punkte nicht verteilt. Im Heldenblatt gibt es dafür «Immer automatisch».`, `You still had ${r.points} unspent points. The hero sheet has «Always automatic» for that.`));
+    else if (r.potions > 0) tips.push(L(`Du hattest noch ${r.potions} ${r.potions === 1 ? 'Trank' : 'Tränke'} dabei. Trink, sobald dein Leben rot wird.`, `You still had ${r.potions} potion${r.potions === 1 ? '' : 's'}. Drink as soon as your health turns red.`));
+    return tips;
+  }
+  // Was reicht im Lager jetzt? Das günstigste Gebäude (sonst ein Volk), für den Ende-Bildschirm
+  function campNext() {
+    const m = G.meta, can = A.CAMP.filter(b => G.campOpen(b.id) && G.campCost(b.id) != null && G.campCost(b.id) <= m.sparks).sort((a, b) => G.campCost(a.id) - G.campCost(b.id));
+    if (can.length) { const b = can[0]; return t(b.name) + ' ' + L(`(Stufe ${G.campLevel(b.id) + 1})`, `(level ${G.campLevel(b.id) + 1})`) + (can.length > 1 ? L(` und ${can.length - 1} mehr`, ` and ${can.length - 1} more`) : ''); }
+    const race = A.META_SHOP.find(u => u.effect.race && !m.unlocked.includes(u.id) && u.cost <= m.sparks);
+    return race ? t(race.name) : null;
+  }
   function runOver() {
-    const r = G.run;
+    const r = G.run; if (!r) return;
     if (!r.over) { r.over = true; G.finishRun(); }
     Portal.gameplayStop();
     overlay.classList.remove('on'); overlay.innerHTML = '';
     const won = r.won, home = r.home, g = A.gradeOf(r), Cl = A.CLASSES.find(c => c.id === r.cls);   // home: 'boss' = nach einem Welt-Boss heimgekehrt, 'exit' = am Ausgang (v39)
+    const died = !home, cause = died ? A.Achieve.causeText({ by: r.deathBy }) : '', next = campNext();   // Fairer Tod (v40)
     const head = home === 'exit' || (home && won) ? L('Sieg! Heimgekehrt.', 'Victory! Home again.') : home ? L('Heimgekehrt!', 'Home again!') : won ? t(U.victory) : t(U.runOver);   // schon am Ausgang vorbei und später nach einem Boss heim: auch ein Sieg
     const msg = home === 'exit' ? L(`Der Ausgang war zu. Also bist du die Treppe hoch. Alle ${r.floor} Ebenen. Zu Fuss.`, `The exit was closed. So you took the stairs. All ${r.floor} floors. On foot.`)
       : home && won ? L(`Am Ausgang vorbei, noch tiefer, noch ein Boss. Dann die Treppe hoch, alle ${r.floor} Ebenen. Sieger dürfen das.`, `Past the exit, deeper still, one more boss. Then up the stairs, all ${r.floor} floors. Winners get to do that.`)
@@ -1016,15 +1070,25 @@ window.A = window.A || {};
       <div class="bigicon">${won || home === 'exit' ? ic('crown', 63) : home ? ic('u_tent', 60) : ic('u_skull', 60)}</div>
       <h2 class="mid">${head}</h2>
       ${msg ? `<div class="msg">${msg}</div>` : ''}<div class="sub">${home ? L(`Heimgekehrt von Ebene ${r.floor}`, `Went home from floor ${r.floor}`) : `${t(U.dead)} ${r.floor}`} (${esc(A.worldName(r.floor))}).${g ? ` ${L('Grad', 'Grade')} ${g}.` : ''}</div>
+      ${died ? `<div class="deathbox"><div class="dby">${ic('u_skull', 20)}<b>${esc(cause.charAt(0).toUpperCase() + cause.slice(1))}.</b></div>${deathTips(r).map(x => `<div class="tip">${esc(x)}</div>`).join('')}</div>` : ''}
       ${r.gradeNew ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L(`Neu: Grad ${r.gradeNew}`, `New: grade ${r.gradeNew}`)}</b> ${L('für', 'for')} ${esc(Cl ? t(Cl.name) : r.cls)}. <i>${esc(t(A.GRADES[r.gradeNew - 1].name))}</i>: ${esc(t(A.GRADES[r.gradeNew - 1].text))} ${L('Wähle ihn beim nächsten Helden.', 'Pick it with your next hero.')}</div>` : r.gradeTop ? `<div class="msg gradenew">${ic('crown', 22)} <b>${L('Grad 10 geschafft!', 'Grade 10 done!')}</b> ${L('Mehr Grade gibt es nicht. Noch nicht.', 'There are no more grades. Not yet.')}</div>` : ''}
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
       ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
-      ${G.campAffordable() ? `<div class="mini extra">${L('Im Lager kannst du jetzt etwas ausbauen.', 'You can build something in the camp now.')}</div>` : ''}
-      <button class="btn primary" id="bCamp" style="margin-top:16px">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>`);
-    $('#bCamp').onclick = () => { S.click(); G.clearRun(); Portal.showAd(() => camp()); };
+      ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}
+      <div class="endbtns"><button class="btn ${died && !next ? 'primary' : ''}" id="bAgain">${ic('u_down', 26)}${L('Nochmal', 'Again')}</button><button class="btn ${died && !next ? '' : 'primary'}" id="bCamp">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>
+      <div class="mini">${L('Nochmal: derselbe Held', 'Again: the same hero')}${g ? L(`, Grad ${g}`, `, grade ${g}`) : ''}.</div></div>`);
+    let left = false; const once = (f) => () => { if (left) return; left = true; f(); };   // nur ein Knopf, nur einmal
+    $('#bCamp').onclick = once(() => { S.click(); G.clearRun(); Portal.showAd(() => camp()); });
+    // Nochmal (v40): gleich der nächste Lauf mit Volk, Klasse und Grad von eben (Begleiter wie zuletzt gewählt)
+    $('#bAgain').onclick = once(() => {
+      S.buy(); const race = A.RACES.find(x => x.id === r.race), cls = A.CLASSES.find(x => x.id === r.cls), gr = cls && G.gradeMax(cls.id) ? Math.min(g, G.gradeMax(cls.id)) : undefined;
+      G.clearRun();
+      if (!race || !cls || !G.raceUnlocked(race) || !G.classUnlocked(cls)) { Portal.showAd(() => heroSelect()); return; }
+      Portal.showAd(() => { A.Scenes.stage(null); G.newRun(race.id, cls.id, gr); Portal.gameplayStart(); dungeon(true); });
+    });
   }
 
   // ---------- Start ----------
