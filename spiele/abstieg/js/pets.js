@@ -73,7 +73,7 @@ A.Pets = (function () {
     const tr = tripOf(id); if (!tr || !tr.done) return null;
     const m = G().meta, e = trips()[id], X = tr.X, rng = new A.RNG(((Math.floor(e.t0 / 1000) ^ 0x3c6ef372) >>> 0) || 3);
     const sparks = rng.int(X.sparks[0], X.sparks[1]);
-    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }
+    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = X.item > 0 && rng.chance(X.item) ? A.EXP_ITEM : rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }
     delete m.exp[id]; m.sparks += sparks;
     const up = gain(id, X.treue);
     G().saveMeta();

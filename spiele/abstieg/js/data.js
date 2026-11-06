@@ -717,7 +717,7 @@ A.EXP_MAX = 3;   // so viele Tiere gleichzeitig unterwegs
 A.EXPEDITIONS = [
   { id: 'kurz', h: 1, name: { de: 'Spaziergang', en: 'Stroll' }, sparks: [10, 15], treue: 8, gift: 0 },
   { id: 'mittel', h: 4, name: { de: 'Ausflug', en: 'Trip' }, sparks: [30, 45], treue: 25, gift: 0.3 },
-  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7 },
+  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7, item: 0.4 },   // item: so oft ist das Mitbringsel ein seltenes Stück (v44)
 ];
 // Mitbringsel für den nächsten Lauf (meta.gift, wird beim Start eingelöst)
 A.EXP_GIFTS = [
@@ -725,6 +725,7 @@ A.EXP_GIFTS = [
   { k: 'gold', n: 60, text: { de: '60 Gold', en: '60 gold' } },
   { k: 'pot', n: 2, text: { de: 'zwei Tränke', en: 'two potions' } },
 ];
+A.EXP_ITEM = { k: 'item', n: 1, text: { de: 'ein seltenes Stück', en: 'a rare item' } };   // nur von der Expedition (v44); beim nächsten Lauf angelegt, wenn besser, sonst im Beutel
 // Was jedes Tier nach der Reise erzählt (fehlt eins, gilt der Satz unter «_»)
 A.EXP_LINES = {
   flitz: { de: 'Flitz ist zurück. Mit einem Hühnerknochen und einem sehr unschuldigen Blick.', en: 'Zippy is back. With a chicken bone and a very innocent look.' },

@@ -192,7 +192,16 @@ A.Game = (function () {
     run.hp = derived().maxHp;
     // Mitbringsel von den Expeditionen (v41, meta.gift): wird beim Start eingelöst, ui.js zeigt es als Banner
     const gf = meta.gift;
-    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0))) { const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0); run.potions += pot; run.gold += gold; run.giftNews = { pot, gold }; meta.gift = null; saveMeta(); }
+    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0) || (gf.item > 0))) {
+      const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0), item = Math.max(0, Math.min(A.EXP_MAX * 2, Math.floor(gf.item) || 0));
+      run.potions += pot; run.gold += gold;
+      // seltene Stücke (v44): gleich angelegt, wenn besser als das Start-Stück an dem Platz, sonst in den Beutel
+      let worn = 0;
+      for (let i = 0; i < item; i++) { const it = randomItem('rare'), c = A.Compare ? A.Compare.all(it)[0] : null;
+        if (c && c.verdict === 'better') { const old = run.gear[c.slot]; run.gear[c.slot] = it; if (old) run.bag.push(old); worn++; } else run.bag.push(it); }
+      if (item) { trimBag(); run.hp = derived().maxHp; }
+      run.giftNews = { pot, gold, item, worn }; meta.gift = null; saveMeta();
+    }
     newFloor();
     save();
     return run;

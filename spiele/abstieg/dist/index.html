@@ -1277,7 +1277,7 @@ A.EXP_MAX = 3;   // so viele Tiere gleichzeitig unterwegs
 A.EXPEDITIONS = [
   { id: 'kurz', h: 1, name: { de: 'Spaziergang', en: 'Stroll' }, sparks: [10, 15], treue: 8, gift: 0 },
   { id: 'mittel', h: 4, name: { de: 'Ausflug', en: 'Trip' }, sparks: [30, 45], treue: 25, gift: 0.3 },
-  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7 },
+  { id: 'lang', h: 8, name: { de: 'Expedition', en: 'Expedition' }, sparks: [55, 80], treue: 50, gift: 0.7, item: 0.4 },   // item: so oft ist das Mitbringsel ein seltenes Stück (v44)
 ];
 // Mitbringsel für den nächsten Lauf (meta.gift, wird beim Start eingelöst)
 A.EXP_GIFTS = [
@@ -1285,6 +1285,7 @@ A.EXP_GIFTS = [
   { k: 'gold', n: 60, text: { de: '60 Gold', en: '60 gold' } },
   { k: 'pot', n: 2, text: { de: 'zwei Tränke', en: 'two potions' } },
 ];
+A.EXP_ITEM = { k: 'item', n: 1, text: { de: 'ein seltenes Stück', en: 'a rare item' } };   // nur von der Expedition (v44); beim nächsten Lauf angelegt, wenn besser, sonst im Beutel
 // Was jedes Tier nach der Reise erzählt (fehlt eins, gilt der Satz unter «_»)
 A.EXP_LINES = {
   flitz: { de: 'Flitz ist zurück. Mit einem Hühnerknochen und einem sehr unschuldigen Blick.', en: 'Zippy is back. With a chicken bone and a very innocent look.' },
@@ -2363,7 +2364,16 @@ A.Game = (function () {
     run.hp = derived().maxHp;
     // Mitbringsel von den Expeditionen (v41, meta.gift): wird beim Start eingelöst, ui.js zeigt es als Banner
     const gf = meta.gift;
-    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0))) { const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0); run.potions += pot; run.gold += gold; run.giftNews = { pot, gold }; meta.gift = null; saveMeta(); }
+    if (gf && typeof gf === 'object' && ((gf.pot > 0) || (gf.gold > 0) || (gf.item > 0))) {
+      const pot = Math.max(0, Math.floor(gf.pot) || 0), gold = Math.max(0, Math.floor(gf.gold) || 0), item = Math.max(0, Math.min(A.EXP_MAX * 2, Math.floor(gf.item) || 0));
+      run.potions += pot; run.gold += gold;
+      // seltene Stücke (v44): gleich angelegt, wenn besser als das Start-Stück an dem Platz, sonst in den Beutel
+      let worn = 0;
+      for (let i = 0; i < item; i++) { const it = randomItem('rare'), c = A.Compare ? A.Compare.all(it)[0] : null;
+        if (c && c.verdict === 'better') { const old = run.gear[c.slot]; run.gear[c.slot] = it; if (old) run.bag.push(old); worn++; } else run.bag.push(it); }
+      if (item) { trimBag(); run.hp = derived().maxHp; }
+      run.giftNews = { pot, gold, item, worn }; meta.gift = null; saveMeta();
+    }
     newFloor();
     save();
     return run;
@@ -9694,7 +9704,7 @@ A.Pets = (function () {
     const tr = tripOf(id); if (!tr || !tr.done) return null;
     const m = G().meta, e = trips()[id], X = tr.X, rng = new A.RNG(((Math.floor(e.t0 / 1000) ^ 0x3c6ef372) >>> 0) || 3);
     const sparks = rng.int(X.sparks[0], X.sparks[1]);
-    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }
+    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = X.item > 0 && rng.chance(X.item) ? A.EXP_ITEM : rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }
     delete m.exp[id]; m.sparks += sparks;
     const up = gain(id, X.treue);
     G().saveMeta();
@@ -15037,7 +15047,7 @@ window.A = window.A || {};
       else right = `<div class="expbtns">${A.EXPEDITIONS.map(X => `<button data-trip="${id}" data-k="${X.id}"><b>${X.h} ${L('Std', 'h')}</b><span>${esc(t(X.name))}</span></button>`).join('')}</div>`;
       return `<div class="expc ${tr ? (tr.done ? 'back' : 'away') : ''}"><div class="pp">${petImg(id, 34)}</div><div class="pb"><b style="color:${P.col}">${esc(t(P.name))}</b>${right}</div></div>`;
     }).join('');
-    const info = L(`Tiere, die gerade nicht mitkommen, gehen auf Reise und bringen Seelenfunken und Treue mit, auf langen Reisen oft ein Mitbringsel für den nächsten Lauf. Die Zeit läuft auch, wenn das Spiel zu ist.`, `Pets that are not joining you go travelling and bring back soul sparks and loyalty, on long trips often a gift for the next run. Time keeps running while the game is closed.`)
+    const info = L(`Tiere, die gerade nicht mitkommen, gehen auf Reise und bringen Seelenfunken und Treue mit, auf langen Reisen oft ein Mitbringsel für den nächsten Lauf, von der Expedition auch mal ein seltenes Stück. Die Zeit läuft auch, wenn das Spiel zu ist.`, `Pets that are not joining you go travelling and bring back soul sparks and loyalty, on long trips often a gift for the next run, from an expedition sometimes a rare item. Time keeps running while the game is closed.`)
       + ' ' + A.EXPEDITIONS.map(X => `${X.h} ${L('Std', 'h')}: ${X.sparks[0]}-${X.sparks[1]}`).join(' · ') + ' ' + t(U.meta) + '.';
     return `<h3>${L('Expeditionen', 'Expeditions')} ${busy}/${A.EXP_MAX}</h3><div class="card flags"><div class="mini">${info}</div>${news}<div class="exps">${cards}</div></div>`;
   }
@@ -15131,7 +15141,7 @@ window.A = window.A || {};
     const wfx = A.Weather.nameOf(Wd.W);
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
     // Mitbringsel von der Expedition (v41): einmal nach dem Ebenen-Schild zeigen, dann vergessen
-    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); setTimeout(() => { if (Wd.W === w2 && dungeonEl.classList.contains('on')) A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }, 2800); }
+    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); setTimeout(() => { if (Wd.W === w2 && dungeonEl.classList.contains('on')) A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : '', gn.item > 0 ? (gn.item === 1 ? (gn.worn ? L('ein seltenes Stück, gleich angelegt', 'a rare item, already equipped') : L('ein seltenes Stück im Beutel', 'a rare item in your bag')) : (gn.worn ? L(`${gn.item} seltene Stücke (${gn.worn} angelegt)`, `${gn.item} rare items (${gn.worn} equipped)`) : L(`${gn.item} seltene Stücke im Beutel`, `${gn.item} rare items in your bag`))) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }, 2800); }
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
