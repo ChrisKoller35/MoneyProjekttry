@@ -178,7 +178,7 @@ A.World = (function () {
     if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
     if (m.curled && m.pose) m.pose = null;   // Panzer vorbei: wieder das normale Bild
     // Einrollen (curl, Grabkäfer): unter halbem Leben einmal 2,5 s im Panzer (foes.js guard fängt jeden Treffer ab, keine Heilung danach), dann sofort Anlauf
-    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chNow = true; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
+    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
     if (m.charge && chargeStep(m, dt, d, nx, ny)) return true;
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)

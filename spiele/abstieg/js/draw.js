@@ -714,7 +714,7 @@ window.A = window.A || {};
       const nf = A.Art.monFrames(m.mid), fly = m.fly && m.shape !== 'ghost', ghost = m.shape === 'ghost';
       const moving = m.state !== 'windup' && !(m.spawn > 0);
       const frame = nf > 1 ? Math.floor(this.t * (fly ? 10 : 6) + (m.x % 7)) % nf : 0;
-      const spr = A.Art.monSprite(m.mid, moving ? frame : 0); const flip = m.fx < 0;
+      const spr = A.Art.monSprite(m.pose || m.mid, moving && !m.pose ? frame : 0); const flip = m.fx < 0;   // pose: Grabkäfer im Panzer, Kugelfisch aufgeblasen (world.js)
       let sx = sc, sy = sc, alpha = 1, lift = 0;
       if (m.shape === 'blob') { const q = Math.sin(this.t * 7 + m.x * 0.1); sx = sc * (1 + q * 0.07); sy = sc * (1 - q * 0.09); }
       if (fly) lift = 7 + Math.sin(this.t * 5 + m.x) * 2;

@@ -772,6 +772,16 @@ A.MONSTERS.push(
   { id: 'glutwicht', name: { de: 'Glutwicht', en: 'Ember Imp' }, hp: 22, atk: 9, def: 1, spd: 8, kind: 'magic', color: '#f77622', shape: 'imp', burn: 0.6, shotCol: '#feae34' },
   { id: 'leerenauge', name: { de: 'Leerenauge', en: 'Void Eye' }, hp: 30, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#b55088', shape: 'eye', teleport: true, fly: true },
 );
+// Nachschub: ein neuer Gegner je Welt (ab der 2. Ebene einer Welt). charge = bleibt stehen, zeigt einen roten Streifen und rennt dann geradeaus los,
+// curl = rollt sich unter halbem Leben einmal 2,5 s unverwundbar ein, danach sofort Anlauf (world.js monSpecial)
+A.MONSTERS.push(
+  { id: 'fasswicht', name: { de: 'Fasswicht', en: 'Barrel Gremlin' }, hp: 20, atk: 7, def: 3, spd: 4, kind: 'melee', color: '#8a5a3c', shape: 'barrel', charge: true, steal: 1 },
+  { id: 'muecke', name: { de: 'Sumpfmücke', en: 'Swamp Mosquito' }, hp: 10, atk: 5, def: 0, spd: 10, kind: 'melee', color: '#9fd8a0', shape: 'mosquito', fly: true, dodge: 25, poisonOnHit: 1 },
+  { id: 'grabkaefer', name: { de: 'Grabkäfer', en: 'Tomb Beetle' }, hp: 45, atk: 8, def: 9, spd: 3, kind: 'melee', color: '#5c4a7a', shape: 'beetle', curl: true, charge: true },
+  { id: 'kugelfisch', name: { de: 'Kugelfisch', en: 'Pufferfish' }, hp: 26, atk: 8, def: 2, spd: 4, kind: 'magic', color: '#feae34', shape: 'puffer', fly: true, ring: 8, ringCd: 7, shotCol: '#feae34' },
+  { id: 'schlackenhund', name: { de: 'Schlackenhund', en: 'Slag Hound' }, hp: 30, atk: 9, def: 2, spd: 8, kind: 'melee', color: '#f77622', shape: 'hound', leap: true, burn: 0.5 },
+  { id: 'fluesterer', name: { de: 'Flüsterer', en: 'Whisperer' }, hp: 28, atk: 10, def: 1, spd: 5, kind: 'magic', color: '#68386c', shape: 'whisperer', fly: true, teleport: true, summon: 'fledermaus', summonCd: 11 },
+);
 for (const id of ['fledermaus', 'glutmotte', 'schattenfaenger', 'spiegelgeist']) A.MONSTERS.find(m => m.id === id).fly = true;
 // Reaktionen (js/foes.js): flee = rennt unter 30 % Leben weg, spores = Sporenwolke, wenn er brennt, shell = zieht sich unter 30 % einmal in den Panzer zurück;
 // Rache haben alle: fällt ein Kumpel daneben, werden sie kurz schneller und stärker
@@ -1131,17 +1141,17 @@ A.PET_CAGE = 0.45;                      // Chance auf einen Käfig je Ebene (ab 
 // ---------- Welten: je 4 Ebenen, danach wiederholen sie sich, nur härter ----------
 // pit: Grube (nicht begehbar, Geschosse fliegen drüber), hazard: Gefahr-Boden, obst: Hindernisse in den Räumen, corner: Dinge in Ecken, favor: bevorzugte Raumformen
 A.WORLDS = [
-  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
+  { id: 'stone', name: { de: 'Graue Gewölbe', en: 'Grey Vaults' }, mons: ['schleimer', 'ratte', 'fledermaus', 'fasswicht', 'kobolddieb', 'spinne', 'knochen'], boss: 'schleimkoenig',
     pit: null, hazard: null, obst: ['pillar'], corner: ['barrel', 'crate', 'pot', 'barrel'], favor: ['pillars', 'octagon', 'cross'] },
-  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
+  { id: 'jungle', name: { de: 'Dschungel-Ruinen', en: 'Jungle Ruins' }, mons: ['frosch', 'pilzkrieger', 'ranke', 'muecke', 'spinne', 'fledermaus', 'schleimer'], boss: 'dornenmutter',
     pit: 'water', hazard: 'mud', obst: ['tree', 'bush', 'tree'], corner: ['bush', 'pot', 'bush'], favor: ['garden', 'garden', 'island'], dense: 3 },
-  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
+  { id: 'desert', name: { de: 'Wüstengrab', en: 'Desert Tomb' }, mons: ['skorpion', 'mumie', 'knochen', 'grabkaefer', 'kobolddieb', 'ratte', 'glutwicht'], boss: 'sandpharao',
     pit: null, hazard: 'quicksand', obst: ['cactus', 'obelisk', 'urn'], corner: ['urn', 'pot', 'urn'], favor: ['pool', 'pillars', 'garden'], dense: 1 },
-  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
+  { id: 'water', name: { de: 'Versunkene Stadt', en: 'Sunken City' }, mons: ['krabbe', 'qualle', 'frosch', 'kugelfisch', 'spiegelgeist', 'schleimer', 'tunnelwurm'], boss: 'kraken',
     pit: 'water', hazard: 'shallow', obst: ['coral', 'column'], corner: ['barrel', 'crate', 'coral'], favor: ['island', 'stripes', 'ring'] },
-  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
+  { id: 'volcano', name: { de: 'Vulkanschmiede', en: 'Volcano Forge' }, mons: ['glutmotte', 'glutwicht', 'rostgolem', 'schlackenhund', 'tunnelwurm', 'skorpion', 'spinne'], boss: 'rostkoenig',
     pit: 'lava', hazard: 'embers', obst: ['obsidian', 'anvil'], corner: ['barrel', 'crate', 'anvil'], favor: ['stripes', 'pool', 'ring'] },
-  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
+  { id: 'abyss', name: { de: 'Der Abgrund', en: 'The Abyss' }, mons: ['schattenfaenger', 'leerenauge', 'spiegelgeist', 'fluesterer', 'knochen', 'pilzkrieger', 'qualle'], boss: 'waechter',
     pit: 'void', hazard: 'shadow', obst: ['crystal'], corner: ['crystal', 'pot'], favor: ['island', 'stripes', 'cross'] },
 ];
 // Gefahr-Boden: slow = Tempo-Faktor, burn = brennt
@@ -1175,7 +1185,8 @@ A.isBossFloor = (f) => f % A.FLOORS_PER_WORLD === 0;
 A.bossOf = (f) => A.isBossFloor(f) ? A.BOSSES[A.worldOf(f).boss] : null;
 A.worldName = (f) => { const n = A.t(A.worldOf(f).name), r = A.worldRound(f); return r ? n + ' ' + ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][Math.min(r, 7)] : n; };
 // Gegner-Auswahl: auf der ersten Ebene einer Welt die ersten drei Arten, dann je Ebene eine mehr
-A.monsterPool = (f) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return w.mons.slice(0, 3 + k).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
+// lvVer: Ebenen-Bau des Spielstands; ab 6 kommt der neue Gegner der Welt ab ihrer 2. Ebene dazu (ältere laufende Ebenen ohne)
+A.monsterPool = (f, lvVer) => { const w = A.worldOf(f), k = (Math.max(1, f) - 1) % A.FLOORS_PER_WORLD; return (lvVer >= 6 ? w.mons.slice(0, 3 + k + (k >= 1 ? 1 : 0)) : w.mons.filter((_, i) => i !== 3).slice(0, 3 + k)).map(id => A.MONSTERS.find(m => m.id === id)).filter(Boolean); };
 
 // ---------- Ereignisse ----------
 A.EVENTS = [
@@ -2038,6 +2049,7 @@ A.Game = (function () {
       leap: !!m.leap, rooted: !!m.rooted, spread: m.spread || 0, ring: m.ring || 0, ringCd: m.ringCd || 0, summon: m.summon || null, summonCd: m.summonCd || 0,
       teleport: !!m.teleport, slowOnHit: !!m.slowOnHit, fly: !!m.fly, shotCol: m.shotCol || null, splitInto: m.splitInto || null,
       flee: !!m.flee, spores: !!m.spores, shell: !!m.shell,   // Reaktionen (foes.js)
+      charge: !!m.charge, curl: !!m.curl,   // Anlauf und Einrollen (world.js monSpecial)
     };
     e.hp = e.maxHp;
     if (elite) A.Elites.make(e, m, floor, elite === true ? A.Elites.count(floor) : +elite || 1, run ? run.rng : A.rng, Array.isArray(elite) ? elite : null);   // Eigenschaften (elites.js)
@@ -2222,7 +2234,7 @@ A.Game = (function () {
   // ---------- Ebenen (Räume) ----------
   function newFloor() {
     run.floorSeed = run.rng.int(1, 2e9); run.rooms = null;
-    run.lvVer = 5;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4) und Käfigen (5); ältere Spielstände bauen ihre laufende Ebene wie bisher
+    run.lvVer = 6;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5) und neuen Gegnern (6); ältere Spielstände bauen ihre laufende Ebene wie bisher
     run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     run.quest = run.rng.pick(A.QUESTS); run.questProg = 0; run.questDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
@@ -5077,6 +5089,186 @@ A.Art = (function () {
     '.C.C...D....C.C.',
     '..C.........C...',
   ]];
+  // Nachschub: ein neuer Gegner je Welt (Fasswicht, Sumpfmücke, Grabkäfer, Kugelfisch, Schlackenhund, Flüsterer)
+  R.barrelimp = [[
+    '...y......y...',
+    '...yy....yy...',
+    '..DDDDDDDDDD..',
+    '.CCCCCCCCCCCC.',
+    '.CCYY0CCYY0CC.',
+    '.DDDDDDDDDDDD.',
+    'CCHCCCCCCCCCCC',
+    'CCHCC0000CCCCC',
+    '.DDDDDDDDDDDD.',
+    '.CHCCCCCCCCCC.',
+    '..DDDDDDDDDD..',
+    '...N......N...',
+    '..NN......NN..',
+  ], [
+    '...y......y...',
+    '...yy....yy...',
+    '..DDDDDDDDDD..',
+    '.CCCCCCCCCCCC.',
+    '.CC0YYCC0YYCC.',
+    '.DDDDDDDDDDDD.',
+    'CCHCCCCCCCCCCC',
+    'CCHCCC00CCCCCC',
+    '.DDDDDDDDDDDD.',
+    '.CHCCCCCCCCCC.',
+    '..DDDDDDDDDD..',
+    '....N....N....',
+    '...NN....NN...',
+  ]];
+  R.mosquito = [[
+    '..55......55..',
+    '.5665....5665.',
+    '.56665..56665.',
+    '..5555CC5555..',
+    '.....CHHC.....',
+    '..xxxC0CC.....',
+    '.....CDDC.....',
+    '......CDC.....',
+    '......DCD.....',
+    '.....0.D.0....',
+    '....0..0..0...',
+  ], [
+    '..............',
+    '..............',
+    '.....5CC5.....',
+    '.55556HHC5555.',
+    '5666665CC66665',
+    '.x5555C0C5555.',
+    '..xx.CDDC.....',
+    '......CDC.....',
+    '......DCD.....',
+    '......0D0.....',
+    '.....0.0.0....',
+  ]];
+  R.beetle = [[
+    '....0....0....',
+    '.....0..0.....',
+    '....D0000D....',
+    '...DCCHCCCD...',
+    '..DCCHCDCCCD..',
+    '.0DCHCCDCCCD0.',
+    '..DCCCCDCCCD..',
+    '.0DCCCCDCCCD0.',
+    '..DDCCCDCCDD..',
+    '.0..DDDDDD..0.',
+  ], [
+    '...0......0...',
+    '....0....0....',
+    '....D0000D....',
+    '...DCCHCCCD...',
+    '.0DCCHCDCCCD0.',
+    '..DCHCCDCCCD..',
+    '.0DCCCCDCCCD0.',
+    '..DCCCCDCCCD..',
+    '..DDCCCDCCDD..',
+    '..0.DDDDDD.0..',
+  ]];
+  R.beetleball = [[
+    '....DDDD....',
+    '..DDCCCCDD..',
+    '.DCCHHCCCCD.',
+    '.DCHCCCCCCD.',
+    'DDDDDDDDDDDD',
+    'DCCCCCCCCCCD',
+    'DCHCCCCCCCCD',
+    '.DDDDDDDDDD.',
+    '..DCCCCCCD..',
+    '....DDDD....',
+  ]];
+  R.puffer = [[
+    '.....CCCC.....',
+    '...CCCCCCCC...',
+    '..CC66CCCCCC.D',
+    '..CC60CCCCCCDD',
+    '.CCCCCCCDCCCDD',
+    '.RCCCCCCCDCCDD',
+    '..CHHHHHHCCC.D',
+    '...CHHHHCC....',
+    '.....CCCC.....',
+  ], [
+    '.....CCCC.....',
+    '...CCCCCCCC...',
+    '..CC66CCCCCCD.',
+    '..CC60CCCCCCDD',
+    '.CCCCCCCDCCCD.',
+    'RRCCCCCCCDCCDD',
+    '..CHHHHHHCCCD.',
+    '...CHHHHCC....',
+    '.....CCCC.....',
+  ]];
+  R.pufferbig = [[
+    '.......5........',
+    '...5..CCC..5....',
+    '....CCCCCCCC....',
+    '..5CC66CCCCCC5.D',
+    '..CCC60CCCCCCCDD',
+    '5CCCCCCCCCCCCCDD',
+    '.RRCCCCCCCCCCCDD',
+    '5CCCCCCCCCCCCCDD',
+    '..CHHHHHHHHHCC.D',
+    '..5CHHHHHHHHC5..',
+    '....CCHHHHCC....',
+    '...5..CCCC..5...',
+    '.......5........',
+  ]];
+  R.sloghound = [[
+    '..............y.',
+    '.CC..........yfy',
+    'CYCC.........fy.',
+    'CCCCC.......Cf..',
+    'CCCHCCCCCCCCC...',
+    '0CCCCfCCCfCCCC..',
+    '..DCCCCfCCCCCD..',
+    '..DCD.....DCD...',
+    '..D.D.....D.D...',
+    '.DD.......DD....',
+  ], [
+    '.............y..',
+    '.CC.........yfy.',
+    'CYCC.........fy.',
+    'CCCCC.......Cf..',
+    'CCCHCCCCCCCCC...',
+    '0CCCCfCCCfCCCC..',
+    '..DCCCCfCCCCCD..',
+    '...DCD...DCD....',
+    '...D.D...D.D....',
+    '..DD.....DD.....',
+  ]];
+  R.whisperer = [[
+    '.....DDDD.....',
+    '....DCCCCD....',
+    '...DCCCCCCD...',
+    '...DC0000CD...',
+    '...DC0c0cCD...',
+    '...DC0000CD...',
+    '..DCCCCCCCCD..',
+    '.DCHCCCCCCHCD.',
+    '.DCHCCCCCCHCD.',
+    '..DCCCCCCCCD..',
+    '..DCCCCCCCCD..',
+    '...DCDCCDCD...',
+    '...D.D..D.D...',
+    '....D....D....',
+  ], [
+    '.....DDDD.....',
+    '....DCCCCD....',
+    '...DCCCCCCD...',
+    '...DC0000CD...',
+    '...DC0000CD...',
+    '...DC0000CD...',
+    '..DCCCCCCCCD..',
+    'DCHCCCCCCCCHCD',
+    '.DCHCCCCCCHCD.',
+    '..DCCCCCCCCD..',
+    '..DCCCCCCCCD..',
+    '...DCDCCDCD...',
+    '..D..D..D..D..',
+    '.....D..D.....',
+  ]];
 
   // ---------- Hindernisse der Welten ----------
   R.pillar = [[
@@ -5589,6 +5781,12 @@ A.Art = (function () {
     leerenauge: { spr: 'eye', C: '#b55088', D: '#68386c' },
     waechter: { spr: 'eye', C: '#e43b44', D: '#a22633', R: '#feae34' },
     kraken: { spr: 'octopus', C: '#b55088', D: '#68386c', H: '#f6757a' },
+    fasswicht: { spr: 'barrelimp', C: '#8a5a3c', D: '#4e3426', H: '#b8865a' },
+    muecke: { spr: 'mosquito', C: '#9fd8a0', D: '#3e8948', H: '#e4f8c8' },
+    grabkaefer: { spr: 'beetle', C: '#5c4a7a', D: '#2e2a4a', H: '#9a86c0' }, grabkaefer_ball: { spr: 'beetleball', C: '#5c4a7a', D: '#2e2a4a', H: '#9a86c0' },
+    kugelfisch: { spr: 'puffer', C: '#feae34', D: '#be4a2f', H: '#fee761' }, kugelfisch_big: { spr: 'pufferbig', C: '#feae34', D: '#be4a2f', H: '#fee761' },
+    schlackenhund: { spr: 'sloghound', C: '#733e39', D: '#3e2731', H: '#be4a2f', Y: '#fee761' },
+    fluesterer: { spr: 'whisperer', C: '#68386c', D: '#262b44', H: '#b55088', c: '#2ce8f5' },
     diener_skel: { spr: 'skeleton', s: '#e6dcf2', '0': '#2a1836', '5': '#c0cbdc' },
     diener_geist: { spr: 'ghost', C: '#e0a4ff', D: '#b55088', H: '#ffffff', '0': '#68386c' },
   };
@@ -9942,9 +10140,9 @@ A.World = (function () {
     const cap = A.Foes.captainFor(f);
     if (r.type === 'boss') list.push(G().monsterEntity(A.bossOf(f), f, false, 1));
     else if (cap && r === A.Foes.captainRoom(W)) {   // Hauptmann der Welt (foes.js), ab der zweiten Runde mit einem Begleiter
-      list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f)), f, false, 2));
+      list.push(A.Foes.makeCaptain(cap, f)); if (f >= 7) list.push(G().monsterEntity(rng.pick(A.monsterPool(f, run.lvVer || 0)), f, false, 2));
     } else {
-      const pool = A.monsterPool(f);
+      const pool = A.monsterPool(f, run.lvVer || 0);   // ab lvVer 6 mit den neuen Gegnern (ab der 2. Ebene einer Welt)
       // grosse Räume: ein Gegner mehr (mehr Platz, aber nicht leer)
       const n = (r.type === 'elite' ? rng.int(2, 3) : f <= 1 ? rng.int(2, 3) : f <= 3 ? rng.int(3, 4) : rng.int(3, 5) + (r.w * r.h > (W.big ? 260 : 130) && f >= 6 ? 1 : 0)) + (W.big ? 1 : 0);
       // Elite-Raum: der erste Gegner ist eine Elite; ab Ebene 3 steckt manchmal auch in einem normalen Kampf ein Champion (eine Eigenschaft weniger)
@@ -9978,11 +10176,19 @@ A.World = (function () {
     const h = W.hero;
     if (m.boss && A.Bosses.step(m, dt, d)) return true;   // eigene Mechanik je Welt-Boss (bosses.js)
     if (m.shellT > W.t) return A.Foes.step(m, dt, d, nx, ny);   // im Panzer: nichts anderes (foes.js)
+    if (m.curled && m.pose) m.pose = null;   // Panzer vorbei: wieder das normale Bild
+    // Einrollen (curl, Grabkäfer): unter halbem Leben einmal 2,5 s im Panzer (foes.js guard fängt jeden Treffer ab, keine Heilung danach), dann sofort Anlauf
+    if (m.curl && !m.curled && m.hp < m.maxHp * 0.5) { m.curled = m.shellHealed = true; m.shellT = W.t + 2.5; m.pose = m.mid + '_ball'; m.state = 'chase'; m.chPh = null; m.chNow = true; float(m.x, m.y - 40, A.LANG === 'de' ? 'Eingerollt!' : 'Curled up!', '#c0cbdc', 14); fx('shield', { e: m }); return true; }
+    if (m.charge && chargeStep(m, dt, d, nx, ny)) return true;
     if (m.traits && m.state !== 'leap' && A.Elites.step(m, dt, d)) return true;   // Feuerring, Stampfer, Eis, Gewitter, Heilen (elites.js)
     if ((m.captain || m.shell) && A.Foes.step(m, dt, d, nx, ny)) return true;   // Masche des Hauptmanns, Panzer (foes.js)
     if (A.Foes.flee(m, dt, d, nx, ny)) return true;   // Flucht unter 30 % Leben (foes.js)
     m.skT -= dt;
-    if (m.ring && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
+    if (m.ring && !m.boss) {   // Kugelfisch: bläst sich 0,5 s sichtbar auf, dann ein Stachelring (nur aus der Nähe)
+      if (m.puffT > 0) { if ((m.puffT -= dt) <= 0) { m.pose = null; m.swing = 0.3; ringShot(m, m.ring, m.shotCol || m.color); fx('nova', { e: m, r: 60, color: m.shotCol || m.color, magic: true }); } return true; }
+      if (m.skT <= 0 && d < 320) { m.skT = m.ringCd || 5; m.puffT = 0.5; m.pose = m.mid + '_big'; fx('windup', { m }); return true; }
+    }
+    if (m.ring && m.boss && m.skT <= 0 && d < 520) { m.skT = m.ringCd || 5; m.swing = 0.3; ringShot(m, m.ring, m.color); fx('nova', { e: m, r: 60, color: m.color, magic: true }); }
     if (m.summon) {
       m.sumT -= dt;
       const alive = W.mons.filter(o => o.alive && o.summoned).length;
@@ -9997,6 +10203,28 @@ A.World = (function () {
     if (m.leap && m.state !== 'leap' && m.cd <= 0 && d > 70 && d < 260 && clearLine(m, h)) { m.state = 'leap'; m.st = 0.32; m.lx = nx; m.ly = ny; m.cd = 2.2; fx('windup', { m }); return true; }
     if (m.state === 'leap') { m.st -= dt; moveEnt(m, m.lx * 520 * dt, m.ly * 520 * dt); if (m.st <= 0) { m.state = 'chase'; if (dist(m, h) < m.r + h.r + 14) hit(m, h, m.atk * 1.2, { kind: 'phys' }); fx('strike', { m }); } return true; }
     return false;
+  }
+  // Anlauf (charge): 0,45 s stehen und zittern, roter Pfeil-Streifen am Boden, dann 0,7 s geradeaus; Held = Schaden und Rückstoss, Wand = benommen
+  function chargeStep(m, dt, d, nx, ny) {
+    const h = W.hero;
+    if (m.state === 'windup' && m.chPh === 'wind') { m.fx = m.cdx; m.fy = m.cdy; if ((m.st -= dt) <= 0) { m.state = 'charge'; m.chPh = null; m.st = 0.7; } return true; }
+    if (m.state === 'charge') {
+      const ox = m.x, oy = m.y, step = 420 * dt; m.fx = m.cdx; m.fy = m.cdy; m.st -= dt;
+      moveEnt(m, m.cdx * step, m.cdy * step);
+      if (!m.chHit && h.alive && dist(m, h) < m.r + h.r + 6) { m.chHit = true; hit(m, h, m.atk * 1.4, { kind: 'phys' }); moveEnt(h, m.cdx * 34, m.cdy * 34); fx('strike', { m }); }
+      if (A.FX && !A.FX.low) A.FX.smoke(m.x, m.y + 8, 1, '#8b9bb4', 3);
+      if (Math.hypot(m.x - ox, m.y - oy) < step * 0.5) { m.state = 'chase'; m.stun = 0.6; fx('strike', { m }); float(m.x, m.y - 40, A.LANG === 'de' ? 'Benommen!' : 'Dazed!', '#fee761', 13); if (A.FX) A.FX.shake(0.15); }
+      else if (m.st <= 0) m.state = 'chase';
+      return true;
+    }
+    if ((m.chCd = (m.chCd ?? 1.5) - dt) > 0 || m.state === 'windup' || !h.alive || !(m.chNow || (d > 90 && d < 300 && clearLine(m, h)))) return false;
+    Object.assign(m, { state: 'windup', chPh: 'wind', st: 0.45, stMax: 0.45, chNow: false, chHit: false, chCd: 3.5, cdx: nx, cdy: ny, fx: nx, fy: ny });
+    fx('windup', { m });
+    if (A.FX) for (let k = 1; k <= 12; k++) {   // Warnung: Pfeil-Spitzen in Laufrichtung, bis zur ersten Wand
+      const cx = m.x + nx * k * 24, cy = m.y + ny * k * 24; if (solid(cx, cy)) break;
+      for (let j = -2; j <= 2; j++) A.FX.part({ x: cx - nx * Math.abs(j) * 5 - ny * j * 5, y: cy + 6 - ny * Math.abs(j) * 5 + nx * j * 5, life: 0.6, size: 2, color: '#e43b44', add: true, drag: 0 });
+    }
+    return true;
   }
   function blink(m) {
     const h = W.hero; fx('appear', { m });
@@ -11203,7 +11431,7 @@ window.A = window.A || {};
       const nf = A.Art.monFrames(m.mid), fly = m.fly && m.shape !== 'ghost', ghost = m.shape === 'ghost';
       const moving = m.state !== 'windup' && !(m.spawn > 0);
       const frame = nf > 1 ? Math.floor(this.t * (fly ? 10 : 6) + (m.x % 7)) % nf : 0;
-      const spr = A.Art.monSprite(m.mid, moving ? frame : 0); const flip = m.fx < 0;
+      const spr = A.Art.monSprite(m.pose || m.mid, moving && !m.pose ? frame : 0); const flip = m.fx < 0;   // pose: Grabkäfer im Panzer, Kugelfisch aufgeblasen (world.js)
       let sx = sc, sy = sc, alpha = 1, lift = 0;
       if (m.shape === 'blob') { const q = Math.sin(this.t * 7 + m.x * 0.1); sx = sc * (1 + q * 0.07); sy = sc * (1 - q * 0.09); }
       if (fly) lift = 7 + Math.sin(this.t * 5 + m.x) * 2;
