@@ -52,7 +52,7 @@ A.Gear = (function () {
   // vor der Schadensrechnung: Faktor, erzwungener Volltreffer, mehr Volltreffer-Schaden
   function pre(from, to, opts) {
     const w = W(); if (!w) return null; const h = w.hero;
-    if (to.side === 'hero') return T(to, 'stein') >= 3 ? { mul: 0.8 } : null;
+    if (to.side === 'hero') return T(to, 'stein') >= 3 ? { mul: 0.8, critAdd: 0 } : null;   // critAdd muss dabei sein, sonst macht ein Volltreffer am Helden «NaN» und er fällt sofort
     let mul = 1, force = false, critAdd = 0;
     if (opts.kind === 'poison' && T(h, 'gift') >= 3) mul *= 2;
     if (from === h && real(opts)) {
