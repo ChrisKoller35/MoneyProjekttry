@@ -21,7 +21,7 @@ A.Combos = (function () {
   const pow = (h) => api.heroPower(h);
   function add(o) { const w = W(); (w.cbfx || (w.cbfx = [])).push(o); return o; }
   function later(o) { const w = W(); (w.cbQ || (w.cbQ = [])).push(o); }
-  function nearest(x, y, maxD) { let best = null, bd = maxD; for (const m of W().mons) { if (!live(m)) continue; const d = Math.hypot(m.x - x, m.y - y); if (d < bd) { bd = d; best = m; } } return best; }
+  function nearest(x, y, maxD, skip) { let best = null, bd = maxD; for (const m of W().mons) { if (!live(m) || (skip && skip.has(m))) continue; const d = Math.hypot(m.x - x, m.y - y); if (d < bd) { bd = d; best = m; } } return best; }
   let popT = 0;   // Knall der Raketen nicht zu oft hintereinander
 
   // ---------- Teile ----------
@@ -34,6 +34,7 @@ A.Combos = (function () {
     if (p.leg) return !!(d.leg && d.leg[p.leg]);
     if (p.tro) { const T = A.TROPHIES[p.tro]; return !!(T && d.tro && d.tro[T.power]); }
     if (p.cls) return r.cls === p.cls;
+    if (p.pet) return ((r.pets) || []).includes(p.pet);
     return false;
   }
   function partName(p) {
@@ -42,6 +43,7 @@ A.Combos = (function () {
     if (p.spell) return L('Zauber ', 'Spell ') + A.t(A.SKILLS[p.spell].name);
     if (p.leg) return A.t(A.LEGENDS[p.leg].name);
     if (p.tro) return A.t(A.TROPHIES[p.tro].name);
+    if (p.pet) return A.t(A.PETS[p.pet].name) + L(' (Begleiter)', ' (companion)');
     return A.t(A.CLASSES.find(c => c.id === p.cls).name);
   }
   // Wo gibt es das fehlende Teil?
@@ -51,6 +53,7 @@ A.Combos = (function () {
     if (p.el) return L('Ausrüstung oder Schmiede', 'gear or forge');
     if (p.leg) return A.Legends.hint(p.leg);
     if (p.tro) return L('Trophäe vom ', 'trophy from ') + A.t(A.BOSSES[p.tro].name);
+    if (p.pet) return L('Begleiter, aus einem Käfig oder der Tierhütte', 'companion, from a cage or the pet hut');
     return L('nur diese Klasse', 'this class only');
   }
   function partIcon(p) {
@@ -59,6 +62,7 @@ A.Combos = (function () {
     if (p.spell) return A.SKILLS[p.spell].icon || 's_strike';
     if (p.leg) return 'i_' + A.LEGENDS[p.leg].ico;
     if (p.tro) return p.tro === 'schleimkoenig' ? 'crown' : A.Art.itemIcon(A.TROPHIES[p.tro].base);
+    if (p.pet) return A.PETS[p.pet].spr;
     return CLS_ICON[p.cls] || 'u_star';
   }
   function recipe(id) { return C(id).need.map(partName).join(' + '); }
@@ -93,13 +97,39 @@ A.Combos = (function () {
   }
 
   // ---------- Treffer ----------
-  // vor der Schadensrechnung: Vampirfürst (+6 % je Blutkugel) und Todesmut (unter 35 % Leben ist jeder Treffer ein Volltreffer)
+  // vor der Schadensrechnung: Vampirfürst (+6 % je Blutkugel), Todesmut (unter 35 % Leben ist jeder Treffer ein Volltreffer),
+  // Dampfkessel (Feuerball auf Gebremste +50 %), Eissplitter (Frost zerspringt), Schattenschritt (Volltreffer aus dem Schatten)
+  const chilled = (m, w) => m.slowUntil > w.t || m.frozenUntil > w.t;   // gebremst (world.js slowMul) oder eingefroren
   function pre(from, to, opts) {
     const w = W(); if (!w || from !== w.hero || to.side !== 'enemy' || !from.combo) return null;
     let mul = 1, force = false;
+    const main = !opts.proc && (opts.kind === 'phys' || opts.kind === 'magic');
     if (from.bloodUntil > w.t && from.bloodN) mul *= 1 + 0.06 * from.bloodN;
     if (on(from, 'todesmut') && from.hp < from.maxHp * 0.35 && (opts.kind === 'phys' || opts.kind === 'magic')) force = true;
+    if (opts.fb && on(from, 'dampfkessel') && chilled(to, w)) { mul *= 1.5; to.cbSteam = w.t; }   // onBoom betäubt danach
+    if (main && on(from, 'eissplitter') && chilled(to, w) && !(from.cbIceT > w.t)) { from.cbIceT = w.t + 1.2; shards(from, to); }
+    if (main && on(from, 'schattenschritt') && from.cbShadeHit > w.t) {   // 1,75 (Volltreffer) mal 8/7 = doppelter Schaden
+      from.cbShadeHit = 0; force = true; mul *= 2 / 1.75;
+      api.float(to.x, to.y - to.r - 30, L('Aus dem Schatten!', 'From the shadows!'), '#e0a4ff', 13);
+      if (A.FX) A.FX.burst(to.x, to.y - 10, 12, { color: ['#b55088', '#68386c', '#e0a4ff'], smin: 50, smax: 150, life: 0.4, add: true, kind: 'spark', drag: 3 });
+    }
     return mul === 1 && !force ? null : { mul, force };
+  }
+  // Eissplitter: 6 Splitter fliegen vom Gegner rundum weg
+  function shards(h, m) {
+    const a0 = Math.random() * TAU;
+    for (let i = 0; i < 6; i++) { const a = a0 + i / 6 * TAU; bolt(h, m.x + Math.cos(a) * (m.r + 6), m.y + Math.sin(a) * (m.r + 6) * EY, a, pow(h) * 0.35, { kind: 'magic', color: '#9be8ff', speed: 380, life: 0.55, r: 3, slow: true, slowDur: 2 }); }
+    api.float(m.x, m.y - m.r - 24, L('Klirr!', 'Shatter!'), '#9be8ff', 12);
+    if (A.FX) A.FX.burst(m.x, m.y - 10, 14, { color: ['#9be8ff', '#ffffff', '#2ce8f5'], smin: 60, smax: 180, life: 0.4, z: 8, vz: 80, g: 300 });
+    if (A.Sound.glass) A.Sound.glass(false);
+  }
+  // Blitzschritt (world.js dash): Schattenschritt macht den Helden 1,5 Sekunden unverwundbar (h.inv wie beim Sprung selbst),
+  // der nächste Treffer in 3 Sekunden ist ein Volltreffer mit doppeltem Schaden (pre)
+  function onDash(h) {
+    const w = W(); if (!on(h, 'schattenschritt') || !h.alive) return;
+    h.cbShadeUntil = w.t + 1.5; h.cbShadeHit = w.t + 3; h.inv = Math.max(h.inv, 1.5);
+    api.float(h.x, h.y - 60, L('Schattenschritt!', 'Shadow step!'), '#e0a4ff', 13);
+    if (A.FX) A.FX.burst(h.x, h.y - 10, 16, { color: ['#b55088', '#68386c', '#e0a4ff'], smin: 40, smax: 140, life: 0.5, add: true, kind: 'spark', drag: 3 });
   }
   // Geschoss ohne Schuss-Ton (es kommen oft viele auf einmal)
   function bolt(h, x, y, a, dmg, o) {
@@ -118,15 +148,36 @@ A.Combos = (function () {
     const w = W(), h = w && w.hero; if (!h || !h.alive || !h.combo) return;
     if (on(h, 'vampirfuerst')) { const a = Math.random() * TAU; add({ kind: 'blood', x: e.x, y: e.y - 10, vx: Math.cos(a) * 130, vy: Math.sin(a) * 90 - 40, t0: w.t }); }
     if (on(h, 'fadensturm')) later({ kind: 'thread', at: w.t + 0.12, x: e.x, y: e.y });
+    // Amok: Sieg im Blutrausch (rushUntil stammt noch vom letzten Sieg, world.js setzt ihn erst nach diesem Haken neu) heilt 2 %
+    if (on(h, 'amok') && h.hp < h.maxHp * 0.5 && h.rushUntil > w.t) {
+      api.heal(h, Math.max(1, Math.round(h.maxHp * 0.02)));
+      if (A.FX) A.FX.burst(h.x, h.y - 12, 6, { color: ['#e43b44', '#ff0044', '#f6757a'], smin: 20, smax: 70, life: 0.35, add: true, kind: 'spark', drag: 4 });
+    }
   }
-  // Held getroffen: Kaktus schiesst Steinstacheln
+  // Held getroffen: Kaktus schiesst Steinstacheln, Blitzpanzer entlädt sich auf den Angreifer
   function onHurt(h, from) {
-    const w = W(); if (!on(h, 'kaktus') || !h.alive || h.hp <= 0 || !from || from.side !== 'enemy' || h.cactT > w.t) return;
-    h.cactT = w.t + 1.2;
-    const a0 = Math.random() * TAU;
-    for (let i = 0; i < 6; i++) { const a = a0 + i / 6 * TAU; bolt(h, h.x + Math.cos(a) * 14, h.y + Math.sin(a) * 10, a, pow(h) * 0.5, { kind: 'phys', color: '#a2e05a', speed: 400, life: 0.6 }); }
-    api.float(h.x, h.y - 56, L('Stachelig!', 'Prickly!'), '#a2e05a', 13);
-    if (A.FX) A.FX.burst(h.x, h.y - 8, 12, { color: ['#a2e05a', '#8b9bb4', '#c0cbdc'], smin: 60, smax: 170, life: 0.4, z: 6, vz: 90, g: 380 });
+    const w = W(); if (!h.alive || h.hp <= 0 || !from || from.side !== 'enemy') return;
+    if (on(h, 'kaktus') && !(h.cactT > w.t)) {
+      h.cactT = w.t + 1.2;
+      const a0 = Math.random() * TAU;
+      for (let i = 0; i < 6; i++) { const a = a0 + i / 6 * TAU; bolt(h, h.x + Math.cos(a) * 14, h.y + Math.sin(a) * 10, a, pow(h) * 0.5, { kind: 'phys', color: '#a2e05a', speed: 400, life: 0.6 }); }
+      api.float(h.x, h.y - 56, L('Stachelig!', 'Prickly!'), '#a2e05a', 13);
+      if (A.FX) A.FX.burst(h.x, h.y - 8, 12, { color: ['#a2e05a', '#8b9bb4', '#c0cbdc'], smin: 60, smax: 170, life: 0.4, z: 6, vz: 90, g: 380 });
+    }
+    if (on(h, 'blitzpanzer') && !(h.cbArmT > w.t) && live(from)) { h.cbArmT = w.t + 1.5; armor(w, h, from); }
+  }
+  // Blitzpanzer: Blitz in den Angreifer (150 %), dann auf bis zu 2 weitere Gegner in der Nähe (je 100 %)
+  function armor(w, h, m) {
+    const done = new Set(); let src = h;
+    for (let i = 0; i < 3 && m; i++) {
+      done.add(m);
+      w.bolts.push({ x0: src.x, y0: src.y - 12, x1: m.x, y1: m.y - 10, life: 0.3, max: 0.3, col: '#7fd8ff', seed: Math.random() * 99 });
+      api.hit(h, m, pow(h) * (i ? 1 : 1.5), { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff' });
+      api.fx('zap', { x: m.x, y: m.y, color: '#7fd8ff' });
+      src = m; m = nearest(src.x, src.y, 190, done);
+    }
+    api.float(h.x, h.y - 56, L('Bzzzt!', 'Bzzzt!'), '#7fd8ff', 13);
+    if (A.FX) A.FX.burst(h.x, h.y - 12, 10, { color: ['#7fd8ff', '#ffffff', '#fee761'], smin: 50, smax: 150, life: 0.3, add: true, kind: 'spark', drag: 4 });
   }
   // Held weicht aus: ein Schattenklon springt heraus
   function onDodge(h) {
@@ -149,6 +200,32 @@ A.Combos = (function () {
       w.marks.push({ kind: 'boom', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * EY, r: Math.max(54, r * 0.85), at: w.t + 0.22, dmg: dmg * 0.7, col: '#feae34', opts: { proc: true, domino: (opts.domino || 0) + 1 } });
     }
     if (opts.bone && A.FX) A.FX.burst(x, y - 8, 16, { color: ['#ead4aa', '#c0cbdc', '#e0a4ff'], smin: 60, smax: 200, life: 0.6, z: 6, vz: 140, g: 420 });
+    if (opts.fb && on(h, 'dampfkessel')) steam(w, x, y, r);
+    if (opts.fb && on(h, 'drachenfeuer')) dragon(w, h, x, y, r, dmg, opts);
+  }
+  // Dampfkessel: wer vom Feuerball gebremst getroffen wurde (pre merkt sich cbSteam), steht 1 Sekunde betäubt im Dampf
+  function steam(w, x, y, r) {
+    const got = w.mons.filter(m => live(m) && m.cbSteam === w.t); if (!got.length) return;
+    for (const m of got) m.stun = Math.max(m.stun, m.boss ? 0.4 : 1);
+    add({ kind: 'steam', x, y, r, t0: w.t, until: w.t + 1.2, seed: Math.random() * 9 });
+    api.float(x, y - 40, L('Zisch!', 'Hiss!'), '#c0f8ff', 14);
+    if (A.FX) A.FX.burst(x, y - 10, 18, { color: ['#ffffff', '#c0f8ff', '#c0cbdc'], smin: 30, smax: 110, life: 0.9, z: 6, vz: 50, g: -30, size: 2 });
+    if (A.Sound.gulp) A.Sound.gulp(0.4);
+  }
+  // Drachenfeuer: der Ring zwischen r und 1,4 r bekommt die Explosion auch ab, dazu eine Glutlache (höchstens 4)
+  function dragon(w, h, x, y, r, dmg, opts) {
+    const R = r * 1.4;
+    for (const m of w.mons) { const d = Math.hypot(m.x - x, m.y - y); if (live(m) && d >= r + m.r && d < R + m.r) api.hit(h, m, dmg, { kind: 'magic', proc: true, burn: opts.burn || 0.4, color: '#f77622' }); }
+    api.fx('boom', { x, y, r: R, color: '#f77622', soft: true });
+    const pools = (w.cbfx || []).filter(o => o.kind === 'ember' && !o.done); if (pools.length >= 4) pools[0].done = true;
+    add({ kind: 'ember', x, y, r: r * 0.8, t0: w.t, until: w.t + 3, tick: w.t + 0.3, seed: Math.random() * 9 });
+  }
+  function emberStep(o, w, h, dt) {
+    if (w.t > o.until) { o.done = true; return; }
+    if (A.FX && !A.FX.low && Math.random() < dt * 14) { const a = Math.random() * TAU, d = Math.random() * o.r; A.FX.part({ add: true, x: o.x + Math.cos(a) * d, y: o.y + Math.sin(a) * d * EY, z: 2, vx: 0, vy: 0, vz: 30 + Math.random() * 30, life: 0.5, color: Math.random() < 0.5 ? '#feae34' : '#f77622', drag: 1 }); }
+    if (w.t < o.tick || !h.alive) return;
+    o.tick += 0.6;   // brennt wie burn: 0.3
+    for (const m of w.mons) if (live(m) && Math.hypot(m.x - o.x, (m.y - o.y) / EY) < o.r + m.r * 0.5) api.hit(h, m, pow(h) * 0.1, { kind: 'magic', proc: true, noKb: true, burn: 0.3, color: '#f77622' });
   }
   // Feuerwerk: 4 Raketen fliegen im Bogen zu Gegnern in der Nähe und zerplatzen bunt
   const FW = ['#fee761', '#f77622', '#2ce8f5', '#f6757a', '#63c74d', '#c77dff', '#ffffff'];
@@ -198,12 +275,29 @@ A.Combos = (function () {
   }
   // Meteor schlägt ein: Meteorschauer bringt 2 kleine Brocken mit (auf Gegner in der Nähe, sonst daneben)
   function onMeteor(k) {
-    const w = W(), h = w && w.hero; if (k.mini || !on(h, 'meteorschauer')) return;
+    const w = W(), h = w && w.hero; if (k.mini || !h || !h.alive) return;
+    if (on(h, 'sprengmeister')) blast(w, k);
+    if (!on(h, 'meteorschauer')) return;
     const near = w.mons.filter(m => live(m) && Math.hypot(m.x - k.x, m.y - k.y) < 220).sort(() => Math.random() - 0.5);
     for (let i = 0; i < 2; i++) {
       const m = near[i], a = Math.random() * TAU, d = 60 + Math.random() * 40;
       w.marks.push({ kind: 'meteor', mini: true, x: m ? m.x : k.x + Math.cos(a) * d, y: m ? m.y : k.y + Math.sin(a) * d * EY, r: 54, t0: w.t, at: w.t + 0.35 + i * 0.2, dmg: k.dmg * 0.35, burn: k.burn, col: k.col, opts: { proc: true } });
     }
+  }
+  // Sprengmeister: 3 Zündschnüre laufen vom Einschlag weg, nach 0,4 Sekunden knallt es dort (je 80 %, Radius 50)
+  function blast(w, k) {
+    const a0 = Math.random() * TAU;
+    for (let i = 0; i < 3; i++) {
+      const a = a0 + i / 3 * TAU + (Math.random() - 0.5) * 0.6, d = 45 + Math.random() * 30 + k.r * 0.35, at = w.t + 0.4 + i * 0.08;
+      const x1 = k.x + Math.cos(a) * d, y1 = k.y + Math.sin(a) * d * EY;
+      add({ kind: 'fuse', x0: k.x, y0: k.y, x1, y1, x: k.x, y: k.y, t0: w.t, at });
+      later({ kind: 'after', at, x: x1, y: y1 });
+    }
+  }
+  function fuseStep(o, w, dt) {
+    if (w.t >= o.at) { o.done = true; return; }
+    const p = clamp((w.t - o.t0) / (o.at - o.t0), 0, 1); o.x = o.x0 + (o.x1 - o.x0) * p; o.y = o.y0 + (o.y1 - o.y0) * p;
+    if (A.FX && !A.FX.low && Math.random() < dt * 40) A.FX.part({ add: true, x: o.x, y: o.y, z: 2, vx: (Math.random() - 0.5) * 60, vy: (Math.random() - 0.5) * 40, vz: 40 + Math.random() * 50, g: 300, life: 0.3, color: Math.random() < 0.5 ? '#fee761' : '#feae34', drag: 2 });
   }
 
   // ---------- Geschosse, Münzen, Zauber, Angriffe ----------
@@ -214,8 +308,19 @@ A.Combos = (function () {
     for (const da of [-0.5, 0.5]) { const a = a0 + da; bolt(h, m.x + Math.cos(a) * (m.r + 6), m.y + Math.sin(a) * (m.r + 6), a, s.dmg * 0.5, { kind: s.opts.kind, color: s.color, speed: sp, life: 0.45 }); }
   }
   // Goldregen: jede Münze im Kampf schiesst einen Goldsplitter auf den nächsten Gegner
+  // Magnetsturm: jede Münze schlägt als kleiner Blitz in den nächsten Gegner (bis 260 px, höchstens 8 pro Sekunde)
   function onCoin(h) {
-    const w = W(); if (!on(h, 'goldregen') || !fight(w)) return;
+    const w = W(); if (!fight(w)) return;
+    if (on(h, 'magnetsturm') && !(w.t - (h.cbMagT || -9) < 0.125)) {
+      const m = nearest(h.x, h.y, 260);
+      if (m) {
+        h.cbMagT = w.t;
+        w.bolts.push({ x0: h.x, y0: h.y - 14, x1: m.x, y1: m.y - 10, life: 0.22, max: 0.22, col: '#fee761', seed: Math.random() * 99 });
+        api.hit(h, m, pow(h) * 0.3, { kind: 'magic', proc: true, noKb: true, color: '#fee761' });
+        api.fx('zap', { x: m.x, y: m.y, color: '#fee761' });
+      }
+    }
+    if (!on(h, 'goldregen')) return;
     const m = nearest(h.x, h.y, 420); if (!m) return;
     bolt(h, h.x, h.y - 6, Math.atan2(m.y - h.y, m.x - h.x), pow(h) * 0.4, { kind: 'magic', color: '#feae34', speed: 560, life: 0.9 });
     if (A.FX) A.FX.burst(h.x, h.y - 18, 4, { color: ['#fee761', '#feae34', '#ffffff'], smin: 30, smax: 90, life: 0.3, add: true, kind: 'spark', drag: 4 });
@@ -268,6 +373,8 @@ A.Combos = (function () {
       } else h.cbMetT = 3;
       if (on(h, 'permafrost')) permafrost(w, h, dt);
       todesmut(w, h, dt);
+      amok(w, h, dt);
+      if (h.cbShadeUntil > w.t && A.FX && !A.FX.low && Math.random() < dt * 24) A.FX.part({ add: true, x: h.x + (Math.random() - 0.5) * 22, y: h.y, z: 2 + Math.random() * 20, vx: 0, vy: 0, vz: 30, life: 0.4, color: Math.random() < 0.5 ? '#b55088' : '#68386c', drag: 1 });
     }
     // Warteschlange: Echo-Echo und Fadenfunken
     if (w.cbQ && w.cbQ.length) {
@@ -280,6 +387,9 @@ A.Combos = (function () {
       if (o.kind === 'rocket') rocketStep(o, w, h);
       else if (o.kind === 'blood') bloodStep(o, w, h, dt);
       else if (o.kind === 'shroom') shroomStep(o, w, h);
+      else if (o.kind === 'ember') emberStep(o, w, h, dt);
+      else if (o.kind === 'fuse') fuseStep(o, w, dt);
+      else if (o.kind === 'steam' && w.t > o.until) o.done = true;
     }
     if (w.cbfx && w.cbfx.length) w.cbfx = w.cbfx.filter(o => !o.done);
   }
@@ -294,7 +404,18 @@ A.Combos = (function () {
       w.bolts.push({ x0: q.x, y0: q.y - 8, x1: m.x, y1: m.y - 10, life: 0.3, max: 0.3, col: '#7fd8ff', seed: Math.random() * 99 });
       api.hit(h, m, api.statOf(h, 'mag') * 0.7, { kind: 'magic', proc: true, noKb: true, color: '#7fd8ff' });
       api.fx('zap', { x: m.x, y: m.y, color: '#7fd8ff' });
+    } else if (q.kind === 'after') {   // Sprengmeister: Nachschlag am Ende der Zündschnur
+      api.boom(q.x, q.y, 50, pow(h) * 0.8, { proc: true }, '#feae34');
+      if (A.FX) { A.FX.burst(q.x, q.y - 6, 12, { color: ['#fee761', '#feae34', '#5d275d'], smin: 60, smax: 180, life: 0.4, z: 6, vz: 120, g: 400 }); A.FX.shake(0.08); }
     }
+  }
+  // Amok: unter 50 % Leben hält jeder neue Blutrausch (world.js: rushUntil = Sieg + 3 s) doppelt so lang
+  function amok(w, h, dt) {
+    const mad = on(h, 'amok') && h.hp < h.maxHp * 0.5 && h.rushUntil > w.t;
+    if (mad && h.rushUntil !== h.cbAmokR) { h.rushUntil += 3; h.cbAmokR = h.rushUntil; }
+    if (mad && !h.cbAmokOn) api.float(h.x, h.y - 66, L('Amok!', 'Amok!'), '#e43b44', 15);
+    h.cbAmokOn = mad;
+    if (mad && A.FX && !A.FX.low && Math.random() < dt * 12) A.FX.part({ add: true, x: h.x + (Math.random() - 0.5) * 20, y: h.y, z: 6 + Math.random() * 14, vx: (Math.random() - 0.5) * 40, vy: 0, vz: 20, g: 120, life: 0.4, color: Math.random() < 0.5 ? '#e43b44' : '#a22633', drag: 1 });
   }
   // Gewitterklingen: jede kreisende Klinge blitzt alle 1,2 Sekunden einen Gegner in der Nähe an
   function storm(w, h, dt) {
@@ -406,6 +527,15 @@ A.Combos = (function () {
     const list = w.cbfx; if (!list || !list.length) return;
     const t = dr.t, spr = A.Art.sprite('cb_pilz');
     for (const o of list) {
+      if (o.kind === 'ember' && !o.done) {   // Glutlache: dunkelrote Pfütze mit flackernden Glutpunkten
+        const x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy), R = o.r / PX, k = clamp((o.until - w.t) / 0.6, 0, 1) * clamp((w.t - o.t0) / 0.2, 0, 1);
+        dr.b.globalAlpha = 0.45 * k; dr.b.fillStyle = '#be4a2f'; dr.b.beginPath(); dr.b.ellipse(x, y, R, R * EY, 0, 0, TAU); dr.b.fill();
+        dr.g.globalAlpha = (0.25 + Math.sin(t * 9 + o.seed) * 0.08) * k; dr.g.fillStyle = '#f77622'; dr.g.beginPath(); dr.g.ellipse(x, y, R * 0.7, R * 0.7 * EY, 0, 0, TAU); dr.g.fill();
+        dr.g.fillStyle = '#feae34';
+        for (let i = 0; i < 7; i++) { const a = o.seed * 3 + i * 2.4, d = R * (0.2 + ((i * 37) % 7) / 9); if (Math.sin(t * 6 + i * 1.7 + o.seed) > 0) dr.g.fillRect(Math.round(x + Math.cos(a) * d), Math.round(y + Math.sin(a) * d * EY), 1, 1); }
+        dr.b.globalAlpha = 1; dr.g.globalAlpha = 1;
+        continue;
+      }
       if (o.kind !== 'shroom' || o.done) continue;
       const x = o.x / PX - cx, y = o.y / PX - cy, grow = clamp((w.t - o.t0) / 0.4, 0.1, 1), wob = Math.sin(t * 3 + o.seed) * 0.06, end = o.until - w.t;
       dr.shadow(x, y, 3 * grow);
@@ -430,6 +560,17 @@ A.Combos = (function () {
         const x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy);
         b.globalAlpha = 1; b.fillStyle = '#181425'; b.fillRect(x - 2, y - 2, 4, 4); b.fillStyle = '#a22633'; b.fillRect(x - 1, y - 1, 2, 2);
         g.globalAlpha = 0.9; g.fillStyle = '#ff0044'; g.fillRect(x - 1, y - 1, 1, 1);
+      } else if (o.kind === 'steam' && !o.done) {   // Dampfwolke: weisse Ballen, die aufsteigen und verblassen
+        const k = clamp((w.t - o.t0) / (o.until - o.t0), 0, 1), R = o.r / PX;
+        b.fillStyle = '#ffffff';
+        for (let i = 0; i < 7; i++) {
+          const a = o.seed + i * 0.9, d = R * (0.25 + (i % 3) * 0.25) * (0.8 + k * 0.4), rr = (4 + (i % 3) * 2) * (0.8 + k * 0.8);
+          b.globalAlpha = 0.55 * (1 - k); b.beginPath(); b.arc(Math.round(o.x / PX - cx + Math.cos(a) * d), Math.round(o.y / PX - cy + Math.sin(a) * d * EY - 6 - k * 14), rr, 0, TAU); b.fill();
+        }
+      } else if (o.kind === 'fuse' && !o.done && w.t >= o.t0) {   // Zündschnur: glühender Funke auf dem Weg zum Nachschlag
+        const x = Math.round(o.x / PX - cx), y = Math.round(o.y / PX - cy) - 1;
+        b.globalAlpha = 1; b.fillStyle = '#181425'; b.fillRect(x - 1, y - 1, 3, 3); b.fillStyle = '#feae34'; b.fillRect(x, y, 1, 1);
+        g.globalAlpha = 0.9; g.fillStyle = '#fee761'; g.fillRect(x - 1, y - 1, 3, 3);
       }
     }
     b.globalAlpha = 1; g.globalAlpha = 1;
@@ -465,11 +606,14 @@ A.Combos = (function () {
       if (o.kind === 'rocket' && w.t >= o.t0) Lt(o.x, o.y - o.z, 26, o.col, 0.7);
       else if (o.kind === 'blood') Lt(o.x, o.y, 16, '#e43b44', 0.6);
       else if (o.kind === 'shroom') Lt(o.x, o.y - 4, 14, '#63c74d', 0.25);
+      else if (o.kind === 'ember') Lt(o.x, o.y, o.r, '#f77622', 0.35);
+      else if (o.kind === 'fuse') Lt(o.x, o.y, 18, '#fee761', 0.6);
     }
+    if (h && h.alive && h.cbShadeUntil > w.t) Lt(h.x, h.y - 8, 44, '#b55088', 0.3);
     if (h && h.alive && h.braveOn) Lt(h.x, h.y - 8, 56, '#e43b44', 0.25 + Math.sin(w.t * 8) * 0.06);
     if (h && h.alive && h.bloodUntil > w.t) Lt(h.x, h.y - 8, 40, '#a22633', 0.08 * (h.bloodN || 1));
   }
 
-  return { bind, on, evaluate, list, completes, hasPart, partName, partWhere, partIcon, recipe, pre, onKill, onHurt, onDodge, onBoom, onMeteor, onChainHit, onShotHit, onCoin,
+  return { bind, on, evaluate, list, completes, hasPart, partName, partWhere, partIcon, recipe, pre, onKill, onHurt, onDodge, onDash, onBoom, onMeteor, onChainHit, onShotHit, onCoin,
     echoChance, onEcho, onAttack, swirl, onAllyGone, onGulp, wolves, surpriseEvery, bounces, tick, drawGround, drawTop, drawAlly, lights };
 })();

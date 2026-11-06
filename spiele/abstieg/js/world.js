@@ -480,6 +480,7 @@ A.World = (function () {
       for (const m of W.mons) if (m.alive && !(m.spawn > 0) && !got.has(m) && dist(h, m) < h.r + m.r + 14) { got.add(m); hit(h, m, dmg, { kind: 'magic', color: col }); }
     }
     h.inv = Math.max(h.inv, 0.4);
+    A.Combos.onDash(h);   // Schattenschritt (combos.js)
     W.fx.push({ kind: 'dash', x: sx, y: sy, x1: h.x, y1: h.y, life: 0.32, color: col });
     fx('zap', { x: h.x, y: h.y, color: col });
   }
