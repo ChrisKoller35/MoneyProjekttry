@@ -1,6 +1,6 @@
 # Zwergen-Mine
 
-**Stand 5.11.2026:** Version 6 spielbar: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
+**Stand 6.11.2026:** Version 7 spielbar: dazu besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
 
 ## Spielregel
 
@@ -18,20 +18,23 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **15 Werkzeuge** (Reiter «Hacke»), freigeschaltet nach Tiefe: Stahlspitze, Doppelschlag, Förderband, Grosse Laterne, Dynamit, Zeitlupe, Bierfass, Goldwaage, Sprengkurs, Erz-Magnet, Glücksbringer, Zwergenlied, Diamantbohrer, Doppelschicht, Kristallkugel.
 - **Dynamit** (Knopf unten links, Taste D): 30 Tipps auf einmal, alle 90 Sekunden. **Bierfass** (Knopf unten rechts, Taste B): Zwerge 20 Sekunden lang dreifach, alle 3 Minuten.
 - **47 Ziele** (Reiter «Ziele»): Tiefe (bis 150), Tipps, Zwerge, Bosse, Truhen, Hacken-Stufe, Werkzeuge, Umzüge, Erbstücke, geschaffte Blöcke (1, 3, 6) und gesammelte Kronen (50, 200). Jedes Ziel gibt einmal Steine.
+- **Fundstücke (2026-11-06):** drei je Schicht, 42 insgesamt; Chance beim Durchbruch in eine neue Tiefe (nicht im Herz ab 141), +1 Stein je Fund, +5 je vollständige Schicht, +50 für alle; Sammlung im Reiter «Ziele».
 - **Rekorde:** Klick auf die Tiefe oben rechts (oder Reiter «Ziele», «Rekorde»): Punktestand, geschaffte Blöcke, tiefster Punkt aller Zeiten, die laufende Mine, die besten 8 früheren Minen und Blöcke mit Tiefe, Erbstücken oder Kronen und Spielzeit sowie die ganze Spielzeit. Neben der Tiefe steht der Rekord dieses Blocks (🏆), solange man darüber liegt. Wer nach einem Umzug den alten Rekord des Blocks knackt, bekommt «Neuer Rekord!».
 - **Neue Mine (Umzug):** Nach dem Grossboss auf Tiefe 50 kann man neu anfangen. Gold, Zwerge, Hacke und Werkzeuge fangen bei null an, Steine und Ziele bleiben. Dafür gibt es Erbstücke, jedes bringt für immer +5 % Gold und Graben. Je tiefer man vorher kommt, desto mehr Erbstücke.
 - **Tipps für Neue:** In den ersten Minuten erklären kurze Sprechblasen das Spiel: Felsen antippen, ersten Zwerg kaufen, erster Boss, Steine ausgeben. Ab Tiefe 100 kommt einmal der Hinweis auf das Herz des Berges. Jeder Tipp kommt nur einmal, geht mit «OK» oder nach ein paar Sekunden weg und erscheint nur in einem neuen Spiel. Alte Spielstände sehen sie nicht (ausser dem Umzugs-Tipp).
 - **Boss zu stark:** Nach einem verlorenen Boss steht oben in jeder Liste eine rote Karte «Boss auf Tiefe N zu stark». Sie zeigt, wie viel vom Boss die Zwerge allein in der Zeit schaffen, und hat den Knopf «Nochmal». Bei 100 % greifen die Zwerge von selbst an («Jetzt schaffen sie es!»).
 - **Umzug lohnt sich:** Hängt man fest (eine Minute nach einem verlorenen Boss oder 5 Minuten ohne neue Tiefe) und macht ein Umzug mindestens 15 % stärker, zeigt ein Tipp auf den Reiter «Ziele», die rote Karte nennt das Plus, und die Karte «Neue Mine» sagt «Lohnt sich jetzt!».
 - **Effekte:** Funken und ein kleiner Hüpfer beim Kaufen, roter Blitz mit Trommel, wenn ein Boss kommt, Ticken in den letzten 5 Sekunden, Konfetti beim Sieg, absteigende Töne bei «Zeit um!».
+- **Besondere Felsen (5.11.2026):** ab Tiefe 5 ab und zu Goldader (×4 Gold), Kristall mit wandernder Schwachstelle (×8 Schaden auf den Punkt, +1 Stein) oder Panzerfels (nur Dynamit, ×6 Gold, verwittert nach 30 s).
 - Zwischendurch taucht eine Schatztruhe auf (Gold oder 15 Sekunden dreifacher Hacken-Schaden).
 - Kommt man zurück, bekommt man das Gold, das die Zwerge in der Zwischenzeit gegraben haben (bis 8 Stunden), mit Werbung doppelt.
+- **Maulwurf (6.11.2026):** alle 2-4 Minuten klaut ein Maulwurf einen kleinen Sack Gold und rennt ganz unten zwischen den Knöpfen durch; antippen bringt den Sack doppelt zurück, sonst ist er weg.
 
 ## Dateien
 
 - `index.html` – das ganze Spiel in einer Datei (kein Internet nötig, ca. 80 KB), Texte Deutsch/Englisch je nach Browser-Sprache
-- `test-mine.js` – Browser-Test mit 66 Prüfungen und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
-- Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) und `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan)
+- `test-mine.js` – Browser-Test mit 74 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
+- Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan) und `bilder-v7/` (Felsen, Maulwurf, Fundstücke)
 
 ## Bedienung
 
