@@ -986,6 +986,8 @@ A.POTS = {
 A.POT_BOOM_PAL = { C: '#a22633', D: '#3e2731', H: '#e43b44' };    // Knallkrug: rot, mit Zündschnur
 A.POT_GOLD_PAL = { C: '#feae34', D: '#be4a2f', H: '#fee761' };    // goldener Krug: glitzert
 // so viele Krüge je Raumart (von, bis); grosse Räume einer mehr
+// ACHTUNG Spielstand: POT_COUNT, POT_BOOM, POT_GOLDEN, MIMIC_FROM, MIMIC_CHANCE und die Platzierung (surprise.js place) bauen die Ebene.
+// Wer sie ändert, verschiebt Krüge in laufenden Spielständen: dann run.lvVer erhöhen (game.js) und die alte Bauweise behalten.
 A.POT_COUNT = { fight: [2, 4], elite: [2, 3], treasure: [2, 3], secret: [3, 5], shop: [1, 2], rest: [1, 3], event: [1, 2], shrine: [1, 2], forge: [1, 2], start: [0, 1], stairs: [1, 2] };
 A.POT_BOOM = 0.12; A.POT_GOLDEN = 0.03;   // Knallkrug (nur Kampfräume ab Ebene 2), goldener Krug (im geheimen Raum öfter)
 A.MIMIC_FROM = 3; A.MIMIC_CHANCE = 0.2;    // Truhe mit Zähnen: Schatzraum ab Ebene 3

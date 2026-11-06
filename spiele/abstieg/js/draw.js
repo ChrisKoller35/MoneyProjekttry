@@ -1319,7 +1319,7 @@ window.A = window.A || {};
         const [x, y] = pos(r); const known = r.visited || owl >= 2 || (owl && r.type === 'secret') || W.edges.some(([p, q]) => { const o = (p.x === r.cx && p.y === r.cy) ? q : (q.x === r.cx && q.y === r.cy) ? p : null; return o && W.rooms.some(z => z.cx === o.x && z.cy === o.y && z.visited); });
         if (!known) continue;
         m.fillStyle = r.visited ? '#262b44' : '#1a1a2a'; m.fillRect(x, y, U, V);
-        m.fillStyle = r.visited || owl >= 2 || (owl && r.type === 'secret') ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.cleared || r.used) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
+        m.fillStyle = r.visited || owl >= 2 || (owl && r.type === 'secret') ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.type === 'treasure' ? r.used : (r.cleared || r.used)) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
         if (r.visited && r.type !== 'fight' && r.type !== 'start') { m.fillStyle = '#ffffff'; m.fillRect(x + 4, y + 3, 1, 1); }
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }

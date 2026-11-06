@@ -49,6 +49,12 @@ A.World = (function () {
     return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach, big: lv.big };
   }
   function reachFrom(tiles, sr) { return A.Levels.flood(tiles, sr.x + Math.floor(sr.w / 2), sr.y + Math.floor(sr.h / 2)); }
+  // Kampf beginnt (Raum betreten oder Mimik wacht auf): Schutzengel, Set-Schild, Würfel, Legenden-Zeiten
+  function fightStart() {
+    const h = W.hero;
+    if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
+    A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h);
+  }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
 
   // ---------- Start einer Ebene ----------
@@ -686,8 +692,7 @@ A.World = (function () {
     const r = roomOf(h.x, h.y);
     if (r && r !== W.room) { W.room = r; }
     if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; W.stats.low = false; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
-      if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
-      A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h); } G().save(); }
+      fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -724,7 +729,7 @@ A.World = (function () {
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
   A.Combos.bind({ get W() { return W; }, hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot });
   A.Pets.bind({ get W() { return W; }, hit, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
-  A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot });
+  A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot, fightStart, slowMul, hazardSlow });
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
 
   return {

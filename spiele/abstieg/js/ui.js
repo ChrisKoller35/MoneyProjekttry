@@ -621,7 +621,7 @@ window.A = window.A || {};
       $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
-    else if (p.kind === 'chest') { if (p.mimic && A.Surprise.wake(p)) return; Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
+    else if (p.kind === 'chest') { if (p.hidden || (p.mimic && A.Surprise.wake(p))) return; Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
     else if (p.kind === 'rubble') Wd.openRubble(p);
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }

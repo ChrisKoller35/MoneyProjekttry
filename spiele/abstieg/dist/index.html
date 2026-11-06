@@ -1469,6 +1469,8 @@ A.POTS = {
 A.POT_BOOM_PAL = { C: '#a22633', D: '#3e2731', H: '#e43b44' };    // Knallkrug: rot, mit Zündschnur
 A.POT_GOLD_PAL = { C: '#feae34', D: '#be4a2f', H: '#fee761' };    // goldener Krug: glitzert
 // so viele Krüge je Raumart (von, bis); grosse Räume einer mehr
+// ACHTUNG Spielstand: POT_COUNT, POT_BOOM, POT_GOLDEN, MIMIC_FROM, MIMIC_CHANCE und die Platzierung (surprise.js place) bauen die Ebene.
+// Wer sie ändert, verschiebt Krüge in laufenden Spielständen: dann run.lvVer erhöhen (game.js) und die alte Bauweise behalten.
 A.POT_COUNT = { fight: [2, 4], elite: [2, 3], treasure: [2, 3], secret: [3, 5], shop: [1, 2], rest: [1, 3], event: [1, 2], shrine: [1, 2], forge: [1, 2], start: [0, 1], stairs: [1, 2] };
 A.POT_BOOM = 0.12; A.POT_GOLDEN = 0.03;   // Knallkrug (nur Kampfräume ab Ebene 2), goldener Krug (im geheimen Raum öfter)
 A.MIMIC_FROM = 3; A.MIMIC_CHANCE = 0.2;    // Truhe mit Zähnen: Schatzraum ab Ebene 3
@@ -10685,6 +10687,30 @@ A.Surprise = (function () {
   const potsOf = (r) => (r ? r._pots || (r._pots = r.props.filter(p => p.kind === 'pot')) : []);
   const potKind = (w) => A.POTS[w.world.id] || A.POTS.stone;
 
+  // Eingänge: der gerade Weg von jeder Tür in den Raum (Gang im Raum-Rechteck plus 5 Kacheln, eine Kachel Rand) bleibt frei.
+  // Türen kommen zu viert (2 x 2 Kacheln an der Zellgrenze, levels.js) und liegen immer ausserhalb des Raum-Rechtecks.
+  function entryLanes(r, tiles, MW) {
+    const lane = new Set(), D = r.doors || [];
+    const walkT = (x, y) => { const v = tiles[y] ? tiles[y][x] : 0; return v === 1 || v === 5; };
+    const inR = (x, y) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+    for (let k = 0; k + 3 < D.length; k += 4) {
+      const g = D.slice(k, k + 4), xs = g.map(q => q[0]), ys = g.map(q => q[1]);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const ax = x1 < r.x ? 1 : x0 > r.x + r.w - 1 ? -1 : 0, ay = ax ? 0 : y1 < r.y ? 1 : y0 > r.y + r.h - 1 ? -1 : 0;
+      if (!ax && !ay) continue;
+      let x = ax > 0 ? r.x : ax < 0 ? r.x + r.w - 1 : x0, y = ay > 0 ? r.y : ay < 0 ? r.y + r.h - 1 : y0, open = -1;
+      for (let n = 0; inR(x, y); n++, x += ax, y += ay) {
+        // noch im Gang: links und rechts davon Wand; danach ist man im Raum
+        const side = ax ? walkT(x, y0 - 1) || walkT(x, y1 + 1) : walkT(x0 - 1, y) || walkT(x1 + 1, y);
+        if (open < 0 && side) open = n;
+        if (open >= 0 && n > open + 4) break;
+        if (ax) { for (let yy = y0 - 1; yy <= y1 + 1; yy++) lane.add(yy * MW + x); }
+        else { for (let xx = x0 - 1; xx <= x1 + 1; xx++) lane.add(y * MW + xx); }
+      }
+    }
+    return lane;
+  }
+
   // ---------- Ebene bauen (world.js genFloor, nur ab Ebenen-Bau 8) ----------
   // Fest aus dem Startwert der Ebene: ein Spielstand baut dieselben Krüge an dieselben Stellen
   function place(rooms, tiles, reach, seed, floor) {
@@ -10698,12 +10724,12 @@ A.Surprise = (function () {
       const cnt = A.POT_COUNT[r.type]; if (!cnt) continue;
       const n = rng.int(cnt[0], cnt[1]) + (r.w * r.h > 220 ? 1 : 0);
       if (n <= 0) continue;
-      // frei: Boden (kein Gefahr-Boden), erreichbar, weg von Türen, Dingen und dem Startpunkt; am liebsten an einer Wand
+      // frei: Boden (kein Gefahr-Boden), erreichbar, weg von Türen, Eingängen, Dingen und dem Startpunkt; am liebsten an einer Wand
       const busy = r.props.map(p => [Math.floor(p.x / TS), Math.floor(p.y / TS)]).concat([[r.anchor.tx, r.anchor.ty], [r.anchor.tx, r.anchor.ty + 1]]);
-      const cand = [];
-      for (let y = r.y + 1; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
+      const lane = entryLanes(r, tiles, MW), cand = [];
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
         if (tiles[y][x] !== 1 || (r.type !== 'secret' && reach && !reach[y * MW + x])) continue;
-        if (near(x, y, busy, 3) || near(x, y, r.doors || [], 3)) continue;
+        if (lane.has(y * MW + x) || near(x, y, busy, 3) || near(x, y, r.doors || [], 3)) continue;
         let wall = 0; for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) { const v = tiles[yy] ? tiles[yy][xx] : 0; if (v === 0 || v === 3 || v === 4) wall++; }
         cand.push([x, y, wall]);
       }
@@ -10826,9 +10852,10 @@ A.Surprise = (function () {
     const r = w.rooms[p.room], base = A.MONSTERS.find(m => m.id === 'mimik'); if (!r || !base) return false;
     const e = G().monsterEntity(base, w.floor, false, 96); e.mimicOf = p;
     const pm = A.Pacts.hpMul(e); if (pm !== 1) { e.maxHp = Math.round(e.maxHp * pm); e.hp = e.maxHp; }   // Gierschlund (pacts.js)
-    p.hidden = true;   // die Truhe ist jetzt der Gegner; ist der Raum frei, taucht sie wieder auf (world.js)
+    p.hidden = true; w.near = null;   // die Truhe ist jetzt der Gegner; ist der Raum frei, taucht sie wieder auf (world.js)
     const m = api.addMon(e, p.x, p.y); m.spawn = 0.3; m.cd = 0.7;
     w.active = r; w.stats.dmgRoom = 0; w.stats.low = false; r.lockT = null; api.setDoors(r, 2); api.fx('lock', { r }); w.hint = ''; r.monsters = 1;
+    api.fightStart();   // wie beim Betreten eines Kampfraums: Schutzengel, Set-Schild, Würfel, Legenden
     api.float(p.x, p.y - 46, L('Die Truhe hat Zähne!', 'The chest has teeth!'), '#e43b44', 17);
     if (A.FX) { A.FX.shake(0.35); A.FX.banner(L('Mimik!', 'Mimic!'), L('Die Truhe beisst zurück', 'The chest bites back'), '#e43b44', 2.2); A.FX.burst(p.x, p.y - 10, 14, { color: ['#b86f50', '#733e39', '#ffffff'], smin: 40, smax: 150, z: 6, vz: 150, g: 500, life: 0.6, size: 2 }); }
     if (A.Sound.roar) A.Sound.roar();
@@ -10837,7 +10864,7 @@ A.Surprise = (function () {
   // Zeichen am Truhen-Bild (draw.js): ab und zu leckt sie sich kurz die Lippen
   function tell(dr, p, x, top, t) {
     const c = (t * 0.8 + p.x * 0.013) % 4.2; if (c > 0.35) return;
-    const g = dr.g; g.fillStyle = '#e43b44'; g.fillRect(Math.round(x + 1), Math.round(top + 5), 3, 1); g.fillStyle = '#f6757a'; g.fillRect(Math.round(x + 3), Math.round(top + 6), 1, 1);
+    const b = dr.b; b.fillStyle = '#e43b44'; b.fillRect(Math.round(x + 1), Math.round(top + 5), 3, 1); b.fillStyle = '#f6757a'; b.fillRect(Math.round(x + 3), Math.round(top + 6), 1, 1);
   }
 
   // ---------- Goldwicht ----------
@@ -10883,14 +10910,14 @@ A.Surprise = (function () {
     if (w.t >= m.gwT) { vanish(m, w); return true; }
     if (w.t > m.gwT - 2.2 && !m.gwWarn) { m.gwWarn = true; api.float(m.x, m.y - 44, L('Gleich bin ich weg!', 'Almost gone!'), '#fee761', 13); }
     if (!m.gwDir || (m.gwDirT = (m.gwDirT || 0) - dt) <= 0) { m.gwDir = away(m, h); m.gwDirT = d < 120 ? 0.25 : 0.6; }
-    const sp = m.speed * dt * (d < 150 ? 1.15 : 0.8), x0 = m.x, y0 = m.y;
+    const sp = m.speed * api.slowMul(m) * api.hazardSlow(m) * dt * (d < 150 ? 1.15 : 0.8), x0 = m.x, y0 = m.y;   // Frost und Schlamm bremsen auch ihn
     api.moveEnt(m, m.gwDir[0] * sp, m.gwDir[1] * sp); m.fx = m.gwDir[0]; m.fy = m.gwDir[1];
     if (Math.hypot(m.x - x0, m.y - y0) < sp * 0.4) { m.gwDir = away(m, h, m.gwDir); m.gwDirT = 0.4; }
     if (A.FX && !A.FX.low && Math.random() < 0.3) A.FX.part({ kind: 'spark', add: true, x: m.x + (Math.random() - 0.5) * 16, y: m.y - 6, vx: 0, vy: -15, life: 0.45, color: Math.random() < 0.5 ? '#fee761' : '#ffffff', drag: 1 });
     return true;
   }
   function vanish(m, w) {
-    m.alive = false; m.hp = 0; m.alpha = 0.6; m.gone = true;
+    m.alive = false; m.hp = 0; m.alpha = 0; m.gone = true;   // weg, ohne Leiche
     api.float(m.x, m.y - 44, L('Tschüssi!', 'Toodles!'), '#fee761', 15);
     if (A.FX) { A.FX.smoke(m.x, m.y - 6, 10, '#3e2731', 5); A.FX.part({ kind: 'ring', x: m.x, y: m.y - 4, life: 0.4, size: 40, color: '#fee761', add: true }); }
     if (A.Sound.pop) A.Sound.pop();
@@ -10933,7 +10960,11 @@ A.Surprise = (function () {
     }
     b.drawImage(spr.img, left, top);
     const g = dr.g;
-    if (p.v === 'boom') { g.fillStyle = '#3e2731'; g.fillRect(Math.round(x), top - 2, 1, 2); g.fillStyle = Math.floor(t * 6 + p.x) % 2 ? '#fee761' : '#f77622'; g.fillRect(Math.round(x), top - 3, 1, 1); }   // Zündschnur
+    if (p.v === 'boom') {   // Zündschnur: dunkler Docht, oben ein Funke (der leuchtet)
+      const sx = Math.round(x), sp = Math.floor(t * 6 + p.x) % 2 ? '#fee761' : '#f77622';
+      b.fillStyle = '#3e2731'; b.fillRect(sx, top - 2, 1, 2); b.fillStyle = sp; b.fillRect(sx, top - 3, 1, 1);
+      g.fillStyle = sp; g.fillRect(sx, top - 3, 1, 1);
+    }
     else if (p.v === 'gold' && Math.floor(t * 3 + p.x) % 4 === 0) { g.fillStyle = '#ffffff'; const k = Math.floor(t * 12) % 3; g.fillRect(left + 2 + k * 2, top + 3 + k, 1, 1); }
     return top;
   }
@@ -11167,6 +11198,12 @@ A.World = (function () {
     return { floor, seed, world: wd, rooms, tiles, start: lv.start, edges, reach, big: lv.big };
   }
   function reachFrom(tiles, sr) { return A.Levels.flood(tiles, sr.x + Math.floor(sr.w / 2), sr.y + Math.floor(sr.h / 2)); }
+  // Kampf beginnt (Raum betreten oder Mimik wacht auf): Schutzengel, Set-Schild, Würfel, Legenden-Zeiten
+  function fightStart() {
+    const h = W.hero;
+    if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
+    A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h);
+  }
   function saveRooms() { return W.rooms.map(r => ({ i: r.i, cleared: r.cleared, used: r.used, visited: r.visited, props: r.props.map(p => p.used) })); }
 
   // ---------- Start einer Ebene ----------
@@ -11804,8 +11841,7 @@ A.World = (function () {
     const r = roomOf(h.x, h.y);
     if (r && r !== W.room) { W.room = r; }
     if (r && !r.visited && inside(r, h.x, h.y)) { r.visited = true; if (['fight', 'elite', 'boss'].includes(r.type) && !r.cleared) { W.active = r; W.stats.dmgRoom = 0; W.stats.low = false; r.lockT = null; setDoors(r, 2); spawnRoom(r); fx('lock', { r }); W.hint = '';
-      if (h.tal.engel) { h.shield = Math.max(h.shield, Math.round(h.maxHp * 0.25)); fx('shield', { e: h }); }
-      A.Gear.onRoomStart(h); A.Legends.onRoomStart(h); A.Wild.onRoomStart(h); } G().save(); }
+      fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const loot = G().roomCleared(a, W.stats); for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -11842,7 +11878,7 @@ A.World = (function () {
   A.Legends.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, castSkill, addEffect });
   A.Combos.bind({ get W() { return W; }, hit, heal, boom, float, fx, heroPower, castSkill, statOf, freeSpot });
   A.Pets.bind({ get W() { return W; }, hit, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
-  A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot });
+  A.Surprise.bind({ get W() { return W; }, hit, float, fx, drop, moveEnt, blocked, reachable, addMon, setDoors, freeSpot, fightStart, slowMul, hazardSlow });
   A.Wild.bind({ get W() { return W; }, hit, heal, kill, float, fx, shoot, moveEnt, mkAlly, heroPower, freeSpot, clearLine, drop });
 
   return {
@@ -13174,7 +13210,7 @@ window.A = window.A || {};
         const [x, y] = pos(r); const known = r.visited || owl >= 2 || (owl && r.type === 'secret') || W.edges.some(([p, q]) => { const o = (p.x === r.cx && p.y === r.cy) ? q : (q.x === r.cx && q.y === r.cy) ? p : null; return o && W.rooms.some(z => z.cx === o.x && z.cy === o.y && z.visited); });
         if (!known) continue;
         m.fillStyle = r.visited ? '#262b44' : '#1a1a2a'; m.fillRect(x, y, U, V);
-        m.fillStyle = r.visited || owl >= 2 || (owl && r.type === 'secret') ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.cleared || r.used) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
+        m.fillStyle = r.visited || owl >= 2 || (owl && r.type === 'secret') ? COL[r.type] : '#3a4466'; m.globalAlpha = r.visited && (r.type === 'treasure' ? r.used : (r.cleared || r.used)) && r.type !== 'stairs' && r.type !== 'shop' && r.type !== 'forge' ? 0.45 : 1; m.fillRect(x + 1, y + 1, U - 2, V - 2); m.globalAlpha = 1;
         if (r.visited && r.type !== 'fight' && r.type !== 'start') { m.fillStyle = '#ffffff'; m.fillRect(x + 4, y + 3, 1, 1); }
         if (r === W.room && Math.floor(this.t * 3) % 2 === 0) { m.fillStyle = '#ffffff'; m.fillRect(x, y, U, 1); m.fillRect(x, y + V - 1, U, 1); m.fillRect(x, y, 1, V); m.fillRect(x + U - 1, y, 1, V); }
       }
@@ -14654,7 +14690,7 @@ window.A = window.A || {};
       $('#bOk').onclick = () => { S.descend(); overlay.classList.remove('on'); overlay.innerHTML = ''; if (Wd.W) Wd.W.sinkT = draw.t; fadeOut(() => { const res = G.descend(); if (res === 'won') { runOver(); return; } Portal.showAd(() => dungeon(true)); }, 220); };
       $('#bClose').onclick = () => { S.click(); ovClose(); };
     }
-    else if (p.kind === 'chest') { if (p.mimic && A.Surprise.wake(p)) return; Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
+    else if (p.kind === 'chest') { if (p.hidden || (p.mimic && A.Surprise.wake(p))) return; Wd.markUsed(p); if (p.secret) secretTreasure(); else treasure(); }
     else if (p.kind === 'rubble') Wd.openRubble(p);
     else if (p.kind === 'fire') { Wd.markUsed(p); rest(); }
     else if (p.kind === 'merchant') { G.roomContent('merchant'); shop(); }

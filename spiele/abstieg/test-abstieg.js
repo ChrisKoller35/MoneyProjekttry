@@ -104,7 +104,7 @@ fs.mkdirSync(out, { recursive: true });
     // Beute aufheben
     if (s.picks.length) { const p = s.picks[0]; await walkTo(p.x, p.y, 3000); continue; }
     // Etwas benutzen?
-    const prop = cur.props.find(p => !p.used && !p.hidden && p.kind !== 'sign' && (p.kind !== 'stairs' || s.rooms.every(r => r.type !== 'fight' && r.type !== 'elite' || r.cleared || !adjacentReachable(r))));
+    const prop = cur.props.find(p => !p.used && !p.hidden && p.kind !== 'sign' && p.kind !== 'pot' && (p.kind !== 'stairs' || s.rooms.every(r => r.type !== 'fight' && r.type !== 'elite' || r.cleared || !adjacentReachable(r))));
     function adjacentReachable() { return true; }
     const blockedSecret = (r) => r.type === 'secret' && r.props.some(p => p.kind === 'rubble' && !p.used);
     // Geheimer Raum: erst das Geröll wegräumen (vorher ist er nicht erreichbar)
