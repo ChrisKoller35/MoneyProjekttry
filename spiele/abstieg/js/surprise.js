@@ -191,8 +191,14 @@ A.Surprise = (function () {
     for (let i = 0; i < 12; i++) {
       const a = i / 12 * TAU, dx = Math.cos(a), dy = Math.sin(a);
       if (not && dx * not[0] + dy * not[1] > 0.9) continue;
-      let free = 0; for (let d = 16; d <= 160; d += 16) { if (api.blocked(m.x + dx * d, m.y + dy * d, m.r) || !api.reachable(m.x + dx * d, m.y + dy * d)) break; free = d; }
-      const score = free * 1.6 + Math.hypot(m.x + dx * free - h.x, m.y + dy * free - h.y);
+      let free = 0, close = 1e9;
+      for (let d = 16; d <= 160; d += 16) {
+        const x = m.x + dx * d, y = m.y + dy * d;
+        if (api.blocked(x, y, m.r) || !api.reachable(x, y)) break;
+        free = d; close = Math.min(close, Math.hypot(x - h.x, y - h.y));
+      }
+      // weit weg vom Helden zählt am meisten; nie dem Helden in die Arme laufen
+      const score = Math.hypot(m.x + dx * free - h.x, m.y + dy * free - h.y) + free * 0.5 - (close < 64 ? 260 : 0);
       if (score > bs) { bs = score; best = [dx, dy]; }
     }
     return best || [1, 0];
