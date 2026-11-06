@@ -164,7 +164,7 @@ window.A = window.A || {};
       <div class="menu">
         ${r ? `<button class="btn primary" id="bCont">${t(U.continueRun)} · ${t(U.floor)} ${r.floor}</button>` : ''}
         <button class="btn ${r ? '' : 'primary'}" id="bNew">${t(U.play)}</button>
-        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() ? `<i class="dot" title="${L('Ausbau möglich', 'Upgrade available')}"></i>` : ''}</button>
+        <button class="btn" id="bCamp">${ic('u_tent', 28)}<span>${t(U.camp)}</span>${spark(m.sparks)}${G.campAffordable() || A.Pets.tripsBack() ? `<i class="dot" title="${L('Im Lager wartet etwas', 'Something waits in the camp')}"></i>` : ''}</button>
         <div class="stats">${L('Durchläufe', 'Runs')} <b>${m.runs}</b> · ${L('Tiefste Ebene', 'Deepest floor')} <b>${m.best}</b> · ${L('Erfolge', 'Achievements')} <b>${A.Achieve.count()}/${A.ACHIEVEMENTS.length}</b>${m.achNew && m.achNew.length ? ` <b class="goldc">${L('Neu!', 'New!')}</b>` : ''}</div>
         <div class="howto pc">${t(U.howto)}</div>
         <button class="link" id="bReset">${t(U.reset)}</button>
@@ -263,7 +263,7 @@ window.A = window.A || {};
   function campState() {
     const lv = {}, open = {}, can = {}, rank = G.campRank();
     for (const b of A.CAMP) { lv[b.id] = G.campLevel(b.id); open[b.id] = G.campOpen(b.id); const c = G.campCost(b.id); can[b.id] = open[b.id] && c != null && c <= G.meta.sparks; }
-    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX, pets: Object.keys(A.PETS).filter(A.Pets.found), ach: A.Achieve.count(), achNew: !!(G.meta.achNew && G.meta.achNew.length) };
+    return { lv, open, can, races: A.RACES.filter(r => G.raceUnlocked(r)).map(r => r.id), troph: Object.assign({}, G.meta.troph), rank, max: rank >= A.CAMP_MAX, pets: Object.keys(A.PETS).filter(id => A.Pets.found(id) && !(A.Pets.away(id) && !A.Pets.tripOf(id).done)),   /* wer noch auf Reise ist (v41), fehlt im Bild */ ach: A.Achieve.count(), achNew: !!(G.meta.achNew && G.meta.achNew.length) };
   }
   // poof: was gerade gebaut wurde (Funken im Bild); die Liste bleibt dabei an ihrer Stelle
   function camp(poof) {
@@ -317,12 +317,12 @@ window.A = window.A || {};
     const petCards = Object.keys(A.PETS).map(id => {
       const P = A.PETS[id];
       if (!A.Pets.found(id)) return `<div class="petc"><div class="pp">${petImg(id, 40)}</div><div class="pb"><b>???</b><div class="mini">${L('Sitzt irgendwo in einem Käfig (ab Ebene 2).', 'Sits in a cage somewhere (from floor 2).')}</div></div></div>`;
-      const lv = A.Pets.treue(id), pr = A.Pets.progress(id), on = psel.includes(id);
+      const lv = A.Pets.treue(id), pr = A.Pets.progress(id), on = psel.includes(id), aw = A.Pets.away(id);
       const tricks = A.Pets.tricks(id).map(x => `<div class="trick ${lv >= x.lv ? 'on' : ''}"><span>${'★'.repeat(x.lv)}</span> ${esc(x.text)}</div>`).join('');
-      return `<div class="petc have ${on ? 'sel' : ''}" ${sn ? `data-pet="${id}"` : ''}><div class="pp">${petImg(id, 40)}</div><div class="pb"><div class="ttl"><b style="color:${P.col}">${esc(t(P.name))}</b>${petStars(lv)}</div>
+      return `<div class="petc have ${on ? 'sel' : ''} ${aw ? 'away' : ''}" ${sn ? `data-pet="${id}"` : ''}><div class="pp">${petImg(id, 40)}</div><div class="pb"><div class="ttl"><b style="color:${P.col}">${esc(t(P.name))}</b>${petStars(lv)}</div>
         <div class="mini">${esc(t(P.kind))} · ${pr ? L(`Treue ${lv}: noch ${pr[1] - pr[0]} bis Treue ${lv + 1}`, `Loyalty ${lv}: ${pr[1] - pr[0]} more to loyalty ${lv + 1}`) : L('Treue 5: treuer geht nicht', 'Loyalty 5: as loyal as it gets')}</div>
         <div class="bar"><i style="width:${pr ? Math.round(pr[0] / pr[1] * 100) : 100}%"></i></div>${tricks}
-        ${sn ? `<div class="mini pick">${on ? `<b class="goldc">${L('Kommt mit in die Tiefe', 'Joins the descent')}</b>` : L('Antippen: kommt mit in die Tiefe', 'Tap: joins the descent')}</div>` : ''}</div></div>`;
+        ${sn ? `<div class="mini pick">${aw ? L('Gerade auf Reise (oben bei den Expeditionen).', 'Away on a trip (see expeditions above).') : on ? `<b class="goldc">${L('Kommt mit in die Tiefe', 'Joins the descent')}</b>` : L('Antippen: kommt mit in die Tiefe', 'Tap: joins the descent')}</div>` : ''}</div></div>`;
     }).join('');
     const petInfo = sn ? L(`Die Tierhütte schickt ${sn > 1 ? sn + ' Tiere' : 'ein Tier'} von Anfang an mit.`, `The pet hut sends ${sn > 1 ? sn + ' pets' : 'one pet'} along from the start.`)
       : pn ? L('Baue die Tierhütte, dann kommen deine Tiere von Anfang an mit.', 'Build the pet hut and your pets join you from the start.')
@@ -365,6 +365,7 @@ window.A = window.A || {};
       <div class="rankbar"><div><b>${L('Lager-Stufe', 'Camp level')} ${rank}</b><span>/ ${A.CAMP_MAX}</span></div><div class="bar"><i style="width:${Math.round(rank / A.CAMP_MAX * 100)}%"></i></div>
         <div class="mini">${next ? L(`Ab Lager-Stufe ${next.rank}: ${t(next.name)}`, `From camp level ${next.rank}: ${t(next.name)}`) : (rank >= A.CAMP_MAX ? L('Alles ausgebaut. Das Lager ist eine Legende.', 'Everything built. The camp is a legend.') : L('Alle Gebäude stehen. Jetzt nur noch höher bauen.', 'All buildings stand. Now build them higher.'))}</div></div>
       <div class="card sparkbar"><span>${t(U.meta)}</span><b>${spark(m.sparks, 22)}</b></div>
+      ${candleHtml()}${expHtml()}
       <h3>${L('Gebäude', 'Buildings')}</h3>${bld}
       <h3>${L('Auftragsbrett', 'Quest board')} ${achN}/${achMax}</h3><div class="card flags"><div class="mini">${L('Erfolge über alle Durchläufe hinweg. Jeder bringt Seelenfunken, sobald er erreicht ist, und ein Zettel mehr hängt am Brett.', 'Achievements across all runs. Each one gives soul sparks as soon as it is reached, and one more note hangs on the board.')}</div><div class="jobs">${jobs}</div></div>
       <h3>${L('Chronik', 'Chronicle')}</h3><div class="card flags"><div class="life">${lifeHtml}</div>${rows ? `<div class="runs">${rows}</div>` : `<div class="mini" style="margin-top:8px">${L('Noch kein Durchlauf. Die Chronik füllt sich mit jedem Abstieg.', 'No run yet. The chronicle fills up with every descent.')}</div>`}</div>
@@ -382,8 +383,48 @@ window.A = window.A || {};
     A.Achieve.clearNew();   // die neuen Erfolge sind jetzt angeschaut
     screen.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const id = b.dataset.up; if (G.campBuy(id)) { S.build(); camp(id); } });
     screen.querySelectorAll('[data-race]').forEach(b => b.onclick = () => { const id = b.dataset.race; if (G.metaBuy(id)) { S.build(); camp(id); } });
-    screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id)) return; A.Pets.choose(id); camp('tier'); });
-    $('#bBack').onclick = () => { S.click(); title(); };
+    screen.querySelectorAll('[data-pet]').forEach(b => b.onclick = () => { const id = b.dataset.pet; S.click(); if (A.Pets.sel().includes(id) || A.Pets.away(id)) return; A.Pets.choose(id); camp('tier'); });
+    // Expeditionen (v41): losschicken und abholen; die Restzeit läuft sichtbar mit
+    screen.querySelectorAll('[data-trip]').forEach(b => b.onclick = () => { if (A.Pets.send(b.dataset.trip, b.dataset.k)) { S.click(); camp('exp'); } });
+    screen.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { const id = b.dataset.claim, res = A.Pets.claim(id); if (res) { expNews = { id, res }; S.level(); camp('exp'); } });
+    expNews = null;
+    clearInterval(expTimer);
+    if (screen.querySelector('[data-left]')) expTimer = setInterval(() => {
+      const els = screen.querySelectorAll('[data-left]'); if (!els.length) { clearInterval(expTimer); return; }
+      let back = false;
+      els.forEach(el => { const tr = A.Pets.tripOf(el.dataset.left); if (!tr || tr.done) { back = true; return; } el.querySelector('.tl').textContent = tripLeft(tr.left); el.querySelector('i').style.width = Math.round(tr.pct * 100) + '%'; });
+      if (back) { clearInterval(expTimer); camp('exp'); }
+    }, 15000);
+    $('#bBack').onclick = () => { S.click(); clearInterval(expTimer); title(); };
+  }
+  // ---------- Expeditionen und Kerzen (v41) ----------
+  let expNews = null, expTimer = null;
+  const tripLeft = (ms) => { const mn = Math.max(1, Math.ceil(ms / 60000)), h = Math.floor(mn / 60), r = mn % 60; return h ? L(`noch ${h} Std ${r} Min`, `${h} h ${r} min left`) : L(`noch ${r} Min`, `${r} min left`); };
+  function candleHtml() {
+    const c = G.candles(false), n = c.n, fl = Array.from({ length: A.CANDLE_MAX }, (_, i) => `<span class="cdl ${i < n ? 'on' : ''}">${ic('candle', 20)}</span>`).join('');
+    const txt = n ? L(`${n} ${n === 1 ? 'Kerze brennt' : 'Kerzen brennen'}: +${Math.round(n * A.CANDLE_SPARKS * 100)} % Seelenfunken auf jeden Lauf.`, `${n} candle${n === 1 ? '' : 's'} burning: +${Math.round(n * A.CANDLE_SPARKS * 100)}% soul sparks on every run.`) + ' ' + (c.today ? L('Heute schon angezündet. Bring morgen wieder einen Lauf zu Ende, dann brennt eine mehr.', 'Already lit today. Finish a run again tomorrow and one more will burn.') : L('Bring heute einen Lauf zu Ende, sonst gehen sie aus.', 'Finish a run today or they go out.'))
+      : L('Noch keine Kerze. Bring heute einen Lauf zu Ende, dann brennt die erste (+5 % Seelenfunken). Jeden Tag in Folge eine mehr.', 'No candle yet. Finish a run today and the first one burns (+5% soul sparks). One more for every day in a row.');
+    return `<div class="card candles"><div class="cdls">${fl}</div><div class="mini">${txt}</div></div>`;
+  }
+  function expHtml() {
+    const ids = Object.keys(A.PETS).filter(id => A.Pets.found(id)); if (!ids.length) return '';
+    const busy = A.Pets.busy(), team = A.Pets.sel();
+    const news = expNews ? (() => { const { id, res } = expNews, P = A.PETS[id];
+      return `<div class="msg expnews">${petImg(id, 30)}<span><b style="color:${P.col}">${esc(res.line)}</b> ${L(`Mitgebracht: +${res.sparks} Seelenfunken, +${res.treue} Treue`, `Brought back: +${res.sparks} soul sparks, +${res.treue} loyalty`)}${res.up ? L(` (jetzt Treue ${res.lv}!)`, ` (now loyalty ${res.lv}!)`) : ''}${res.gift ? L(`, dazu ${esc(t(res.gift.text))} für den nächsten Lauf`, `, plus ${esc(t(res.gift.text))} for the next run`) : ''}.</span></div>`; })() : '';
+    const cards = ids.map(id => {
+      const P = A.PETS[id], tr = A.Pets.tripOf(id);
+      let right;
+      if (tr && tr.done) right = `<div class="mini goldc">${L('Zurück!', 'Back!')} (${esc(t(tr.X.name))})</div><button class="btn primary small" data-claim="${id}">${L('Abholen', 'Collect')}</button>`;
+      else if (tr) right = `<div class="mini" data-left="${id}">${esc(t(tr.X.name))}: <span class="tl">${tripLeft(tr.left)}</span><div class="bar"><i style="width:${Math.round(tr.pct * 100)}%"></i></div></div>`;
+      else if (A.Pets.inRun(id)) right = `<div class="mini">${L('Ist gerade mit dir in der Tiefe.', 'Is down in the depths with you right now.')}</div>`;
+      else if (team.includes(id)) right = `<div class="mini">${L('Kommt mit in die Tiefe (Tierhütte).', 'Joins the descent (pet hut).')}</div>`;
+      else if (busy >= A.EXP_MAX) right = `<div class="mini">${L(`Schon ${A.EXP_MAX} Tiere unterwegs.`, `${A.EXP_MAX} pets are already away.`)}</div>`;
+      else right = `<div class="expbtns">${A.EXPEDITIONS.map(X => `<button data-trip="${id}" data-k="${X.id}"><b>${X.h} ${L('Std', 'h')}</b><span>${esc(t(X.name))}</span></button>`).join('')}</div>`;
+      return `<div class="expc ${tr ? (tr.done ? 'back' : 'away') : ''}"><div class="pp">${petImg(id, 34)}</div><div class="pb"><b style="color:${P.col}">${esc(t(P.name))}</b>${right}</div></div>`;
+    }).join('');
+    const info = L(`Tiere, die gerade nicht mitkommen, gehen auf Reise und bringen Seelenfunken und Treue mit, auf langen Reisen oft ein Mitbringsel für den nächsten Lauf. Die Zeit läuft auch, wenn das Spiel zu ist.`, `Pets that are not joining you go travelling and bring back soul sparks and loyalty, on long trips often a gift for the next run. Time keeps running while the game is closed.`)
+      + ' ' + A.EXPEDITIONS.map(X => `${X.h} ${L('Std', 'h')}: ${X.sparks[0]}-${X.sparks[1]}`).join(' · ') + ' ' + t(U.meta) + '.';
+    return `<h3>${L('Expeditionen', 'Expeditions')} ${busy}/${A.EXP_MAX}</h3><div class="card flags"><div class="mini">${info}</div>${news}<div class="exps">${cards}</div></div>`;
   }
 
   // Erster Sieg über einen Weltenboss: der Wimpel kommt ins Lager
@@ -431,7 +472,7 @@ window.A = window.A || {};
       onProp: (p) => useProp(p),
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
-      onLevel: () => { if (Wd.W) { A.FX.ev('level', { h: Wd.W.hero, level: G.run.level }); if (G.meta.autoPts) { Wd.refreshHero(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 74, L('Punkte verteilt', 'Points spent'), '#fee761', 12, 'u_star'); } } hudUpdate(); },
+      onLevel: () => { if (Wd.W) { A.FX.ev('level', { h: Wd.W.hero, level: G.run.level, sub: G.meta.autoPts ? L('Punkte automatisch verteilt', 'Points spent automatically') : null }); if (G.meta.autoPts) { Wd.refreshHero(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 74, L('Punkte verteilt', 'Points spent'), '#fee761', 12, 'u_star'); } } hudUpdate(); },
       onElite: (list) => eliteNews(list),
       onBook: (ids) => bookNews(ids),
     };
@@ -441,6 +482,8 @@ window.A = window.A || {};
     S.music(A.Draw.themeOf(r.floor));
     const wfx = A.Weather.nameOf(Wd.W);
     A.FX.banner(t(U.floor) + ' ' + r.floor, A.worldName(r.floor) + (wfx ? ' · ' + wfx : '') + (A.gradeOf(r) ? ' · ' + L('Grad', 'Grade') + ' ' + A.gradeOf(r) : ''), '#fee761', 2.6);
+    // Mitbringsel von der Expedition (v41): einmal nach dem Ebenen-Schild zeigen, dann vergessen
+    if (r.giftNews) { const gn = r.giftNews, w2 = Wd.W; delete r.giftNews; G.save(); setTimeout(() => { if (Wd.W === w2 && dungeonEl.classList.contains('on')) A.FX.banner(L('Mitbringsel von der Reise', 'A gift from the trip'), [gn.pot ? L(`+${gn.pot} ${gn.pot === 1 ? 'Trank' : 'Tränke'}`, `+${gn.pot} potion${gn.pot === 1 ? '' : 's'}`) : '', gn.gold ? L(`+${gn.gold} Gold`, `+${gn.gold} gold`) : ''].filter(Boolean).join(' · '), '#e4a672', 2.6); }, 2800); }
     // neue Welt (oder Steinschlag zum ersten Mal): kurz sagen, was hier anders ist (weather.js)
     if (fresh && r.floor > 1 && ((r.floor - 1) % A.FLOORS_PER_WORLD === 0 || r.floor === 2) && wfx) { const w0 = Wd.W; w0.hint = A.Weather.tip(w0); setTimeout(() => { if (Wd.W === w0 && !w0.active) w0.hint = ''; }, 9000); }
     if (fresh && r.floor === 1) { const coarse = matchMedia('(pointer: coarse)').matches; Wd.W.hint = coarse ? L('Links laufen, rechts schlagen', 'Left: move, right: attack') : L('WASD laufen · Leertaste schlagen · 1-4 Zauber', 'WASD move · Space attack · 1-4 spells'); const w1 = Wd.W; setTimeout(() => { if (Wd.W === w1 && !w1.active) w1.hint = ''; }, 7000); }
@@ -1075,8 +1118,9 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle ? `<div class="mini extra">${[r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
+      ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}
       ${next ? `<div class="mini extra">${L('Im Lager reicht es jetzt für:', 'In the camp you can now afford:')} <b class="goldc">${esc(next)}</b></div>` : ''}
       <div class="endbtns"><button class="btn ${died && !next ? 'primary' : ''}" id="bAgain">${ic('u_down', 26)}${L('Nochmal', 'Again')}</button><button class="btn ${died && !next ? '' : 'primary'}" id="bCamp">${ic('u_tent', 28)}${t(U.toCamp)}</button></div>
       <div class="mini">${L('Nochmal: derselbe Held', 'Again: the same hero')}${g ? L(`, Grad ${g}`, `, grade ${g}`) : ''}.</div></div>`);

@@ -39,17 +39,47 @@ A.Pets = (function () {
   // Die Wahl im Lager; fehlt eine, kommen die ersten gefundenen Tiere
   function sel() {
     const n = startN(); if (!n) return [];
-    const out = (G().meta.petSel || []).filter(found).slice(0, n);
-    for (const id of ids()) if (out.length < n && found(id) && !out.includes(id)) out.push(id);
+    const out = (G().meta.petSel || []).filter(id => found(id) && !away(id)).slice(0, n);   // wer auf Reise ist (v41), bleibt draussen
+    for (const id of ids()) if (out.length < n && found(id) && !away(id) && !out.includes(id)) out.push(id);
     return out;
   }
   // Ein Tier wählen: ist kein Platz mehr frei, bleibt das zuerst gewählte zu Hause
   function choose(id) {
-    const n = startN(); if (!found(id) || !n) return;
+    const n = startN(); if (!found(id) || !n || away(id)) return;
     const s = sel().filter(x => x !== id); s.push(id);
     G().meta.petSel = s.slice(-n); G().saveMeta();
   }
   function startPets() { return sel().slice(0, slots()); }
+
+  // ---------- Expeditionen (v41, A.EXPEDITIONS) ----------
+  // meta.exp[id] = { k, t0, end } (Zeit in ms, echte Uhr). Unterwegs ist ein Tier weder im Team der Tierhütte noch in einem Käfig.
+  const now = () => Date.now();
+  function trips() { const m = G().meta; if (!m.exp || typeof m.exp !== 'object') m.exp = {}; return m.exp; }
+  const tripX = (e) => e && A.EXPEDITIONS.find(x => x.id === e.k);
+  function away(id) { const m = G().meta, e = m && m.exp && m.exp[id]; return !!(e && tripX(e) && isFinite(e.end)); }
+  function tripOf(id) {
+    if (!away(id)) return null; const e = trips()[id], X = tripX(e), left = Math.max(0, e.end - now());
+    return { X, left, done: left <= 0, pct: clamp(1 - left / (X.h * 3600e3), 0, 1) };
+  }
+  const busy = () => ids().filter(away).length;
+  const inRun = (id) => { const r = G().run; return !!(r && !r.over && (r.pets || []).includes(id)); };   // gerade mit in der Tiefe (Lauf zum Weiterspielen)
+  function canSend(id) { return found(id) && !away(id) && !sel().includes(id) && !inRun(id) && busy() < A.EXP_MAX; }
+  function send(id, k) {
+    const X = A.EXPEDITIONS.find(x => x.id === k); if (!X || !canSend(id)) return false;
+    const t = now(); trips()[id] = { k, t0: t, end: t + X.h * 3600e3 }; G().saveMeta(); return true;
+  }
+  // Abholen: Seelenfunken, Treue und manchmal ein Mitbringsel für den nächsten Lauf (meta.gift); fest aus der Startzeit gewürfelt
+  function claim(id) {
+    const tr = tripOf(id); if (!tr || !tr.done) return null;
+    const m = G().meta, e = trips()[id], X = tr.X, rng = new A.RNG(((Math.floor(e.t0 / 1000) ^ 0x3c6ef372) >>> 0) || 3);
+    const sparks = rng.int(X.sparks[0], X.sparks[1]);
+    let gift = null; if (X.gift > 0 && rng.chance(X.gift)) { gift = rng.pick(A.EXP_GIFTS); const g = m.gift && typeof m.gift === 'object' ? m.gift : (m.gift = {}); g[gift.k] = (g[gift.k] || 0) + gift.n; }
+    delete m.exp[id]; m.sparks += sparks;
+    const up = gain(id, X.treue);
+    G().saveMeta();
+    return { sparks, treue: X.treue, up, lv: treue(id), gift, line: A.t(A.EXP_LINES[id] || A.EXP_LINES._) };
+  }
+  const tripsBack = () => ids().filter(id => { const tr = tripOf(id); return tr && tr.done; }).length;
 
   // ---------- Käfige ----------
   // In welchem Kampfraum steht der Käfig? Fest aus dem Startwert der Ebene (der Spielstand zählt die Dinge im Raum der Reihe nach)
@@ -71,7 +101,7 @@ A.Pets = (function () {
   }
   // Was sitzt drin? Nie ein Tier, das schon dabei ist; noch nie gefundene viel öfter
   function cagePick() {
-    const have = withMe(), list = ids().filter(id => !have.includes(id));
+    const have = withMe(), list = ids().filter(id => !have.includes(id) && !away(id));   // Tiere auf Reise sitzen in keinem Käfig
     if (!list.length) return null;
     return G().run.rng.weighted(list, id => found(id) ? 1 : 4);
   }
@@ -540,5 +570,5 @@ A.Pets = (function () {
   function name(id) { return A.t(P(id).name); }
   function tricks(id) { const Pt = P(id); return [{ lv: 1, text: A.t(Pt.text) }, { lv: 3, text: A.t(Pt.t3) }, { lv: 5, text: A.t(Pt.t5) }]; }
 
-  return { bind, found, treue, progress, count, slots, startN, dmgMul, sel, choose, startPets, cageRoom, cageOnFloor, reveal, cagePick, free, join, gain, onKill, step, tick, owlSees, drawAlly, drawGround, drawCage, lights, name, tricks, withMe };
+  return { bind, found, treue, progress, count, slots, startN, dmgMul, sel, choose, startPets, away, inRun, tripOf, busy, canSend, send, claim, tripsBack, cageRoom, cageOnFloor, reveal, cagePick, free, join, gain, onKill, step, tick, owlSees, drawAlly, drawGround, drawCage, lights, name, tricks, withMe };
 })();
