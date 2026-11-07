@@ -637,6 +637,20 @@ A.Game = (function () {
     if (oc.item) res.items.push(randomItem(oc.item));
     if (oc.curse) res.items.push(randomItem('cursed'));
     if (oc.sacrifice) { const worst = run.bag[0]; if (worst) run.bag.shift(); run.points += 2; if (meta.autoPts) autoSpend(); }
+    const de = A.LANG === 'de';
+    if (oc.points) { run.points += oc.points; if (meta.autoPts) autoSpend(); }
+    // Zufälliger Segen: dieselbe Platz-Grenze wie am Schrein (takeBoon); voll oder alle schon da → Erfahrung
+    if (oc.talent) {
+      const free = Object.keys(A.TALENTS).filter(id => !run.talents.includes(id));
+      if (free.length && run.talents.length < d.talentSlots) { const id = rng.pick(free); run.talents.push(id); run.hp = Math.min(run.hp, derived().maxHp); res.msg += (de ? ' Du spürst: ' : ' You feel: ') + A.t(A.TALENTS[id].name) + '.'; }
+      else { addXp(50); res.msg += de ? ' Dein Kopf ist voll. Du bekommst Erfahrung.' : ' Your head is full. You get experience.'; }
+    }
+    // Zauber verstärken: ein aktiver Zauber unter der Höchststufe; sonst 40 Gold
+    if (oc.spellUpg) {
+      const ups = run.active.filter(id => id && A.Boons.upgOf(id, run) < A.Boons.MAX_UPG);
+      if (ups.length) { const id = rng.pick(ups); run.upg[id] = A.Boons.upgOf(id, run) + 1; res.msg += ' ' + A.Boons.skName(id) + '.'; }
+      else { run.gold += 40; res.msg += de ? ' Du kannst schon alles. +40 Gold.' : ' You know it all already. +40 gold.'; }
+    }
     for (const it of res.items) addToBag(it);
     save(); return res;
   }
