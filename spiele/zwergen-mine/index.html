@@ -158,6 +158,7 @@ const T = DE ? {
   gemPower: 'Zwergenkraft', gemGold: 'Goldgier', gemCrit: 'Glückstreffer', gemOffline: 'Nachtschicht', gemChest: 'Schatzspürer',
   gemPowerE: 'alles Graben', gemGoldE: 'mehr Gold', gemCritE: 'Volltreffer-Chance', gemOfflineE: 'Gold wenn du weg bist', gemChestE: 'Truhen öfter',
   chestGold: 'Schatztruhe!', chestRage: 'Zwergenwut! ×3', milestone: 'Meilenstein: ×2',
+  daily: 'Heute', daily1: 'Besiege 1 Boss', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
   goal: 'Ziele', goalDone: 'Ziel erreicht!', goalsDone: '{n} Ziele erreicht!', bought: 'Gekauft', bigBoss: 'Grossboss!', layer: 'Schicht',
   newMine: 'Neue Mine', heir: 'Erbstücke', move: 'Umziehen', moveFrom: 'Besiege den Grossboss auf Tiefe 50, dann kannst du umziehen und Erbstücke sammeln', no: 'Abbrechen', deeper: 'Je tiefer, desto mehr.',
   newMineInfo: 'Gold, Zwerge, Hacke und Werkzeuge fangen neu an. Steine und Ziele bleiben.',
@@ -207,6 +208,7 @@ const T = DE ? {
   gemPower: 'Dwarf Power', gemGold: 'Gold Greed', gemCrit: 'Lucky Strike', gemOffline: 'Night Shift', gemChest: 'Treasure Sense',
   gemPowerE: 'all digging', gemGoldE: 'more gold', gemCritE: 'critical chance', gemOfflineE: 'gold while away', gemChestE: 'chests more often',
   chestGold: 'Treasure chest!', chestRage: 'Dwarf rage! ×3', milestone: 'Milestone: ×2',
+  daily: 'Today', daily1: 'Beat 1 boss', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
   goal: 'Goals', goalDone: 'Goal reached!', goalsDone: '{n} goals reached!', bought: 'Bought', bigBoss: 'Big boss!', layer: 'Layer',
   newMine: 'New Mine', heir: 'Heirlooms', move: 'Move', moveFrom: 'Beat the big boss at depth 50, then you can move and collect heirlooms', no: 'Cancel', deeper: 'Deeper means more.',
   newMineInfo: 'Gold, dwarves, pickaxe and tools start over. Gems and goals stay.',
@@ -402,6 +404,13 @@ const F = {
   goalProgress: (g, s) => ({ depth: Math.max(s.maxDepth, s.best || 1), taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest, heir: s.heir || 0, blocks: (s.towers || []).length, crowns: s.crownsAll || 0 })[g.type],
 };
 // FORMELN_ENDE
+// Tagesziele: je Typ drei Grössen (klein unter Tiefe 30, mittel unter 100, sonst gross), Lohn in Steinen
+const DAILY_POOL = [
+  { type: 'taps',  n: [300, 800, 2000], gems: [2, 3, 5] },
+  { type: 'boss',  n: [1, 3, 6],        gems: [2, 3, 5] },
+  { type: 'dw',    n: [5, 12, 30],      gems: [2, 3, 5] },
+  { type: 'chest', n: [2, 5, 12],       gems: [2, 3, 5] },
+];
 
 // ---------- Ringe: nach 14 Schichten geht es mit neuen Farben weiter ----------
 const ROMAN = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -476,7 +485,8 @@ function freshState() {
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
-    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0 };
+    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false } };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -496,6 +506,8 @@ function load() {
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     S.shop = Object.assign({}, d.shop || {});
+    S.daily = Object.assign(f.daily, d.daily && typeof d.daily === 'object' ? d.daily : {});   // Spielstand von vor den Tageszielen
+    if (!Array.isArray(S.daily.goals) || !S.daily.base || !S.daily.done) S.daily = freshState().daily;
     if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
     if (d.towers == null) {   // Spielstand von vor den Blöcken
       if (S.best > F.blockEnd) {   // Herz des Berges schon besiegt: Alter Berg zählt als geschafft
@@ -772,6 +784,7 @@ function startBlock(k) {
   toast.style.display = 'none';
   S.blk = k; S.blockDone = false;
   S.heir = 0; S.runTime = 0; S.lastMaxAt = 0; S.recBase = 0; S.blkBest = 1;
+  dailyMove();
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
   rage = 0; beer = 0; lava = 0; frost = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
   applyStart();
@@ -781,7 +794,7 @@ function startBlock(k) {
   sfx.boss(); save();
 }
 // Kronen-Laden: Startkapital und Zwergen-Gilde bei jedem Neubeginn (Block oder Umzug)
-function applyStart() { S.gold = F.startGold(S); S.dw[0] = F.startDw(S); }
+function applyStart() { S.gold = F.startGold(S); S.dw[0] = F.startDw(S); S.daily.base.dw = (S.daily.base.dw || 0) + S.dw[0]; }   // Gilde-Startzwerge zählen nicht fürs Tagesziel
 // Gletscher: Kälteeinbruch
 function startFrost() {
   frost = F.frostSec; lavaTimer = F.lavaEvery();
@@ -1086,36 +1099,73 @@ function openChest() {
 // ---------- Zeichnen ----------
 function rng(seed) { let s = seed; return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
 
+// Aussehen je Schicht (Reihenfolge wie LAYERS): Felsform, Erzmuster, Stollen-Deko
+const LOOKS = [
+  { form: 'rund',     ore: 'nuggets', deko: 'wurzeln',     dekoCol: '#4a2f18' },  // Erde
+  { form: 'kantig',   ore: 'nuggets', deko: 'stalaktiten', dekoCol: '#8f8f99' },  // Stein
+  { form: 'kantig',   ore: 'adern',   deko: 'floez',       dekoCol: '#08070a' },  // Kohle
+  { form: 'rund',     ore: 'adern',   deko: 'rohre',       dekoCol: '#b8693a' },  // Kupfer
+  { form: 'kantig',   ore: 'adern',   deko: 'traeger',     dekoCol: '#4c4f57' },  // Eisen
+  { form: 'rund',     ore: 'adern',   deko: 'silberadern' },                      // Silber
+  { form: 'rund',     ore: 'nuggets', deko: 'nuggets' },                          // Gold
+  { form: 'facetten', ore: 'zapfen',  deko: 'kristallzapfen' },                   // Kristall
+  { form: 'blasig',   ore: 'glut',    deko: 'lavatropfen' },                      // Lava
+  { form: 'rund',     ore: 'zapfen',  deko: 'nebel' },                            // Tiefe
+  { form: 'scherben', ore: 'adern',   deko: 'scherben' },                         // Obsidian
+  { form: 'facetten', ore: 'adern',   deko: 'runen' },                            // Mithril
+  { form: 'blasig',   ore: 'glut',    deko: 'glutfunken' },                       // Glutkern
+  { form: 'scherben', ore: 'augen',   deko: 'sterne',      dekoCol: '#f4eaff' },  // Leere
+];
+
 function drawRock(t) {
   const c = rockCenter();
   const L = layerAt(S.depth);
+  const look = LOOKS[F.layerOf(S.depth)] || LOOKS[0];
   const sx = (Math.random() - 0.5) * shake * 10, sy = (Math.random() - 0.5) * shake * 10;
   const R = rng(rockSeed);
-  const pts = [];
-  const N = 11;
+  const pts = [], form = look.form;
+  // Umriss je Form; alle Punkte bleiben innerhalb 0.82-1.04 × c.r
+  const N = form === 'rund' ? 14 : form === 'kantig' ? 7 : form === 'facetten' ? 6 : form === 'scherben' ? 9 : 11;
+  const rot = form === 'facetten' ? R() * 0.5 : 0;
   for (let i = 0; i < N; i++) {
-    const a = (i / N) * Math.PI * 2 + R() * 0.2;
-    const rr = c.r * (0.82 + R() * 0.22);
+    let a = (i / N) * Math.PI * 2, f;
+    if (form === 'rund') { a += R() * 0.1; f = 0.94 + R() * 0.07; }
+    else if (form === 'kantig') { a += R() * 0.45; f = 0.82 + R() * 0.22; }
+    else if (form === 'facetten') { a += rot; f = 1.0; }
+    else if (form === 'scherben') { a += R() * 0.15; f = i % 3 === 0 ? 0.99 + R() * 0.05 : 0.82 + R() * 0.08; }
+    else if (form === 'blasig') { a += R() * 0.2; f = 0.82 + R() * 0.12; }
+    else { a += R() * 0.2; f = 0.82 + R() * 0.22; }
+    const rr = c.r * f;
     pts.push([c.x + sx + Math.cos(a) * rr, c.y + sy + Math.sin(a) * rr * 0.92]);
   }
+  const outline = () => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); };
   // Schatten
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(c.x, c.y + c.r * 0.95, c.r * 0.9, c.r * 0.18, 0, 0, Math.PI * 2); ctx.fill();
   // Körper
-  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+  outline();
   const g = ctx.createRadialGradient(c.x - c.r * 0.3, c.y - c.r * 0.4, c.r * 0.1, c.x, c.y, c.r * 1.1);
   g.addColorStop(0, shade(L.rock, 30)); g.addColorStop(1, L.dark);
   ctx.fillStyle = g; ctx.fill();
   ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.stroke();
-  ctx.save(); ctx.clip();
-  // Erz-Adern (ab Ring II leuchtend)
-  if (L.glow) { ctx.shadowColor = L.ore; ctx.shadowBlur = 10; }
-  for (let i = 0; i < 9; i++) {
-    const ox = c.x + sx + (R() - 0.5) * c.r * 1.5, oy = c.y + sy + (R() - 0.5) * c.r * 1.4, s = 4 + R() * 8;
-    ctx.fillStyle = L.ore;
-    ctx.beginPath(); ctx.moveTo(ox, oy - s); ctx.lineTo(ox + s * 0.8, oy); ctx.lineTo(ox, oy + s * 0.7); ctx.lineTo(ox - s * 0.9, oy); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(ox - s * 0.3, oy - s * 0.5, s * 0.25, s * 0.25);
+  if (form === 'blasig') {   // Halbkreis-Blasen am Rand (Punkte ≤ 0.94, Blase ≤ 0.10 → ≤ 1.04)
+    const nb = 4 + Math.floor(R() * 3);
+    for (let i = 0; i < nb; i++) {
+      const p = pts[Math.floor((i / nb) * N + R() * 2) % N], a = Math.atan2(p[1] - c.y - sy, p[0] - c.x - sx), b = c.r * (0.07 + R() * 0.03);
+      ctx.beginPath(); ctx.arc(p[0], p[1], b, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p[0], p[1], b, a - Math.PI / 2, a + Math.PI / 2); ctx.stroke();
+    }
   }
+  outline();
+  ctx.save(); ctx.clip();
+  if (form === 'facetten') {   // Kanten der Kristall-Facetten
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.beginPath();
+    for (const p of pts) { ctx.moveTo(c.x + sx, c.y + sy - c.r * 0.08); ctx.lineTo(p[0], p[1]); }
+    ctx.stroke();
+  }
+  // Erz (ab Ring II leuchtend)
+  if (L.glow) { ctx.shadowColor = L.ore; ctx.shadowBlur = 10; }
+  drawOre(L, look, c, R, sx, sy, t);
   ctx.shadowBlur = 0;
   // Risse je nach Schaden
   const dmg = 1 - Math.max(0, S.hp) / hpMax;
@@ -1174,6 +1224,183 @@ function roundRect(x, y, w, h, r) {
   ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
 
+// ---------- Erzmuster und Stollen-Deko je Schicht ----------
+function drawOre(L, look, c, R, sx, sy, t) {
+  const x0 = c.x + sx, y0 = c.y + sy, r = c.r;
+  ctx.fillStyle = L.ore; ctx.strokeStyle = L.ore; ctx.lineCap = 'round';
+  if (look.ore === 'adern') {   // geschwungene Adern
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 5; i++) {
+      const ax = x0 + (R() - 0.5) * r * 1.3, ay = y0 + (R() - 0.5) * r * 1.2, a = R() * Math.PI * 2, l = r * (0.35 + R() * 0.35), b = (R() - 0.5) * l * 0.9;
+      const bx = ax + Math.cos(a) * l, by = ay + Math.sin(a) * l;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2 - Math.sin(a) * b, (ay + by) / 2 + Math.cos(a) * b, bx, by); ctx.stroke();
+    }
+  } else if (look.ore === 'zapfen') {   // Kristallzapfen von innen nach aussen, mit Glanz
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + R() * 0.6, r0 = r * 0.14, r1 = r * (0.55 + R() * 0.3), w = 0.13;
+      ctx.beginPath(); ctx.moveTo(x0 + Math.cos(a - w) * r0, y0 + Math.sin(a - w) * r0); ctx.lineTo(x0 + Math.cos(a + w) * r0, y0 + Math.sin(a + w) * r0);
+      ctx.lineTo(x0 + Math.cos(a) * r1, y0 + Math.sin(a) * r1); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath();
+      ctx.moveTo(x0 + Math.cos(a - w * 0.4) * r0, y0 + Math.sin(a - w * 0.4) * r0); ctx.lineTo(x0 + Math.cos(a) * r1 * 0.85, y0 + Math.sin(a) * r1 * 0.85); ctx.stroke();
+    }
+  } else if (look.ore === 'glut') {   // glühende Risse, Leuchten pulsiert
+    ctx.shadowColor = L.ore; ctx.shadowBlur = 6 + 10 * (0.5 + 0.5 * Math.sin(t * 3)); ctx.lineWidth = 2.5;
+    for (let i = 0; i < 6; i++) {
+      let x = x0 + (R() - 0.5) * r * 1.1, y = y0 + (R() - 0.5) * r * 1.1;
+      const a0 = R() * Math.PI * 2;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let k = 0; k < 3; k++) { const a = a0 + (R() - 0.5) * 1.2; x += Math.cos(a) * r * 0.18; y += Math.sin(a) * r * 0.18; ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  } else if (look.ore === 'augen') {   // Augenpaare, blinzeln alle 3-5 s
+    for (let i = 0; i < 3; i++) {
+      const ex = x0 + (R() - 0.5) * r * 1.0, ey = y0 + (R() - 0.5) * r * 0.9, ew = r * 0.065, k = (Math.PI * 2) / (3 + R() * 2), seed = R() * 10;
+      const shut = Math.sin(t * k + seed) > 0.97;
+      for (const s of [-1, 1]) {
+        const x = ex + s * ew * 1.5;
+        if (shut) { ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - ew, ey); ctx.lineTo(x + ew, ey); ctx.stroke(); continue; }
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(x, ey, ew, ew * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = L.ore; ctx.beginPath(); ctx.arc(x, ey, ew * 0.38, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  } else {   // Nuggets (wie bisher)
+    for (let i = 0; i < 9; i++) {
+      const ox = x0 + (R() - 0.5) * r * 1.5, oy = y0 + (R() - 0.5) * r * 1.4, s = 4 + R() * 8;
+      ctx.fillStyle = L.ore;
+      ctx.beginPath(); ctx.moveTo(ox, oy - s); ctx.lineTo(ox + s * 0.8, oy); ctx.lineTo(ox, oy + s * 0.7); ctx.lineTo(ox - s * 0.9, oy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(ox - s * 0.3, oy - s * 0.5, s * 0.25, s * 0.25);
+    }
+  }
+}
+// x an den Stollenwänden (links oder rechts vom Felsen)
+const wallX = (R) => R() < 0.5 ? R() * CW * 0.22 : CW * (0.78 + R() * 0.22);
+const DEKO = {
+  wurzeln(R, col) {   // Wurzelstränge von oben
+    ctx.strokeStyle = col; ctx.lineCap = 'round';
+    for (let i = 0; i < 7; i++) {
+      const x = R() * CW, l = CH * (0.06 + R() * 0.14), b = (R() - 0.5) * 30;
+      ctx.lineWidth = 2 + R() * 2.5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + b, l * 0.5, x - b * 0.4, l); ctx.stroke();
+      ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x + b * 0.3, l * 0.45); ctx.lineTo(x + b * 0.3 + (R() - 0.5) * 24, l * 0.75); ctx.stroke();
+    }
+  },
+  stalaktiten(R, col) {   // graue Zapfen oben
+    ctx.fillStyle = col; ctx.globalAlpha = 0.8; ctx.beginPath();
+    for (let i = 0; i < 11; i++) { const x = R() * CW, w = 5 + R() * 8, h = 14 + R() * 36, y = CH * 0.08 + 12; ctx.moveTo(x - w, y); ctx.lineTo(x + w, y); ctx.lineTo(x, y + h); ctx.closePath(); }
+    ctx.fill(); ctx.globalAlpha = 1;
+  },
+  floez(R, col) {   // schwarzes Kohleband quer, mit Glanz
+    const y = CH * (0.2 + R() * 0.04), h = 12 + R() * 6, w1 = R() * 6, w2 = R() * 6;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, y + w1); ctx.quadraticCurveTo(CW / 2, y - 8, CW, y + w2);
+    ctx.lineTo(CW, y + w2 + h); ctx.quadraticCurveTo(CW / 2, y + h + 6, 0, y + w1 + h); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, y + w1 + 2); ctx.quadraticCurveTo(CW / 2, y - 6, CW, y + w2 + 2); ctx.stroke();
+  },
+  rohre(R, col) {   // Kupferrohre mit Bogen, Patina-Flecken
+    for (const s of [-1, 1]) {
+      const x = s < 0 ? CW * 0.13 : CW * 0.87, y1 = CH * (0.55 + R() * 0.15), rb = 14;
+      ctx.beginPath(); ctx.moveTo(x, CH * 0.08 + 12); ctx.lineTo(x, y1); ctx.arc(x + s * rb, y1, rb, s < 0 ? 0 : Math.PI, Math.PI / 2, s > 0); ctx.lineTo(s < 0 ? 0 : CW, y1 + rb);
+      ctx.strokeStyle = col; ctx.lineWidth = 7; ctx.stroke(); ctx.strokeStyle = 'rgba(255,220,180,0.35)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#4fb39a'; ctx.globalAlpha = 0.75; ctx.beginPath();
+      for (let i = 0; i < 3; i++) { const py = CH * 0.15 + R() * (y1 - CH * 0.15); ctx.moveTo(x + 3, py); ctx.arc(x, py, 3, 0, Math.PI * 2); }
+      ctx.fill(); ctx.globalAlpha = 1;
+    }
+  },
+  traeger(R, col) {   // Eisenträger mit Nieten links und rechts
+    for (const x of [CW * 0.15, CW * 0.85 - 10]) {
+      ctx.fillStyle = col; ctx.fillRect(x, CH * 0.08 + 12, 10, CH);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 4, CH * 0.08 + 12, 2, CH);
+      ctx.fillStyle = '#9a9ea8'; ctx.beginPath();
+      for (let i = 0; i < 7; i++) { const y = CH * 0.14 + i * CH * 0.12; ctx.moveTo(x + 7.5, y); ctx.arc(x + 5, y, 2.5, 0, Math.PI * 2); }
+      ctx.fill();
+    }
+  },
+  silberadern(R, col) {   // feine helle Linien in den Wänden
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath();
+    for (let i = 0; i < 9; i++) { let x = wallX(R), y = R() * CH; ctx.moveTo(x, y); for (let k = 0; k < 3; k++) { x += (R() - 0.5) * 30; y += 8 + R() * 16; ctx.lineTo(x, y); } }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  },
+  nuggets(R, col, t) {   // glänzende Goldpunkte in den Wänden, blinken
+    ctx.fillStyle = col;
+    for (let i = 0; i < 14; i++) {
+      const x = wallX(R), y = R() * CH, s = 1.5 + R() * 2;
+      ctx.globalAlpha = 0.35 + 0.65 * Math.max(0, Math.sin(t * 2 + i * 1.7)); ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  },
+  kristallzapfen(R, col) {   // hellblaue Zapfen oben und unten, durchsichtig
+    ctx.fillStyle = col; ctx.globalAlpha = 0.4; ctx.beginPath();
+    for (let i = 0; i < 14; i++) {
+      const x = R() * CW, w = 4 + R() * 7, h = 16 + R() * 40, top = i < 7, y = top ? CH * 0.08 + 12 : CH;
+      ctx.moveTo(x - w, y); ctx.lineTo(x + w, y); ctx.lineTo(x, top ? y + h : y - h); ctx.closePath();
+    }
+    ctx.fill(); ctx.globalAlpha = 1;
+  },
+  lavatropfen(R, col, t) {   // 3 Tropfen fallen langsam, mit Glut-Schein
+    ctx.fillStyle = col;
+    for (let i = 0; i < 3; i++) {
+      const x = wallX(R), y0 = CH * 0.08 + 12, sp = 25 + R() * 20, y = y0 + ((t * sp + R() * CH) % (CH - y0));
+      ctx.globalAlpha = 0.22; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(x + 3.5, y); ctx.arc(x, y, 3.5, 0, Math.PI); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  },
+  nebel(R, col, t) {   // zwei violette Nebelschwaden treiben vorbei
+    ctx.fillStyle = col; const W = CW * 1.6;
+    for (let i = 0; i < 2; i++) {
+      const y = CH * (0.25 + R() * 0.55), sp = (8 + R() * 8) * (i ? -1 : 1), x = (((t * sp + R() * W) % W) + W) % W - CW * 0.3;
+      ctx.globalAlpha = 0.1; ctx.beginPath(); ctx.ellipse(x, y, CW * 0.32, CH * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + CW * 0.12, y - CH * 0.02, CW * 0.2, CH * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  },
+  scherben(R, col) {   // schwarze Splitter mit cyan Kante
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const x = wallX(R), y = R() * CH, s = 8 + R() * 14, a = R() * Math.PI;
+      ctx.moveTo(x + Math.cos(a) * s, y + Math.sin(a) * s); ctx.lineTo(x + Math.cos(a + 2.5) * s * 0.4, y + Math.sin(a + 2.5) * s * 0.4); ctx.lineTo(x - Math.cos(a) * s * 0.6, y - Math.sin(a) * s * 0.6); ctx.closePath();
+    }
+    ctx.fillStyle = '#050508'; ctx.fill();
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.6; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1;
+  },
+  runen(R, col, t) {   // 5 leuchtende Runen an der Wand, pulsieren
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const x = wallX(R), y = CH * (0.2 + R() * 0.6), h = 12 + R() * 5, d = (R() < 0.5 ? -1 : 1) * h * 0.5, o = R() * 4;
+      ctx.globalAlpha = 0.35 + 0.4 * Math.sin(t * 2 + i * 1.3) ** 2;
+      ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.moveTo(x, y - h / 2 + o); ctx.lineTo(x + d, y - h * 0.1); ctx.lineTo(x, y + h * 0.2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  },
+  glutfunken(R, col, t) {   // 12 Funken steigen auf
+    ctx.fillStyle = col;
+    for (let i = 0; i < 12; i++) {
+      const sp = 18 + R() * 30, x = R() * CW + Math.sin(t * 1.3 + i) * 7, y = CH - ((t * sp + R() * CH) % CH), s = 1.3 + R() * 1.5;
+      ctx.globalAlpha = 0.3 + 0.4 * Math.sin(t * 3 + i) ** 2; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  },
+  sterne(R, col, t) {   // 20 Sterne, zwei blinken, einer wandert sehr langsam
+    ctx.fillStyle = col;
+    for (let i = 0; i < 20; i++) {
+      const y = R() * CH, s = 1 + R() * 1.5;
+      let x = R() * CW;
+      if (i === 2) x = (x + t * 3) % CW;
+      ctx.globalAlpha = i < 2 ? 0.2 + 0.8 * Math.abs(Math.sin(t * 1.4 + i * 2)) : 0.55;
+      ctx.fillRect(x - s / 2, y - s / 2, s, s);
+    }
+    ctx.globalAlpha = 1;
+  },
+};
+function drawDeko(L, look, t) {
+  const f = DEKO[look.deko];
+  if (!f) return;
+  ctx.save();
+  f(rng(F.layerOf(S.depth) * 53 + 9), look.dekoCol || L.ore, t);
+  ctx.restore();
+}
+
 function drawBackground(t) {
   const L = layerAt(S.depth);
   ctx.fillStyle = L.bg; ctx.fillRect(0, 0, CW, CH);
@@ -1188,6 +1415,8 @@ function drawBackground(t) {
   ctx.fillStyle = '#5a3d22';
   ctx.fillRect(CW * 0.06, 0, 12, CH); ctx.fillRect(CW * 0.94 - 12, 0, 12, CH);
   ctx.fillRect(CW * 0.06, CH * 0.08, CW * 0.88, 12);
+  // Stollen-Deko je Schicht
+  drawDeko(L, LOOKS[F.layerOf(S.depth)] || LOOKS[0], t);
   // Laternen
   for (const lx of [CW * 0.06 + 6, CW * 0.94 - 6]) {
     const flick = 0.85 + Math.sin(t * 9 + lx) * 0.08;
@@ -1431,6 +1660,7 @@ function buildPanel() {
     rows.push(makeRow({ icon: S.blockDone ? iconCanvas(emojiIcon('🏔️')) : iconCanvas(heirIcon), kind: 'prest' }));
     if (S.towers.length || S.blkBest >= 100) rows.push(makeRow({ icon: iconCanvas(emojiIcon('👑')), kind: 'realm' }));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🏆')), kind: 'rec' }));
+    S.daily.goals.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon('📅')), kind: 'daily', g })));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🦴')), kind: 'finds' }));
     const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
     gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
@@ -1468,6 +1698,10 @@ function rowData(r) {
   if (r.kind === 'goal') {
     const g = r.g, done = !!S.goals[g.id], p = Math.min(g.n, F.goalProgress(g, S));
     return { name: goalName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
+  }
+  if (r.kind === 'daily') {
+    const g = r.g, done = !!S.daily.done[g.id], p = Math.min(g.n, dailyProgress(g));
+    return { name: T.daily + ': ' + dailyName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
   }
   if (r.kind === 'stuck') {
     const p = bossPower();
@@ -1532,7 +1766,7 @@ function updateTabDots() {
 let seenPrest = false;
 function buy(r) {
   const d = rowData(r);
-  if (r.kind === 'goal') return;
+  if (r.kind === 'goal' || r.kind === 'daily') return;
   if (r.kind === 'prest') { if (S.blockDone) showRealm(); else newMine(); return; }
   if (r.kind === 'realm') { showRealm(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
@@ -1603,6 +1837,51 @@ function placeTip() {
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('hint', b.dataset.tab === tipNow.at));
 }
 document.getElementById('tipOk').addEventListener('click', hideTip);
+
+// ---------- Tagesziele: drei kleine Ziele je Kalendertag ----------
+function dayKey() { const d = new Date(), z = (n) => (n < 10 ? '0' : '') + n; return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+function dailyCount(type) { return { taps: S.taps, boss: S.st.bosses, dw: S.dw.reduce((a, b) => a + b, 0), chest: S.st.chests }[type] || 0; }
+function dailyName(g) { return g.type === 'boss' && g.n === 1 ? T.daily1 : T.goals[g.type].replace('{n}', g.n); }
+// Neuer Tag nur bei einem grösseren Schlüssel: Uhr zurückstellen würfelt nicht neu
+function ensureDaily() {
+  const key = dayKey();
+  if (!(key > S.daily.day)) return;
+  const had = !!S.daily.day, deep = Math.max(S.best || 1, S.blkBest || 1, S.maxDepth || 1);
+  const size = deep < 30 ? 0 : deep < 100 ? 1 : 2;
+  const pool = DAILY_POOL.slice(), goals = [], base = {};
+  while (goals.length < 3) {
+    const p = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    goals.push({ id: p.type + p.n[size], type: p.type, n: p.n[size], gems: p.gems[size] });
+    base[p.type] = dailyCount(p.type);
+  }
+  S.daily = { day: key, goals, base, done: {}, bonus: false };
+  if (had) showBanner({ text: '📅 ' + T.dailyNew, sub: goals.map(dailyName).join(' · '), life: 3, color: '#6fdc7a' });
+  if (tab === 'goal') buildPanel();
+  save();
+}
+// Fortschritt seit Tagesstart; nie negativ (sonst Startwert auf den jetzigen Zähler setzen)
+function dailyProgress(g) {
+  const p = dailyCount(g.type) - (S.daily.base[g.type] || 0);
+  if (p < 0) { S.daily.base[g.type] = dailyCount(g.type); return 0; }
+  return p;
+}
+// Umzug / neuer Block: bisherige Zwerge vom Startwert abziehen, damit das Zwerge-Ziel weiter zählt
+function dailyMove() { S.daily.base.dw = (S.daily.base.dw || 0) - S.dw.reduce((a, b) => a + b, 0); }
+function checkDaily() {
+  const done = S.daily.goals.filter(g => !S.daily.done[g.id] && dailyProgress(g) >= g.n);
+  for (const g of done) {
+    S.daily.done[g.id] = true; S.gems += g.gems;
+    showBanner({ text: T.goalDone, sub: T.daily + ': ' + dailyName(g) + '  💎 +' + g.gems, life: 2.6, color: '#6fdc7a' });
+  }
+  if (S.daily.goals.length && !S.daily.bonus && S.daily.goals.every(g => S.daily.done[g.id])) {
+    S.daily.bonus = true; S.gems += 5;
+    showBanner({ text: '📅 ' + T.dailyAll, sub: T.dailyBonus + '  💎 +5', life: 3, color: '#ffd447' });
+  }
+  if (!done.length) return;
+  sfx.boss();
+  if (tab === 'goal') buildPanel();
+  save();
+}
 
 // ---------- Ziele ----------
 function goalName(g) { return (g.n === 1 && T.goals1[g.type]) || T.goals[g.type].replace('{n}', g.n); }
@@ -1770,6 +2049,7 @@ function startOver() {
 function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
   S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.blkBest;
+  dailyMove();
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
   rage = 0; beer = 0; lava = 0; frost = 0; chest = null; chestTimer = 25; layerShown = -1;
   applyStart();
@@ -1855,7 +2135,7 @@ function frame(now) {
   else if ((S.blk === 'vulkan' || S.blk === 'eis') && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) (S.blk === 'vulkan' ? startLava : startFrost)(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
-    goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip(); updateCrowns();
+    goalTimer = 0.5; checkGoals(); ensureDaily(); checkDaily(); updateSkillBtns(); updateTip(); updateCrowns();
     if (S.farm && bossPower() >= 1) { retryBoss(); showBanner({ text: T.autoRetry, sub: T.autoRetrySub, life: 2.2, color: '#6fdc7a' }); }
   }
 
@@ -1892,6 +2172,7 @@ function frame(now) {
 
 // ---------- Start ----------
 const since = load();
+ensureDaily();
 drawSoundIcon();
 layerShown = Math.floor((S.depth - 1) / 10);
 spawnRock();
@@ -1914,7 +2195,7 @@ requestAnimationFrame(frame);
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS };
 </script>
 </body>
 </html>

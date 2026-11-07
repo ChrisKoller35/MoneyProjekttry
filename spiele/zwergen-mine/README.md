@@ -1,12 +1,13 @@
 # Zwergen-Mine
 
-**Stand 6.11.2026:** Version 8 spielbar: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
+**Stand 7.11.2026:** Version 9 spielbar: jede Schicht sieht anders aus und jeden Tag gibt es drei Tagesziele (Nacht-Bot, geprüft). Version 8: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
 
 ## Spielregel
 
 Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man eine bessere Spitzhacke (mehr pro Tipp), Zwerge (graben von allein, auch wenn man weg ist) und Werkzeuge (einmalige Käufe). Alle 10 Tiefen wartet ein Boss-Felsen mit Zeitlimit, alle 50 Tiefen ein Grossboss (zehnfach so stark, 40 Sekunden, dreifach Steine). Schafft man ihn, gibt es Edelsteine für dauerhafte Verbesserungen (Zwergenkraft, Goldgier, Glückstreffer, Nachtschicht, Schatzspürer). Schafft man ihn nicht («Zeit um!»), gräbt man eine Tiefe höher weiter und probiert es später nochmal.
 
 - **14 Schichten** zu je 10 Tiefen: Erde, Stein, Kohle, Kupfer, Eisen, Silber, Gold, Kristall, Lava, Tiefe, Obsidian, Mithril, Glutkern, Leere.
+- **Schicht-Looks (7.11.2026):** jede der 14 Schichten hat eigene Felsform, eigenes Erzmuster und eigene Stollen-Deko (Wurzeln, Stalaktiten, Lavatropfen, Glutfunken, Sterne …); Ringe behalten Form und bekommen die Farbverschiebung.
 - **Letzte Schicht und Endboss:** Tiefe 141 bis 150 ist das «Herz des Berges» (im Vulkan «Herz des Vulkans»), leuchtend; wer sie zum ersten Mal erreicht, bekommt 30 Steine. Auf Tiefe 150 wartet der Endboss mit Krone (Grossboss, 40 Sekunden). Tiefer geht es in einem Block nicht.
 - **Block geschafft:** Endboss besiegt gibt sofort 👑 10 Kronen und einen Förderturm. Jeder Turm fördert Kronen über echte Zeit, auch wenn man weg ist (Alter Berg 1 pro Stunde, Vulkan 2). Das Lager fasst 12 Stunden, danach fördert der Turm nichts mehr, bis man abholt (Uhr verstellen bringt nichts). Ein grüner Punkt an der Krone oben zeigt, dass Kronen im Lager liegen.
 - **Dein Reich (Karte):** Klick auf die Krone oben, den Knopf «Nächster Block» oder Reiter «Ziele», «Dein Reich». Dort: Kronen, Punktestand, Fördertürme mit Lager und «Abholen», und die Blöcke. Alter Berg ist frei, Vulkan kostet 10 Kronen, Gletscher 25, Grotte 50 (je einmal). Einen Block kann man beliebig oft spielen, jeder geschaffte gibt einen weiteren Turm. Wechselt man mitten im Block, fragt das Spiel nach.
@@ -21,6 +22,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **15 Werkzeuge** (Reiter «Hacke»), freigeschaltet nach Tiefe: Stahlspitze, Doppelschlag, Förderband, Grosse Laterne, Dynamit, Zeitlupe, Bierfass, Goldwaage, Sprengkurs, Erz-Magnet, Glücksbringer, Zwergenlied, Diamantbohrer, Doppelschicht, Kristallkugel.
 - **Dynamit** (Knopf unten links, Taste D): 30 Tipps auf einmal, alle 90 Sekunden. **Bierfass** (Knopf unten rechts, Taste B): Zwerge 20 Sekunden lang dreifach, alle 3 Minuten.
 - **47 Ziele** (Reiter «Ziele»): Tiefe (bis 150), Tipps, Zwerge, Bosse, Truhen, Hacken-Stufe, Werkzeuge, Umzüge, Erbstücke, geschaffte Blöcke (1, 3, 6) und gesammelte Kronen (50, 200). Jedes Ziel gibt einmal Steine.
+- **Tagesziele (2026-11-07):** jeden Tag drei neue kleine Ziele (Tipps, Bosse, Zwerge, Truhen) oben im Reiter «Ziele», Lohn in Steinen, alle drei geschafft gibt 5 Steine extra; die Grösse wächst mit der Tiefe.
 - **Fundstücke (2026-11-06):** drei je Schicht, 42 insgesamt; Chance beim Durchbruch in eine neue Tiefe (nicht im Herz ab 141), +1 Stein je Fund, +5 je vollständige Schicht, +50 für alle; Sammlung im Reiter «Ziele».
 - **Rekorde:** Klick auf die Tiefe oben rechts (oder Reiter «Ziele», «Rekorde»): Punktestand, geschaffte Blöcke, tiefster Punkt aller Zeiten, die laufende Mine, die besten 8 früheren Minen und Blöcke mit Tiefe, Erbstücken oder Kronen und Spielzeit sowie die ganze Spielzeit. Neben der Tiefe steht der Rekord dieses Blocks (🏆), solange man darüber liegt. Wer nach einem Umzug den alten Rekord des Blocks knackt, bekommt «Neuer Rekord!».
 - **Neue Mine (Umzug):** Nach dem Grossboss auf Tiefe 50 kann man neu anfangen. Gold, Zwerge, Hacke und Werkzeuge fangen bei null an, Steine und Ziele bleiben. Dafür gibt es Erbstücke, jedes bringt für immer +5 % Gold und Graben. Je tiefer man vorher kommt, desto mehr Erbstücke.
@@ -36,7 +38,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 ## Dateien
 
 - `index.html` – das ganze Spiel in einer Datei (kein Internet nötig, ca. 80 KB), Texte Deutsch/Englisch je nach Browser-Sprache
-- `test-mine.js` – Browser-Test mit 85 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
+- `test-mine.js` – Browser-Test mit 90 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
 - Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan) `bilder-v7/` (Felsen, Maulwurf, Fundstücke) und `bilder-v8/` (Gletscher, Grotte, Kronen-Laden)
 
 ## Bedienung
