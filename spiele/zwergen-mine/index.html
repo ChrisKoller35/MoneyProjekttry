@@ -158,7 +158,7 @@ const T = DE ? {
   gemPower: 'Zwergenkraft', gemGold: 'Goldgier', gemCrit: 'Glückstreffer', gemOffline: 'Nachtschicht', gemChest: 'Schatzspürer',
   gemPowerE: 'alles Graben', gemGoldE: 'mehr Gold', gemCritE: 'Volltreffer-Chance', gemOfflineE: 'Gold wenn du weg bist', gemChestE: 'Truhen öfter',
   chestGold: 'Schatztruhe!', chestRage: 'Zwergenwut! ×3', milestone: 'Meilenstein: ×2',
-  daily: 'Heute', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
+  daily: 'Heute', daily1: 'Besiege 1 Boss', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
   goal: 'Ziele', goalDone: 'Ziel erreicht!', goalsDone: '{n} Ziele erreicht!', bought: 'Gekauft', bigBoss: 'Grossboss!', layer: 'Schicht',
   newMine: 'Neue Mine', heir: 'Erbstücke', move: 'Umziehen', moveFrom: 'Besiege den Grossboss auf Tiefe 50, dann kannst du umziehen und Erbstücke sammeln', no: 'Abbrechen', deeper: 'Je tiefer, desto mehr.',
   newMineInfo: 'Gold, Zwerge, Hacke und Werkzeuge fangen neu an. Steine und Ziele bleiben.',
@@ -208,7 +208,7 @@ const T = DE ? {
   gemPower: 'Dwarf Power', gemGold: 'Gold Greed', gemCrit: 'Lucky Strike', gemOffline: 'Night Shift', gemChest: 'Treasure Sense',
   gemPowerE: 'all digging', gemGoldE: 'more gold', gemCritE: 'critical chance', gemOfflineE: 'gold while away', gemChestE: 'chests more often',
   chestGold: 'Treasure chest!', chestRage: 'Dwarf rage! ×3', milestone: 'Milestone: ×2',
-  daily: 'Today', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
+  daily: 'Today', daily1: 'Beat 1 boss', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
   goal: 'Goals', goalDone: 'Goal reached!', goalsDone: '{n} goals reached!', bought: 'Bought', bigBoss: 'Big boss!', layer: 'Layer',
   newMine: 'New Mine', heir: 'Heirlooms', move: 'Move', moveFrom: 'Beat the big boss at depth 50, then you can move and collect heirlooms', no: 'Cancel', deeper: 'Deeper means more.',
   newMineInfo: 'Gold, dwarves, pickaxe and tools start over. Gems and goals stay.',
@@ -794,7 +794,7 @@ function startBlock(k) {
   sfx.boss(); save();
 }
 // Kronen-Laden: Startkapital und Zwergen-Gilde bei jedem Neubeginn (Block oder Umzug)
-function applyStart() { S.gold = F.startGold(S); S.dw[0] = F.startDw(S); }
+function applyStart() { S.gold = F.startGold(S); S.dw[0] = F.startDw(S); S.daily.base.dw = (S.daily.base.dw || 0) + S.dw[0]; }   // Gilde-Startzwerge zählen nicht fürs Tagesziel
 // Gletscher: Kälteeinbruch
 function startFrost() {
   frost = F.frostSec; lavaTimer = F.lavaEvery();
@@ -1841,7 +1841,7 @@ document.getElementById('tipOk').addEventListener('click', hideTip);
 // ---------- Tagesziele: drei kleine Ziele je Kalendertag ----------
 function dayKey() { const d = new Date(), z = (n) => (n < 10 ? '0' : '') + n; return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
 function dailyCount(type) { return { taps: S.taps, boss: S.st.bosses, dw: S.dw.reduce((a, b) => a + b, 0), chest: S.st.chests }[type] || 0; }
-function dailyName(g) { return T.goals[g.type].replace('{n}', g.n); }
+function dailyName(g) { return g.type === 'boss' && g.n === 1 ? T.daily1 : T.goals[g.type].replace('{n}', g.n); }
 // Neuer Tag nur bei einem grösseren Schlüssel: Uhr zurückstellen würfelt nicht neu
 function ensureDaily() {
   const key = dayKey();
@@ -2195,7 +2195,7 @@ requestAnimationFrame(frame);
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS };
 </script>
 </body>
 </html>

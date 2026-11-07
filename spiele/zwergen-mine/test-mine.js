@@ -371,7 +371,36 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await shot('25-fundstuecke');
   await page.click('#tClose'); await page.waitForTimeout(200);
 
-  // 10) Spätere Schichten ansehen
+  // 9l) Tagesziele: drei je Tag, Lohn in Steinen, Bonus für alle drei, neuer Tag würfelt neu, Gilde-Startzwerge zählen nicht
+  await page.click('[data-tab="goal"]'); await page.waitForTimeout(300);
+  check((await page.locator('.card', { hasText: 'Heute:' }).count()) === 3, 'Drei Tagesziele oben im Reiter «Ziele»');
+  await shot('31-tagesziele');
+  const dy = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, n = S.daily.goals.length;
+    S.daily.done = {}; S.daily.bonus = false; S.daily.base = { taps: S.taps, boss: S.st.bosses, chest: S.st.chests, dw: S.dw.reduce((a, b) => a + b, 0) }; m.checkDaily(); const g0 = S.gems, early = Object.keys(S.daily.done).length;
+    for (const g of S.daily.goals) { if (g.type === 'taps') S.taps += g.n; if (g.type === 'boss') S.st.bosses += g.n; if (g.type === 'chest') S.st.chests += g.n; if (g.type === 'dw') S.dw[0] += g.n; }
+    m.checkDaily(); const sum = S.daily.goals.reduce((a, g) => a + g.gems, 0);
+    const got = S.gems - g0, bonus = S.daily.bonus;
+    m.checkDaily(); const twice = S.gems - g0;
+    const day = S.daily.day; S.daily.day = '2000-01-01'; m.ensureDaily(); const rolled = S.daily.day === day && Object.keys(S.daily.done).length === 0;
+    S.daily.day = '2999-01-01'; m.ensureDaily(); const noBack = S.daily.day === '2999-01-01';
+    S.daily.day = day;
+    S.shop.gilde = 2; S.daily.goals = [{ id: 'dw5', type: 'dw', n: 5, gems: 2 }]; S.daily.base.dw = S.dw.reduce((a, b) => a + b, 0); S.daily.done = {};
+    m.startBlock('stein'); const dwp = m.dailyProgress(S.daily.goals[0]); const startDw = S.dw[0];
+    S.shop.gilde = 0;
+    return { n, early, got, sum, ok: early === 0 && got === sum + 5 && bonus, twice: twice === got, rolled, noBack, dwp, startDw };
+  });
+  check(dy.n === 3 && dy.ok && dy.twice, 'Tagesziele geben Steine, alle drei +5 extra, nur einmal');
+  check(dy.rolled && dy.noBack, 'Neuer Tag würfelt neue Tagesziele, Uhr zurück nicht');
+  check(dy.startDw === 20 && dy.dwp === 0, 'Gilde-Startzwerge zählen nicht fürs Zwerge-Tagesziel');
+  await page.click('[data-tab="pick"]'); await page.waitForTimeout(200);
+
+  // 10) Alle 14 Schichten ansehen (eigene Felsform, Erzmuster, Stollen-Deko)
+  check(await page.evaluate(() => window.__mine.LOOKS.length === 14), '14 Schicht-Looks');
+  for (const d of [5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135]) {
+    await page.evaluate((d) => window.__mine.jump(d), d); await page.waitForTimeout(500);
+    await page.screenshot({ path: `${out}/15-look-${String(d).padStart(3, '0')}.png`, clip: { x: 0, y: 0, width: 390, height: 520 } });
+  }
   for (const d of [61, 91, 111, 131]) {
     await page.evaluate((d) => window.__mine.jump(d), d); await page.waitForTimeout(1200);
     await shot(`15-schicht-${d}`);
