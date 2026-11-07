@@ -945,7 +945,7 @@ A.EVENTS = [
   { id: 'steuer', title: { de: 'Der Kobold-Steuerberater', en: 'The Goblin Tax Advisor' }, text: { de: 'Ein Kobold mit Brille: «Sie haben Beute nicht angemeldet. Reden wir.»', en: 'A goblin in glasses: "You haven\'t declared your loot. Let\'s talk."' },
     choices: [
       { text: { de: 'Zahlen', en: 'Pay up' }, needGold: 30, outcomes: [{ p: 1, gold: -30, xp: 70, potion: 1, msg: { de: 'Quittung gibt es keine. Teil des Angebots. +70 EP, 1 Trank.', en: 'No receipt. That\'s part of the deal. +70 XP, 1 potion.' } }] },
-      { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet. −40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes it. −40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
+      { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet bis zu 40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes up to 40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
     ] },
 ];
 
