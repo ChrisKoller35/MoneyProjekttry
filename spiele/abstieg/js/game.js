@@ -450,7 +450,7 @@ A.Game = (function () {
     for (const k of ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge']) if (it.stats[k]) out.push((it.stats[k] > 0 ? '+' : '') + it.stats[k] + (k === 'crit' || k === 'dodge' ? ' %' : '') + ' ' + A.t(L[k]));
     for (const a of A.AFFIXES) if (it.stats[a.key] && !['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'].includes(a.key)) { const v = it.stats[a.key]; out.push(A.t(a.text).replace('+{v}', v < 0 ? '−' + -v : '+' + v).replace('{v}', v)); }   // Fluch: «−2 % Leben alle 2 Sekunden» statt «+-2»
     if (it.stats.revive) out.push(A.LANG === 'de' ? 'Einmal pro Durchlauf überleben' : 'Survive once per run');
-    if (it.stats.luck) out.push('+' + it.stats.luck + ' ' + A.t(A.UI.stat.luck));
+    if (it.stats.luck) out.push((it.stats.luck > 0 ? '+' + it.stats.luck : '−' + -it.stats.luck) + ' ' + A.t(A.UI.stat.luck));   // Glück unter null: «−2 Glück», nicht «+-2»
     if (it.trophy && A.TROPHIES[it.trophy]) out.push('★ ' + A.t(A.TROPHIES[it.trophy].text));
     return out;
   }
