@@ -7,12 +7,13 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 ## Stand Stufe 1
 - 6 Ebenen (Boss auf 3 und 6), je Ebene 6-8 verbundene Räume (Kampf, Elite, Truhe, Händler, Feuer, Ereignis, Treppe/Boss); Kampfräume verriegeln die Türen bis alle Gegner tot sind. Kein Auto-Kampf mehr (Christoph 18.10.).
 - 2 Rassen frei (Mensch, Felsgeborener), 3 freischaltbar im Lager. 3 Klassen (Klinge, Schütze, Weber); Rufer und Braumeister kamen am 20.10. dazu (siehe unten).
-- 22 Gegenstands-Grundformen, 14 Zusätze, 6 Einzelstücke, verfluchte Items; Beutel mit 8 Plätzen.
+- 22 Gegenstands-Grundformen, 14 Zusätze, 14 Einzelstücke, verfluchte Items; Beutel mit 8 Plätzen.
 - 12 Monster, 2 Bosse, 6 Ereignisse, Händler, Rast, Schatz. 4 Aufgaben.
 - Stufenaufstieg mit Statpunkten, alle 3 Stufen eine neue Fähigkeit.
 - Seelenfunken nach jedem Durchlauf, Lager mit 10 Freischaltungen (seit 20.10. ein ausbaubares Lager, siehe unten).
 - Speichert im Browser (laufender Durchlauf und Lager). Deutsch/Englisch nach Browser-Sprache.
 - **Nachschub (7.11.2026):** 8 neue Ereignisse (14), neue Ergebnisse: zufälliger Segen, Zauber verstärken, Statpunkte; Wahlen mit Goldpreis.
+- **Nachschub (7.11.2026):** 8 neue Einzelstücke (14): Kelle des Küchenchefs, Sandalen der Pünktlichkeit, Bademantel des Hausmeisters, Amulett des Kleingedruckten (legendär), Dolch der schlechten Entscheidungen, Topf der Umnachtung, Kette des Gläubigers, Zepter des Praktikanten (verflucht), je mit Haken. Zusammen 8 legendäre und 6 verfluchte. Der Haken liegt immer auf einem Wert, den die Grundform nicht hat, sonst wächst er mit der Ebene weg.
 
 ## Welten und Segen (19.10.2026)
 - **6 Welten mit je 4 Ebenen** (Graue Gewölbe, Dschungel-Ruinen, Wüstengrab, Versunkene Stadt, Vulkanschmiede, Abgrund), Boss auf jeder 4. Ebene. Nach Ebene 24 geht es endlos weiter: die Welten kommen wieder (II, III …), die Gegner werden stärker.
