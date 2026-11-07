@@ -12,6 +12,7 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 - Stufenaufstieg mit Statpunkten, alle 3 Stufen eine neue Fähigkeit.
 - Seelenfunken nach jedem Durchlauf, Lager mit 10 Freischaltungen (seit 20.10. ein ausbaubares Lager, siehe unten).
 - Speichert im Browser (laufender Durchlauf und Lager). Deutsch/Englisch nach Browser-Sprache.
+- **Nachschub (7.11.2026):** 8 neue Ereignisse (14), neue Ergebnisse: zufälliger Segen, Zauber verstärken, Statpunkte; Wahlen mit Goldpreis.
 
 ## Welten und Segen (19.10.2026)
 - **6 Welten mit je 4 Ebenen** (Graue Gewölbe, Dschungel-Ruinen, Wüstengrab, Versunkene Stadt, Vulkanschmiede, Abgrund), Boss auf jeder 4. Ebene. Nach Ebene 24 geht es endlos weiter: die Welten kommen wieder (II, III …), die Gegner werden stärker.
