@@ -158,6 +158,7 @@ const T = DE ? {
   gemPower: 'Zwergenkraft', gemGold: 'Goldgier', gemCrit: 'Glückstreffer', gemOffline: 'Nachtschicht', gemChest: 'Schatzspürer',
   gemPowerE: 'alles Graben', gemGoldE: 'mehr Gold', gemCritE: 'Volltreffer-Chance', gemOfflineE: 'Gold wenn du weg bist', gemChestE: 'Truhen öfter',
   chestGold: 'Schatztruhe!', chestRage: 'Zwergenwut! ×3', milestone: 'Meilenstein: ×2',
+  daily: 'Heute', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
   goal: 'Ziele', goalDone: 'Ziel erreicht!', goalsDone: '{n} Ziele erreicht!', bought: 'Gekauft', bigBoss: 'Grossboss!', layer: 'Schicht',
   newMine: 'Neue Mine', heir: 'Erbstücke', move: 'Umziehen', moveFrom: 'Besiege den Grossboss auf Tiefe 50, dann kannst du umziehen und Erbstücke sammeln', no: 'Abbrechen', deeper: 'Je tiefer, desto mehr.',
   newMineInfo: 'Gold, Zwerge, Hacke und Werkzeuge fangen neu an. Steine und Ziele bleiben.',
@@ -207,6 +208,7 @@ const T = DE ? {
   gemPower: 'Dwarf Power', gemGold: 'Gold Greed', gemCrit: 'Lucky Strike', gemOffline: 'Night Shift', gemChest: 'Treasure Sense',
   gemPowerE: 'all digging', gemGoldE: 'more gold', gemCritE: 'critical chance', gemOfflineE: 'gold while away', gemChestE: 'chests more often',
   chestGold: 'Treasure chest!', chestRage: 'Dwarf rage! ×3', milestone: 'Milestone: ×2',
+  daily: 'Today', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
   goal: 'Goals', goalDone: 'Goal reached!', goalsDone: '{n} goals reached!', bought: 'Bought', bigBoss: 'Big boss!', layer: 'Layer',
   newMine: 'New Mine', heir: 'Heirlooms', move: 'Move', moveFrom: 'Beat the big boss at depth 50, then you can move and collect heirlooms', no: 'Cancel', deeper: 'Deeper means more.',
   newMineInfo: 'Gold, dwarves, pickaxe and tools start over. Gems and goals stay.',
@@ -402,6 +404,13 @@ const F = {
   goalProgress: (g, s) => ({ depth: Math.max(s.maxDepth, s.best || 1), taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest, heir: s.heir || 0, blocks: (s.towers || []).length, crowns: s.crownsAll || 0 })[g.type],
 };
 // FORMELN_ENDE
+// Tagesziele: je Typ drei Grössen (klein unter Tiefe 30, mittel unter 100, sonst gross), Lohn in Steinen
+const DAILY_POOL = [
+  { type: 'taps',  n: [300, 800, 2000], gems: [2, 3, 5] },
+  { type: 'boss',  n: [1, 3, 6],        gems: [2, 3, 5] },
+  { type: 'dw',    n: [5, 12, 30],      gems: [2, 3, 5] },
+  { type: 'chest', n: [2, 5, 12],       gems: [2, 3, 5] },
+];
 
 // ---------- Ringe: nach 14 Schichten geht es mit neuen Farben weiter ----------
 const ROMAN = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -476,7 +485,8 @@ function freshState() {
     gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, hp: 0, sound: true, saved: Date.now(), taps: 0,
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
-    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0 };
+    blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false } };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -496,6 +506,8 @@ function load() {
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     S.shop = Object.assign({}, d.shop || {});
+    S.daily = Object.assign(f.daily, d.daily && typeof d.daily === 'object' ? d.daily : {});   // Spielstand von vor den Tageszielen
+    if (!Array.isArray(S.daily.goals) || !S.daily.base || !S.daily.done) S.daily = freshState().daily;
     if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
     if (d.towers == null) {   // Spielstand von vor den Blöcken
       if (S.best > F.blockEnd) {   // Herz des Berges schon besiegt: Alter Berg zählt als geschafft
@@ -772,6 +784,7 @@ function startBlock(k) {
   toast.style.display = 'none';
   S.blk = k; S.blockDone = false;
   S.heir = 0; S.runTime = 0; S.lastMaxAt = 0; S.recBase = 0; S.blkBest = 1;
+  dailyMove();
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
   rage = 0; beer = 0; lava = 0; frost = 0; lavaTimer = F.lavaEvery(); chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
   applyStart();
@@ -1647,6 +1660,7 @@ function buildPanel() {
     rows.push(makeRow({ icon: S.blockDone ? iconCanvas(emojiIcon('🏔️')) : iconCanvas(heirIcon), kind: 'prest' }));
     if (S.towers.length || S.blkBest >= 100) rows.push(makeRow({ icon: iconCanvas(emojiIcon('👑')), kind: 'realm' }));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🏆')), kind: 'rec' }));
+    S.daily.goals.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon('📅')), kind: 'daily', g })));
     rows.push(makeRow({ icon: iconCanvas(emojiIcon('🦴')), kind: 'finds' }));
     const gs = GOALS.slice().sort((a, b) => (S.goals[a.id] ? 1 : 0) - (S.goals[b.id] ? 1 : 0));
     gs.forEach((g) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(GOAL_EMOJI[g.type])), kind: 'goal', g })));
@@ -1684,6 +1698,10 @@ function rowData(r) {
   if (r.kind === 'goal') {
     const g = r.g, done = !!S.goals[g.id], p = Math.min(g.n, F.goalProgress(g, S));
     return { name: goalName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
+  }
+  if (r.kind === 'daily') {
+    const g = r.g, done = !!S.daily.done[g.id], p = Math.min(g.n, dailyProgress(g));
+    return { name: T.daily + ': ' + dailyName(g), lvl: '', eff: done ? `<b>✓</b>` : `${fmt(p)} / ${fmt(g.n)}`, cost: g.gems, cur: 'gem', locked: false, done, reward: true, bar: done ? 1 : p / g.n };
   }
   if (r.kind === 'stuck') {
     const p = bossPower();
@@ -1748,7 +1766,7 @@ function updateTabDots() {
 let seenPrest = false;
 function buy(r) {
   const d = rowData(r);
-  if (r.kind === 'goal') return;
+  if (r.kind === 'goal' || r.kind === 'daily') return;
   if (r.kind === 'prest') { if (S.blockDone) showRealm(); else newMine(); return; }
   if (r.kind === 'realm') { showRealm(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
@@ -1819,6 +1837,51 @@ function placeTip() {
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('hint', b.dataset.tab === tipNow.at));
 }
 document.getElementById('tipOk').addEventListener('click', hideTip);
+
+// ---------- Tagesziele: drei kleine Ziele je Kalendertag ----------
+function dayKey() { const d = new Date(), z = (n) => (n < 10 ? '0' : '') + n; return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+function dailyCount(type) { return { taps: S.taps, boss: S.st.bosses, dw: S.dw.reduce((a, b) => a + b, 0), chest: S.st.chests }[type] || 0; }
+function dailyName(g) { return T.goals[g.type].replace('{n}', g.n); }
+// Neuer Tag nur bei einem grösseren Schlüssel: Uhr zurückstellen würfelt nicht neu
+function ensureDaily() {
+  const key = dayKey();
+  if (!(key > S.daily.day)) return;
+  const had = !!S.daily.day, deep = Math.max(S.best || 1, S.blkBest || 1, S.maxDepth || 1);
+  const size = deep < 30 ? 0 : deep < 100 ? 1 : 2;
+  const pool = DAILY_POOL.slice(), goals = [], base = {};
+  while (goals.length < 3) {
+    const p = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    goals.push({ id: p.type + p.n[size], type: p.type, n: p.n[size], gems: p.gems[size] });
+    base[p.type] = dailyCount(p.type);
+  }
+  S.daily = { day: key, goals, base, done: {}, bonus: false };
+  if (had) showBanner({ text: '📅 ' + T.dailyNew, sub: goals.map(dailyName).join(' · '), life: 3, color: '#6fdc7a' });
+  if (tab === 'goal') buildPanel();
+  save();
+}
+// Fortschritt seit Tagesstart; nie negativ (sonst Startwert auf den jetzigen Zähler setzen)
+function dailyProgress(g) {
+  const p = dailyCount(g.type) - (S.daily.base[g.type] || 0);
+  if (p < 0) { S.daily.base[g.type] = dailyCount(g.type); return 0; }
+  return p;
+}
+// Umzug / neuer Block: bisherige Zwerge vom Startwert abziehen, damit das Zwerge-Ziel weiter zählt
+function dailyMove() { S.daily.base.dw = (S.daily.base.dw || 0) - S.dw.reduce((a, b) => a + b, 0); }
+function checkDaily() {
+  const done = S.daily.goals.filter(g => !S.daily.done[g.id] && dailyProgress(g) >= g.n);
+  for (const g of done) {
+    S.daily.done[g.id] = true; S.gems += g.gems;
+    showBanner({ text: T.goalDone, sub: T.daily + ': ' + dailyName(g) + '  💎 +' + g.gems, life: 2.6, color: '#6fdc7a' });
+  }
+  if (S.daily.goals.length && !S.daily.bonus && S.daily.goals.every(g => S.daily.done[g.id])) {
+    S.daily.bonus = true; S.gems += 5;
+    showBanner({ text: '📅 ' + T.dailyAll, sub: T.dailyBonus + '  💎 +5', life: 3, color: '#ffd447' });
+  }
+  if (!done.length) return;
+  sfx.boss();
+  if (tab === 'goal') buildPanel();
+  save();
+}
 
 // ---------- Ziele ----------
 function goalName(g) { return (g.n === 1 && T.goals1[g.type]) || T.goals[g.type].replace('{n}', g.n); }
@@ -1986,6 +2049,7 @@ function startOver() {
 function doNewMine(gain) {
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
   S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.blkBest;
+  dailyMove();
   S.gold = 0; S.depth = 1; S.maxDepth = 1; S.farm = false; S.pick = 0; S.dw = DWARVES.map(() => 0); S.up = {}; S.cdDyn = 0; S.cdBeer = 0;
   rage = 0; beer = 0; lava = 0; frost = 0; chest = null; chestTimer = 25; layerShown = -1;
   applyStart();
@@ -2071,7 +2135,7 @@ function frame(now) {
   else if ((S.blk === 'vulkan' || S.blk === 'eis') && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) (S.blk === 'vulkan' ? startLava : startFrost)(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
-    goalTimer = 0.5; checkGoals(); updateSkillBtns(); updateTip(); updateCrowns();
+    goalTimer = 0.5; checkGoals(); ensureDaily(); checkDaily(); updateSkillBtns(); updateTip(); updateCrowns();
     if (S.farm && bossPower() >= 1) { retryBoss(); showBanner({ text: T.autoRetry, sub: T.autoRetrySub, life: 2.2, color: '#6fdc7a' }); }
   }
 
@@ -2108,6 +2172,7 @@ function frame(now) {
 
 // ---------- Start ----------
 const since = load();
+ensureDaily();
 drawSoundIcon();
 layerShown = Math.floor((S.depth - 1) / 10);
 spawnRock();
