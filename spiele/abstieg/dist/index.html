@@ -1455,6 +1455,54 @@ A.EVENTS = [
       { text: { de: 'Item opfern', en: 'Sacrifice an item' }, needItem: true, outcomes: [{ p: 1, sacrifice: true, msg: { de: 'Der Altar kaut. Du fühlst dich stärker: +2 Statpunkte.', en: 'The altar chews. You feel stronger: +2 stat points.' } }] },
       { text: { de: 'Weitergehen', en: 'Walk on' }, outcomes: [{ p: 1, msg: { de: 'Der Altar seufzt.', en: 'The altar sighs.' } }] },
     ] },
+  { id: 'lotterie', title: { de: 'Die Gönner-Lotterie', en: 'The Patron Lottery' }, text: { de: 'Eine sprechende Kiste verkauft Lose. «Jedes Los gewinnt! Irgendwas.»', en: 'A talking crate sells tickets. "Every ticket wins! Something."' },
+    choices: [
+      { text: { de: 'Los kaufen', en: 'Buy a ticket' }, needGold: 25, outcomes: [{ p: 0.45, gold: -25, item: 'epic', msg: { de: 'Gewonnen! Die Kiste klingt enttäuscht.', en: 'You won! The crate sounds disappointed.' } }, { p: 0.3, gold: 35, msg: { de: '60 Gold Gewinn, minus Los: +35. Die Bank gewinnt trotzdem.', en: '60 gold prize, minus the ticket: +35. The house still wins.' } }, { p: 0.25, gold: -25, item: 'cursed', msg: { de: 'Der Hauptpreis. Angeblich.', en: 'The grand prize. Allegedly.' } }] },
+      { text: { de: 'Kiste anschreien', en: 'Yell at the crate' }, outcomes: [{ p: 1, msg: { de: 'Die Kiste schreit zurück. Ihr seid jetzt quitt.', en: 'The crate yells back. You\'re even now.' } }] },
+    ] },
+  { id: 'briefkasten', title: { de: 'Der Beschwerde-Briefkasten', en: 'The Complaints Box' }, text: { de: 'Ein Briefkasten. Aufschrift: «Beschwerden an die Verwaltung. Antwort garantiert.»', en: 'A mailbox. Label: "Complaints to management. Reply guaranteed."' },
+    choices: [
+      { text: { de: 'Beschwerde einwerfen', en: 'Post a complaint' }, outcomes: [{ p: 0.5, talent: true, msg: { de: 'Die Verwaltung entschuldigt sich.', en: 'Management apologises.' } }, { p: 0.5, dmg: 0.15, msg: { de: 'Die Verwaltung antwortet. Mit einem Amboss.', en: 'Management replies. With an anvil.' } }] },
+      { text: { de: 'Lob einwerfen', en: 'Post praise' }, outcomes: [{ p: 1, gold: 25, msg: { de: 'Niemand lobt hier. Das fällt auf. +25 Gold.', en: 'Nobody praises down here. It gets noticed. +25 gold.' } }] },
+    ] },
+  { id: 'buffet', title: { de: 'Das Schleim-Buffet', en: 'The Slime Buffet' }, text: { de: 'Ein Buffet, all you can eat. Das Essen wackelt.', en: 'An all-you-can-eat buffet. The food wobbles.' },
+    choices: [
+      { text: { de: 'Probieren', en: 'Have a taste' }, outcomes: [{ p: 0.6, heal: 0.5, msg: { de: 'Schmeckt nach Hühnchen. +50 % Leben.', en: 'Tastes like chicken. +50% health.' } }, { p: 0.4, dmg: 0.1, stat: 'tou', msg: { de: 'Es lebt noch. Jetzt in dir. +1 Zähigkeit.', en: 'It\'s still alive. Now inside you. +1 toughness.' } }] },
+      { text: { de: 'Mitnehmen', en: 'Take a doggy bag' }, needGold: 10, outcomes: [{ p: 1, gold: -10, potion: 1, msg: { de: 'Ein Trank zum Mitnehmen. Verpackung extra.', en: 'A potion to go. Packaging costs extra.' } }] },
+      { text: { de: 'Weitergehen', en: 'Walk on' }, outcomes: [{ p: 1, msg: { de: 'Das Buffet sieht dir nach. Hungrig.', en: 'The buffet watches you leave. Hungrily.' } }] },
+    ] },
+  { id: 'regal', title: { de: 'Das Bücherregal der Toten', en: 'The Bookshelf of the Dead' }, text: { de: 'Bücher von Abenteurern, die es nicht geschafft haben. Viele Randnotizen.', en: 'Books by adventurers who didn\'t make it. Lots of margin notes.' },
+    choices: [
+      { text: { de: 'Lesen', en: 'Read' }, outcomes: [{ p: 0.7, spellUpg: true, msg: { de: 'Eine Randnotiz hilft.', en: 'A margin note helps.' } }, { p: 0.3, xp: 60, msg: { de: 'Kapitel 1: «Ich sterbe gleich.» Lehrreich. +60 Erfahrung.', en: 'Chapter 1: "I\'m about to die." Educational. +60 experience.' } }] },
+      { text: { de: 'Seite rausreissen', en: 'Tear out a page' }, outcomes: [{ p: 1, gold: 35, msg: { de: 'Papier ist hier unten wertvoller als Gold. Fast. +35 Gold.', en: 'Paper is worth more than gold down here. Almost. +35 gold.' } }] },
+    ] },
+  { id: 'minotaurus', title: { de: 'Der müde Minotaurus', en: 'The Tired Minotaur' }, text: { de: 'Ein Minotaurus schläft vor einer Tür. Er schnarcht in Moll.', en: 'A minotaur sleeps in front of a door. He snores in a minor key.' },
+    choices: [
+      { text: { de: 'Horn stehlen', en: 'Steal a horn' }, outcomes: [{ p: 0.6, item: 'rare', msg: { de: 'Er merkt nichts. Am Horn hing etwas.', en: 'He doesn\'t notice. Something hung on the horn.' } }, { p: 0.4, dmg: 0.35, msg: { de: 'Er war nicht so müde. −35 % Leben.', en: 'He wasn\'t that tired. −35% health.' } }] },
+      { text: { de: 'Schlafen lassen', en: 'Let him sleep' }, outcomes: [{ p: 1, xp: 30, msg: { de: 'Rücksicht. Selten hier unten. +30 Erfahrung.', en: 'Consideration. Rare down here. +30 experience.' } }] },
+      { text: { de: 'Decke drüberlegen', en: 'Tuck him in' }, outcomes: [{ p: 1, points: 1, msg: { de: 'Er schnurrt. Du wächst daran. +1 Statpunkt.', en: 'He purrs. You grow from it. +1 stat point.' } }] },
+    ] },
+  { id: 'brunnen2', title: { de: 'Der Wunschbrunnen (Abo-Modell)', en: 'The Wishing Well (Subscription)' }, text: { de: 'Ein Brunnen mit Preisliste. Wünsche jetzt monatlich kündbar.', en: 'A well with a price list. Wishes now cancel any month.' },
+    choices: [
+      { text: { de: 'Premium-Wunsch', en: 'Premium wish' }, needGold: 50, outcomes: [{ p: 1, gold: -50, points: 2, msg: { de: 'Premium-Wunsch erfüllt. +2 Statpunkte.', en: 'Premium wish granted. +2 stat points.' } }] },
+      { text: { de: 'Basis-Wunsch', en: 'Basic wish' }, needGold: 10, outcomes: [{ p: 0.5, gold: -10, stat: 'luck', msg: { de: 'Basis-Wunsch. +1 Glück. Mit Werbung.', en: 'Basic wish. +1 luck. With ads.' } }, { p: 0.5, gold: -10, msg: { de: 'Der Brunnen gähnt.', en: 'The well yawns.' } }] },
+      { text: { de: 'Den Brunnen bestehlen', en: 'Rob the well' }, outcomes: [{ p: 0.5, gold: 30, msg: { de: 'Kündigung per Diebstahl. +30 Gold.', en: 'Cancelled by theft. +30 gold.' } }, { p: 0.5, curse: true, msg: { de: 'Der Brunnen hat eine Rechtsabteilung. Ein Fluch-Item.', en: 'The well has a legal department. A cursed item.' } }] },
+    ] },
+  { id: 'spiegel', title: { de: 'Der Spiegel der Ehrlichkeit', en: 'The Mirror of Honesty' }, text: { de: 'Ein Spiegel, der nur die Wahrheit sagt. Er räuspert sich schon.', en: 'A mirror that only tells the truth. It\'s already clearing its throat.' },
+    choices: [
+      { text: { de: 'Hineinsehen', en: 'Look into it' }, outcomes: [
+        { p: 0.2, stat: 'str', msg: { de: '«Du hast Arme. Benutz sie.» +1 Stärke.', en: '"You have arms. Use them." +1 strength.' } },
+        { p: 0.2, stat: 'tou', msg: { de: '«Du hältst viel aus. Mich zum Beispiel.» +1 Zähigkeit.', en: '"You can take a lot. Me, for one." +1 toughness.' } },
+        { p: 0.2, stat: 'dex', msg: { de: '«Du läufst gut weg. Das ist ein Talent.» +1 Geschick.', en: '"You run away well. That\'s a talent." +1 dexterity.' } },
+        { p: 0.2, stat: 'mind', msg: { de: '«Da oben ist mehr, als man denkt. Nicht viel mehr.» +1 Geist.', en: '"There\'s more up there than it seems. Not much more." +1 mind.' } },
+        { p: 0.2, stat: 'luck', msg: { de: '«Dass du noch lebst, ist reines Glück.» +1 Glück.', en: '"You\'re alive by pure luck." +1 luck.' } }] },
+      { text: { de: 'Zerschlagen', en: 'Smash it' }, outcomes: [{ p: 0.5, item: 'rare', msg: { de: 'Hinter dem Spiegel lag etwas. Ehrlich.', en: 'Something lay behind the mirror. Honestly.' } }, { p: 0.5, curse: true, msg: { de: 'Sieben Jahre. Mindestens. Ein Fluch-Item.', en: 'Seven years. At least. A cursed item.' } }] },
+    ] },
+  { id: 'steuer', title: { de: 'Der Kobold-Steuerberater', en: 'The Goblin Tax Advisor' }, text: { de: 'Ein Kobold mit Brille: «Sie haben Beute nicht angemeldet. Reden wir.»', en: 'A goblin in glasses: "You haven\'t declared your loot. Let\'s talk."' },
+    choices: [
+      { text: { de: 'Zahlen', en: 'Pay up' }, needGold: 30, outcomes: [{ p: 1, gold: -30, xp: 70, potion: 1, msg: { de: 'Quittung gibt es keine. Teil des Angebots. +70 EP, 1 Trank.', en: 'No receipt. That\'s part of the deal. +70 XP, 1 potion.' } }] },
+      { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet. −40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes it. −40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
+    ] },
 ];
 
 // ---------- Lager ----------
@@ -2834,6 +2882,20 @@ A.Game = (function () {
     if (oc.item) res.items.push(randomItem(oc.item));
     if (oc.curse) res.items.push(randomItem('cursed'));
     if (oc.sacrifice) { const worst = run.bag[0]; if (worst) run.bag.shift(); run.points += 2; if (meta.autoPts) autoSpend(); }
+    const de = A.LANG === 'de';
+    if (oc.points) { run.points += oc.points; if (meta.autoPts) autoSpend(); }
+    // Zufälliger Segen: dieselbe Platz-Grenze wie am Schrein (takeBoon); voll oder alle schon da → Erfahrung
+    if (oc.talent) {
+      const free = Object.keys(A.TALENTS).filter(id => !run.talents.includes(id));
+      if (free.length && run.talents.length < d.talentSlots) { const id = rng.pick(free); run.talents.push(id); run.hp = Math.min(run.hp, derived().maxHp); res.msg += (de ? ' Du spürst: ' : ' You feel: ') + A.t(A.TALENTS[id].name) + '.'; }
+      else { addXp(50); res.msg += de ? ' Dein Kopf ist voll. Du bekommst Erfahrung.' : ' Your head is full. You get experience.'; }
+    }
+    // Zauber verstärken: ein aktiver Zauber unter der Höchststufe; sonst 40 Gold
+    if (oc.spellUpg) {
+      const ups = run.active.filter(id => id && A.Boons.upgOf(id, run) < A.Boons.MAX_UPG);
+      if (ups.length) { const id = rng.pick(ups); run.upg[id] = A.Boons.upgOf(id, run) + 1; res.msg += ' ' + A.Boons.skName(id) + '.'; }
+      else { run.gold += 40; res.msg += de ? ' Du kannst schon alles. +40 Gold.' : ' You know it all already. +40 gold.'; }
+    }
     for (const it of res.items) addToBag(it);
     save(); return res;
   }
@@ -15742,7 +15804,7 @@ window.A = window.A || {};
   }
   function eventScreen() {
     const r = G.run, ev = r.currentEvent;
-    ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${c.needItem && !r.bag.length ? 'disabled' : ''}>${t(c.text)}</button>`).join('')}`);
+    ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${(c.needItem && !r.bag.length) || (c.needGold && r.gold < c.needGold) ? 'disabled' : ''}>${t(c.text)}${c.needGold ? ' ' + coin(c.needGold) : ''}</button>`).join('')}`);
     overlay.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); S.click(); r.currentEvent = null; Wd.W.hero.hp = r.hp; hudUpdate();
       const show = () => {
         ov(`<h2 class="mid">${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(lootRow).join('')}${res.items.length ? `<div class="mini">${L('Liegt im Beutel. Antippen zum Vergleichen und Anlegen.', 'Now in your bag. Tap to compare and equip.')}</div>` : ''}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);
