@@ -1570,6 +1570,12 @@ A.QUESTS = [
   { id: 'nodmg', text: { de: 'Säubere einen Raum ohne Schaden', en: 'Clear a room without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
   { id: 'crit3', text: { de: 'Lande 3 Volltreffer', en: 'Land 3 critical hits' }, type: 'crits', n: 3, reward: { xp: 40 } },
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
+  { id: 'scherben', text: { de: 'Zerschlage 6 Krüge auf dieser Ebene. Sie haben es verdient.', en: 'Smash 6 jars on this floor. They had it coming.' }, type: 'pots', n: 6, reward: { gold: 40 } },
+  { id: 'goldgier', text: { de: 'Sammle 100 Gold vom Boden auf', en: 'Pick up 100 gold from the floor' }, type: 'gold', n: 100, reward: { item: 'rare' } },
+  { id: 'dreifach', text: { de: 'Besiege 3 Gegner kurz nacheinander', en: 'Defeat 3 enemies in quick succession' }, type: 'triple', n: 1, reward: { potions: 1 } },
+  { id: 'sparsam', text: { de: 'Besiege 12 Gegner, ohne einen Trank zu trinken', en: 'Defeat 12 enemies without drinking a potion' }, type: 'nopot', n: 12, reward: { sparks: 12 } },
+  { id: 'tanz', text: { de: 'Besiege 8 Gegner hintereinander, ohne getroffen zu werden', en: 'Defeat 8 enemies in a row without getting hit' }, type: 'streak', n: 8, reward: { xp: 60 } },
+  { id: 'wagemut', text: { de: 'Säubere einen Raum und steh danach mit unter 30 % Leben da', en: 'Clear a room and finish it below 30% health' }, type: 'low', n: 1, reward: { potions: 2 } },
 ];
 
 A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter
@@ -2775,12 +2781,22 @@ A.Game = (function () {
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
-  function questEvent(kind) {
+  // kind: Ereignis ('kill', 'crit', 'pot', 'gold', 'potion', 'hurt', ...); n: Menge (z. B. Gold), Standard 1
+  function questEvent(kind, n) {
     const q = run.quest; if (!q || run.questDone) return;
+    n = typeof n === 'number' && isFinite(n) ? n : 1;
     if (q.type === 'crits' && kind === 'crit') run.questProg++;
     if (q.type === 'elite' && kind === 'elite') run.questProg = 1;
     if (q.type === 'nodmg' && kind === 'nodmg') run.questProg = 1;
     if (q.type === 'kills') run.questProg = run.floorKills;
+    if (q.type === 'pots' && kind === 'pot') run.questProg++;
+    if (q.type === 'gold' && kind === 'gold') run.questProg += n;
+    if (q.type === 'triple' && kind === 'triple') run.questProg = 1;
+    if (q.type === 'nopot' && kind === 'kill') run.questProg++;
+    if (q.type === 'nopot' && kind === 'potion') run.questProg = 0;
+    if (q.type === 'streak' && kind === 'kill') run.questProg++;
+    if (q.type === 'streak' && kind === 'hurt') run.questProg = 0;
+    if (q.type === 'low' && kind === 'low') run.questProg = 1;
     if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
   }
   // Belohnung für einen getöteten Gegner
@@ -2820,7 +2836,8 @@ A.Game = (function () {
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
-    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
+    if (stats && ['fight', 'elite', 'boss'].includes(room.type) && run.hp > 0 && run.hp < derived().maxHp * 0.3) questEvent('low');   // Aufgabe «Wagemut»
+    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.showSparks = (run.showSparks || 0) + rw.sparks; run.questJustDone = true; }
     save();
     return { items };
   }
@@ -2934,7 +2951,7 @@ A.Game = (function () {
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
   function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r) * (1 + A.patronVal('potHeal', r)); }   // Trockener Hals (pacts.js): nur halb so viel
-  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
+  function usePotion() { if (run.potions <= 0) return false; run.potions--; questEvent('potion'); const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
@@ -11245,6 +11262,7 @@ A.Surprise = (function () {
   function breakOpen(p, w, s) {
     p.used = true; p.brokeT = w.t; s.saveAt = w.t + 1.5;   // run.rooms schreibt die Oberfläche jeden Frame; gespeichert wird kurz danach
     A.Achieve.add('pots');
+    G().questEvent('pot');
     const P = potKind(w);
     if (A.FX) { A.FX.burst(p.x, p.y - 8, 10, { color: P.bits, smin: 40, smax: 130, z: 6, vz: 160, g: 520, life: 0.7, size: 2 }); A.FX.smoke(p.x, p.y - 6, 3, '#c0cbdc', 3); }
     if (A.Sound.glass) A.Sound.glass(false);
@@ -11532,7 +11550,7 @@ A.Show = (function () {
     const s = w.show || (w.show = {});
     s.n = s.last != null && w.t - s.last <= A.HYPE_MULTI_T ? (s.n || 0) + 1 : 1; s.last = w.t;   // Serie: reisst ab, wenn eine Pause länger ist
     const n = s.n, H = A.HYPE;
-    if (n === 3) hype(H.multi3, L('Dreifach!', 'Triple!'));
+    if (n === 3) { hype(H.multi3, L('Dreifach!', 'Triple!')); G().questEvent('triple'); }
     else if (n === 5) hype(H.multi5, L('Gemetzel!', 'Carnage!'));
     else if (n === 8) hype(H.multi8, L('Wahnsinn!', 'Madness!'));
     if (e.boss) r.bossKills = (r.bossKills || 0) + 1;   // für den Tageswunsch (v43)
@@ -12112,7 +12130,7 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); G().questEvent('hurt'); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -12471,7 +12489,7 @@ A.World = (function () {
       const d = dist(p, h);
       if ((p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) || p.kind === 'candy' && d < 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
-        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
+        if (p.kind === 'gold') { G().run.gold += p.val; G().questEvent('gold', p.val); p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
         else if (p.kind === 'candy') { p.done = true; heal(h, Math.max(1, Math.round(h.maxHp * 0.02))); if (A.Sound.pop) A.Sound.pop(); }   // Bonbon der Piñata
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; W.held = { it: p.it, x: p.x, y: p.y }; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }   // held: Fenster offen, Stück noch nicht verstaut (savePicks)
