@@ -102,6 +102,7 @@ A.Surprise = (function () {
   function breakOpen(p, w, s) {
     p.used = true; p.brokeT = w.t; s.saveAt = w.t + 1.5;   // run.rooms schreibt die Oberfläche jeden Frame; gespeichert wird kurz danach
     A.Achieve.add('pots');
+    G().questEvent('pot');
     const P = potKind(w);
     if (A.FX) { A.FX.burst(p.x, p.y - 8, 10, { color: P.bits, smin: 40, smax: 130, z: 6, vz: 160, g: 520, life: 0.7, size: 2 }); A.FX.smoke(p.x, p.y - 6, 3, '#c0cbdc', 3); }
     if (A.Sound.glass) A.Sound.glass(false);

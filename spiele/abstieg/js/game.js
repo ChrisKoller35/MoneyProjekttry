@@ -522,12 +522,22 @@ A.Game = (function () {
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
-  function questEvent(kind) {
+  // kind: Ereignis ('kill', 'crit', 'pot', 'gold', 'potion', 'hurt', ...); n: Menge (z. B. Gold), Standard 1
+  function questEvent(kind, n) {
     const q = run.quest; if (!q || run.questDone) return;
+    n = typeof n === 'number' && isFinite(n) ? n : 1;
     if (q.type === 'crits' && kind === 'crit') run.questProg++;
     if (q.type === 'elite' && kind === 'elite') run.questProg = 1;
     if (q.type === 'nodmg' && kind === 'nodmg') run.questProg = 1;
     if (q.type === 'kills') run.questProg = run.floorKills;
+    if (q.type === 'pots' && kind === 'pot') run.questProg++;
+    if (q.type === 'gold' && kind === 'gold') run.questProg += n;
+    if (q.type === 'triple' && kind === 'triple') run.questProg = 1;
+    if (q.type === 'nopot' && kind === 'kill') run.questProg++;
+    if (q.type === 'nopot' && kind === 'potion') run.questProg = 0;
+    if (q.type === 'streak' && kind === 'kill') run.questProg++;
+    if (q.type === 'streak' && kind === 'hurt') run.questProg = 0;
+    if (q.type === 'low' && kind === 'low') run.questProg = 1;
     if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
   }
   // Belohnung für einen getöteten Gegner
@@ -567,7 +577,8 @@ A.Game = (function () {
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
-    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
+    if (stats && ['fight', 'elite', 'boss'].includes(room.type) && run.hp > 0 && run.hp < derived().maxHp * 0.3) questEvent('low');   // Aufgabe «Wagemut»
+    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.showSparks = (run.showSparks || 0) + rw.sparks; run.questJustDone = true; }
     save();
     return { items };
   }
@@ -681,7 +692,7 @@ A.Game = (function () {
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
   function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r) * (1 + A.patronVal('potHeal', r)); }   // Trockener Hals (pacts.js): nur halb so viel
-  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
+  function usePotion() { if (run.potions <= 0) return false; run.potions--; questEvent('potion'); const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
