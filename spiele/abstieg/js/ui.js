@@ -467,7 +467,7 @@ window.A = window.A || {};
       <div class="msg">${L('Drin', 'Inside')}: <b class="goldc">${esc(res.got)}</b></div>
       ${res.fresh.length ? `<div class="msg gradenew">${ic('eye', 20)} <b>${L('Neuer Gönner', 'New sponsor')}: ${res.fresh.map(x => esc(t(x.name))).join(', ')}</b>. ${L(`Du hast jetzt ${res.fans} Fans.`, `You now have ${res.fans} fans.`)}</div>` : `<div class="mini">${L(`Fans: ${res.fans}`, `Fans: ${res.fans}`)}${nextSponsor() ? ' · ' + nextSponsor() : ''}</div>`}
       <button class="btn primary" id="bOk" data-esc>${L('Danke!', 'Thanks!')}</button></div>`);
-    $('#bOk').onclick = () => { S.click(); ovClose(); };
+    $('#bOk').onclick = () => { S.click(); ovClose(); pendingPicks(); };   // ein Schicksalspunkt aus der Kiste (Madame Zukunft): Fenster gleich, der Raum ist ja frei
   }
   // Wer kommt als Nächstes dazu? («Noch 2 Fans bis Professor Pilz»)
   function nextSponsor() {
@@ -475,6 +475,13 @@ window.A = window.A || {};
     return nx ? L(`noch ${nx.fans - f}, dann kommt ${t(nx.name)}`, `${nx.fans - f} more, then ${t(nx.name)} joins`) : '';
   }
   // Tageswunsch erfüllt: Banner erst, wenn kein Fenster offen ist und kein anderes Banner läuft (Kiste, «Ebene 6», «Raum gesäubert»)
+  // Aufgabe ausserhalb eines Kampfs erfüllt (Krüge, Gold vom Boden): Banner, sobald kein Fenster und kein anderes Banner offen ist
+  function questNews() {
+    const run0 = G.run; if (!run0 || !run0.questJustDone) return; run0.questJustDone = false;
+    const txt = run0.quest ? t(run0.quest.text) : '';
+    const when = (n) => { if (G.run !== run0 || run0.over || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(n + 1), 500); return; } A.FX.banner(t(U.questDone), txt, '#63c74d', 2.4); };
+    setTimeout(() => when(0), 300);
+  }
   function wishNews(wd) {
     const run0 = G.run, fresh = (wd.fresh || []).map(s => t(s.name)).join(', ');
     const when = (f, n) => { if (G.run !== run0 || !run0 || run0.over || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(f, n + 1), 500); return; } f(); };
@@ -547,6 +554,7 @@ window.A = window.A || {};
       onItem: (it) => { if (!calmLoot(it)) foundItem(it); },   // Ruhige Beute (v40): schwächere Funde ohne Fenster
       onCrate: (p) => crateWin(p),   // Kiste eines Gönners (v42)
       onProp: (p) => useProp(p),
+      onQuest: () => questNews(),   // Aufgabe ausserhalb eines Kampfs erfüllt: world.js hat gleich ausgezahlt
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
       onLevel: () => { if (Wd.W) { A.FX.ev('level', { h: Wd.W.hero, level: G.run.level, sub: G.meta.autoPts ? L('Punkte automatisch verteilt', 'Points spent automatically') : null }); if (G.meta.autoPts) { Wd.refreshHero(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 74, L('Punkte verteilt', 'Points spent'), '#fee761', 12, 'u_star'); } } hudUpdate(); },

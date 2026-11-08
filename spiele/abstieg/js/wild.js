@@ -198,7 +198,7 @@ A.Wild = (function () {
   }
   function eat(a, p, w, h) {
     const i = w.picks.indexOf(p); if (i >= 0) w.picks.splice(i, 1);
-    const r = A.Game.run; r.gold += p.val; r.kisti = (r.kisti || 0) + 1; a.chew = 0.3;
+    const r = A.Game.run; r.gold += p.val; A.Game.questEvent('gold', p.val); r.kisti = (r.kisti || 0) + 1; a.chew = 0.3;   // Münze vom Boden: zählt auch für «Goldgier»
     api.fx('coin', { x: a.x, y: a.y });
     A.Combos.onCoin(h); onCoin(h, p.val);
     if (r.kisti < 20) { api.float(a.x, a.y - 26, L('Mampf! ', 'Munch! ') + r.kisti + '/20', '#feae34', 11); return; }

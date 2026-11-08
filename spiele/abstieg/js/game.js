@@ -505,7 +505,7 @@ A.Game = (function () {
     const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
     dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.questJustDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
@@ -514,6 +514,7 @@ A.Game = (function () {
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
     A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
     if (run.floor === A.MAX_FLOOR) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } gradeWin(); saveMeta(); }   // am Ausgang weiter nach unten: auch ein Sieg
+    if (run.questRewardPending) payQuest().forEach(addToBag);   // nichts von der alten Ebene mitnehmen (world.js zahlt sonst schon gleich aus)
     run.floor++; newFloor(); A.Achieve.onFloor(run); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
@@ -539,6 +540,12 @@ A.Game = (function () {
     if (q.type === 'streak' && kind === 'hurt') run.questProg = 0;
     if (q.type === 'low' && kind === 'low') run.questProg = 1;
     if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
+  }
+  // Belohnung der Aufgabe auszahlen: beim Raum-Ende (roomCleared) oder gleich, wenn die Aufgabe ausserhalb eines Kampfs fertig wurde (world.js: Krüge, Gold vom Boden)
+  function payQuest(items) {
+    items = items || []; const rw = run && run.questRewardPending; if (!rw) return items;
+    run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.showSparks = (run.showSparks || 0) + rw.sparks; run.questJustDone = true;
+    return items;
   }
   // Belohnung für einen getöteten Gegner
   // Elite-Gegner: je mehr Eigenschaften, desto mehr Gold, Erfahrung, bessere Beute und Seelenfunken (die gibt es am Ende des Durchlaufs)
@@ -578,7 +585,7 @@ A.Game = (function () {
     A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
     if (stats && ['fight', 'elite', 'boss'].includes(room.type) && run.hp > 0 && run.hp < derived().maxHp * 0.3) questEvent('low');   // Aufgabe «Wagemut»
-    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.showSparks = (run.showSparks || 0) + rw.sparks; run.questJustDone = true; }
+    payQuest(items);
     save();
     return { items };
   }
@@ -745,7 +752,7 @@ A.Game = (function () {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
-    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
+    newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

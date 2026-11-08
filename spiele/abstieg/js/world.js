@@ -10,7 +10,7 @@ A.World = (function () {
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const petOf = (s) => (s.from && s.from.pet ? s.from : null);   // Schuss eines Begleiters (Glut)
   let W = null;      // aktueller Zustand der Ebene
-  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook
+  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook, onQuest
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
 
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
@@ -729,6 +729,7 @@ A.World = (function () {
       fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const run = G().run; if (run.fight && run.fight.r === a.i) run.fight = null; run.rooms = saveRooms();   // vor dem Speichern in roomCleared: der Raum gilt schon als frei
+      run.hp = h.hp;   // das Leben jetzt, nicht das vom letzten Bild (Aufgabe «Wagemut»: Heilung oder Schaden beim letzten Treffer)
       const lv0 = run.level, loot = G().roomCleared(a, W.stats); if (run.level !== lv0) refreshHero();   // Auftrag gab eine Stufe («Immer automatisch» hat schon verteilt)
       for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -738,6 +739,12 @@ A.World = (function () {
     W.near = null;
     for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign' || p.kind === 'pot') continue; if (dist(p, h) < (p.rad || 46)) W.near = p; }
     if (W.near && W.near.kind === 'rubble' && !W.near.hinted) { W.near.hinted = true; float(W.near.x, W.near.y - 40, A.LANG === 'de' ? 'Hier zieht es. Wegräumen?' : 'There is a draft. Clear it?', '#fee761', 14); }
+    // Aufgabe ausserhalb eines Kampfs erfüllt (Krüge, Gold vom Boden): gleich auszahlen, nicht erst im nächsten Kampfraum oder auf der nächsten Ebene
+    if (!W.active && !W.paused && h.alive && G().run.questRewardPending && !G().run.over) {
+      const run = G().run, lv0 = run.level, its = G().payQuest(); if (run.level !== lv0) refreshHero();
+      for (const it of its) drop({ kind: 'item', it }, h.x + (Math.random() - 0.5) * 50, h.y - 16, 40);
+      G().save(); if (hooks.onQuest) hooks.onQuest();
+    }
     G().run.hp = h.hp;
   }
   function interact() { if (!W.near) return false; const p = W.near; if (hooks.onProp) hooks.onProp(p); return true; }
