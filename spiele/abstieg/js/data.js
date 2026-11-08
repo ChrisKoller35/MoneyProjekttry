@@ -770,7 +770,7 @@ A.SPONSORS = [
   { id: 'ruhm', von: { de: 'von Herrn Ruhm', en: 'from Mister Fame' }, fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
   { id: 'igor', von: { de: 'von Igor dem Totengräber', en: 'from Igor the Gravedigger' }, fans: 20, gift: 'shield', name: { de: 'Igor der Totengräber', en: 'Igor the Gravedigger' }, note: { de: 'Ich hab dir schon ein Loch geschaufelt. Schön tief. Bis du es brauchst: hier, ein Sargdeckel zum Vorhalten.', en: 'I already dug you a hole. Nice and deep. Until you need it: here, a coffin lid to hold up.' } },
   { id: 'zukunft', von: { de: 'von Madame Zukunft', en: 'from Madame Future' }, fans: 35, gift: 'fate', name: { de: 'Madame Zukunft', en: 'Madame Future' }, note: { de: 'Ich habe deine Zukunft gesehen. Sie ist kurz. Hier ist ein Schicksalspunkt, mach was draus.', en: 'I have seen your future. It is short. Here is a fate point, make something of it.' } },
-  { id: 'gusti', von: { de: 'von Gastwirt Gusti', en: 'from Innkeeper Gusti' }, fans: 50, gift: 'buffet', name: { de: 'Gastwirt Gusti', en: 'Innkeeper Gusti' }, note: { de: 'Die Küche hat geschlossen. Ich hab trotzdem was gefunden: ein Trank, Bonbons und das Trinkgeld der Zuschauer.', en: 'The kitchen is closed. I found something anyway: a potion, candy and the tips from the audience.' } },
+  { id: 'gusti', von: { de: 'von Gastwirt Gusti', en: 'from Innkeeper Gusti' }, fans: 50, gift: 'buffet', name: { de: 'Gastwirt Gusti', en: 'Innkeeper Gusti' }, note: { de: 'Die Küche hat geschlossen. Ich hab trotzdem was gefunden: einen Trank, Bonbons und das Trinkgeld der Zuschauer.', en: 'The kitchen is closed. I found something anyway: a potion, candy and the tips from the audience.' } },
 ];
 // Gönner wählen (v43, Heldenwahl): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit.
 // fx: dmgPct/hpPct/goldPct/xpPct in Prozent wie die Pakte (game.js derived), pots: Tränke am Start, potHeal: Trank-Heilung,
@@ -785,8 +785,8 @@ A.PATRON_RULES = {
   kiste: { fx: { hype: 0.5 }, rule: { de: 'Kistenregen: Das Auge füllt sich 50 % schneller.', en: 'Crate rain: the eye fills 50% faster.' } },
   ruhm: { fx: { sparks: 0.2, monHp: 0.15 }, rule: { de: 'Rampenlicht: +20 % Seelenfunken. Die Gegner haben 15 % mehr Leben, fürs Publikum.', en: 'Spotlight: +20% soul sparks. Enemies have 15% more health, for the audience.' } },
   igor: { fx: { thorns: 8, hpPct: -5 }, rule: { de: 'Sargnägel: Wer dich trifft, bekommt 8 % des Schadens zurück. Der Sarg ist eng: 5 % weniger Leben.', en: 'Coffin nails: whoever hits you takes 8% of the damage back. The coffin is tight: 5% less health.' } },
-  zukunft: { fx: { crit: 10, dodge: -5 }, rule: { de: 'Vorahnung: +10 Volltreffer. Du siehst alles kommen, nur nicht den Schlag von links: 5 weniger Ausweichen.', en: 'Premonition: +10 crit. You see everything coming, except the hit from the left: 5 less dodge.' } },
-  gusti: { fx: { regen: 2, spd: -1 }, rule: { de: 'Vollpension: +2 Regeneration. Nach dem Essen ist man träge: 1 Tempo weniger.', en: 'Full board: +2 regeneration. After the meal you are sluggish: 1 less speed.' } },
+  zukunft: { fx: { crit: 10, dodge: -5 }, rule: { de: 'Vorahnung: +10 % Volltreffer. Du siehst alles kommen, nur nicht den Schlag von links: 5 % weniger Ausweichen.', en: 'Premonition: +10% crit. You see everything coming, except the hit from the left: 5% less dodge.' } },
+  gusti: { fx: { regen: 2, spd: -1 }, rule: { de: 'Vollpension: +2 % Leben alle 2 Sekunden. Nach dem Essen ist man träge: 1 Tempo weniger.', en: 'Full board: +2% health every 2 seconds. After the meal you are sluggish: 1 less speed.' } },
 };
 A.patronOf = (r) => (r && typeof r.patron === 'string' && A.PATRON_RULES[r.patron] ? r.patron : null);
 A.patronVal = (k, r) => { const p = A.patronOf(r), d = A.dailyOf(r); return (p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0) + (d && d.p ? (+d.p[k] || 0) : 0); };   // dazu der Dreh der Tageswelt (v45)
@@ -1012,11 +1012,11 @@ A.QUESTS = [
   { id: 'nodmg', text: { de: 'Säubere einen Raum ohne Schaden', en: 'Clear a room without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
   { id: 'crit3', text: { de: 'Lande 3 Volltreffer', en: 'Land 3 critical hits' }, type: 'crits', n: 3, reward: { xp: 40 } },
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
-  { id: 'scherben', text: { de: 'Zerschlage 6 Krüge auf dieser Ebene. Sie haben es verdient.', en: 'Smash 6 jars on this floor. They had it coming.' }, type: 'pots', n: 6, reward: { gold: 40 } },
-  { id: 'goldgier', text: { de: 'Sammle 100 Gold vom Boden auf', en: 'Pick up 100 gold from the floor' }, type: 'gold', n: 100, reward: { item: 'rare' } },
+  { id: 'scherben', text: { de: 'Zerschlage 6 Gefässe auf dieser Ebene. Sie haben es verdient.', en: 'Smash 6 pots on this floor. They had it coming.' }, type: 'pots', n: 6, reward: { gold: 40 } },
+  { id: 'goldgier', text: { de: 'Sammle 50 Gold vom Boden auf', en: 'Pick up 50 gold from the floor' }, type: 'gold', n: 50, reward: { item: 'rare' } },
   { id: 'dreifach', text: { de: 'Besiege 3 Gegner kurz nacheinander', en: 'Defeat 3 enemies in quick succession' }, type: 'triple', n: 1, reward: { potions: 1 } },
-  { id: 'sparsam', text: { de: 'Besiege 12 Gegner, ohne einen Trank zu trinken', en: 'Defeat 12 enemies without drinking a potion' }, type: 'nopot', n: 12, reward: { sparks: 12 } },
-  { id: 'tanz', text: { de: 'Besiege 8 Gegner hintereinander, ohne getroffen zu werden', en: 'Defeat 8 enemies in a row without getting hit' }, type: 'streak', n: 8, reward: { xp: 60 } },
+  { id: 'sparsam', text: { de: 'Besiege 8 Gegner, ohne einen Trank zu trinken', en: 'Defeat 8 enemies without drinking a potion' }, type: 'nopot', n: 8, reward: { sparks: 12 } },
+  { id: 'tanz', text: { de: 'Besiege 8 Gegner hintereinander, ohne Schaden zu nehmen', en: 'Defeat 8 enemies in a row without taking damage' }, type: 'streak', n: 8, reward: { xp: 60 } },
   { id: 'wagemut', text: { de: 'Säubere einen Raum und steh danach mit unter 30 % Leben da', en: 'Clear a room and finish it below 30% health' }, type: 'low', n: 1, reward: { potions: 2 } },
 ];
 

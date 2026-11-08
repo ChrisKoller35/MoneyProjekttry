@@ -544,7 +544,7 @@ A.Game = (function () {
   // Belohnung der Aufgabe auszahlen: beim Raum-Ende (roomCleared) oder gleich, wenn die Aufgabe ausserhalb eines Kampfs fertig wurde (world.js: Krüge, Gold vom Boden)
   function payQuest(items) {
     items = items || []; const rw = run && run.questRewardPending; if (!rw) return items;
-    run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.showSparks = (run.showSparks || 0) + rw.sparks; run.questJustDone = true;
+    run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.questSparks = (run.questSparks || 0) + rw.sparks; run.questJustDone = true;   // Funken (Sparsam): eigene Zeile «Aufgaben» am Ende
     return items;
   }
   // Belohnung für einen getöteten Gegner
@@ -715,8 +715,9 @@ A.Game = (function () {
     run.sparksPatron = patron; run.sparksDaily = daily; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
-    meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const quest = Math.max(0, Math.floor(run.questSparks || 0)); run.sparksQuest = quest;   // Ebenen-Aufgaben (v48): Seelenfunken als Belohnung
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + quest + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    meta.sparks += sparks + show + quest; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
   }
