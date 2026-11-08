@@ -117,6 +117,9 @@ A.Show = (function () {
       case 'rage': r.rageFloor = r.floor; if (api.refreshHero) api.refreshHero(); got = L(`+${Math.round(A.SPONSOR_RAGE * 100)} % Schaden auf dieser und der nächsten Ebene`, `+${Math.round(A.SPONSOR_RAGE * 100)}% damage on this floor and the next`); break;
       case 'heal': if (h) { h.hp = h.maxHp; r.hp = h.hp; } for (let i = 0; i < 8; i++) api.drop({ kind: 'candy' }, x, y, 60 + i * 10); got = L('volles Leben und Bonbons', 'full health and candy'); break;
       case 'sparks': { const n = 10 + 2 * r.floor; r.showSparks = (r.showSparks || 0) + n; got = L(`+${n} Seelenfunken am Ende`, `+${n} soul sparks at the end`); break; }
+      case 'shield': if (h) { h.shield = Math.max(h.shield || 0, Math.round(h.maxHp * 0.6)); api.fx('shield', { e: h }); } got = L('Schild: 60 % deines Lebens', 'Shield: 60% of your health'); break;   // lebt auf dem Helden wie beim Schutzengel
+      case 'fate': r.fatePts = (r.fatePts || 0) + 1; r.fateLater = false; if (h) api.float(h.x, h.y - 62, L('+1 Schicksalspunkt', '+1 fate point'), '#fee761', 15, 'u_star'); got = L('+1 Schicksalspunkt', '+1 fate point'); break;   // die Oberfläche holt ihn über fateOpen ab
+      case 'buffet': { const g = 20 + 8 * r.floor; r.potions += 1; for (let i = 0; i < 6; i++) api.drop({ kind: 'candy' }, x, y, 60 + i * 10); for (let i = 0; i < 4; i++) api.drop({ kind: 'gold', val: Math.ceil(g / 4) }, x, y, 70 + i * 14); got = L(`+1 Trank, Bonbons und ${g} Gold`, `+1 potion, candy and ${g} gold`); break; }
       default: r.potions += 1; got = L('+1 Trank', '+1 potion');
     }
     if (A.FX && w) { A.FX.burst(x, y - 10, 18, { color: ['#c28569', '#8a4836', '#fee761'], smin: 40, smax: 160, life: 0.6, kind: 'spark', add: true }); A.FX.smoke(x, y - 6, 8, '#c0cbdc', 5); }
