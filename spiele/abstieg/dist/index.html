@@ -15250,9 +15250,10 @@ window.A = window.A || {};
   // Tageswunsch erfüllt: Banner erst, wenn kein Fenster offen ist und kein anderes Banner läuft (Kiste, «Ebene 6», «Raum gesäubert»)
   // Aufgabe ausserhalb eines Kampfs erfüllt (Krüge, Gold vom Boden): Banner, sobald kein Fenster und kein anderes Banner offen ist
   function questNews() {
-    const run0 = G.run; if (!run0 || !run0.questJustDone) return; run0.questJustDone = false;
+    const run0 = G.run, w0 = Wd.W; if (!run0 || !run0.questJustDone) return; run0.questJustDone = false;
     const txt = run0.quest ? t(run0.quest.text) : '';
-    const when = (n) => { if (G.run !== run0 || run0.over || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(n + 1), 500); return; } A.FX.banner(t(U.questDone), txt, '#63c74d', 2.4); };
+    // nur auf dieser Ebene (wie das Mitbringsel): wer gleich die Treppe nimmt, hat die Belohnung schon, das Banner fällt dann weg
+    const when = (n) => { if (G.run !== run0 || run0.over || Wd.W !== w0 || (w0 && w0.sinkT != null) || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(n + 1), 500); return; } A.FX.banner(t(U.questDone), txt, '#63c74d', 2.4); };
     setTimeout(() => when(0), 300);
   }
   function wishNews(wd) {
