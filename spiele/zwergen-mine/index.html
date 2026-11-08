@@ -2233,8 +2233,9 @@ function frame(now) {
   drawRock(t); specialStep(dt); drawSpecial(t); drawIce(t);
   drawPlayerPick();
   drawChest(t); moleStep(dt); drawMole(t);
-  quoteStep(dt); drawQuote(t);
+  quoteStep(dt);
   drawFx(dt);
+  drawQuote(t);   // Sprechblase über den fliegenden Münzen, damit der Text lesbar bleibt
 
   // HUD
   goldEl.textContent = fmt(S.gold); gemsEl.textContent = fmt(S.gems); depthEl.textContent = S.depth;
