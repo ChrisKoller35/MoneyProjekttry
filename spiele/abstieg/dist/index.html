@@ -1332,6 +1332,9 @@ A.SPONSORS = [
   { id: 'mops', von: { de: 'vom Mops-Verein', en: 'from the Pug Club' }, fans: 10, gift: 'heal', name: { de: 'Der Mops-Verein', en: 'The Pug Club' }, note: { de: 'Wir haben gesammelt. Es hat für Bonbons gereicht. Und für eine Umarmung, die aber nicht in die Kiste passte.', en: 'We collected. It was enough for candy. And a hug, which did not fit in the crate.' } },
   { id: 'kiste', von: { de: 'von der Kistenkönigin', en: 'from the Crate Queen' }, fans: 15, gift: 'item', tier: 2, name: { de: 'Die Kistenkönigin', en: 'The Crate Queen' }, note: { de: 'Eine Kiste in der Kiste. Darin: etwas Schönes. Die Kiste behalte ich.', en: 'A crate in the crate. Inside: something nice. I am keeping the crate.' } },
   { id: 'ruhm', von: { de: 'von Herrn Ruhm', en: 'from Mister Fame' }, fans: 25, gift: 'sparks', name: { de: 'Herr Ruhm', en: 'Mister Fame' }, note: { de: 'Ich mache dich berühmt. Fangen wir klein an: mit Seelenfunken.', en: 'I will make you famous. Let us start small: with soul sparks.' } },
+  { id: 'igor', von: { de: 'von Igor dem Totengräber', en: 'from Igor the Gravedigger' }, fans: 20, gift: 'shield', name: { de: 'Igor der Totengräber', en: 'Igor the Gravedigger' }, note: { de: 'Ich hab dir schon ein Loch geschaufelt. Schön tief. Bis du es brauchst: hier, ein Sargdeckel zum Vorhalten.', en: 'I already dug you a hole. Nice and deep. Until you need it: here, a coffin lid to hold up.' } },
+  { id: 'zukunft', von: { de: 'von Madame Zukunft', en: 'from Madame Future' }, fans: 35, gift: 'fate', name: { de: 'Madame Zukunft', en: 'Madame Future' }, note: { de: 'Ich habe deine Zukunft gesehen. Sie ist kurz. Hier ist ein Schicksalspunkt, mach was draus.', en: 'I have seen your future. It is short. Here is a fate point, make something of it.' } },
+  { id: 'gusti', von: { de: 'von Gastwirt Gusti', en: 'from Innkeeper Gusti' }, fans: 50, gift: 'buffet', name: { de: 'Gastwirt Gusti', en: 'Innkeeper Gusti' }, note: { de: 'Die Küche hat geschlossen. Ich hab trotzdem was gefunden: einen Trank, Bonbons und das Trinkgeld der Zuschauer.', en: 'The kitchen is closed. I found something anyway: a potion, candy and the tips from the audience.' } },
 ];
 // Gönner wählen (v43, Heldenwahl): einer schickt alle Kisten dieses Laufs und bringt eine kleine Regel mit.
 // fx: dmgPct/hpPct/goldPct/xpPct in Prozent wie die Pakte (game.js derived), pots: Tränke am Start, potHeal: Trank-Heilung,
@@ -1345,6 +1348,9 @@ A.PATRON_RULES = {
   mops: { fx: { hpPct: 20, dmgPct: -10 }, rule: { de: 'Kuschelkurs: +20 % Leben, 10 % weniger Schaden. Gewalt ist keine Lösung. Meistens.', en: 'Cuddle course: +20% health, 10% less damage. Violence is not the answer. Usually.' } },
   kiste: { fx: { hype: 0.5 }, rule: { de: 'Kistenregen: Das Auge füllt sich 50 % schneller.', en: 'Crate rain: the eye fills 50% faster.' } },
   ruhm: { fx: { sparks: 0.2, monHp: 0.15 }, rule: { de: 'Rampenlicht: +20 % Seelenfunken. Die Gegner haben 15 % mehr Leben, fürs Publikum.', en: 'Spotlight: +20% soul sparks. Enemies have 15% more health, for the audience.' } },
+  igor: { fx: { thorns: 8, hpPct: -5 }, rule: { de: 'Sargnägel: Wer dich trifft, bekommt 8 % des Schadens zurück. Der Sarg ist eng: 5 % weniger Leben.', en: 'Coffin nails: whoever hits you takes 8% of the damage back. The coffin is tight: 5% less health.' } },
+  zukunft: { fx: { crit: 10, dodge: -5 }, rule: { de: 'Vorahnung: +10 % Volltreffer. Du siehst alles kommen, nur nicht den Schlag von links: 5 % weniger Ausweichen.', en: 'Premonition: +10% crit. You see everything coming, except the hit from the left: 5% less dodge.' } },
+  gusti: { fx: { regen: 2, spd: -1 }, rule: { de: 'Vollpension: +2 % Leben alle 2 Sekunden. Nach dem Essen ist man träge: 1 Tempo weniger.', en: 'Full board: +2% health every 2 seconds. After the meal you are sluggish: 1 less speed.' } },
 };
 A.patronOf = (r) => (r && typeof r.patron === 'string' && A.PATRON_RULES[r.patron] ? r.patron : null);
 A.patronVal = (k, r) => { const p = A.patronOf(r), d = A.dailyOf(r); return (p ? (+A.PATRON_RULES[p].fx[k] || 0) : 0) + (d && d.p ? (+d.p[k] || 0) : 0); };   // dazu der Dreh der Tageswelt (v45)
@@ -1570,6 +1576,12 @@ A.QUESTS = [
   { id: 'nodmg', text: { de: 'Säubere einen Raum ohne Schaden', en: 'Clear a room without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
   { id: 'crit3', text: { de: 'Lande 3 Volltreffer', en: 'Land 3 critical hits' }, type: 'crits', n: 3, reward: { xp: 40 } },
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
+  { id: 'scherben', text: { de: 'Zerschlage 6 Gefässe auf dieser Ebene. Sie haben es verdient.', en: 'Smash 6 pots on this floor. They had it coming.' }, type: 'pots', n: 6, reward: { gold: 40 } },
+  { id: 'goldgier', text: { de: 'Sammle 50 Gold vom Boden auf', en: 'Pick up 50 gold from the floor' }, type: 'gold', n: 50, reward: { item: 'rare' } },
+  { id: 'dreifach', text: { de: 'Besiege 3 Gegner kurz nacheinander', en: 'Defeat 3 enemies in quick succession' }, type: 'triple', n: 1, reward: { potions: 1 } },
+  { id: 'sparsam', text: { de: 'Besiege 8 Gegner, ohne einen Trank zu trinken', en: 'Defeat 8 enemies without drinking a potion' }, type: 'nopot', n: 8, reward: { sparks: 12 } },
+  { id: 'tanz', text: { de: 'Besiege 8 Gegner hintereinander, ohne Schaden zu nehmen', en: 'Defeat 8 enemies in a row without taking damage' }, type: 'streak', n: 8, reward: { xp: 60 } },
+  { id: 'wagemut', text: { de: 'Säubere einen Raum und steh danach mit unter 30 % Leben da', en: 'Clear a room and finish it below 30% health' }, type: 'low', n: 1, reward: { potions: 2 } },
 ];
 
 A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter
@@ -2758,7 +2770,7 @@ A.Game = (function () {
     const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
     dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.questJustDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
@@ -2767,6 +2779,7 @@ A.Game = (function () {
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
     A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
     if (run.floor === A.MAX_FLOOR) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } gradeWin(); saveMeta(); }   // am Ausgang weiter nach unten: auch ein Sieg
+    if (run.questRewardPending) payQuest().forEach(addToBag);   // nichts von der alten Ebene mitnehmen (world.js zahlt sonst schon gleich aus)
     run.floor++; newFloor(); A.Achieve.onFloor(run); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
@@ -2775,13 +2788,29 @@ A.Game = (function () {
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
-  function questEvent(kind) {
+  // kind: Ereignis ('kill', 'crit', 'pot', 'gold', 'potion', 'hurt', ...); n: Menge (z. B. Gold), Standard 1
+  function questEvent(kind, n) {
     const q = run.quest; if (!q || run.questDone) return;
+    n = typeof n === 'number' && isFinite(n) ? n : 1;
     if (q.type === 'crits' && kind === 'crit') run.questProg++;
     if (q.type === 'elite' && kind === 'elite') run.questProg = 1;
     if (q.type === 'nodmg' && kind === 'nodmg') run.questProg = 1;
     if (q.type === 'kills') run.questProg = run.floorKills;
+    if (q.type === 'pots' && kind === 'pot') run.questProg++;
+    if (q.type === 'gold' && kind === 'gold') run.questProg += n;
+    if (q.type === 'triple' && kind === 'triple') run.questProg = 1;
+    if (q.type === 'nopot' && kind === 'kill') run.questProg++;
+    if (q.type === 'nopot' && kind === 'potion') run.questProg = 0;
+    if (q.type === 'streak' && kind === 'kill') run.questProg++;
+    if (q.type === 'streak' && kind === 'hurt') run.questProg = 0;
+    if (q.type === 'low' && kind === 'low') run.questProg = 1;
     if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
+  }
+  // Belohnung der Aufgabe auszahlen: beim Raum-Ende (roomCleared) oder gleich, wenn die Aufgabe ausserhalb eines Kampfs fertig wurde (world.js: Krüge, Gold vom Boden)
+  function payQuest(items) {
+    items = items || []; const rw = run && run.questRewardPending; if (!rw) return items;
+    run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.questSparks = (run.questSparks || 0) + rw.sparks; run.questJustDone = true;   // Funken (Sparsam): eigene Zeile «Aufgaben» am Ende
+    return items;
   }
   // Belohnung für einen getöteten Gegner
   // Elite-Gegner: je mehr Eigenschaften, desto mehr Gold, Erfahrung, bessere Beute und Seelenfunken (die gibt es am Ende des Durchlaufs)
@@ -2820,7 +2849,8 @@ A.Game = (function () {
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
-    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
+    if (stats && ['fight', 'elite', 'boss'].includes(room.type) && run.hp > 0 && run.hp < derived().maxHp * 0.3) questEvent('low');   // Aufgabe «Wagemut»
+    payQuest(items);
     save();
     return { items };
   }
@@ -2934,7 +2964,7 @@ A.Game = (function () {
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
   function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r) * (1 + A.patronVal('potHeal', r)); }   // Trockener Hals (pacts.js): nur halb so viel
-  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
+  function usePotion() { if (run.potions <= 0) return false; run.potions--; questEvent('potion'); const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
@@ -2950,8 +2980,9 @@ A.Game = (function () {
     run.sparksPatron = patron; run.sparksDaily = daily; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
-    meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const quest = Math.max(0, Math.floor(run.questSparks || 0)); run.sparksQuest = quest;   // Ebenen-Aufgaben (v48): Seelenfunken als Belohnung
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + quest + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    meta.sparks += sparks + show + quest; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
   }
@@ -2987,7 +3018,7 @@ A.Game = (function () {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
-    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
+    newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();
@@ -10517,7 +10548,7 @@ A.Wild = (function () {
   }
   function eat(a, p, w, h) {
     const i = w.picks.indexOf(p); if (i >= 0) w.picks.splice(i, 1);
-    const r = A.Game.run; r.gold += p.val; r.kisti = (r.kisti || 0) + 1; a.chew = 0.3;
+    const r = A.Game.run; r.gold += p.val; A.Game.questEvent('gold', p.val); r.kisti = (r.kisti || 0) + 1; a.chew = 0.3;   // Münze vom Boden: zählt auch für «Goldgier»
     api.fx('coin', { x: a.x, y: a.y });
     A.Combos.onCoin(h); onCoin(h, p.val);
     if (r.kisti < 20) { api.float(a.x, a.y - 26, L('Mampf! ', 'Munch! ') + r.kisti + '/20', '#feae34', 11); return; }
@@ -11245,6 +11276,7 @@ A.Surprise = (function () {
   function breakOpen(p, w, s) {
     p.used = true; p.brokeT = w.t; s.saveAt = w.t + 1.5;   // run.rooms schreibt die Oberfläche jeden Frame; gespeichert wird kurz danach
     A.Achieve.add('pots');
+    G().questEvent('pot');
     const P = potKind(w);
     if (A.FX) { A.FX.burst(p.x, p.y - 8, 10, { color: P.bits, smin: 40, smax: 130, z: 6, vz: 160, g: 520, life: 0.7, size: 2 }); A.FX.smoke(p.x, p.y - 6, 3, '#c0cbdc', 3); }
     if (A.Sound.glass) A.Sound.glass(false);
@@ -11532,7 +11564,7 @@ A.Show = (function () {
     const s = w.show || (w.show = {});
     s.n = s.last != null && w.t - s.last <= A.HYPE_MULTI_T ? (s.n || 0) + 1 : 1; s.last = w.t;   // Serie: reisst ab, wenn eine Pause länger ist
     const n = s.n, H = A.HYPE;
-    if (n === 3) hype(H.multi3, L('Dreifach!', 'Triple!'));
+    if (n === 3) { hype(H.multi3, L('Dreifach!', 'Triple!')); G().questEvent('triple'); }
     else if (n === 5) hype(H.multi5, L('Gemetzel!', 'Carnage!'));
     else if (n === 8) hype(H.multi8, L('Wahnsinn!', 'Madness!'));
     if (e.boss) r.bossKills = (r.bossKills || 0) + 1;   // für den Tageswunsch (v43)
@@ -11596,6 +11628,9 @@ A.Show = (function () {
       case 'rage': r.rageFloor = r.floor; if (api.refreshHero) api.refreshHero(); got = L(`+${Math.round(A.SPONSOR_RAGE * 100)} % Schaden auf dieser und der nächsten Ebene`, `+${Math.round(A.SPONSOR_RAGE * 100)}% damage on this floor and the next`); break;
       case 'heal': if (h) { h.hp = h.maxHp; r.hp = h.hp; } for (let i = 0; i < 8; i++) api.drop({ kind: 'candy' }, x, y, 60 + i * 10); got = L('volles Leben und Bonbons', 'full health and candy'); break;
       case 'sparks': { const n = 10 + 2 * r.floor; r.showSparks = (r.showSparks || 0) + n; got = L(`+${n} Seelenfunken am Ende`, `+${n} soul sparks at the end`); break; }
+      case 'shield': if (h) { h.shield = Math.max(h.shield || 0, Math.round(h.maxHp * 0.6)); api.fx('shield', { e: h }); } got = L('Schild: 60 % deines Lebens', 'Shield: 60% of your health'); break;   // lebt auf dem Helden wie beim Schutzengel
+      case 'fate': r.fatePts = (r.fatePts || 0) + 1; r.fateLater = false; if (h) api.float(h.x, h.y - 62, L('+1 Schicksalspunkt', '+1 fate point'), '#fee761', 15, 'u_star'); got = L('+1 Schicksalspunkt', '+1 fate point'); break;   // die Oberfläche holt ihn über fateOpen ab
+      case 'buffet': { const g = 20 + 8 * r.floor; r.potions += 1; for (let i = 0; i < 6; i++) api.drop({ kind: 'candy' }, x, y, 60 + i * 10); for (let i = 0; i < 4; i++) api.drop({ kind: 'gold', val: Math.ceil(g / 4) }, x, y, 70 + i * 14); got = L(`+1 Trank, Bonbons und ${g} Gold`, `+1 potion, candy and ${g} gold`); break; }
       default: r.potions += 1; got = L('+1 Trank', '+1 potion');
     }
     if (A.FX && w) { A.FX.burst(x, y - 10, 18, { color: ['#c28569', '#8a4836', '#fee761'], smin: 40, smax: 160, life: 0.6, kind: 'spark', add: true }); A.FX.smoke(x, y - 6, 8, '#c0cbdc', 5); }
@@ -11771,7 +11806,7 @@ A.World = (function () {
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const petOf = (s) => (s.from && s.from.pet ? s.from : null);   // Schuss eines Begleiters (Glut)
   let W = null;      // aktueller Zustand der Ebene
-  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook
+  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook, onQuest
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
 
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
@@ -12112,7 +12147,7 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); G().questEvent('hurt'); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -12128,7 +12163,7 @@ A.World = (function () {
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
       if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
-      if (to.thorns && opts.kind !== 'magic' && from.alive && !(from.boss && from.guardT > W.t)) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)), fh0 = from.hp; from.hp -= back; from.flash = 0.1; if (from.boss && from.side === 'enemy') A.Bosses.gate(from, fh0); float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
+      if (to.thorns && opts.kind !== 'magic' && from.alive && !(from.boss && from.guardT > W.t)) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)), fh0 = from.hp; from.hp -= back; from.flash = 0.1; if (from.boss && from.side === 'enemy') A.Bosses.gate(from, fh0); float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); G().questEvent('hurt'); } checkDeath(from); }
       if (to.healOnPhys && opts.kind !== 'magic' && !(to.guardT > W.t)) heal(to, Math.round(to.maxHp * to.healOnPhys));   // in der Phasen-Pause heilt der Boss nicht (sonst rutscht er wieder über die Schwelle)
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
@@ -12471,7 +12506,7 @@ A.World = (function () {
       const d = dist(p, h);
       if ((p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) || p.kind === 'candy' && d < 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
-        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
+        if (p.kind === 'gold') { G().run.gold += p.val; G().questEvent('gold', p.val); p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
         else if (p.kind === 'candy') { p.done = true; heal(h, Math.max(1, Math.round(h.maxHp * 0.02))); if (A.Sound.pop) A.Sound.pop(); }   // Bonbon der Piñata
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; W.held = { it: p.it, x: p.x, y: p.y }; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }   // held: Fenster offen, Stück noch nicht verstaut (savePicks)
@@ -12490,6 +12525,7 @@ A.World = (function () {
       fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const run = G().run; if (run.fight && run.fight.r === a.i) run.fight = null; run.rooms = saveRooms();   // vor dem Speichern in roomCleared: der Raum gilt schon als frei
+      run.hp = h.hp;   // das Leben jetzt, nicht das vom letzten Bild (Aufgabe «Wagemut»: Heilung oder Schaden beim letzten Treffer)
       const lv0 = run.level, loot = G().roomCleared(a, W.stats); if (run.level !== lv0) refreshHero();   // Auftrag gab eine Stufe («Immer automatisch» hat schon verteilt)
       for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -12499,6 +12535,12 @@ A.World = (function () {
     W.near = null;
     for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign' || p.kind === 'pot') continue; if (dist(p, h) < (p.rad || 46)) W.near = p; }
     if (W.near && W.near.kind === 'rubble' && !W.near.hinted) { W.near.hinted = true; float(W.near.x, W.near.y - 40, A.LANG === 'de' ? 'Hier zieht es. Wegräumen?' : 'There is a draft. Clear it?', '#fee761', 14); }
+    // Aufgabe ausserhalb eines Kampfs erfüllt (Krüge, Gold vom Boden): gleich auszahlen, nicht erst im nächsten Kampfraum oder auf der nächsten Ebene
+    if (!W.active && !W.paused && h.alive && G().run.questRewardPending && !G().run.over) {
+      const run = G().run, lv0 = run.level, its = G().payQuest(); if (run.level !== lv0) refreshHero();
+      for (const it of its) drop({ kind: 'item', it }, h.x + (Math.random() - 0.5) * 50, h.y - 16, 40);
+      G().save(); if (hooks.onQuest) hooks.onQuest();
+    }
     G().run.hp = h.hp;
   }
   function interact() { if (!W.near) return false; const p = W.near; if (hooks.onProp) hooks.onProp(p); return true; }
@@ -15198,7 +15240,7 @@ window.A = window.A || {};
       <div class="msg">${L('Drin', 'Inside')}: <b class="goldc">${esc(res.got)}</b></div>
       ${res.fresh.length ? `<div class="msg gradenew">${ic('eye', 20)} <b>${L('Neuer Gönner', 'New sponsor')}: ${res.fresh.map(x => esc(t(x.name))).join(', ')}</b>. ${L(`Du hast jetzt ${res.fans} Fans.`, `You now have ${res.fans} fans.`)}</div>` : `<div class="mini">${L(`Fans: ${res.fans}`, `Fans: ${res.fans}`)}${nextSponsor() ? ' · ' + nextSponsor() : ''}</div>`}
       <button class="btn primary" id="bOk" data-esc>${L('Danke!', 'Thanks!')}</button></div>`);
-    $('#bOk').onclick = () => { S.click(); ovClose(); };
+    $('#bOk').onclick = () => { S.click(); ovClose(); pendingPicks(); };   // ein Schicksalspunkt aus der Kiste (Madame Zukunft): Fenster gleich, der Raum ist ja frei
   }
   // Wer kommt als Nächstes dazu? («Noch 2 Fans bis Professor Pilz»)
   function nextSponsor() {
@@ -15206,6 +15248,14 @@ window.A = window.A || {};
     return nx ? L(`noch ${nx.fans - f}, dann kommt ${t(nx.name)}`, `${nx.fans - f} more, then ${t(nx.name)} joins`) : '';
   }
   // Tageswunsch erfüllt: Banner erst, wenn kein Fenster offen ist und kein anderes Banner läuft (Kiste, «Ebene 6», «Raum gesäubert»)
+  // Aufgabe ausserhalb eines Kampfs erfüllt (Krüge, Gold vom Boden): Banner, sobald kein Fenster und kein anderes Banner offen ist
+  function questNews() {
+    const run0 = G.run, w0 = Wd.W; if (!run0 || !run0.questJustDone) return; run0.questJustDone = false;
+    const txt = run0.quest ? t(run0.quest.text) : '';
+    // nur auf dieser Ebene (wie das Mitbringsel): wer gleich die Treppe nimmt, hat die Belohnung schon, das Banner fällt dann weg
+    const when = (n) => { if (G.run !== run0 || run0.over || Wd.W !== w0 || (w0 && w0.sinkT != null) || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(n + 1), 500); return; } A.FX.banner(t(U.questDone), txt, '#63c74d', 2.4); };
+    setTimeout(() => when(0), 300);
+  }
   function wishNews(wd) {
     const run0 = G.run, fresh = (wd.fresh || []).map(s => t(s.name)).join(', ');
     const when = (f, n) => { if (G.run !== run0 || !run0 || run0.over || !dungeonEl.classList.contains('on')) return; if ((overlay.classList.contains('on') || A.FX.banners.length) && n < 60) { setTimeout(() => when(f, n + 1), 500); return; } f(); };
@@ -15278,6 +15328,7 @@ window.A = window.A || {};
       onItem: (it) => { if (!calmLoot(it)) foundItem(it); },   // Ruhige Beute (v40): schwächere Funde ohne Fenster
       onCrate: (p) => crateWin(p),   // Kiste eines Gönners (v42)
       onProp: (p) => useProp(p),
+      onQuest: () => questNews(),   // Aufgabe ausserhalb eines Kampfs erfüllt: world.js hat gleich ausgezahlt
       onCleared: (room) => { if (room.type === 'boss') { Portal.happytime(); campNews(); } if (r.questJustDone) { r.questJustDone = false; setTimeout(() => A.FX.banner(t(U.questDone), r.quest ? t(r.quest.text) : '', '#63c74d', 2.4), 1300); } G.save(); setTimeout(pendingPicks, 400); },
       onDeath: () => { S.lose(); const run0 = G.run; if (!run0.over) { run0.over = true; G.finishRun(); } setTimeout(() => { if (G.run === run0) runOver(); }, 1100); },   // gleich als vorbei speichern: wer die Seite in der Sekunde danach schliesst, steht sonst mit 0 Leben wieder auf
       onLevel: () => { if (Wd.W) { A.FX.ev('level', { h: Wd.W.hero, level: G.run.level, sub: G.meta.autoPts ? L('Punkte automatisch verteilt', 'Points spent automatically') : null }); if (G.meta.autoPts) { Wd.refreshHero(); Wd.float(Wd.W.hero.x, Wd.W.hero.y - 74, L('Punkte verteilt', 'Points spent'), '#fee761', 12, 'u_star'); } } hudUpdate(); },
@@ -15671,7 +15722,7 @@ window.A = window.A || {};
       return `<div class="skill ${full ? 'on' : ''} ${pts && !full ? '' : 'off'}" data-fate="${k}"><div class="si">${ic(D.icon, 30)}</div><div style="flex:1;min-width:0"><div class="nm" style="color:${D.col}">${esc(t(D.name))}${mine.includes(k) ? ` <span class="mini goldc">${L('dein Build', 'your build')}</span>` : ''} <span class="pips fate">${pips}</span></div><div class="ds">${n ? now + (full ? ` <span class="mini">(${L('voll', 'maxed')})</span>` : '') : esc(A.Build.fateText(k, 1))}</div></div></div>`;
     }).join('');
     const sub = pts ? L(`Du hast <b class="goldc">${pts}</b> Schicksalspunkt${pts > 1 ? 'e' : ''}. Jeder gibt der Richtung einen festen Bonus und zählt ${A.FATE_W} Punkte für deinen Build: passende Beute kommt öfter. Höchstens ${A.FATE_MAX} je Richtung.`, `You have <b class="goldc">${pts}</b> fate point${pts > 1 ? 's' : ''}. Each gives the direction a fixed bonus and counts ${A.FATE_W} points for your build: fitting loot drops more often. At most ${A.FATE_MAX} per direction.`)
-      : L('Keine Punkte offen. Neue gibt es für jeden Welt-Boss und Hauptmann.', 'No points left. You get new ones for every world boss and captain.');
+      : L('Keine Punkte offen. Neue gibt es für jeden Welt-Boss und Hauptmann und in den Kisten von Madame Zukunft.', 'No points left. You get new ones for every world boss and captain, and in Madame Future\'s crates.');
     ov(`<h2 class="mid">${ic('u_star', 30)}${L('Schicksal', 'Fate')}</h2><div class="sub">${sub}</div>${rows}<button class="btn" id="bClose"${pts ? '' : ' data-esc'}>${pts ? L('Später', 'Later') : t(U.back)}</button>`);
     overlay.querySelectorAll('[data-fate]').forEach(el => el.onclick = () => {
       const k = el.dataset.fate; if (!G.fateSpend(k)) return;
@@ -15936,7 +15987,7 @@ window.A = window.A || {};
       <div class="result"><div>${t(U.reached)}<b>${r.floor}</b></div><div>${t(U.level)}<b>${r.level}</b></div><div>${t(U.kills)}<b>${r.kills}</b></div><div>${t(U.gold)}<b>${r.gold}</b></div></div>
       ${(() => { const p = A.Build.profile(r); return p.first ? `<div class="mini">${L('Build', 'Build')}: <b style="color:${A.BUILD_DIRS[p.first].col}">${esc(A.Build.name(p))}</b></div>` : ''; })()}
       <div class="big">${spark('+' + r.sparksEarned, 40)}</div><div class="mini">${t(U.sparksEarned)}</div>
-      ${r.sparksDaily || r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow || r.sparksPatron || r.sparksWish ? `<div class="mini extra">${[r.sparksDaily ? L(`Tageswelt: +${r.sparksDaily}`, `Daily world: +${r.sparksDaily}`) : '', r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : '', r.sparksPatron ? L(`Rampenlicht: +${r.sparksPatron}`, `Spotlight: +${r.sparksPatron}`) : '', r.sparksWish ? L(`Tageswunsch: +${r.sparksWish}`, `Daily wish: +${r.sparksWish}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${r.sparksDaily || r.sparksRecord || r.sparksBanners || r.sparksElite || r.sparksBook || r.sparksLegend || r.sparksCombo || r.sparksPet || r.sparksAch || r.sparksPact || r.sparksGrade || r.sparksHome || r.sparksCandle || r.sparksShow || r.sparksPatron || r.sparksWish || r.sparksQuest ? `<div class="mini extra">${[r.sparksDaily ? L(`Tageswelt: +${r.sparksDaily}`, `Daily world: +${r.sparksDaily}`) : '', r.sparksHome ? L(`Heimkehren: +${r.sparksHome}`, `Going home: +${r.sparksHome}`) : '', r.sparksGrade ? L(`Grad ${g}: +${r.sparksGrade}`, `Grade ${g}: +${r.sparksGrade}`) : '', r.sparksRecord ? L(`Neuer Rekord: +${r.sparksRecord}`, `New record: +${r.sparksRecord}`) : '', r.sparksBanners ? L(`Wimpel für das Lager: +${r.sparksBanners}`, `Pennants for the camp: +${r.sparksBanners}`) : '', r.sparksElite ? L(`Elite-Gegner: +${r.sparksElite}`, `Elite enemies: +${r.sparksElite}`) : '', r.sparksBook ? L(`Elite-Buch: +${r.sparksBook}`, `Elite book: +${r.sparksBook}`) : '', r.sparksLegend ? L(`Neue Legenden: +${r.sparksLegend}`, `New legends: +${r.sparksLegend}`) : '', r.sparksCombo ? L(`Neue Kombos: +${r.sparksCombo}`, `New combos: +${r.sparksCombo}`) : '', r.sparksPet ? L(`Neue Begleiter: +${r.sparksPet}`, `New pets: +${r.sparksPet}`) : '', r.sparksAch ? L(`Erfolge: +${r.sparksAch}`, `Achievements: +${r.sparksAch}`) : '', r.sparksPact ? L(`Pakte: +${r.sparksPact}`, `Pacts: +${r.sparksPact}`) : '', r.sparksCandle ? L(`${r.candles === 1 ? 'Kerze' : 'Kerzen'} am Feuer: +${r.sparksCandle}`, `Campfire candle${r.candles === 1 ? '' : 's'}: +${r.sparksCandle}`) : '', r.sparksShow ? L(`Gönner: +${r.sparksShow}`, `Sponsors: +${r.sparksShow}`) : '', r.sparksPatron ? L(`Rampenlicht: +${r.sparksPatron}`, `Spotlight: +${r.sparksPatron}`) : '', r.sparksWish ? L(`Tageswunsch: +${r.sparksWish}`, `Daily wish: +${r.sparksWish}`) : '', r.sparksQuest ? L(`Aufgaben: +${r.sparksQuest}`, `Quests: +${r.sparksQuest}`) : ''].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="mini extra">${ic('eye', 16)} ${L(`Zuschauer: ${A.Show.fmt(A.Show.viewers(r))}`, `Viewers: ${A.Show.fmt(A.Show.viewers(r))}`)}${r.crates ? L(` · Kisten: ${r.crates}`, ` · Crates: ${r.crates}`) : ''}${A.patronOf(r) ? ' · ' + L('Gönner', 'Sponsor') + ': ' + esc(t(A.SPONSORS.find(s => s.id === r.patron).name)) : ''}${r.wishDone ? ' · <b class="goldc">' + L('Tageswunsch erfüllt', 'Daily wish granted') + '</b>' + ((r.wishDone.fresh || []).length ? ' · ' + L('Neuer Gönner', 'New sponsor') + ': ' + r.wishDone.fresh.map(id => { const x = A.SPONSORS.find(s => s.id === id); return x ? esc(t(x.name)) : ''; }).filter(Boolean).join(', ') : '') : ''}</div>
       ${r.achIds && r.achIds.length ? `<div class="mini extra"><b class="goldc">${L('Erfolg', 'Achievement')}:</b> ${esc(r.achIds.map(id => { const a = A.ACHIEVEMENTS.find(x => x.id === id); return a ? t(a.name) : id; }).join(' · '))}</div>` : ''}
       ${r.candleUp ? `<div class="mini extra candlemsg">${ic('candle', 18)} ${r.candles >= A.CANDLE_MAX ? L(`Alle ${A.CANDLE_MAX} Kerzen brennen. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % Funken auf jeden Lauf, solange du jeden Tag vorbeischaust.`, `All ${A.CANDLE_MAX} candles are burning. +${Math.round(A.CANDLE_SPARKS * A.CANDLE_MAX * 100)} % sparks on every run, as long as you drop by each day.`) : L(`Neue Kerze am Lagerfeuer (${r.candles}/${A.CANDLE_MAX}). Morgen wieder ein Lauf, dann brennt die nächste.`, `New candle at the campfire (${r.candles}/${A.CANDLE_MAX}). One run tomorrow and the next one burns.`)}</div>` : ''}

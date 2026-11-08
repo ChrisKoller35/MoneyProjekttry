@@ -505,7 +505,7 @@ A.Game = (function () {
     const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
     dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.floorKills = 0;
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.questJustDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
@@ -514,6 +514,7 @@ A.Game = (function () {
     // Keine feste Grenze mehr: nach der letzten Welt kommen die Welten wieder, nur härter
     A.Achieve.onFloorDone(run);   // ganze Ebene ohne Schaden?
     if (run.floor === A.MAX_FLOOR) { if (!run.won) { run.won = true; meta.won = (meta.won || 0) + 1; } gradeWin(); saveMeta(); }   // am Ausgang weiter nach unten: auch ein Sieg
+    if (run.questRewardPending) payQuest().forEach(addToBag);   // nichts von der alten Ebene mitnehmen (world.js zahlt sonst schon gleich aus)
     run.floor++; newFloor(); A.Achieve.onFloor(run); save(); return 'descend';
   }
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
@@ -522,13 +523,29 @@ A.Game = (function () {
     if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
     save();
   }
-  function questEvent(kind) {
+  // kind: Ereignis ('kill', 'crit', 'pot', 'gold', 'potion', 'hurt', ...); n: Menge (z. B. Gold), Standard 1
+  function questEvent(kind, n) {
     const q = run.quest; if (!q || run.questDone) return;
+    n = typeof n === 'number' && isFinite(n) ? n : 1;
     if (q.type === 'crits' && kind === 'crit') run.questProg++;
     if (q.type === 'elite' && kind === 'elite') run.questProg = 1;
     if (q.type === 'nodmg' && kind === 'nodmg') run.questProg = 1;
     if (q.type === 'kills') run.questProg = run.floorKills;
+    if (q.type === 'pots' && kind === 'pot') run.questProg++;
+    if (q.type === 'gold' && kind === 'gold') run.questProg += n;
+    if (q.type === 'triple' && kind === 'triple') run.questProg = 1;
+    if (q.type === 'nopot' && kind === 'kill') run.questProg++;
+    if (q.type === 'nopot' && kind === 'potion') run.questProg = 0;
+    if (q.type === 'streak' && kind === 'kill') run.questProg++;
+    if (q.type === 'streak' && kind === 'hurt') run.questProg = 0;
+    if (q.type === 'low' && kind === 'low') run.questProg = 1;
     if (run.questProg >= q.n) { run.questDone = true; run.questRewardPending = q.reward; }
+  }
+  // Belohnung der Aufgabe auszahlen: beim Raum-Ende (roomCleared) oder gleich, wenn die Aufgabe ausserhalb eines Kampfs fertig wurde (world.js: Krüge, Gold vom Boden)
+  function payQuest(items) {
+    items = items || []; const rw = run && run.questRewardPending; if (!rw) return items;
+    run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); if (rw.potions) run.potions += rw.potions; if (rw.sparks) run.questSparks = (run.questSparks || 0) + rw.sparks; run.questJustDone = true;   // Funken (Sparsam): eigene Zeile «Aufgaben» am Ende
+    return items;
   }
   // Belohnung für einen getöteten Gegner
   // Elite-Gegner: je mehr Eigenschaften, desto mehr Gold, Erfahrung, bessere Beute und Seelenfunken (die gibt es am Ende des Durchlaufs)
@@ -567,7 +584,8 @@ A.Game = (function () {
     if (stats && stats.dmgRoom === 0) questEvent('nodmg');
     A.Show.onRoom(room, stats);      // Zuschauer (v42): sauber, knapp, Boss ohne Kratzer (vor dem Auftragsbrett, das «knapp» zurücksetzt)
     A.Achieve.onRoom(room, stats);   // Räume ohne Schaden, knapp überlebt (Auftragsbrett)
-    if (run.questRewardPending) { const rw = run.questRewardPending; run.questRewardPending = null; if (rw.gold) run.gold += rw.gold; if (rw.xp) addXp(rw.xp); if (rw.item) items.push(randomItem(rw.item)); run.questJustDone = true; }
+    if (stats && ['fight', 'elite', 'boss'].includes(room.type) && run.hp > 0 && run.hp < derived().maxHp * 0.3) questEvent('low');   // Aufgabe «Wagemut»
+    payQuest(items);
     save();
     return { items };
   }
@@ -681,7 +699,7 @@ A.Game = (function () {
   function potionPrice() { return Math.round((25 + run.floor * 5) * shopMul()); }
   // Tränke heilen 40 %, beim Braumeister 60 %, der Kräuterkessel im Lager legt noch etwas drauf
   function potionPct(r) { r = r || run; const cls = r && A.CLASSES.find(c => c.id === r.cls); return (((cls && cls.potionPct) || 0.4) + metaEffects().potionHeal) * A.Pacts.potMul(r) * (1 + A.patronVal('potHeal', r)); }   // Trockener Hals (pacts.js): nur halb so viel
-  function usePotion() { if (run.potions <= 0) return false; run.potions--; const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
+  function usePotion() { if (run.potions <= 0) return false; run.potions--; questEvent('potion'); const d = derived(); run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * potionPct())); save(); return true; }
 
   // ---------- Ende ----------
   // Seelenfunken: Tiefe, Gegner, Stufe, Elite-Gegner (1 je Eigenschaft), dazu 5 je Ebene über dem alten Rekord;
@@ -697,8 +715,9 @@ A.Game = (function () {
     run.sparksPatron = patron; run.sparksDaily = daily; wishCheck(true);   // Tageswunsch (v43): Heimkehren zählt erst hier
     run.sparksPact = pact; run.sparksGrade = grade; run.sparksHome = home; run.sparksCandle = candle; run.candles = cd.n; run.candleUp = !!cd.up;
     const show = Math.max(0, Math.floor(run.showSparks || 0)); run.sparksShow = show;   // Herr Ruhm (v42): Seelenfunken aus Kisten
-    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
-    meta.sparks += sparks + show; meta.runs++; meta.best = Math.max(meta.best, run.floor);
+    const quest = Math.max(0, Math.floor(run.questSparks || 0)); run.sparksQuest = quest;   // Ebenen-Aufgaben (v48): Seelenfunken als Belohnung
+    run.sparksEarned = sparks + banners + book + legend + combo + pet + ach + show + quest + (run.sparksWish || 0); run.sparksRecord = record; run.sparksBanners = banners; run.sparksElite = elite; run.sparksBook = book; run.sparksLegend = legend; run.sparksCombo = combo; run.sparksPet = pet; run.sparksAch = ach;
+    meta.sparks += sparks + show + quest; meta.runs++; meta.best = Math.max(meta.best, run.floor);
     A.Achieve.record(run, false);   // Eintrag in die Chronik
     saveMeta(); save();
   }
@@ -734,7 +753,7 @@ A.Game = (function () {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
-    newFloor, descend, roomContent, questEvent, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
+    newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

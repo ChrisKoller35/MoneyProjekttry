@@ -10,7 +10,7 @@ A.World = (function () {
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const petOf = (s) => (s.from && s.from.pet ? s.from : null);   // Schuss eines Begleiters (Glut)
   let W = null;      // aktueller Zustand der Ebene
-  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook
+  let hooks = {};    // Rückrufe an die Oberfläche: onItem, onProp, onCleared, onDeath, onLevel, onDescend, onElite, onBook, onQuest
   const fx = (name, d) => { if (A.FX) A.FX.ev(name, d); };   // Effekte und Töne (fx.js)
 
   // ---------- Ebene bauen (Räume und Formen in levels.js) ----------
@@ -351,7 +351,7 @@ A.World = (function () {
     const col = opts.kind === 'poison' ? '#63c74d' : opts.kind === 'burn' ? '#f77622' : to.side === 'hero' ? '#e43b44' : crit ? '#feae34' : opts.kind === 'magic' ? '#2ce8f5' : '#ffffff';
     if (dmg > 0) float(to.x, to.y - to.r - 10, (to.side === 'hero' ? '-' : '') + dmg + (crit ? '!' : ''), col, crit ? 21 : to.side === 'hero' ? 17 : opts.kind === 'poison' || opts.kind === 'burn' ? 12 : 15);
     if (absorbed) float(to.x, to.y - to.r - 22, String(absorbed), '#2ce8f5', 12);
-    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); } }
+    if (to.side === 'hero') { W.stats.dmgRoom += dmg; W.shake = 0.15; if (to === W.hero && dmg > 0) { A.Gear.onHurt(to, from); A.Legends.onHurt(to, from, dmg); A.Combos.onHurt(to, from); A.Wild.onHurt(to, from, dmg); A.Achieve.onHurt(to, from, dmg, W.stats); G().questEvent('hurt'); } }
     fx('hit', { from, to, dmg, crit, kind: opts.kind, color: opts.color });
     // Rückstoss für getroffene Gegner
     if (to.side === 'enemy' && from && from.side === 'hero' && opts.kind !== 'poison' && opts.kind !== 'burn' && !opts.noKb) {
@@ -367,7 +367,7 @@ A.World = (function () {
       if (opts.burn) addEffect(to, 'burn', Math.max(1, Math.round(statOf(from, 'mag') * opts.burn)), 2);
       if (opts.stun) { to.stun = Math.max(to.stun, opts.stun); }
       if (opts.slow) { to.slowUntil = W.t + (opts.slowDur || 1.6); to.slowPow = 0.55; }
-      if (to.thorns && opts.kind !== 'magic' && from.alive && !(from.boss && from.guardT > W.t)) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)), fh0 = from.hp; from.hp -= back; from.flash = 0.1; if (from.boss && from.side === 'enemy') A.Bosses.gate(from, fh0); float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); } checkDeath(from); }
+      if (to.thorns && opts.kind !== 'magic' && from.alive && !(from.boss && from.guardT > W.t)) { const back = Math.max(1, Math.round(dmg * to.thorns / 100)), fh0 = from.hp; from.hp -= back; from.flash = 0.1; if (from.boss && from.side === 'enemy') A.Bosses.gate(from, fh0); float(from.x, from.y - from.r - 10, '-' + back, '#c0cbdc', 13); if (from === W.hero) { W.stats.dmgRoom += back; A.Achieve.onHurt(from, to, back, W.stats); G().questEvent('hurt'); } checkDeath(from); }
       if (to.healOnPhys && opts.kind !== 'magic' && !(to.guardT > W.t)) heal(to, Math.round(to.maxHp * to.healOnPhys));   // in der Phasen-Pause heilt der Boss nicht (sonst rutscht er wieder über die Schwelle)
       if (from.steal && to.side === 'hero') { const g = Math.min(G().run.gold, 5 + W.floor * 3); if (g > 0) { G().run.gold -= g; float(from.x, from.y - from.r - 24, '-' + g, '#feae34', 13, 'coin'); } }
       if (to.side === 'hero' && from.side === 'enemy' && !(to.leg && to.leg.pfannen)) { const k = Math.hypot(to.x - from.x, to.y - from.y) || 1; moveEnt(to, (to.x - from.x) / k * 10, (to.y - from.y) / k * 10); }
@@ -710,7 +710,7 @@ A.World = (function () {
       const d = dist(p, h);
       if ((p.kind === 'gold' && d < (h.tal.gold || (h.gear && h.gear.pw.goldmagnet) ? 230 : 110) || p.kind === 'candy' && d < 110) && p.t > 0.45) { p.x += (h.x - p.x) / d * 300 * dt; p.y += (h.y - p.y) / d * 300 * dt; }
       if (d < h.r + 10 && p.t > 0.3 && !(p.z > 4)) {
-        if (p.kind === 'gold') { G().run.gold += p.val; p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
+        if (p.kind === 'gold') { G().run.gold += p.val; G().questEvent('gold', p.val); p.done = true; float(h.x, h.y - 30, '+' + p.val, '#feae34', 12, 'coin'); fx('coin', { x: h.x, y: h.y }); A.Combos.onCoin(h); A.Wild.onCoin(h, p.val); }
         else if (p.kind === 'candy') { p.done = true; heal(h, Math.max(1, Math.round(h.maxHp * 0.02))); if (A.Sound.pop) A.Sound.pop(); }   // Bonbon der Piñata
         else if (p.kind === 'potion') { G().run.potions++; p.done = true; float(h.x, h.y - 30, '+1', '#e43b44', 13, 'potion'); fx('pickPotion', { x: h.x, y: h.y }); }
         else if (p.kind === 'item' && !W.paused) { p.done = true; W.paused = true; W.held = { it: p.it, x: p.x, y: p.y }; fx('pickItem', { rarity: p.it.rarity }); if (hooks.onItem) hooks.onItem(p.it); }   // held: Fenster offen, Stück noch nicht verstaut (savePicks)
@@ -729,6 +729,7 @@ A.World = (function () {
       fightStart(); } G().save(); }
     if (W.active && !W.mons.some(m => m.alive)) { const a = W.active; W.active = null; a.cleared = true; setDoors(a, 1); W.hint = '';
       const run = G().run; if (run.fight && run.fight.r === a.i) run.fight = null; run.rooms = saveRooms();   // vor dem Speichern in roomCleared: der Raum gilt schon als frei
+      run.hp = h.hp;   // das Leben jetzt, nicht das vom letzten Bild (Aufgabe «Wagemut»: Heilung oder Schaden beim letzten Treffer)
       const lv0 = run.level, loot = G().roomCleared(a, W.stats); if (run.level !== lv0) refreshHero();   // Auftrag gab eine Stufe («Immer automatisch» hat schon verteilt)
       for (const it of loot.items) drop({ kind: 'item', it }, (a.x + a.w / 2) * TS + (Math.random() - 0.5) * 60, (a.y + a.h / 2) * TS + (Math.random() - 0.5) * 40, 40);
       fx('cleared', { r: a });
@@ -738,6 +739,12 @@ A.World = (function () {
     W.near = null;
     for (const rr of W.rooms) for (const p of rr.props) { if (p.hidden || p.used || p.kind === 'sign' || p.kind === 'pot') continue; if (dist(p, h) < (p.rad || 46)) W.near = p; }
     if (W.near && W.near.kind === 'rubble' && !W.near.hinted) { W.near.hinted = true; float(W.near.x, W.near.y - 40, A.LANG === 'de' ? 'Hier zieht es. Wegräumen?' : 'There is a draft. Clear it?', '#fee761', 14); }
+    // Aufgabe ausserhalb eines Kampfs erfüllt (Krüge, Gold vom Boden): gleich auszahlen, nicht erst im nächsten Kampfraum oder auf der nächsten Ebene
+    if (!W.active && !W.paused && h.alive && G().run.questRewardPending && !G().run.over) {
+      const run = G().run, lv0 = run.level, its = G().payQuest(); if (run.level !== lv0) refreshHero();
+      for (const it of its) drop({ kind: 'item', it }, h.x + (Math.random() - 0.5) * 50, h.y - 16, 40);
+      G().save(); if (hooks.onQuest) hooks.onQuest();
+    }
     G().run.hp = h.hp;
   }
   function interact() { if (!W.near) return false; const p = W.near; if (hooks.onProp) hooks.onProp(p); return true; }
