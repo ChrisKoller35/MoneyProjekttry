@@ -15,7 +15,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const S = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__mine.S)));
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   // Zufall abschalten (besondere Felsen, Maulwurf), damit die Prüfungen gleich bleiben; eigene Prüfungen weiter unten
-  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; });
+  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; });
 
   await page.goto(file); await calm(page); await page.waitForTimeout(600);
   await shot('01-start');
@@ -39,6 +39,14 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check(s.dw[0] === 1 && sparks > 0, `Erster Zwerg gekauft (${sparks} Funken)`);
   check((await tipNow()) !== 'dwarf', 'Zwergen-Tipp verschwindet nach dem Kauf');
   await shot('03-zwerge');
+
+  // 2b) Zwergen-Spruch (Sprechblase über einem Zwerg)
+  await page.evaluate(() => window.__mineQuote.say('plain'));
+  await page.waitForTimeout(150);
+  const quoteText = await page.evaluate(() => window.__mineQuote.quote && window.__mineQuote.quote.text);
+  check(!!quoteText && ['Steine. Wieder Steine. Überraschung.', 'Graben ist meditativ. Sagt niemand.', 'Wer zuletzt hackt, zahlt die Runde.'].includes(quoteText), `Zwergen-Spruch sichtbar (${quoteText})`);
+  await shot('03b-spruch');
+  check((await page.evaluate(() => window.__mineQuote.key)) === 'plain', 'Spruch-Lage am Anfang: plain');
 
   // 3) Vorspulen bis Boss auf Tiefe 10 (Fundstücke können vorher Steine bringen; den Steine-Tipp hier überspringen, damit der Boss-Tipp sicher kommt)
   await page.evaluate(() => { window.__mine.S.tips.gem = true; });
