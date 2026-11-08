@@ -271,6 +271,28 @@ const TS = DE ? {
   panzerGone: 'The armored rock crumbles', panzerGoneSub: 'Too late. It was shy.',
   klonk: 'Clank', gem: 'Crystal shattered',
 };
+// Sprüche der Zwerge (Sprechblase), je Lage drei Sätze, höchstens 44 Zeichen
+const QUOTES = DE ? {
+  mole: ['Da! Der Sack! Haltet ihn!', 'Das war mein Lohn, du Fellsocke!', 'Ich sag\'s ja: Wir brauchen eine Katze.'],
+  boss: ['Chef, der hat Zähne!', 'Ich hab Rücken. Mach du.', 'Nicht hinsehen, einfach hauen.'],
+  lava: ['Ist hier jemandem auch so warm?', 'Mein Bart raucht. Das ist neu.', 'Wir graben später. Vielleicht.'],
+  frost: ['Mir friert der Bart ab.', 'Bier. Jetzt. Aus medizinischen Gründen.', 'Wer hat das Fenster offen gelassen?'],
+  idle: ['Tippt da noch jemand?', 'Wir machen das hier ganz allein, ja?', 'Die Hacke ruft. Dich.'],
+  deep: ['Hört ihr das auch? Dieses Pochen?', 'Hier unten hab ich keinen Empfang.', 'Noch tiefer, und wir sind in Australien.'],
+  many: ['Hundert Zwerge, ein Klo.', 'Hinten anstellen, ich war zuerst.', 'Wer hat meinen Helm?'],
+  rich: ['Kauf doch mal was. Uns zum Beispiel.', 'Das Gold liegt nur rum. Skandal.', 'Ich kenne einen, der günstig gräbt. Mich.'],
+  plain: ['Steine. Wieder Steine. Überraschung.', 'Graben ist meditativ. Sagt niemand.', 'Wer zuletzt hackt, zahlt die Runde.'],
+} : {
+  mole: ['There! The sack! Stop him!', 'That was my pay, you fur sock!', 'Told you: we need a cat.'],
+  boss: ['Boss, this one has teeth!', 'My back hurts. You do it.', 'Don\'t look, just hit.'],
+  lava: ['Is anyone else this warm?', 'My beard is smoking. That\'s new.', 'We\'ll dig later. Maybe.'],
+  frost: ['My beard is freezing off.', 'Beer. Now. For medical reasons.', 'Who left the window open?'],
+  idle: ['Is anyone still tapping?', 'We do this all by ourselves, huh?', 'The pickaxe is calling. You.'],
+  deep: ['Do you hear that too? That knocking?', 'No signal down here.', 'Any deeper and we come out in Australia.'],
+  many: ['A hundred dwarves, one toilet.', 'Back of the line, I was first.', 'Who took my helmet?'],
+  rich: ['Buy something. Us, for example.', 'The gold just lies around. Scandal.', 'I know someone who digs cheap. Me.'],
+  plain: ['Rocks. More rocks. Surprise.', 'Digging is meditative. Said nobody.', 'Last one to swing buys the round.'],
+};
 
 // ---------- Spielformeln ----------
 // FORMELN_START (wird vom Balancing-Test gelesen)
@@ -1071,6 +1093,54 @@ function drawMole(t) {
 }
 window.__mineMole = { spawn: spawnMole, get mole() { return mole; }, catch: catchMole, off: false };
 
+// ---------- Zwergen-Sprüche ----------
+let quote = null, quoteTimer = 30, lastQuote = '', quoteEvent = null;   // erster Spruch frühestens nach 30 s Sitzung
+let dwarfPos = [];   // von drawDwarves gefüllt: wo die Zwerge gerade stehen
+function quoteKey() {   // erste zutreffende Lage gewinnt
+  if (mole && mole.out) return 'mole';
+  if (bossActive) return 'boss';
+  if (lava > 0) return 'lava';
+  if (frost > 0 && beer <= 0) return 'frost';
+  if (performance.now() - lastTap >= 60000) return 'idle';
+  if (S.depth >= 100) return 'deep';
+  if (S.dw.reduce((a, b) => a + b, 0) >= 100) return 'many';
+  if (S.gold >= 30 * F.rockGold(S.depth, S)) return 'rich';
+  return 'plain';
+}
+function sayQuote(key) {
+  const list = QUOTES[key].filter(q => q !== lastQuote);   // nie zweimal derselbe Satz hintereinander
+  const text = list[Math.floor(Math.random() * list.length)];
+  lastQuote = text;
+  quote = { idx: Math.floor(Math.random() * Math.max(1, dwarfPos.length)), text, life: 4 };
+}
+function quoteStep(dt) {
+  if (quote) { quote.life -= dt; if (quote.life <= 0) quote = null; }
+  if (dwarfPos.length === 0 || toast.style.display === 'block' || tipNow || window.__mineQuote.off) return;
+  const ev = mole && mole.out ? 'mole' : bossActive ? 'boss' : null;   // Maulwurf und Boss: Spruch sofort, einmal je Ereignis
+  if (!ev) quoteEvent = null;
+  else if (ev !== quoteEvent) { quoteEvent = ev; if (!quote && quoteTimer > 8) quoteTimer = 0; }
+  quoteTimer -= dt;
+  if (quoteTimer <= 0) { sayQuote(quoteKey()); quoteTimer = 40 + Math.random() * 40; }
+}
+function drawQuote(t) {
+  if (!quote || !dwarfPos.length) return;
+  const p = dwarfPos[quote.idx] || dwarfPos[0];
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, quote.life * 2);   // letzte halbe Sekunde ausblenden
+  ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(quote.text).width + 16, h = 26;
+  const tipY = p.y - 30 + Math.sin(t * 3) * 2, by = tipY - 6 - h;   // Schwanz zeigt auf den Helm
+  const x = Math.max(8, Math.min(CW - w - 8, p.x - w / 2));
+  const tx = Math.max(x + 10, Math.min(x + w - 10, p.x));
+  ctx.fillStyle = '#fff8e6'; ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1;
+  roundRect(x, by, w, h, 8); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx - 6, by + h - 0.5); ctx.lineTo(tx, tipY); ctx.lineTo(tx + 6, by + h - 0.5); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(tx - 6, by + h); ctx.lineTo(tx, tipY); ctx.lineTo(tx + 6, by + h); ctx.stroke();
+  ctx.fillStyle = '#2a1f17'; ctx.fillText(quote.text, x + 8, by + h / 2 + 1);
+  ctx.restore();
+}
+window.__mineQuote = { off: false, say(key) { sayQuote(QUOTES[key] ? key : 'plain'); }, get quote() { return quote; }, get key() { return quoteKey(); } };
+
 // ---------- Truhe ----------
 function spawnChest() {
   const left = Math.random() < 0.5;
@@ -1491,6 +1561,7 @@ function drawDwarves(t) {
   const spots = [];
   owned.forEach((i) => { const n = Math.min(3, Math.ceil(S.dw[i] / 10)); for (let k = 0; k < n; k++) spots.push(i); });
   const show = spots.slice(0, 10);
+  dwarfPos = [];
   show.forEach((type, idx) => {
     const side = idx % 2 === 0 ? -1 : 1;
     const row = Math.floor(idx / 2);
@@ -1498,6 +1569,7 @@ function drawDwarves(t) {
     const y = c.y + c.r * 0.55 - row * 20;
     const speed = 5 + type * 0.6;
     const hat = F.shopLv(S, 'helm') ? '#f5c542' : DWARVES[type].hat;
+    dwarfPos[idx] = { x, y: lava > 0 ? y + 14 : y, side };   // vor dem return bei Lava, für die Sprechblase
     if (lava > 0) { ctx.globalAlpha = 0.55; drawDwarf(x, y + 14, 1.15 - row * 0.05, hat, 0, side > 0); ctx.globalAlpha = 1; return; }   // in Deckung
     const cold = frost > 0 && beer <= 0;   // Kälte: Zwerge zittern und schwingen langsam
     drawDwarf(x + (cold ? Math.sin(t * 40 + idx) * 1.2 : 0), y, 1.25 - row * 0.05, hat, t * speed * (cold ? F.frostDw : 1) + idx * 1.3, side > 0);
@@ -2161,6 +2233,7 @@ function frame(now) {
   drawRock(t); specialStep(dt); drawSpecial(t); drawIce(t);
   drawPlayerPick();
   drawChest(t); moleStep(dt); drawMole(t);
+  quoteStep(dt); drawQuote(t);
   drawFx(dt);
 
   // HUD
