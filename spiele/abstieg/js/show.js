@@ -53,7 +53,7 @@ A.Show = (function () {
     const s = w.show || (w.show = {});
     s.n = s.last != null && w.t - s.last <= A.HYPE_MULTI_T ? (s.n || 0) + 1 : 1; s.last = w.t;   // Serie: reisst ab, wenn eine Pause länger ist
     const n = s.n, H = A.HYPE;
-    if (n === 3) hype(H.multi3, L('Dreifach!', 'Triple!'));
+    if (n === 3) { hype(H.multi3, L('Dreifach!', 'Triple!')); G().questEvent('triple'); }
     else if (n === 5) hype(H.multi5, L('Gemetzel!', 'Carnage!'));
     else if (n === 8) hype(H.multi8, L('Wahnsinn!', 'Madness!'));
     if (e.boss) r.bossKills = (r.bossKills || 0) + 1;   // für den Tageswunsch (v43)

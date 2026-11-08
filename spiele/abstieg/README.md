@@ -8,7 +8,7 @@ Konzept: `/mnt/project-files/inventar/moneyprojekt/spiele/abstieg/KONZEPT.md` (P
 - 6 Ebenen (Boss auf 3 und 6), je Ebene 6-8 verbundene Räume (Kampf, Elite, Truhe, Händler, Feuer, Ereignis, Treppe/Boss); Kampfräume verriegeln die Türen bis alle Gegner tot sind. Kein Auto-Kampf mehr (Christoph 18.10.).
 - 2 Rassen frei (Mensch, Felsgeborener), 3 freischaltbar im Lager. 3 Klassen (Klinge, Schütze, Weber); Rufer und Braumeister kamen am 20.10. dazu (siehe unten).
 - 22 Gegenstands-Grundformen, 14 Zusätze, 14 Einzelstücke, verfluchte Items; Beutel mit 8 Plätzen.
-- 12 Monster, 2 Bosse, 6 Ereignisse, Händler, Rast, Schatz. 4 Aufgaben.
+- 12 Monster, 2 Bosse, 6 Ereignisse, Händler, Rast, Schatz. 4 Aufgaben (seit 07.11. 10, siehe «Neue Ebenen-Aufgaben»).
 - Stufenaufstieg mit Statpunkten, alle 3 Stufen eine neue Fähigkeit.
 - Seelenfunken nach jedem Durchlauf, Lager mit 10 Freischaltungen (seit 20.10. ein ausbaubares Lager, siehe unten).
 - Speichert im Browser (laufender Durchlauf und Lager). Deutsch/Englisch nach Browser-Sprache.
@@ -236,6 +236,11 @@ Der Abstieg ist eine Show, und die Show hat Geldgeber.
 - **Dreh:** Jeden Tag gilt ein Dreh mit einem Haken und einem Vorteil, zum Beispiel «Glaskanone» (+30 % Schaden, Gegner treffen 25 % härter) oder «Kistentag» (das Auge füllt sich doppelt so schnell, Tränke heilen 30 % weniger). Zwei Tage hintereinander nie derselbe.
 - **Geschafft:** Nach dem Boss auf Ebene 4 führt die Treppe nur noch heim. Wer heimkehrt, bekommt +10 % fürs Heimkehren und einmal am Tag +50 % Seelenfunken für die Tageswelt. «Nochmal» startet wieder die Tageswelt von heute. Steht die Heldenwahl über Mitternacht offen, zeigt «Los» zuerst den neuen Dreh. Im Lager steht der Dreh von heute bei den Gönnern.
 - **Spielstand:** neu in `meta` `daily` (`days`: die letzten geschafften Tage, `n`: wie oft geschafft); im Durchlauf `daily` (Tag und Dreh), `dailyWon`, `sparksDaily`. Alte Stände laden ohne diese Felder und spielen wie bisher. Eine Tageswelt, die eine ältere Version über Ebene 4 hinaus getragen hat, läuft als normaler Lauf weiter.
+
+## Neue Ebenen-Aufgaben (07.11.2026)
+- Zu den 4 Aufgaben je Ebene kommen 6 dazu (10): «Scherben» (6 Krüge zerschlagen, 40 Gold), «Goldgier» (100 Gold vom Boden aufsammeln, ein seltenes Stück), «Dreifach» (3 Gegner kurz nacheinander, 1 Trank), «Sparsam» (12 Gegner ohne einen Trank zu trinken, 12 Seelenfunken), «Tanz» (8 Gegner hintereinander ohne getroffen zu werden, 60 Erfahrung), «Wagemut» (Kampfraum säubern und mit unter 30 % Leben dastehen, 2 Tränke).
+- Zwei neue Belohnungen: Tränke (sofort) und Seelenfunken (über `showSparks`, gutgeschrieben am Ende des Durchlaufs). Die Belohnung kommt wie bisher beim nächsten gesäuberten Raum.
+- Haken in `questEvent(kind, n)` (`game.js`): Krug (`surprise.js`), Gold-Aufnahme und Treffer (`world.js`), «Dreifach!» (`show.js`), Trank und Raum-Ende (`game.js`). Spielstand-Format bleibt gleich: `run.quest` und `questProg` wie bisher, neue Aufgaben kommen nur auf neuen Ebenen.
 
 ## Schrift (06.11.2026)
 - Die Pixel-Schrift setzte «fi» und «fl» zu einem Zeichen zusammen, das wie ein «A» aussah («GräAn Gemetzel», «Anden», «Aiegt»). Jetzt sind diese Verbindungen überall aus (`font-variant-ligatures: none` in `index.html`, gilt auch für den Text im Canvas). Die Zierschrift sieht gleich aus wie vorher.

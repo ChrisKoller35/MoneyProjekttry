@@ -1006,6 +1006,12 @@ A.QUESTS = [
   { id: 'nodmg', text: { de: 'Säubere einen Raum ohne Schaden', en: 'Clear a room without taking damage' }, type: 'nodmg', n: 1, reward: { item: 'rare' } },
   { id: 'crit3', text: { de: 'Lande 3 Volltreffer', en: 'Land 3 critical hits' }, type: 'crits', n: 3, reward: { xp: 40 } },
   { id: 'elite', text: { de: 'Besiege einen Elite-Gegner', en: 'Defeat an elite enemy' }, type: 'elite', n: 1, reward: { gold: 50 } },
+  { id: 'scherben', text: { de: 'Zerschlage 6 Krüge auf dieser Ebene. Sie haben es verdient.', en: 'Smash 6 jars on this floor. They had it coming.' }, type: 'pots', n: 6, reward: { gold: 40 } },
+  { id: 'goldgier', text: { de: 'Sammle 100 Gold vom Boden auf', en: 'Pick up 100 gold from the floor' }, type: 'gold', n: 100, reward: { item: 'rare' } },
+  { id: 'dreifach', text: { de: 'Besiege 3 Gegner kurz nacheinander', en: 'Defeat 3 enemies in quick succession' }, type: 'triple', n: 1, reward: { potions: 1 } },
+  { id: 'sparsam', text: { de: 'Besiege 12 Gegner, ohne einen Trank zu trinken', en: 'Defeat 12 enemies without drinking a potion' }, type: 'nopot', n: 12, reward: { sparks: 12 } },
+  { id: 'tanz', text: { de: 'Besiege 8 Gegner hintereinander, ohne getroffen zu werden', en: 'Defeat 8 enemies in a row without getting hit' }, type: 'streak', n: 8, reward: { xp: 60 } },
+  { id: 'wagemut', text: { de: 'Säubere einen Raum und steh danach mit unter 30 % Leben da', en: 'Clear a room and finish it below 30% health' }, type: 'low', n: 1, reward: { potions: 2 } },
 ];
 
 A.MAX_FLOOR = 24;   // Ende der sechs Welten; danach geht es endlos weiter
