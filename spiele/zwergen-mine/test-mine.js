@@ -491,6 +491,29 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   });
   check(zg.zero.join() === '0,0,0,1' && zg.now.join() === '2,2,4,4', 'Ziele zählen Helden, Ausrüstung, Seltenheit und Rang ' + JSON.stringify(zg));
 
+  // 9j8) Schmiede (8 Steine je Wurf, nur Besseres bleibt) und Treue-Serie (Tage in Folge)
+  const fg = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, G = window.__mineGear, keep = [JSON.stringify(S.gear), S.gems, JSON.stringify(S.daily), S.streak];
+    S.gear = { helm: { r: 1, v: 15 } }; S.gems = 8 * 60 + 3; let never = true, wins = 0;
+    for (let i = 0; i < 60; i++) { const before = S.gear.helm.v, r = G.forge('helm'); if (!r || S.gear.helm.v < before || (r.win !== (S.gear.helm.v > before))) never = false; if (r && r.win) wins++; }
+    const left = S.gems, poor = G.forge('helm') === null, onlyHelm = Object.keys(S.gear).join() === 'helm';
+    const day = (d) => { const x = new Date(); x.setDate(x.getDate() - d); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+    S.gems = 0; S.streak = 3; S.daily.day = day(1); m.ensureDaily(); const s1 = S.streak, g1 = S.gems;
+    S.gems = 0; S.streak = 9; S.daily.day = day(1); m.ensureDaily(); const g2 = S.gems;
+    S.gems = 0; S.streak = 5; S.daily.day = day(3); m.ensureDaily(); const s3 = S.streak, g3 = S.gems;
+    S.gear = { helm: { r: 1, v: 15 }, pick: { r: 3, v: 50 } }; S.gems = 20; document.getElementById('toast').style.display = 'none'; m.showGear();
+    return { never, wins, left, poor, onlyHelm, s1, g1, g2, s3, g3, keep };
+  });
+  check(fg.never && fg.left === 3 && fg.poor && fg.onlyHelm, 'Schmiede: 8 Steine je Wurf, das Stück wird nie schlechter, ohne Steine geht nichts (' + fg.wins + ' Verbesserungen in 60 Würfen)');
+  check(fg.s1 === 4 && fg.g1 === 4 && fg.g2 === 7 && fg.s3 === 1 && fg.g3 === 1, 'Treue-Serie: Tag 4 in Folge gibt 4 Steine, höchstens 7, eine Lücke fängt bei 1 an');
+  await page.waitForTimeout(300);
+  check((await page.locator('#toast [data-forge]').count()) === 3, 'Ausrüstungs-Fenster hat drei Schmiede-Knöpfe');
+  await shot('24g-schmiede');
+  await page.click('#toast [data-forge="amu"]'); await page.waitForTimeout(200);
+  check(await page.evaluate(() => window.__mine.S.gems === 12 && !!window.__mine.S.gear.amu), 'Schmieden füllt einen leeren Platz');
+  await page.click('#tClose'); await page.waitForTimeout(200);
+  await page.evaluate((k) => { const S = window.__mine.S; S.gear = JSON.parse(k[0]); S.gems = k[1]; S.daily = JSON.parse(k[2]); S.streak = k[3]; window.__mine.buildPanel(); }, fg.keep);
+
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
   check(fd.n === 0, 'Im Herz des Berges gibt es keine Fundstücke');

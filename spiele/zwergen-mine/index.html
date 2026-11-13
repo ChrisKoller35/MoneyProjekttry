@@ -158,7 +158,7 @@ const T = DE ? {
   gemPower: 'Zwergenkraft', gemGold: 'Goldgier', gemCrit: 'Glückstreffer', gemOffline: 'Nachtschicht', gemChest: 'Schatzspürer',
   gemPowerE: 'alles Graben', gemGoldE: 'mehr Gold', gemCritE: 'Volltreffer-Chance', gemOfflineE: 'Gold wenn du weg bist', gemChestE: 'Truhen öfter',
   chestGold: 'Schatztruhe!', chestRage: 'Zwergenwut! ×3', milestone: 'Meilenstein: ×2',
-  daily: 'Heute', daily1: 'Besiege 1 Boss', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
+  streak: 'Tag {n} in Folge!', streakSub: 'Treue-Bonus', daily: 'Heute', daily1: 'Besiege 1 Boss', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
   goal: 'Ziele', goalDone: 'Ziel erreicht!', goalsDone: '{n} Ziele erreicht!', bought: 'Gekauft', bigBoss: 'Grossboss!', layer: 'Schicht',
   newMine: 'Neue Mine', heir: 'Erbstücke', move: 'Umziehen', moveFrom: 'Besiege den Grossboss auf Tiefe 50, dann kannst du umziehen und Erbstücke sammeln', no: 'Abbrechen', deeper: 'Je tiefer, desto mehr.',
   newMineInfo: 'Gold, Zwerge, Hacke und Werkzeuge fangen neu an. Steine und Ziele bleiben.',
@@ -209,7 +209,7 @@ const T = DE ? {
   gemPower: 'Dwarf Power', gemGold: 'Gold Greed', gemCrit: 'Lucky Strike', gemOffline: 'Night Shift', gemChest: 'Treasure Sense',
   gemPowerE: 'all digging', gemGoldE: 'more gold', gemCritE: 'critical chance', gemOfflineE: 'gold while away', gemChestE: 'chests more often',
   chestGold: 'Treasure chest!', chestRage: 'Dwarf rage! ×3', milestone: 'Milestone: ×2',
-  daily: 'Today', daily1: 'Beat 1 boss', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
+  streak: 'Day {n} in a row!', streakSub: 'Loyalty bonus', daily: 'Today', daily1: 'Beat 1 boss', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
   goal: 'Goals', goalDone: 'Goal reached!', goalsDone: '{n} goals reached!', bought: 'Bought', bigBoss: 'Big boss!', layer: 'Layer',
   newMine: 'New Mine', heir: 'Heirlooms', move: 'Move', moveFrom: 'Beat the big boss at depth 50, then you can move and collect heirlooms', no: 'Cancel', deeper: 'Deeper means more.',
   newMineInfo: 'Gold, dwarves, pickaxe and tools start over. Gems and goals stay.',
@@ -570,8 +570,9 @@ const HERO_STEP = { borin: 25, thrain: 15, gundi: 15, flinka: 30, dvala: 3 };
 // Beute: Bosse lassen Ausrüstung fallen (drei Plätze, vier Seltenheiten); das bessere Stück bleibt, der Rest wird zu Steinen
 const GEAR_SLOTS = [{ k: 'pick', icon: '⛏️' }, { k: 'helm', icon: '🪖' }, { k: 'amu', icon: '📿' }];
 const RARITY = [{ col: '#c9c9c9', lo: 5, hi: 10 }, { col: '#57d2ff', lo: 12, hi: 20 }, { col: '#c77dff', lo: 25, hi: 35 }, { col: '#ffb13d', lo: 45, hi: 60 }];
-const GEAR_ODDS = { boss: [60, 28, 10, 2], big: [25, 42, 26, 7] }, GEAR_CHANCE = 0.4;
+const GEAR_ODDS = { boss: [60, 28, 10, 2], big: [25, 42, 26, 7] }, GEAR_CHANCE = 0.4, FORGE_COST = 8;
 const TG = DE ? {
+  forge: 'Schmieden', forgeInfo: 'Die Schmiede würfelt ein neues Stück für diesen Platz. Ist es besser, bleibt es. Sonst war es Schrott.', forgeWin: 'Besser!', forgeLose: 'Schrott. Der Schmied zuckt mit den Schultern.',
   title: 'Ausrüstung', findLegend: 'Finde ein legendäres Stück', loot: 'Beute!', melt: 'Eingeschmolzen', empty: 'Noch leer. Bosse lassen Beute fallen.',
   info: 'Bosse lassen manchmal Ausrüstung fallen, Grossbosse immer. Das bessere Stück bleibt, schwächere werden zu einem Stein. Ausrüstung bleibt für immer.',
   rar: ['Gewöhnlich', 'Selten', 'Episch', 'Legendär'], slot: { pick: 'Hacke', helm: 'Helm', amu: 'Amulett' },
@@ -582,6 +583,7 @@ const TG = DE ? {
     amu: ['Glückskiesel', 'Hasenpfote vom Maulwurf', 'Amulett der Goldnase', 'Zahn des Bergkönigs'],
   },
 } : {
+  forge: 'Forge', forgeInfo: 'The forge rolls a new piece for this slot. If it is better, it stays. Otherwise it was scrap.', forgeWin: 'Better!', forgeLose: 'Scrap. The smith shrugs.',
   title: 'Gear', findLegend: 'Find a legendary piece', loot: 'Loot!', melt: 'Melted down', empty: 'Still empty. Bosses drop loot.',
   info: 'Bosses sometimes drop gear, big bosses always. The better piece stays, weaker ones turn into a gem. Gear stays forever.',
   rar: ['Common', 'Rare', 'Epic', 'Legendary'], slot: { pick: 'Pickaxe', helm: 'Helmet', amu: 'Amulet' },
@@ -603,7 +605,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 15;
+const VERSION = 16;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -613,6 +615,7 @@ const NEWS = DE ? [
   [12, '🎒', 'Beute: Bosse lassen Ausrüstung fallen (Reiter «Hacke»)'],
   [13, '🎖', 'Ränge: dein Punktestand gibt Titel und Bonus'],
   [14, '🌠', 'Neuer Block: der Sternenschacht (100 Kronen)'],
+  [16, '🔨', 'Schmiede für Ausrüstung und Treue-Bonus für jeden Tag in Folge'],
 ] : [
   [7, '⛏️', 'Special rocks, the cheeky mole and 42 finds'],
   [8, '🧊', 'Glacier, Grotto and the crown shop (map “Your Realm”)'],
@@ -622,6 +625,7 @@ const NEWS = DE ? [
   [12, '🎒', 'Loot: bosses drop gear (“Pickaxe” tab)'],
   [13, '🎖', 'Ranks: your score gives titles and a bonus'],
   [14, '🌠', 'New block: the Star Shaft (100 crowns)'],
+  [16, '🔨', 'Forge for gear and a loyalty bonus for every day in a row'],
 ];
 const TN = DE ? { title: 'Was ist neu?', ok: 'Los geht\'s' } : { title: 'What\'s new?', ok: 'Let\'s go' };
 
@@ -633,7 +637,7 @@ function freshState() {
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
     blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
-    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {}, rankSeen: 0, ver: VERSION };
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {}, rankSeen: 0, ver: VERSION, streak: 0 };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -2205,6 +2209,11 @@ function ensureDaily() {
     goals.push({ id: p.type + p.n[size], type: p.type, n: p.n[size], gems: p.gems[size] });
     base[p.type] = dailyCount(p.type);
   }
+  // Treue-Serie: an aufeinanderfolgenden Tagen gespielt gibt Steine (1 bis 7), eine Lücke fängt bei 1 an
+  const prev = S.daily.day, y = new Date(); y.setDate(y.getDate() - 1);
+  const yKey = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
+  S.streak = prev === yKey ? (S.streak || 1) + 1 : 1;
+  if (had) { const g = Math.min(7, S.streak); S.gems += g; showBanner({ text: '🔥 ' + T.streak.replace('{n}', S.streak), sub: T.streakSub + '  💎 +' + g, life: 3, color: '#ff8a3d' }); }
   S.daily = { day: key, goals, base, done: {}, bonus: false };
   if (had) showBanner({ text: '📅 ' + T.dailyNew, sub: goals.map(dailyName).join(' · '), life: 3, color: '#6fdc7a' });
   if (tab === 'goal') buildPanel();
@@ -2310,17 +2319,33 @@ function gearDrop() {   // nach einem Boss-Sieg
   if (!big && Math.random() >= GEAR_CHANCE) return;
   gearGive(gearRoll(big));
 }
-function showGear() {
-  if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
+function gearForge(k) {   // Schmiede: für Steine ein neues Stück für genau diesen Platz würfeln
+  if (S.gems < FORGE_COST || !GEAR_SLOTS.some(g => g.k === k)) return null;
+  S.gems -= FORGE_COST;
+  const it = gearRoll(false); it.k = k;
+  const old = S.gear[k], win = !old || it.v > old.v;
+  if (win) S.gear[k] = { r: it.r, v: it.v };
+  win ? sfx.chest() : sfx.fail();
+  refreshPanel(true); save();
+  return { win, it };
+}
+function showGear(again, msg) {
+  if (!again && toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
   const rowsG = GEAR_SLOTS.map((g) => {
     const it = S.gear[g.k];
     return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px;background:#2a2238;border:2px solid ${it ? RARITY[it.r].col : 'transparent'};border-radius:10px;padding:8px;text-align:left">
       <span style="font-size:22px;flex:none">${g.icon}</span>
-      <span style="flex:1;min-width:0">${it ? `<b style="color:${RARITY[it.r].col}">${gearName(g.k, it)}</b><div class="small">${TG.rar[it.r]} · ${TG.eff[g.k].replace('{p}', it.v)}</div>` : `<b>${TG.slot[g.k]}</b><div class="small">${TG.empty}</div>`}</span></div>`;
+      <span style="flex:1;min-width:0">${it ? `<b style="color:${RARITY[it.r].col}">${gearName(g.k, it)}</b><div class="small">${TG.rar[it.r]} · ${TG.eff[g.k].replace('{p}', it.v)}</div>` : `<b>${TG.slot[g.k]}</b><div class="small">${TG.empty}</div>`}</span>
+      <button data-forge="${g.k}" ${S.gems < FORGE_COST ? 'disabled ' : ''}style="flex:none;background:${S.gems < FORGE_COST ? '#4a3f60' : '#57d2ff'};color:#003449;padding:6px 8px;font-size:12px">🔨 ${GEM_S}${FORGE_COST}</button></div>`;
   }).join('');
-  popup(`<div style="font-weight:900;font-size:18px">🎒 ${TG.title}</div><div class="small" style="max-width:300px">${TG.info}</div>${rowsG}
+  popup(`<div style="font-weight:900;font-size:18px">🎒 ${TG.title} · ${GEM_S}${fmt(S.gems)}</div><div class="small" style="max-width:300px">${TG.info}</div>${rowsG}
+    <div class="small" style="max-width:300px;margin-top:6px">🔨 ${TG.forgeInfo}</div>${msg ? `<div style="font-weight:800;margin-top:4px;color:${msg.col}">${msg.text}</div>` : ''}
     <div class="small" style="margin-top:6px">${TG.rar.map((n, i) => `<b style="color:${RARITY[i].col}">${n}</b>`).join(' · ')}</div><button id="tClose">${T.close}</button>`, true);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+  toast.querySelectorAll('[data-forge]').forEach(b => { b.onclick = () => {
+    const r = gearForge(b.dataset.forge); if (!r) return;
+    showGear(true, r.win ? { col: RARITY[r.it.r].col, text: TG.forgeWin + ' ' + gearName(r.it.k, r.it) + ' · ' + TG.eff[r.it.k].replace('{p}', r.it.v) } : { col: '#ff6b6b', text: TG.forgeLose + ' (' + TG.rar[r.it.r] + ' +' + r.it.v + ' %)' });
+  }; });
 }
 
 // ---------- Ränge ----------
@@ -2672,7 +2697,7 @@ requestAnimationFrame(frame);
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult() * starMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
   startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear, rankCheck, showNews, VERSION, get starN() { return starN; } };
-window.__mineGear = { off: false, roll: gearRoll, give: gearGive, RARITY, SLOTS: GEAR_SLOTS };
+window.__mineGear = { off: false, roll: gearRoll, give: gearGive, forge: gearForge, FORGE_COST, RARITY, SLOTS: GEAR_SLOTS };
 </script>
 </body>
 </html>
