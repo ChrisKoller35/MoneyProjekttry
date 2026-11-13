@@ -186,10 +186,11 @@ const T = DE ? {
   towers: 'Fördertürme', perHour: 'pro Stunde', store: 'Lager', full: 'voll', nextIn: 'nächste Krone in {m} min', collectN: 'Abholen 👑 +{n}', storeEmpty: 'Lager noch leer', collected: 'Kronen abgeholt!',
   noTower: 'Noch kein Förderturm. Besiege das Herz des Berges auf Tiefe 150, dann fördert hier ein Turm Kronen, auch wenn du weg bist.',
   blocksT: 'Blöcke', soon: 'Bald', here: 'Hier bist du', hereD: 'Du bist hier auf Tiefe {d}', start: 'Start', again: 'Nochmal',
-  blk: { stein: 'Alter Berg', vulkan: 'Vulkan', eis: 'Gletscher', wasser: 'Grotte' },
-  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis halbiert den Schaden, bis Dynamit es sprengt (dafür doppelt Gold). Bei Kälte frieren die Zwerge, Bier wärmt.', wasser: 'Doppelt so viele Truhen. Verlierst du einen Boss, steigt das Wasser: 2 Tiefen zurück.' },
-  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans', eis: 'Herz des Gletschers', wasser: 'Herz der Grotte' },
+  blk: { stein: 'Alter Berg', vulkan: 'Vulkan', eis: 'Gletscher', wasser: 'Grotte', stern: 'Sternenschacht' },
+  blkInfo: { stein: 'Wie du ihn kennst.', vulkan: 'Lava-Ausbruch: 10 s lang zählen Tipps dreifach, die Zwerge gehen in Deckung.', eis: 'Eis halbiert den Schaden, bis Dynamit es sprengt (dafür doppelt Gold). Bei Kälte frieren die Zwerge, Bier wärmt.', wasser: 'Doppelt so viele Truhen. Verlierst du einen Boss, steigt das Wasser: 2 Tiefen zurück.', stern: 'Dünne Luft: Zwerge graben halb so schnell. Dafür ist jeder 10. Tipp ein Sternschlag (×15).' },
+  heart: { stein: 'Herz des Berges', vulkan: 'Herz des Vulkans', eis: 'Herz des Gletschers', wasser: 'Herz der Grotte', stern: 'Herz des Sterns' },
   eisLayers: ['Schnee', 'Firn', 'Packeis', 'Gletscherstein', 'Frostkupfer', 'Eisen im Eis', 'Silberfrost', 'Eisgold', 'Blaueis', 'Frostgrund', 'Eisobsidian', 'Polarmithril', 'Kältekern', 'Ewiges Eis'],
+  sternLayers: ['Sternenstaub', 'Mondgestein', 'Nachtkohle', 'Kometenkupfer', 'Meteoreisen', 'Mondsilber', 'Sonnengold', 'Sternkristall', 'Sonnenglut', 'Weltraumtiefe', 'Schwarzes Loch (klein)', 'Sternenmithril', 'Novakern', 'Urknall'], strike: 'Sternschlag!',
   wasserLayers: ['Tropfstein', 'Kalkstein', 'Muschelbank', 'Korallenstein', 'Grünspan', 'Rostwasser', 'Perlmutt', 'Goldsand', 'Seekristall', 'Tiefsee', 'Schwarzes Riff', 'Nixenmithril', 'Strudelkern', 'Abgrund'],
   iceMelt: 'Eis geschmolzen!', iceSub: 'Jetzt voller Schaden, doppelt Gold', iceLbl: '❄ Eis: halber Schaden', frostOn: 'Kälteeinbruch!', frostSub: '12 s: Zwerge frieren, Bier wärmt', warm: 'warm', floodFail: 'Das Wasser steigt!', floodSub: '2 Tiefen zurück. Kauf Stärkeres, dann nochmal',
   shopT: 'Kronen-Laden', shopNote: 'Ausgeben senkt den Punktestand nicht', shopBought: 'Gekauft!',
@@ -236,10 +237,11 @@ const T = DE ? {
   towers: 'Mine towers', perHour: 'per hour', store: 'Storage', full: 'full', nextIn: 'next crown in {m} min', collectN: 'Collect 👑 +{n}', storeEmpty: 'Storage still empty', collected: 'Crowns collected!',
   noTower: 'No mine tower yet. Beat the Heart of the Mountain at depth 150 and a tower will mine crowns here, even while you are away.',
   blocksT: 'Blocks', soon: 'Soon', here: 'You are here', hereD: 'You are at depth {d}', start: 'Start', again: 'Again',
-  blk: { stein: 'Old Mountain', vulkan: 'Volcano', eis: 'Glacier', wasser: 'Grotto' },
-  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice halves your damage until dynamite blasts it (double gold). In cold snaps dwarves freeze, beer warms them.', wasser: 'Twice as many chests. Lose a boss and the water rises: 2 depths back.' },
-  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano', eis: 'Heart of the Glacier', wasser: 'Heart of the Grotto' },
+  blk: { stein: 'Old Mountain', vulkan: 'Volcano', eis: 'Glacier', wasser: 'Grotto', stern: 'Star Shaft' },
+  blkInfo: { stein: 'The one you know.', vulkan: 'Lava eruption: for 10 s taps count triple, dwarves take cover.', eis: 'Ice halves your damage until dynamite blasts it (double gold). In cold snaps dwarves freeze, beer warms them.', wasser: 'Twice as many chests. Lose a boss and the water rises: 2 depths back.', stern: 'Thin air: dwarves dig half as fast. But every 10th tap is a star strike (×15).' },
+  heart: { stein: 'Heart of the Mountain', vulkan: 'Heart of the Volcano', eis: 'Heart of the Glacier', wasser: 'Heart of the Grotto', stern: 'Heart of the Star' },
   eisLayers: ['Snow', 'Firn', 'Pack Ice', 'Glacier Stone', 'Frost Copper', 'Iron in Ice', 'Silver Frost', 'Ice Gold', 'Blue Ice', 'Frost Floor', 'Ice Obsidian', 'Polar Mithril', 'Cold Core', 'Eternal Ice'],
+  sternLayers: ['Stardust', 'Moon Rock', 'Night Coal', 'Comet Copper', 'Meteor Iron', 'Moon Silver', 'Sun Gold', 'Star Crystal', 'Sun Ember', 'Deep Space', 'Black Hole (small)', 'Star Mithril', 'Nova Core', 'Big Bang'], strike: 'Star strike!',
   wasserLayers: ['Dripstone', 'Limestone', 'Shell Bank', 'Coral Stone', 'Verdigris', 'Rust Water', 'Mother of Pearl', 'Gold Sand', 'Sea Crystal', 'Deep Sea', 'Black Reef', 'Mermaid Mithril', 'Whirlpool Core', 'Abyss'],
   iceMelt: 'Ice melted!', iceSub: 'Full damage now, double gold', iceLbl: '❄ Ice: half damage', frostOn: 'Cold snap!', frostSub: '12 s: dwarves freeze, beer warms', warm: 'warm', floodFail: 'The water rises!', floodSub: '2 depths back. Buy upgrades, then retry',
   shopT: 'Crown Shop', shopNote: 'Spending never lowers your score', shopBought: 'Bought!',
@@ -371,6 +373,7 @@ const BLOCKS = [
   { k: 'vulkan', rate: 2, cost: 10, icon: '🌋', color: '#ff8a3d' },
   { k: 'eis',    rate: 2, cost: 25, icon: '🧊', color: '#7fe7ff' },
   { k: 'wasser', rate: 3, cost: 50, icon: '🌊', color: '#57a8ff' },
+  { k: 'stern',  rate: 5, cost: 100, icon: '🌠', color: '#c9a6ff' },
 ];
 // Kronen-Laden: Käufe mit Kronen (der Punktestand bleibt)
 const SHOP = [
@@ -393,6 +396,7 @@ const F = {
   startGold: (s) => { const L = F.shopLv(s, 'start'); return L ? 100 * Math.pow(10, L) : 0; },
   startDw: (s) => 10 * F.shopLv(s, 'gilde'),
   lavaEvery: () => 45 + Math.random() * 15, lavaSec: 10, lavaTap: 3,
+  sternDw: 0.5, sternEvery: 10, sternMult: 15,   // Sternenschacht: Zwerge halb so schnell, jeder 10. Tipp ist ein Sternschlag
   frostSec: 12, frostDw: 0.25, iceChance: 0.25, iceDmg: 0.5, iceGold: 2,
   isBoss: (d) => d % 10 === 0,
   isBigBoss: (d) => d % 50 === 0,
@@ -416,7 +420,7 @@ const F = {
   milestoneMult: (n) => Math.pow(2, [10, 25, 50, 100, 150, 200].filter(m => n >= m).length),
   dwarfCost: (i, n) => Math.ceil(DWARVES[i].cost * Math.pow(1.15, n)),
   dwarfDps: (i, n, s) => DWARVES[i].dps * n * F.milestoneMult(n) * F.powerMult(s) * F.dwarfMult(s) * (1 + 0.15 * F.hero(s, 'thrain')),
-  totalDps: (s) => DWARVES.reduce((a, _, i) => a + F.dwarfDps(i, s.dw[i], s), 0),
+  totalDps: (s) => DWARVES.reduce((a, _, i) => a + F.dwarfDps(i, s.dw[i], s), 0) * (s.blk === 'stern' ? F.sternDw : 1),
   critChance: (s) => 0.04 + 0.02 * s.gu.crit,
   critMult: (s) => s.up.gluck ? 6 : 5,
   doubleChance: (s) => s.up.doppel ? 0.15 : 0,
@@ -464,12 +468,14 @@ const HEARTS = {
   vulkan: { rock: '#8a1f0f', dark: '#4a0a04', ore: '#ffdd55', bg: '#220500' },
   eis:    { rock: '#8cc8f0', dark: '#3a6a9a', ore: '#ffffff', bg: '#06121e' },
   wasser: { rock: '#2a8a9a', dark: '#0a3a4a', ore: '#aaffee', bg: '#021418' },
+  stern:  { rock: '#6a4ab8', dark: '#22104a', ore: '#fff6c8', bg: '#05020f' },
 };
 // Farbstich je Block: Farbton, wie stark, mehr Sättigung, heller
 const TINT = {
   vulkan: { h: 14,  k: 0.6, ds: 0.18, dl: 0,    bk: 0.7,  bds: 0.25 },
   eis:    { h: 200, k: 0.7, ds: 0.05, dl: 0.12, bk: 0.75, bds: 0.2 },
   wasser: { h: 182, k: 0.6, ds: 0.12, dl: 0.02, bk: 0.75, bds: 0.25 },
+  stern:  { h: 268, k: 0.65, ds: 0.12, dl: 0.02, bk: 0.8, bds: 0.3 },
 };
 function layerAt(d) {
   const kind = S.blk || 'stein', heart = d > 140 && d <= F.blockEnd;
@@ -591,6 +597,29 @@ const TR = DE ? {
   names: ['Pebble Tapper', 'Tunnel Hand', 'Hewer', 'Foreman', 'Shift Boss', 'Mine Master', 'Mountain Reeve', 'Dwarf Prince', 'Mountain King', 'Legend of the Mountain'],
 };
 
+// Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
+const VERSION = 14;
+const NEWS = DE ? [
+  [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
+  [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
+  [9, '📅', 'Jede Schicht sieht anders aus, dazu drei Tagesziele pro Tag'],
+  [10, '💬', 'Die Zwerge reden'],
+  [11, '🦸', 'Helden-Zwerge (Reiter «Zwerge») und der Kobold-Krämer'],
+  [12, '🎒', 'Beute: Bosse lassen Ausrüstung fallen (Reiter «Hacke»)'],
+  [13, '🎖', 'Ränge: dein Punktestand gibt Titel und Bonus'],
+  [14, '🌠', 'Neuer Block: der Sternenschacht (100 Kronen)'],
+] : [
+  [7, '⛏️', 'Special rocks, the cheeky mole and 42 finds'],
+  [8, '🧊', 'Glacier, Grotto and the crown shop (map “Your Realm”)'],
+  [9, '📅', 'Every layer looks different, plus three daily goals'],
+  [10, '💬', 'The dwarves talk'],
+  [11, '🦸', 'Hero dwarves (“Dwarves” tab) and the goblin peddler'],
+  [12, '🎒', 'Loot: bosses drop gear (“Pickaxe” tab)'],
+  [13, '🎖', 'Ranks: your score gives titles and a bonus'],
+  [14, '🌠', 'New block: the Star Shaft (100 crowns)'],
+];
+const TN = DE ? { title: 'Was ist neu?', ok: 'Los geht\'s' } : { title: 'What\'s new?', ok: 'Let\'s go' };
+
 // ---------- Spielstand ----------
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
@@ -599,7 +628,7 @@ function freshState() {
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
     blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
-    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {}, rankSeen: 0 };
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {}, rankSeen: 0, ver: VERSION };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -619,6 +648,7 @@ function load() {
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     S.shop = Object.assign({}, d.shop || {});
+    S.ver = d.ver || 6;   // Spielstand von vor «Was ist neu»: zeigt alles seit Version 6
     if (d.rankSeen == null) S.rankSeen = F.rank(S);   // Spielstand von vor den Rängen: kein Banner für alte Ränge
     S.gear = {}; for (const g of GEAR_SLOTS) { const x = d.gear && d.gear[g.k]; if (x && x.v > 0 && RARITY[x.r]) S.gear[g.k] = { r: x.r, v: x.v }; }   // Spielstand von vor der Beute
     const dh = d.hero && typeof d.hero === 'object' ? d.hero : {};   // Spielstand von vor den Helden
@@ -758,6 +788,28 @@ function showBanner(b) {
 let swingT = 0, rockSeed = 1, layerShown = -1, beer = 0, lava = 0, lavaTimer = 50, frost = 0, frozen = false, iceGold = false;
 const isEnd = () => S.depth === F.blockEnd;
 const tapMult = () => (rage > 0 ? 3 : 1) * (lava > 0 ? F.lavaTap : 1);
+// Sternenschacht: jeder 10. Tipp ist ein Sternschlag
+let starN = 0, starFlash = 0;
+function starMult() {
+  if (S.blk !== 'stern' || S.blockDone) return 1;
+  if (++starN < F.sternEvery) return 1;
+  starN = 0; starFlash = 1;
+  const c = rockCenter(); floats.push({ x: c.x, y: c.y - c.r - 30, text: '🌠 ' + T.strike, life: 1.2, color: '#fff6c8' });
+  for (let i = 0; i < 14; i++) { const p = chip(c.x, c.y, i % 2 ? '#fff6c8' : '#c9a6ff'); p.vx *= 1.6; p.vy -= 2; chips.push(p); }
+  shake = 1; sfx.crit();
+  return F.sternMult;
+}
+function drawStern(t) {   // zehn Punkte über dem Felsen: wie weit bis zum nächsten Sternschlag
+  if (S.blk !== 'stern' || S.blockDone) return;
+  const c = rockCenter(), y = c.y - c.r - 14;
+  for (let i = 0; i < F.sternEvery; i++) {
+    const x = c.x + (i - (F.sternEvery - 1) / 2) * 12, on = i < starN, last = i === F.sternEvery - 1;
+    ctx.fillStyle = on ? '#fff6c8' : 'rgba(255,255,255,0.18)';
+    ctx.beginPath(); ctx.arc(x, y, last ? 4.5 : 3, 0, Math.PI * 2); ctx.fill();
+    if (last && !on) { ctx.strokeStyle = '#c9a6ff'; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+  if (starFlash > 0) { ctx.fillStyle = `rgba(255,246,200,${starFlash * 0.35})`; ctx.fillRect(0, 0, CW, CH); }
+}
 
 function rockCenter() { return { x: CW / 2, y: CH * 0.52, r: Math.min(CW * 0.27, CH * 0.3) * (bossActive ? 1.15 : 1) }; }
 
@@ -1065,12 +1117,12 @@ cv.addEventListener('pointerdown', (e) => {
   lastTap = now;
   S.taps++;
   swingT = 1;
-  damage(F.pickDmg(S.pick, S) * tapMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, x, y);
+  damage(F.pickDmg(S.pick, S) * tapMult() * starMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, x, y);
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') {
     e.preventDefault(); const c = rockCenter(); swingT = 1; S.taps++;
-    damage(F.pickDmg(S.pick, S) * tapMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
+    damage(F.pickDmg(S.pick, S) * tapMult() * starMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
   }
   if (e.code === 'KeyD') useDyn();
   if (e.code === 'KeyB') useBeer();
@@ -1711,6 +1763,15 @@ function drawBackground(t) {
       ctx.fillStyle = `rgba(235,248,255,${0.35 + E() * 0.4})`;
       ctx.beginPath(); ctx.arc(x, y, 1.2 + E() * 2, 0, Math.PI * 2); ctx.fill();
     }
+  } else if (S.blk === 'stern') {   // Sternenschacht: Sterne funkeln, ab und zu eine Sternschnuppe
+    const E = rng(31);
+    for (let i = 0; i < 46; i++) {
+      const x = E() * CW, y = E() * CH, sz = 0.8 + E() * 1.6;
+      ctx.fillStyle = `rgba(255,250,225,${0.25 + 0.6 * Math.abs(Math.sin(t * (0.6 + E()) + i))})`;
+      ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+    }
+    const ph = (t % 7) / 0.9;
+    if (ph < 1) { const sx = CW * (0.15 + 0.6 * ((Math.floor(t / 7) * 0.37) % 1)) + ph * 120, sy = CH * 0.1 + ph * 70; ctx.strokeStyle = `rgba(255,246,200,${1 - ph})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - 34, sy - 20); ctx.stroke(); }
   } else if (S.blk === 'wasser') {   // Grotte: Luftblasen steigen
     const E = rng(53);
     ctx.strokeStyle = 'rgba(170,240,255,0.35)'; ctx.lineWidth = 1.2;
@@ -2554,6 +2615,7 @@ function frame(now) {
   drawDwarves(t);
   drawTrader(t);
   drawRock(t); specialStep(dt); drawSpecial(t); drawIce(t);
+  drawStern(t); starFlash = Math.max(0, starFlash - dt * 4);
   drawHero(t);
   drawPlayerPick();
   drawChest(t); moleStep(dt); drawMole(t);
@@ -2587,13 +2649,24 @@ if (migrated) setTimeout(() => afterToast(() => {
     <button id="tMap">${T.toMap}</button>`);
   document.getElementById('tMap').onclick = () => { toast.style.display = 'none'; showRealm(); };
 }), 700);
+// Was ist neu seit dem letzten Besuch (nach Offline-Gold und Erklärungen)
+function showNews(all) {
+  const list = NEWS.filter(n => all || n[0] > S.ver);
+  S.ver = VERSION;
+  if (!list.length) return;
+  popup(`<div style="font-weight:900;font-size:18px">✨ ${TN.title}</div>
+    <div style="text-align:left;max-width:300px;margin:6px auto 0">${list.slice().reverse().map(n => `<div style="display:flex;gap:8px;margin-top:6px"><span style="flex:none">${n[1]}</span><span>${n[2]}</span></div>`).join('')}</div>
+    <button id="tClose">${TN.ok}</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; save(); };
+}
+if (since && NEWS.some(n => n[0] > S.ver) && !window.__mineNoNews) setTimeout(() => afterToast(() => showNews()), 1200); else S.ver = VERSION;
 Portal.gameplayStart();
 requestAnimationFrame(frame);
 
 // Für Tests von aussen (Playwright) erreichbar
-window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
+window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult() * starMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear, rankCheck };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear, rankCheck, showNews, VERSION, get starN() { return starN; } };
 window.__mineGear = { off: false, roll: gearRoll, give: gearGive, RARITY, SLOTS: GEAR_SLOTS };
 </script>
 </body>
