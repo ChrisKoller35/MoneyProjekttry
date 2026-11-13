@@ -41,6 +41,7 @@ A.Legends = (function () {
     if (g.src === 'boss') return L('Vom Weltenboss ', 'From the world boss ') + A.t(A.BOSSES[g.boss].name);
     if (g.src === 'elite') return L('Von Elite-Gegnern mit der Eigenschaft ', 'From elites with the trait ') + A.t(A.ELITE_TRAITS[g.trait].name);
     if (g.src === 'wild') return L('Kann überall auftauchen: in Truhen, bei Elite-Gegnern, nach Kämpfen und bei Weltenbossen. Ab Welt 2 viel öfter.', 'Can turn up anywhere: in chests, from elites, after fights and from world bosses. Much more often from world 2.');
+    if (g.src === 'grade') return L(`Nur ab Grad ${g.grade}, bei Weltenbossen (Grade gibt es nach dem Ausgang auf Ebene ${A.MAX_FLOOR}).`, `Only from grade ${g.grade}, from world bosses (grades unlock at the exit on floor ${A.MAX_FLOOR}).`);   // Legenden der Grade (v51)
     return L('Aus einem geheimen Raum in ', 'From a secret room in ') + A.t(A.WORLDS[g.world].name);
   }
 
@@ -55,15 +56,16 @@ A.Legends = (function () {
     if (from.leg.prahlhans && from.brag) mul *= 1 + 0.08 * from.brag;
     return mul === 1 && !crit ? null : { mul, crit };
   }
-  // Treffer am Helden abfangen: Tintenwolke (Gegner sieht nichts) und Bratpfannen (jeder dritte prallt ab)
+  // Treffer am Helden abfangen: Tintenwolke (Gegner sieht nichts), Bratpfannen (jeder dritte prallt ab) und Nashornleder (jeder vierte)
   function guard(from, to, opts) {
     const w = W(); if (!w || to !== w.hero || !from || from.side !== 'enemy' || (opts.kind !== 'phys' && opts.kind !== 'magic')) return null;
     if (from.blindUntil > w.t && Math.random() < 0.5) {
       api.float(to.x, to.y - to.r - 8, L('daneben', 'miss'), '#c0cbdc', 12); api.fx('miss', { to }); A.Gear.onDodge(to); A.Combos.onDodge(to);
       return -1;
     }
-    if (has(to, 'pfannen') && (to.panN = (to.panN || 0) + 1) % 3 === 0) {
-      api.float(to.x, to.y - to.r - 14, L('Klong!', 'Clang!'), '#c0cbdc', 16);
+    const pan = has(to, 'pfannen') ? 3 : has(to, 'nashorn') ? 4 : 0;   // beides Rüstung, nie zusammen getragen: panN teilen ist sicher
+    if (pan && (to.panN = (to.panN || 0) + 1) % pan === 0) {
+      api.float(to.x, to.y - to.r - 14, pan === 3 ? L('Klong!', 'Clang!') : L('Dicke Haut!', 'Thick skin!'), '#c0cbdc', 16);
       if (A.Sound.klong) A.Sound.klong();
       if (A.FX) A.FX.burst(to.x + (from.x - to.x) * 0.3, to.y - 14 + (from.y - to.y) * 0.3, 10, { color: ['#ffffff', '#fee761', '#c0cbdc'], smin: 60, smax: 180, life: 0.3, add: true, kind: 'spark', drag: 4 });
       to.flash = 0.06;
@@ -126,6 +128,7 @@ A.Legends = (function () {
       api.float(e.x, e.y - 40, L('Leerenloch!', 'Void rift!'), '#e0a4ff', 14);
       if (A.Sound.summon) A.Sound.summon();
     }
+    if (h.leg.behalteloeffel) api.heal(h, Math.max(1, Math.round(h.maxHp * 0.02)));   // Der Löffel, den du behältst (Grad 9): jeder besiegte Gegner heilt 2 %
   }
   // Held getroffen
   function onHurt(h, from, dmg) {
@@ -181,7 +184,11 @@ A.Legends = (function () {
     const w = W(); if (!h.leg) return;
     h.brag = 0; h.stopT = 4; h.anvT = 1.5; h.duckT = 2; h.ratT = 1; h.dice = null;
     if (h.leg.wuerfel) roll(h, 1 + Math.floor(Math.random() * 6));
-    void w;
+    if (h.leg.klingel) {   // Türklingel-Ring (Grad 3): alle Gegner starren zur Tür (fightStart läuft nach spawnRoom; stun zählt erst nach dem Erscheinen herunter)
+      for (const m of w.mons) if (m.alive) m.stun = Math.max(m.stun || 0, m.boss ? 0.5 : 1.5);
+      api.float(h.x, h.y - 96, L('Ding-Dong!', 'Ding-dong!'), '#fee761', 18);
+      if (A.Sound.buy) A.Sound.buy();
+    }
   }
   function roll(h, n) {
     const w = W(), run = A.Game.run;

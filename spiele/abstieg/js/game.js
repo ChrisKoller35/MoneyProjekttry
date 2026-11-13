@@ -434,6 +434,13 @@ A.Game = (function () {
     const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 1.5);
     return run.rng.chance(p * (meta.legFound[id] ? 1 : 1.5)) ? makeLegend(id) : null;
   }
+  // Legenden der Grade (v51): nur bei Weltenbossen und nur ab ihrem Grad; die Tageswelt hat Grad 0 (gradeOf, nicht gradeVal)
+  function gradeLegend() {
+    const g = A.gradeOf(run), ids = Object.keys(A.LEGENDS).filter(k => A.LEGENDS[k].src === 'grade' && g >= A.LEGENDS[k].grade && !legSeen(k));
+    if (!ids.length) return null;   // vor jedem Zufallswurf: Läufe auf Grad 0-2 würfeln gleich wie bisher
+    const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 2);
+    return run.rng.chance(A.GRADE_LEG_CHANCE[meta.legFound[id] ? 1 : 0]) ? makeLegend(id) : null;
+  }
   // Truhe im geheimen Raum: viel Gold, ein gutes Item und oft die Legende dieser Welt
   function secretChest() {
     const id = Object.keys(A.LEGENDS).find(k => A.LEGENDS[k].src === 'secret' && A.LEGENDS[k].world === A.worldIndex(run.floor) % A.WORLDS.length);
@@ -565,7 +572,7 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++; A.Achieve.onKill(e);
     const items = []; let esparks = 0, book = null;
-    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); }
+    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); const gl = gradeLegend(); if (gl) items.push(gl); bossBanner(e.mid); }
     else if (e.elite) {
       items.push(randomItem(rollRarity(nt)));
       const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
@@ -767,7 +774,7 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, gradeLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
     doRest, doEvent, luckEff, riddleEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };

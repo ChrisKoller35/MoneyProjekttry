@@ -403,7 +403,8 @@ A.TROPHIES = {
 };
 
 // Legendäre Gegenstände (Regeln in js/legends.js): 20 Einzelstücke, die die Spielweise verändern, und eine Sammlung im Lager.
-// src: boss = vom Weltenboss (boss), elite = von Elite-Gegnern mit dieser Eigenschaft (trait), secret = Truhe im geheimen Raum dieser Welt (world, 0-5).
+// src: boss = vom Weltenboss (boss), elite = von Elite-Gegnern mit dieser Eigenschaft (trait), secret = Truhe im geheimen Raum dieser Welt (world, 0-5),
+// wild = überall (wild.js), grade = nur in Läufen ab diesem Grad (grade), bei Weltenbossen (v51).
 // base: Grund-Item ('weapon' = Waffe der eigenen Klasse), ico: eigenes Bildchen (art.js i_...), stats: kommen zu den Grundwerten dazu
 A.LEGENDS = {
   pudding: { src: 'boss', boss: 'schleimkoenig', base: 'amulett', ico: 'pudding', el: 'stein', stats: { hp: 25, regen: 1 },
@@ -530,6 +531,22 @@ Object.assign(A.LEGENDS, {
     text: { de: 'Jeder 4. normale Angriff ist eine riesige Fliegenklatsche: grosser Schaden in einer Linie vor dir. Gegner unter 30 % Leben werden plattgedrückt.', en: 'Every 4th basic attack is a giant fly swatter: big damage in a line in front of you. Enemies below 30% health get flattened.' },
     flavor: { de: 'Für sehr grosse Fliegen. Und kleine Drachen.', en: 'For very big flies. And small dragons.' } },
 });
+// Legenden der Grade (v51): nur ab grade (run.grade), bei Weltenbossen (game.js gradeLegend), Wirkung legends.js
+Object.assign(A.LEGENDS, {
+  klingel: { src: 'grade', grade: 3, base: 'ring', ico: 'ring', el: 'blitz', stats: { crit: 6, atkPct: 8, magPct: 8 },
+    name: { de: 'Türklingel-Ring', en: 'Doorbell Ring' },
+    text: { de: 'Zu Beginn jedes Kampfs klingelt es: Alle Gegner starren 1.5 Sekunden zur Tür (Bosse kurz).', en: 'At the start of every fight the doorbell rings: all enemies stare at the door for 1.5 seconds (bosses briefly).' },
+    flavor: { de: 'Ab Grad 3 kommt immer noch einer vorbei. Jetzt klingelt er wenigstens.', en: 'From grade 3 on, someone always drops by. Now at least they ring first.' } },
+  nashorn: { src: 'grade', grade: 6, base: 'leder', ico: 'leder', el: 'stein', stats: { def: 6, hp: 30 },
+    name: { de: 'Nashornleder-Wams', en: 'Rhino-Hide Jerkin' },
+    text: { de: 'Jeder 4. Treffer prallt an deiner dicken Haut ab.', en: 'Every 4th hit bounces off your thick skin.' },
+    flavor: { de: 'Grad 6 macht dir die Haut dünn. Ein Nashorn hat dir seine geliehen. Es will sie zurück.', en: 'Grade 6 thins your skin. A rhino lent you its own. It wants it back.' } },
+  behalteloeffel: { src: 'grade', grade: 9, base: 'weapon', ico: 'loeffel', el: 'schatten', stats: { atkPct: 15, magPct: 15, hp: 20 },
+    name: { de: 'Der Löffel, den du behältst', en: 'The Spoon You Keep' },
+    text: { de: 'Jeder besiegte Gegner heilt dich um 2 % deines Lebens.', en: 'Every enemy you defeat heals you for 2% of your health.' },
+    flavor: { de: 'Hier unten heisst «den Löffel abgeben» sterben. Den hier gibst du nicht ab.', en: 'Down here, "handing in your spoon" means dying. You are not handing this one in.' } },
+});
+A.GRADE_LEG_CHANCE = [0.35, 0.2];   // je Weltenboss: [noch nie gefunden, schon in der Sammlung]
 // Chance auf ein verrücktes Stück je Gelegenheit: [Welt 1, ab Welt 2]; noch nie gefundene Stücke 1.5-mal so oft
 A.WILD_CHANCE = { chest: [0.04, 0.12], elite: [0.02, 0.06], room: [0.01, 0.03], boss: [0, 0.25] };
 A.LEGEND_SPARKS = 20;   // Seelenfunken für jede Legende, die zum ersten Mal in die Sammlung kommt
