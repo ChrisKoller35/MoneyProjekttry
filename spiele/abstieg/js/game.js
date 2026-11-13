@@ -228,6 +228,8 @@ A.Game = (function () {
   }
 
   // ---------- Abgeleitete Werte ----------
+  // Glück (v49): je Punkt über dem Startwert +4 % Gold und +0.5 Beute-Glück (Seltenheit und Drop-Chance, siehe rollRarity und killReward)
+  const LUCK_GOLD = 4, LUCK_ITEM = 0.5;
   function gearList() { return A.SLOTS.map(s => run.gear[s]).filter(Boolean); }
   function derived(r) {
     r = r || run;
@@ -235,6 +237,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
+    const cls = A.CLASSES.find(x => x.id === r.cls), luckX = s.luck - race.base.luck - (cls ? cls.base.luck : 0) + sum('luck');   // Glück über dem Startwert: Ausrüstung, Statpunkte, Statue, Brunnen
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, dm = (A.dailyOf(r) || {}).p || {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0) + (+dm[k] || 0);   // om: Regel des Gönners (v43); dm: Dreh der Tageswelt (v45)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
@@ -247,11 +250,11 @@ A.Game = (function () {
       crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit') + me.crit),
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
-      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct'),
-      xpPct: sum('xpPct') + tv('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), dropPct: tv('dropPct'),
+      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct') + luckX * LUCK_GOLD,
+      xpPct: sum('xpPct') + tv('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), luckBonus: luckX, dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
-      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck'),
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck') + luckX * LUCK_ITEM,
     };
     if (A.Pacts.val('noDodge', r)) d.dodge = 0;   // Glasknochen (pacts.js)
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
@@ -318,7 +321,7 @@ A.Game = (function () {
   // ---------- Items ----------
   function rollRarity(bonusLuck) {
     const rng = run ? run.rng : A.rng;
-    const luck = (bonusLuck || 0) + (run ? derived().itemLuck : 0);
+    const luck = Math.max(-2, (bonusLuck || 0) + (run ? derived().itemLuck : 0));   // nie unter −2: die Gewichte unten müssen positiv bleiben
     const list = Object.keys(A.RARITY);
     return rng.weighted(list, k => {
       const r = A.RARITY[k];
@@ -330,7 +333,10 @@ A.Game = (function () {
   }
   let itemSeq = 0;
   const STAT_KEYS = ['atk', 'mag', 'def', 'hp', 'spd', 'crit', 'dodge'];
-  function makeItem(base, rarity, floor, forceUnique) {
+  // Einzelstück als gesehen merken: erst, wenn es wirklich vergeben wird (v49). fittingItem würfelt bis zu sechsmal und verwirft; die Verworfenen bleiben im Lauf möglich
+  function markUnique(it) { if (!run || !it || !it.unique) return; run.seenUniques = run.seenUniques || []; if (!run.seenUniques.includes(it.unique)) run.seenUniques.push(it.unique); }
+  // keep: true = der Aufrufer merkt sich das Stück selbst (fittingItem)
+  function makeItem(base, rarity, floor, forceUnique, keep) {
     const rng = run ? run.rng : A.rng;
     const R = A.RARITY[rarity];
     const scale = (1 + 0.18 * (floor - 1)) * R.mult;
@@ -344,7 +350,7 @@ A.Game = (function () {
       it.stats = {};
       for (const k of STAT_KEYS) if (ub[k]) it.stats[k] = Math.round(ub[k] * (k === 'spd' || k === 'crit' || k === 'dodge' ? 1 : scale));
       for (const k of Object.keys(u.stats)) it.stats[k] = (it.stats[k] || 0) + u.stats[k];
-      if (run) { run.seenUniques = run.seenUniques || []; run.seenUniques.push(u.id); }
+      if (!keep) markUnique(it);
       return it;
     }
     rollStats(it, rng);
@@ -454,18 +460,19 @@ A.Game = (function () {
     if (it.trophy && A.TROPHIES[it.trophy]) out.push('★ ' + A.t(A.TROPHIES[it.trophy].text));
     return out;
   }
-  function randomItem(rarity, slotPref) {
+  function randomItem(rarity, slotPref, keep) {
     const rng = run.rng;
     let bases = A.BASES.filter(b => !b.cls || b.cls.includes(run.cls));
     if (slotPref) bases = bases.filter(b => b.slot === slotPref);
-    return makeItem(rng.pick(bases), rarity || rollRarity(), run.floor);
+    return makeItem(rng.pick(bases), rarity || rollRarity(), run.floor, undefined, keep);
   }
   // Dein Build: ab Ebene 3 wird bis zu sechsmal gewürfelt, bis ein Stück passt (Element oder Kraft der stärksten Richtungen, oder Kombo-Magnet)
   function fittingItem(rarity) {
     const w = run.floor >= 3 ? A.Build.wants(run) : null; let it = null;
     rarity = rarity || rollRarity();   // einmal würfeln: das Nachwürfeln darf die Seltenheit (und den Preis) nicht heben
     if (rarity === 'common' && w && w.any) rarity = 'good';   // gewöhnliche Stücke haben kein Element und keine Kraft: mindestens «gut», damit eins passen kann
-    for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
+    for (let i = 0; i < (w && w.any ? 6 : 1); i++) { it = randomItem(rarity, undefined, true); if (!w || !w.any || A.Build.fits(it, run, w)) break; }
+    markUnique(it);   // nur das behaltene Stück gilt als gesehen; Verworfene bleiben im Lauf möglich
     return it;
   }
   function setFocus(dir) { run.focus = dir && A.BUILD_DIRS[dir] ? dir : null; save(); }
