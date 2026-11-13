@@ -448,6 +448,20 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.click('#tClose'); await page.waitForTimeout(200);
   await page.evaluate((h) => { const S = window.__mine.S; S.gear = JSON.parse(h.keep); S.gems = h.keepG; window.__mine.buildPanel(); }, bt);
 
+  // 9j5) Ränge: Punktestand gibt Titel, jeder Rang +10 % Gold und Graben
+  const rk = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, F = m.F, keep = [S.crownsAll, S.rankSeen];
+    S.crownsAll = 0; const r0 = F.rank(S), tap0 = F.pickDmg(5, S), gold0 = F.rockGold(25, S);
+    S.crownsAll = 9; const r9 = F.rank(S); S.crownsAll = 10; const r10 = F.rank(S); S.crownsAll = 60; const r60 = F.rank(S), tap = F.pickDmg(5, S) / tap0, gold = F.rockGold(25, S) / gold0;
+    S.crownsAll = 1e9; const top = F.rank(S);
+    S.crownsAll = 30; S.rankSeen = 1; m.rankCheck(); const banner = m.banners().some(b => b.includes('Neuer Rang')), seen = S.rankSeen;
+    m.showRecords(); const txt = document.getElementById('toast').textContent; document.getElementById('toast').style.display = 'none';
+    S.crownsAll = keep[0]; S.rankSeen = keep[1];
+    return { r0, r9, r10, r60, tap, gold, top, banner, seen, txt };
+  });
+  check(rk.r0 === 0 && rk.r9 === 0 && rk.r10 === 1 && rk.r60 === 3 && rk.top === 9 && near(rk.tap, 1.3) && Math.abs(rk.gold - 1.3) < 0.05, 'Ränge: 10 Kronen = Rang 2, 60 = Rang 4 (+30 % Gold und Graben), höchstens Rang 10');
+  check(rk.banner && rk.seen === 2 && rk.txt.includes('Rang 3: Hauer') && rk.txt.includes('Vorarbeiter'), 'Neuer Rang: Banner einmal, Rekorde zeigen Titel und nächsten Rang');
+
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
   check(fd.n === 0, 'Im Herz des Berges gibt es keine Fundstücke');
