@@ -15,7 +15,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const S = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__mine.S)));
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   // Zufall abschalten (besondere Felsen, Maulwurf), damit die Prüfungen gleich bleiben; eigene Prüfungen weiter unten
-  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; window.__mineTrader.off = true; });
+  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; window.__mineTrader.off = true; window.__mineGear.off = true; });
 
   await page.goto(file); await calm(page); await page.waitForTimeout(600);
   await shot('01-start');
@@ -425,6 +425,28 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.click('#tClose'); await page.waitForTimeout(600);
   await shot('24d-held-am-felsen');
   await page.evaluate((h) => { const S = window.__mine.S; S.hero = JSON.parse(h.keepH); S.gems = h.keepG; window.__mine.buildPanel(); }, hz);
+
+  // 9j4) Beute: Ausrüstung von Bossen, das bessere Stück bleibt, schwächere werden zu einem Stein
+  const bt = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, F = m.F, G = window.__mineGear, keep = JSON.stringify(S.gear), keepG = S.gems;
+    S.gear = {}; const tap0 = F.pickDmg(5, S), dps0 = F.dwarfDps(0, 10, S), gold0 = F.rockGold(25, S);
+    const a = G.give({ k: 'pick', r: 1, v: 15 }), tap = F.pickDmg(5, S) / tap0;
+    const g0 = S.gems, b = G.give({ k: 'pick', r: 0, v: 8 }), melted = S.gems - g0, still = S.gear.pick.v;
+    const c = G.give({ k: 'pick', r: 3, v: 50 }), best = S.gear.pick.v;
+    G.give({ k: 'helm', r: 2, v: 30 }); G.give({ k: 'amu', r: 0, v: 10 });
+    const dps = F.dwarfDps(0, 10, S) / dps0, gold = F.rockGold(25, S) / gold0;
+    let ok = true; const seen = [0, 0, 0, 0];
+    for (let i = 0; i < 3000; i++) { const it = G.roll(i % 2 === 0); seen[it.r]++; const R = G.RARITY[it.r]; if (!(it.v >= R.lo && it.v <= R.hi) || !['pick', 'helm', 'amu'].includes(it.k)) ok = false; }
+    m.showGear();
+    return { a, tap, b, melted, still, c, best, dps, gold, ok, seen, keep, keepG };
+  });
+  check(bt.a && near(bt.tap, 1.15) && !bt.b && bt.melted === 1 && bt.still === 15 && bt.c && bt.best === 50, 'Beute: besseres Stück bleibt (Tippen +15 %), schwächeres wird zu einem Stein');
+  check(near(bt.dps, 1.3) && near(bt.gold, 1.1) && bt.ok && bt.seen.every(n => n > 0) && bt.seen[0] > bt.seen[3], 'Helm stärkt Zwerge, Amulett Gold; Würfel bleibt in den Grenzen, Legendär ist am seltensten');
+  await page.waitForTimeout(300);
+  check((await page.locator('#toast').textContent()).includes('Urgrossvaters Donnerhacke'), 'Ausrüstungs-Fenster zeigt die Stücke');
+  await shot('24e-ausruestung');
+  await page.click('#tClose'); await page.waitForTimeout(200);
+  await page.evaluate((h) => { const S = window.__mine.S; S.gear = JSON.parse(h.keep); S.gems = h.keepG; window.__mine.buildPanel(); }, bt);
 
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
