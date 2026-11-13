@@ -158,7 +158,7 @@ const T = DE ? {
   gemPower: 'Zwergenkraft', gemGold: 'Goldgier', gemCrit: 'Glückstreffer', gemOffline: 'Nachtschicht', gemChest: 'Schatzspürer',
   gemPowerE: 'alles Graben', gemGoldE: 'mehr Gold', gemCritE: 'Volltreffer-Chance', gemOfflineE: 'Gold wenn du weg bist', gemChestE: 'Truhen öfter',
   chestGold: 'Schatztruhe!', chestRage: 'Zwergenwut! ×3', milestone: 'Meilenstein: ×2',
-  streak: 'Tag {n} in Folge!', streakSub: 'Treue-Bonus', daily: 'Heute', daily1: 'Besiege 1 Boss', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
+  streak: 'Tag {n} in Folge!', streakSub: 'Treue-Bonus', daily: 'Heute', daily1: 'Besiege 1 Boss', dailyMole1: 'Erwische 1 Maulwurf', dailyAll: 'Alle Tagesziele geschafft!', dailyNew: 'Neue Tagesziele', dailyBonus: 'Tagesbonus',
   goal: 'Ziele', goalDone: 'Ziel erreicht!', goalsDone: '{n} Ziele erreicht!', bought: 'Gekauft', bigBoss: 'Grossboss!', layer: 'Schicht',
   newMine: 'Neue Mine', heir: 'Erbstücke', move: 'Umziehen', moveFrom: 'Besiege den Grossboss auf Tiefe 50, dann kannst du umziehen und Erbstücke sammeln', no: 'Abbrechen', deeper: 'Je tiefer, desto mehr.',
   newMineInfo: 'Gold, Zwerge, Hacke und Werkzeuge fangen neu an. Steine und Ziele bleiben.',
@@ -209,7 +209,7 @@ const T = DE ? {
   gemPower: 'Dwarf Power', gemGold: 'Gold Greed', gemCrit: 'Lucky Strike', gemOffline: 'Night Shift', gemChest: 'Treasure Sense',
   gemPowerE: 'all digging', gemGoldE: 'more gold', gemCritE: 'critical chance', gemOfflineE: 'gold while away', gemChestE: 'chests more often',
   chestGold: 'Treasure chest!', chestRage: 'Dwarf rage! ×3', milestone: 'Milestone: ×2',
-  streak: 'Day {n} in a row!', streakSub: 'Loyalty bonus', daily: 'Today', daily1: 'Beat 1 boss', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
+  streak: 'Day {n} in a row!', streakSub: 'Loyalty bonus', daily: 'Today', daily1: 'Beat 1 boss', dailyMole1: 'Catch 1 mole', dailyAll: 'All daily goals done!', dailyNew: 'New daily goals', dailyBonus: 'Daily bonus',
   goal: 'Goals', goalDone: 'Goal reached!', goalsDone: '{n} goals reached!', bought: 'Bought', bigBoss: 'Big boss!', layer: 'Layer',
   newMine: 'New Mine', heir: 'Heirlooms', move: 'Move', moveFrom: 'Beat the big boss at depth 50, then you can move and collect heirlooms', no: 'Cancel', deeper: 'Deeper means more.',
   newMineInfo: 'Gold, dwarves, pickaxe and tools start over. Gems and goals stay.',
@@ -452,6 +452,7 @@ const DAILY_POOL = [
   { type: 'boss',  n: [1, 3, 6],        gems: [2, 3, 5] },
   { type: 'dw',    n: [5, 12, 30],      gems: [2, 3, 5] },
   { type: 'chest', n: [2, 5, 12],       gems: [2, 3, 5] },
+  { type: 'mole',  n: [1, 2, 3],        gems: [2, 3, 5] },
 ];
 
 // ---------- Ringe: nach 14 Schichten geht es mit neuen Farben weiter ----------
@@ -624,7 +625,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 19;
+const VERSION = 20;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -2272,8 +2273,8 @@ document.getElementById('tipOk').addEventListener('click', hideTip);
 
 // ---------- Tagesziele: drei kleine Ziele je Kalendertag ----------
 function dayKey() { const d = new Date(), z = (n) => (n < 10 ? '0' : '') + n; return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
-function dailyCount(type) { return { taps: S.taps, boss: S.st.bosses, dw: S.dw.reduce((a, b) => a + b, 0), chest: S.st.chests }[type] || 0; }
-function dailyName(g) { return g.type === 'boss' && g.n === 1 ? T.daily1 : T.goals[g.type].replace('{n}', g.n); }
+function dailyCount(type) { return { taps: S.taps, boss: S.st.bosses, dw: S.dw.reduce((a, b) => a + b, 0), chest: S.st.chests, mole: S.st.moles }[type] || 0; }
+function dailyName(g) { return g.type === 'boss' && g.n === 1 ? T.daily1 : g.type === 'mole' && g.n === 1 ? T.dailyMole1 : T.goals[g.type].replace('{n}', g.n); }
 // Neuer Tag nur bei einem grösseren Schlüssel: Uhr zurückstellen würfelt nicht neu
 function ensureDaily() {
   const key = dayKey();

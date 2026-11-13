@@ -585,9 +585,9 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await shot('31-tagesziele');
   const dy = await page.evaluate(() => {
     const m = window.__mine, S = m.S, n = S.daily.goals.length;
-    S.daily.done = {}; S.daily.bonus = false; S.daily.base = { taps: S.taps, boss: S.st.bosses, chest: S.st.chests, dw: S.dw.reduce((a, b) => a + b, 0) }; m.checkDaily(); const g0 = S.gems, early = Object.keys(S.daily.done).length;
-    for (const g of S.daily.goals) { if (g.type === 'taps') S.taps += g.n; if (g.type === 'boss') S.st.bosses += g.n; if (g.type === 'chest') S.st.chests += g.n; if (g.type === 'dw') S.dw[0] += g.n; }
-    m.checkDaily(); const sum = S.daily.goals.reduce((a, g) => a + g.gems, 0);
+    S.daily.done = {}; S.daily.bonus = false; const moles0 = S.st.moles; S.daily.base = { taps: S.taps, boss: S.st.bosses, chest: S.st.chests, mole: S.st.moles, dw: S.dw.reduce((a, b) => a + b, 0) }; m.checkDaily(); const g0 = S.gems, early = Object.keys(S.daily.done).length;
+    for (const g of S.daily.goals) { if (g.type === 'taps') S.taps += g.n; if (g.type === 'boss') S.st.bosses += g.n; if (g.type === 'chest') S.st.chests += g.n; if (g.type === 'dw') S.dw[0] += g.n; if (g.type === 'mole') S.st.moles += g.n; }
+    m.checkDaily(); S.st.moles = moles0; const sum = S.daily.goals.reduce((a, g) => a + g.gems, 0);
     const got = S.gems - g0, bonus = S.daily.bonus;
     m.checkDaily(); const twice = S.gems - g0;
     const day = S.daily.day; S.daily.day = '2000-01-01'; m.ensureDaily(); const rolled = S.daily.day === day && Object.keys(S.daily.done).length === 0;
@@ -599,6 +599,11 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
     return { n, early, got, sum, ok: early === 0 && got === sum + 5 && bonus, twice: twice === got, rolled, noBack, dwp, startDw };
   });
   check(dy.n === 3 && dy.ok && dy.twice, 'Tagesziele geben Steine, alle drei +5 extra, nur einmal');
+  const dm = await page.evaluate(() => { const m = window.__mine, S = m.S, keep = JSON.stringify(S.daily), k = S.st.moles;
+    S.daily.goals = [{ id: 'mole1', type: 'mole', n: 1, gems: 2 }]; S.daily.base = { mole: k }; S.daily.done = {}; const p0 = m.dailyProgress(S.daily.goals[0]);
+    S.st.moles = k + 1; const p1 = m.dailyProgress(S.daily.goals[0]); document.querySelector('[data-tab="goal"]').click(); const txt = document.getElementById('panel').textContent.includes('Erwische 1 Maulwurf');
+    S.st.moles = k; S.daily = JSON.parse(keep); m.buildPanel(); return { p0, p1, txt }; });
+  check(dm.p0 === 0 && dm.p1 === 1 && dm.txt, 'Tagesziel «Erwische 1 Maulwurf» zählt erwischte Maulwürfe');
   check(dy.rolled && dy.noBack, 'Neuer Tag würfelt neue Tagesziele, Uhr zurück nicht');
   check(dy.startDw === 20 && dy.dwp === 0, 'Gilde-Startzwerge zählen nicht fürs Zwerge-Tagesziel');
   await page.click('[data-tab="pick"]'); await page.waitForTimeout(200);
