@@ -510,11 +510,23 @@ const TM = DE ? {
   caught: 'Erwischt!', caughtSub: 'Sack doppelt zurück',
   gone: 'Weg ist er.', goneSub: 'Mit {n} Gold. Frech.', tap: 'Antippen!',
   tip: 'Ein Maulwurf! Tipp ihn an, bevor er im Loch ist, dann gibt er das Gold doppelt zurück.',
+  petRow: 'Maulwurf Mauli', petRowNo: 'Maulwurf zähmen', petNo: 'Erwische {n} Maulwürfe, dann wechselt einer die Seite ({a} / {n})',
+  petEff: 'Bringt alle {s} s einen Sack mit <b>{g}</b> Gold', petNext: 'nächste Stufe: noch {n} erwischen', petMax: 'höchste Stufe',
+  petNew: 'Ein Maulwurf wechselt die Seite!', petNewSub: 'Mauli bringt dir ab jetzt Gold', petUp: 'Mauli ist jetzt Stufe {n}', petUpSub: 'Seine Säcke werden dicker',
+  petTitle: 'Mauli', petText: 'Du hast so viele seiner Vettern erwischt, dass er sich lieber gleich bei dir gemeldet hat. Er trägt jetzt einen Helm und nennt das «Karriere».',
+  petTextNo: 'Maulwürfe klauen Gold. Wer genug von ihnen erwischt, bekommt irgendwann einen, der lieber für die Mine arbeitet.',
+  petSay: ['Lieferung!', 'Ehrlich verdient. Fast.', 'Frag nicht, woher.', 'Für die Mine!'],
 } : {
   steal: 'A mole is stealing gold!', stealSub: 'Tap him before he\'s gone',
   caught: 'Caught!', caughtSub: 'Sack back, doubled',
   gone: 'And he\'s gone.', goneSub: 'With {n} gold. Cheeky.', tap: 'Tap!',
   tip: 'A mole! Tap him before he reaches the hole and he returns the gold, doubled.',
+  petRow: 'Mauli the mole', petRowNo: 'Tame a mole', petNo: 'Catch {n} moles and one will switch sides ({a} / {n})',
+  petEff: 'Brings a sack with <b>{g}</b> gold every {s} s', petNext: 'next level: catch {n} more', petMax: 'top level',
+  petNew: 'A mole switches sides!', petNewSub: 'Mauli brings you gold from now on', petUp: 'Mauli is now level {n}', petUpSub: 'His sacks get fatter',
+  petTitle: 'Mauli', petText: 'You caught so many of his cousins that he decided to report for duty himself. He wears a helmet now and calls it “a career”.',
+  petTextNo: 'Moles steal gold. Catch enough of them and sooner or later one would rather work for the mine.',
+  petSay: ['Delivery!', 'Honestly earned. Almost.', 'Don\'t ask where from.', 'For the mine!'],
 };
 
 // Kobold-Krämer (seltener Besuch mit einem Handel)
@@ -605,7 +617,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 17;
+const VERSION = 18;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -616,6 +628,7 @@ const NEWS = DE ? [
   [13, '🎖', 'Ränge: dein Punktestand gibt Titel und Bonus'],
   [14, '🌠', 'Neuer Block: der Sternenschacht (100 Kronen)'],
   [16, '🔨', 'Schmiede für Ausrüstung und Treue-Bonus für jeden Tag in Folge'],
+  [18, '🐾', 'Mauli: erwische 5 Maulwürfe, dann arbeitet einer für dich'],
 ] : [
   [7, '⛏️', 'Special rocks, the cheeky mole and 42 finds'],
   [8, '🧊', 'Glacier, Grotto and the crown shop (map “Your Realm”)'],
@@ -626,6 +639,7 @@ const NEWS = DE ? [
   [13, '🎖', 'Ranks: your score gives titles and a bonus'],
   [14, '🌠', 'New block: the Star Shaft (100 crowns)'],
   [16, '🔨', 'Forge for gear and a loyalty bonus for every day in a row'],
+  [18, '🐾', 'Mauli: catch 5 moles and one will work for you'],
 ];
 const TN = DE ? { title: 'Was ist neu?', ok: 'Los geht\'s' } : { title: 'What\'s new?', ok: 'Let\'s go' };
 
@@ -1207,10 +1221,11 @@ function moleStep(dt) {
 function catchMole() {
   if (!mole || !mole.out) return;
   const gain = mole.sack * 2;
-  S.gold += gain; S.st.moles++;
+  const lv0 = petLv(); S.gold += gain; S.st.moles++; const lv1 = petLv();
   for (let i = 0; i < 8; i++) coins.push({ x: mole.x, y: mole.y, t: -i * 0.03, sx: 0, sy: 0 });
   for (let i = 0; i < 16; i++) chips.push(chip(mole.x, mole.y - 10, CONFETTI[i % CONFETTI.length]));
   showBanner({ text: TM.caught, sub: '+' + fmt(gain) + ' · ' + TM.caughtSub, life: 2, color: '#6fdc7a', coin: true });
+  if (lv1 > lv0) { showBanner(lv1 === 1 ? { text: '🐾 ' + TM.petNew, sub: TM.petNewSub, life: 3, color: '#f5c542' } : { text: '🐾 ' + TM.petUp.replace('{n}', lv1), sub: TM.petUpSub, life: 2.4, color: '#f5c542' }); if (tab === 'dwarf') buildPanel(); }
   sfx.chest();
   mole.out = false; mole.seen = true; mole.ph = 'back'; mole.k = 1; mole.hole = mole.x;   // Loch dort, wo er erwischt wurde
   refreshPanel(true); save();
@@ -1250,6 +1265,52 @@ function drawMole(t) {
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.strokeText(TM.tap, x, ay - 2); ctx.fillText(TM.tap, x, ay - 2);
   }
 }
+// Mauli, der zahme Maulwurf: ab 5 erwischten Maulwürfen bringt einer regelmässig einen Sack Gold
+const PET_FIRST = 5, PET_STEP = 5, PET_MAX = 10, PET_EVERY = 40;
+const petLv = () => { const n = (S.st && S.st.moles) || 0; return n < PET_FIRST ? 0 : Math.min(PET_MAX, 1 + Math.floor((n - PET_FIRST) / PET_STEP)); };
+const petGold = (lv) => Math.ceil(F.rockGold(S.depth, S) * (2 + lv));
+let pet = null, petTimer = PET_EVERY;
+function petGive() {
+  const lv = petLv(); if (!lv) return 0;
+  const g = petGold(lv), x = CW * 0.5, y = moleY();
+  S.gold += g; pet = { x, y, k: 0, t: 0 };
+  floats.push({ x, y: y - 40, text: '+' + fmt(g), life: 1.4, color: '#f5c542' });
+  floats.push({ x, y: y - 62, text: TM.petSay[Math.floor(Math.random() * TM.petSay.length)], life: 1.6, color: '#f3ead8' });
+  for (let i = 0; i < 5; i++) coins.push({ x, y, t: -i * 0.04, sx: 0, sy: 0 });
+  return g;
+}
+function petStep(dt) {
+  if (pet) { pet.t += dt; pet.k = pet.t < 0.4 ? pet.t / 0.4 : pet.t > 1.6 ? Math.max(0, 1 - (pet.t - 1.6) / 0.4) : 1; if (pet.t > 2) pet = null; }
+  if (window.__minePet.off || !petLv()) return;
+  petTimer -= dt;
+  if (petTimer <= 0 && !mole && !bossActive) { petTimer = PET_EVERY; petGive(); }
+}
+function drawPet(t) {
+  if (!pet) return;
+  const { x, y } = pet;
+  ctx.fillStyle = '#1a0f0a'; ctx.beginPath(); ctx.ellipse(x, y + 6, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x - 40, y - 70, 80, 76); ctx.clip();
+  ctx.translate(x, y + (1 - pet.k) * 34);
+  ctx.fillStyle = '#5a3a24'; roundRect(-14, -12, 28, 18, 8); ctx.fill();   // Körper
+  ctx.fillStyle = '#f5c542'; ctx.beginPath(); ctx.arc(0, -11, 11, Math.PI, 0); ctx.fill(); ctx.fillRect(-13, -12, 26, 3);   // Helm
+  ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.arc(0, -17, 3, 0, Math.PI * 2); ctx.fill();   // Helmlampe
+  ctx.fillStyle = '#f09ab0'; ctx.beginPath(); ctx.arc(0, -1, 4, 0, Math.PI * 2); ctx.fill();   // Nase
+  for (const ex of [-6, 6]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex, -6, 3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(ex, -6, 1.5, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = '#c9a54a'; ctx.beginPath(); ctx.arc(20, -4 + Math.sin(t * 6) * 1.5, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(17, -14 + Math.sin(t * 6) * 1.5, 6, 4);   // Sack
+  ctx.restore();
+}
+function showPet() {
+  const lv = petLv(), n = S.st.moles;
+  const left = PET_FIRST + lv * PET_STEP - n;
+  popup(`<div style="font-weight:900;font-size:18px">🐾 ${lv ? TM.petTitle + ' · Lv ' + lv : TM.petRowNo}</div>
+    <div class="small" style="font-style:italic;max-width:280px">${lv ? TM.petText : TM.petTextNo}</div>
+    <div style="max-width:280px;margin-top:4px">${lv ? TM.petEff.replace('{s}', PET_EVERY).replace('{g}', fmt(petGold(lv))) : TM.petNo.replace(/\{n\}/g, PET_FIRST).replace('{a}', n)}</div>
+    ${lv ? `<div class="small">${lv >= PET_MAX ? TM.petMax : TM.petNext.replace('{n}', left)}</div>` : ''}
+    <button id="tClose">OK</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+}
+window.__minePet = { off: false, give: petGive, get lv() { return petLv(); }, get pet() { return pet; }, show: showPet };
 window.__mineMole = { spawn: spawnMole, get mole() { return mole; }, catch: catchMole, off: false };
 
 // ---------- Zwergen-Sprüche ----------
@@ -1999,6 +2060,7 @@ function buildPanel() {
     ups.forEach((u) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(UP_EMOJI[u.key])), kind: 'up', key: u.key })));
   } else if (tab === 'dwarf') {
     if (S.best >= HEROES[0].unlock || heroCount()) rows.push(makeRow({ icon: iconCanvas(emojiIcon('🦸')), kind: 'heroes' }));
+    if (S.st.moles > 0) rows.push(makeRow({ icon: iconCanvas(emojiIcon('🐾')), kind: 'pet' }));
     DWARVES.forEach((d, i) => rows.push(makeRow({ icon: iconCanvas(dwarfIcon(i)), kind: 'dwarf', i })));
   } else if (tab === 'gem') {
     GEM_UPS.forEach((u) => rows.push(makeRow({ icon: iconCanvas(gemIcon(u.key)), kind: 'gem', key: u.key })));
@@ -2059,6 +2121,10 @@ function rowData(r) {
   if (r.kind === 'gear') {
     const parts = GEAR_SLOTS.filter(g => S.gear[g.k]).map(g => `<b style="color:${RARITY[S.gear[g.k].r].col}">${g.icon} +${S.gear[g.k].v} %</b>`);
     return { name: TG.title, lvl: gearCount() + ' / 3', eff: parts.length ? parts.join(' · ') : TG.empty, cost: 0, cur: 'rec', locked: false, rec: true };
+  }
+  if (r.kind === 'pet') {
+    const lv = petLv();
+    return { name: lv ? TM.petRow : TM.petRowNo, lvl: lv ? 'Lv ' + lv : '', eff: lv ? TM.petEff.replace('{s}', PET_EVERY).replace('{g}', fmt(petGold(lv))) : TM.petNo.replace(/\{n\}/g, PET_FIRST).replace('{a}', S.st.moles), cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'heroes') {
     const on = S.hero.on;
@@ -2126,6 +2192,7 @@ function buy(r) {
   if (r.kind === 'rec') { showRecords(); return; }
   if (r.kind === 'finds') { showFinds(); return; }
   if (r.kind === 'heroes') { showHeroes(); return; }
+  if (r.kind === 'pet') { showPet(); return; }
   if (r.kind === 'gear') { showGear(); return; }
   if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
@@ -2653,7 +2720,7 @@ function frame(now) {
   drawStern(t); starFlash = Math.max(0, starFlash - dt * 4);
   drawHero(t);
   drawPlayerPick();
-  drawChest(t); moleStep(dt); drawMole(t);
+  drawChest(t); moleStep(dt); drawMole(t); petStep(dt); drawPet(t);
   quoteStep(dt);
   drawFx(dt);
   drawQuote(t);   // Sprechblase über den fliegenden Münzen, damit der Text lesbar bleibt

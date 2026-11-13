@@ -15,7 +15,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const S = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__mine.S)));
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   // Zufall abschalten (besondere Felsen, Maulwurf), damit die Prüfungen gleich bleiben; eigene Prüfungen weiter unten
-  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; window.__mineTrader.off = true; window.__mineGear.off = true; });
+  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; window.__mineTrader.off = true; window.__mineGear.off = true; window.__minePet.off = true; });
 
   await page.goto(file); await calm(page); await page.waitForTimeout(600);
   await shot('01-start');
@@ -387,6 +387,25 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.waitForTimeout(300); await shot('24-maulwurf');
   const mc = await page.evaluate(() => { const m = window.__mine, x = window.__mineMole, g = m.S.gold, sack = x.mole.sack; x.catch(); return { back: Math.abs(m.S.gold - g - 2 * sack) < 1, moles: m.S.st.moles }; });
   check(mc.back && mc.moles === 1, 'Maulwurf erwischt: Sack doppelt zurück');
+
+  // 9j1) Mauli: ab 5 erwischten Maulwürfen arbeitet einer für die Mine
+  const pt = await page.evaluate(async () => {
+    const m = window.__mine, x = window.__mineMole, p = window.__minePet; const keep = m.S.st.moles;
+    await new Promise(r => setTimeout(r, 700));
+    m.S.st.moles = 3; const lv0 = p.lv, none = p.give();
+    m.S.st.moles = 4; m.S.gold = 1e6; x.spawn(); await new Promise(r => setTimeout(r, 900)); x.catch();
+    const lv1 = p.lv, ban = m.banners().join('|'), g = m.S.gold, got = p.give(), up = m.S.gold - g, shown = !!p.pet;
+    m.S.st.moles = 9; x.mole && 0; const lv9 = p.lv; m.S.st.moles = 10; const lv10 = p.lv; m.S.st.moles = 999; const lvMax = p.lv;
+    m.S.st.moles = 5; document.querySelector('[data-tab="dwarf"]').click();
+    const row = document.getElementById('panel').textContent.includes('Mauli');
+    return { lv0, none, lv1, ban, got, up, shown, lv9, lv10, lvMax, row, keep };
+  });
+  check(pt.lv0 === 0 && pt.none === 0 && pt.lv1 === 1 && pt.ban.includes('wechselt die Seite'), 'Mauli: der fünfte erwischte Maulwurf wechselt die Seite');
+  check(pt.got > 0 && Math.abs(pt.up - pt.got) < 1 && pt.shown, `Mauli bringt einen Sack Gold (${pt.got})`);
+  check(pt.lv9 === 1 && pt.lv10 === 2 && pt.lvMax === 10 && pt.row, 'Mauli: Stufe steigt alle 5 Maulwürfe bis 10, Zeile im Reiter «Zwerge»');
+  await page.waitForTimeout(500); await shot('24a-mauli');
+  await page.evaluate(() => { window.__minePet.show(); }); await page.waitForTimeout(200); await shot('24a2-mauli-fenster');
+  await page.evaluate((k) => { document.getElementById('tClose').click(); window.__mine.S.st.moles = k + 1; }, pt.keep);
 
   // 9j2) Kobold-Krämer: Steine gegen Gold, Bier, Würfel; Verjagen lässt Münzen fallen
   const kb = await page.evaluate(() => {
