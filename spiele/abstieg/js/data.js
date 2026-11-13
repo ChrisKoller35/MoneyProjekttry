@@ -886,7 +886,7 @@ A.EVENTS = [
     ] },
   { id: 'statue', title: { de: 'Die Statue', en: 'The Statue' }, text: { de: 'Eine Statue mit ausgestreckter Hand. Die Hand will etwas.', en: 'A statue with an outstretched hand. The hand wants something.' },
     choices: [
-      { text: { de: '30 Gold geben', en: 'Give 30 gold' }, outcomes: [{ p: 1, gold: -30, stat: 'luck', msg: { de: 'Die Statue zwinkert. +1 Glück.', en: 'The statue winks. +1 luck.' } }] },
+      { text: { de: 'Gold geben', en: 'Give gold' }, needGold: 30, outcomes: [{ p: 1, gold: -30, stat: 'luck', msg: { de: 'Die Statue zwinkert. +1 Glück.', en: 'The statue winks. +1 luck.' } }] },
       { text: { de: 'Hand abbrechen', en: 'Break the hand off' }, outcomes: [{ p: 0.5, item: 'rare', msg: { de: 'In der Hand steckte etwas.', en: 'Something was inside the hand.' } }, { p: 0.5, dmg: 0.3, msg: { de: 'Die Statue schlägt zurück. −30 % Leben.', en: 'The statue hits back. −30% health.' } }] },
       { text: { de: 'Ignorieren', en: 'Ignore it' }, outcomes: [{ p: 1, msg: { de: 'Die Hand bleibt leer. Wie dein Herz.', en: 'The hand stays empty. Like your heart.' } }] },
     ] },
