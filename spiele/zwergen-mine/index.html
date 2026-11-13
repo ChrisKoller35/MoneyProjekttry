@@ -283,6 +283,7 @@ const QUOTES = DE ? {
   deep: ['Hört ihr das auch? Dieses Pochen?', 'Hier unten hab ich keinen Empfang.', 'Noch tiefer, und wir sind in Australien.'],
   many: ['Hundert Zwerge, ein Klo.', 'Hinten anstellen, ich war zuerst.', 'Wer hat meinen Helm?'],
   rich: ['Kauf doch mal was. Uns zum Beispiel.', 'Das Gold liegt nur rum. Skandal.', 'Ich kenne einen, der günstig gräbt. Mich.'],
+  pet: ['Der Maulwurf verdient mehr als ich.', 'Seit wann hat DER einen Helm?', 'Zählt mal nach. Ich trau ihm nicht.'],
   plain: ['Steine. Wieder Steine. Überraschung.', 'Graben ist meditativ. Sagt niemand.', 'Wer zuletzt hackt, zahlt die Runde.'],
 } : {
   mole: ['There! The sack! Stop him!', 'That was my pay, you fur sock!', 'Told you: we need a cat.'],
@@ -293,6 +294,7 @@ const QUOTES = DE ? {
   deep: ['Do you hear that too? That knocking?', 'No signal down here.', 'Any deeper and we come out in Australia.'],
   many: ['A hundred dwarves, one toilet.', 'Back of the line, I was first.', 'Who took my helmet?'],
   rich: ['Buy something. Us, for example.', 'The gold just lies around. Scandal.', 'I know someone who digs cheap. Me.'],
+  pet: ['The mole earns more than I do.', 'Since when does HE get a helmet?', 'Count it again. I don\'t trust him.'],
   plain: ['Rocks. More rocks. Surprise.', 'Digging is meditative. Said nobody.', 'Last one to swing buys the round.'],
 };
 
@@ -625,7 +627,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 21;
+const VERSION = 22;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -1287,6 +1289,7 @@ function petGive() {
   floats.push({ x, y: y - 40, text: '+' + fmt(g), life: 1.4, color: '#f5c542' });
   floats.push({ x, y: y - 62, text: TM.petSay[Math.floor(Math.random() * TM.petSay.length)], life: 1.6, color: '#f3ead8' });
   for (let i = 0; i < 5; i++) coins.push({ x, y, t: -i * 0.04, sx: 0, sy: 0 });
+  if (!window.__mineQuote.off && !quote && Math.random() < 0.35) sayQuote('pet');   // die Zwerge haben eine Meinung zu Mauli
   return g;
 }
 function petStep(dt) {
