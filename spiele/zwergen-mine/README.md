@@ -68,6 +68,7 @@ Objekt `Portal` oben im Code: `gameplayStart`, `gameplayStop`, `happytime` (Boss
 - `portal/crazygames-adapter.js` setzt `window.ZwergenMinePortal` auf das CrazyGames-SDK (Version 3): Spielbeginn und Pause, «happytime», freiwillige Werbung mit Belohnung nur nach ganz gesehener Werbung.
 - `node portal/build-crazygames.js` schreibt die fertige Datei nach `portal/dist/crazygames/index.html` (SDK und Adapter vor dem Spiel eingefügt). `dist` wird nicht ins Repo gelegt.
 - Während Werbung läuft, schickt der Adapter `zm-ad-start` und `zm-ad-end`; das Spiel pausiert, ist stumm und läuft danach weiter (im Test geprüft).
+- `node portal/cover.js <ordner>` erzeugt die Titelbilder (1920×1080, 800×1200, 800×800) und fünf Bildschirmfotos aus dem Spiel selbst. Schritt für Schritt für Christoph: `portal/EINREICHEN.md`.
 - **Noch nicht geprüft:** der Adapter ist nach der SDK-Beschreibung geschrieben, aber nicht auf dem echten Portal gelaufen. Vor dem Einreichen im CrazyGames-Prüfwerkzeug («QA Tool») testen. Rangliste (`submitScore`) hat bei CrazyGames kein Gegenstück und tut dort nichts.
 
 ## Formeln
@@ -82,8 +83,10 @@ Zwischen `FORMELN_START` und `FORMELN_ENDE` im Code.
 
 ## Beschreibung für Portale
 
-**Deutsch:** Grab dich durch die Erde! Hacke Felsen, heuere Zwerge an, sprenge Grossbosse mit Dynamit und zieh mit Erbstücken in immer tiefere Minen. Wie tief kommst du?
+**Deutsch:** Grab dich durch die Erde! Hacke Felsen, heuere Zwerge an, sprenge Grossbosse mit Dynamit und zieh mit Erbstücken in immer tiefere Minen. Fünf Welten vom Alten Berg über Vulkan, Gletscher und Grotte bis in den Sternenschacht. Sammle Helden-Zwerge, Beute von Bossen und 42 Fundstücke, feilsche mit dem Kobold-Krämer und steig im Rang auf. Deine Zwerge graben weiter, auch wenn du weg bist. Wie tief kommst du?
 
-**English:** Dig your way down! Smash rocks, hire dwarves, blast big bosses with dynamite and move to ever deeper mines with your heirlooms. How deep can you go?
+**English:** Dig your way down! Smash rocks, hire dwarves, blast big bosses with dynamite and move to ever deeper mines with your heirlooms. Five worlds, from the Old Mountain through Volcano, Glacier and Grotto to the Star Shaft. Collect hero dwarves, boss loot and 42 finds, haggle with the goblin peddler and climb the ranks. Your dwarves keep digging while you are away. How deep can you go?
+
+**Steuerung / Controls:** Tippen oder klicken auf den Felsen; am PC auch Leertaste, D für Dynamit, B für Bier. / Tap or click the rock; on desktop also Space, D for dynamite, B for beer.
 
 Schlagwörter: idle, clicker, mining, dwarves, incremental, prestige, casual
