@@ -2494,7 +2494,9 @@ A.Game = (function () {
 
   // ---------- Abgeleitete Werte ----------
   // Glück (v49): je Punkt über dem Startwert +4 % Gold und +0.5 Beute-Glück (Seltenheit und Drop-Chance, siehe rollRarity und killReward)
-  const LUCK_GOLD = 4, LUCK_ITEM = 0.5;
+  // Es zählen höchstens LUCK_MAX Punkte: sonst bekäme der Braumeister mit «Automatisch» bis +120 % Gold, und wer alle Statpunkte auf Glück setzt, noch mehr
+  const LUCK_GOLD = 4, LUCK_ITEM = 0.5, LUCK_MAX = 6;
+  const luckEff = (x) => Math.max(-LUCK_MAX, Math.min(LUCK_MAX, x || 0));   // wirksamer Glücks-Bonus (Heldenblatt zeigt beides)
   function gearList() { return A.SLOTS.map(s => run.gear[s]).filter(Boolean); }
   function derived(r) {
     r = r || run;
@@ -2502,7 +2504,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const cls = A.CLASSES.find(x => x.id === r.cls), luckX = s.luck - race.base.luck - (cls ? cls.base.luck : 0) + sum('luck');   // Glück über dem Startwert: Ausrüstung, Statpunkte, Statue, Brunnen
+    const cls = A.CLASSES.find(x => x.id === r.cls), luckX = s.luck - race.base.luck - (cls ? cls.base.luck : 0) + sum('luck'), luckE = luckEff(luckX);   // Glück über dem Startwert: Ausrüstung, Statpunkte, Statue, Wunschbrunnen, Spiegel
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, dm = (A.dailyOf(r) || {}).p || {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0) + (+dm[k] || 0);   // om: Regel des Gönners (v43); dm: Dreh der Tageswelt (v45)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
@@ -2515,11 +2517,11 @@ A.Game = (function () {
       crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit') + me.crit),
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
-      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct') + luckX * LUCK_GOLD,
+      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct') + luckE * LUCK_GOLD,
       xpPct: sum('xpPct') + tv('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), luckBonus: luckX, dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
-      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck') + luckX * LUCK_ITEM,
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck') + luckE * LUCK_ITEM,
     };
     if (A.Pacts.val('noDodge', r)) d.dodge = 0;   // Glasknochen (pacts.js)
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
@@ -3026,7 +3028,7 @@ A.Game = (function () {
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, luckEff, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();
 
@@ -15052,7 +15054,7 @@ window.A = window.A || {};
     if (e.gearA) out.push(L('Startrüstung gut (grün)', 'Good starting armor (green)'));
     if (e.gearHB) out.push(L('Guter Helm und gute Stiefel zum Start', 'Good helm and boots at the start'));
     if (e.shopOff) out.push(L(`Händler ${p(e.shopOff)} % billiger`, `Merchants ${p(e.shopOff)}% cheaper`));
-    if (e.itemLuck) out.push(L(`Bessere Beute (+${e.itemLuck} Glück)`, `Better loot (+${e.itemLuck} luck)`));
+    if (e.itemLuck) out.push(L(`Bessere Beute (+${e.itemLuck} Beute-Glück)`, `Better loot (+${e.itemLuck} loot luck)`));
     if (e.startBoon) out.push(e.startBoon > 1 ? L(`Start mit ${e.startBoon} Segen vom Schrein`, `Start with ${e.startBoon} shrine blessings`) : L('Start mit einem Segen vom Schrein', 'Start with a shrine blessing'));
     if (e.def) out.push(L(`+${e.def} Rüstung`, `+${e.def} armor`));
     if (e.crit) out.push(L(`+${e.crit} % Volltreffer`, `+${e.crit}% crit`));
@@ -15676,7 +15678,8 @@ window.A = window.A || {};
     const head = `<div class="sheethead"><img class="px" src="${Art.heroUrl(r.race, r.cls, 3)}" width="54" height="54" alt=""><div><div class="nm">${esc(t(cls.name))}</div><div class="mini">${esc(t(race.name))} · ${t(U.level)} ${r.level} · ${t(U.floor)} ${r.floor}</div>${buildLine(r, d)}</div></div>`;
     const statsHtml = ['str', 'tou', 'dex', 'mind', 'luck'].map(k => `<div class="stat"><span>${ic(STAT_ICON[k], 22)}${t(U.stat[k])}</span><span><b>${r.stats[k]}</b>${r.points > 0 ? `<button data-sp="${k}" aria-label="+">+</button>` : ''}</span></div>`).join('');
     const kv = `<div class="kv" style="margin-top:12px"><span>${t(U.hp)} <b>${d.maxHp}</b></span><span>${t(U.derived.atk)} <b>${d.atk}</b></span><span>${t(U.derived.mag)} <b>${d.mag}</b></span><span>${t(U.derived.def)} <b>${d.def}</b></span><span>${t(U.derived.spd)} <b>${d.spd}</b></span><span>${t(U.derived.crit)} <b>${d.crit} %</b></span><span>${t(U.derived.dodge)} <b>${d.dodge} %</b></span><span>${t(U.xp)} <b>${r.xp}/${G.xpNeed(r.level)}</b></span></div>`;
-    const luckHtml = d.luckBonus ? `<div class="mini" style="margin-top:6px">${ic('u_star', 16)} ${t(U.stat.luck)} ${d.luckBonus > 0 ? '+' : '−'}${Math.abs(d.luckBonus)}: ${L(`${d.luckBonus > 0 ? '+' : '−'}${Math.abs(d.luckBonus * 4)} % Gold, ${d.luckBonus > 0 ? 'bessere' : 'schlechtere'} Beute`, `${d.luckBonus > 0 ? '+' : '−'}${Math.abs(d.luckBonus * 4)}% gold, ${d.luckBonus > 0 ? 'better' : 'worse'} loot`)}</div>` : '';   // Glück über dem Startwert (v49)
+    const lb = d.luckBonus || 0, le = G.luckEff(lb), sg = (x) => (x > 0 ? '+' : '−') + Math.abs(x);   // Glück über dem Startwert (v49); es zählen höchstens 6 Punkte
+    const luckHtml = lb ? `<div class="mini" style="margin-top:6px">${ic('u_star', 16)} ${t(U.stat.luck)} ${sg(lb)}: ${L(`${sg(le * 4)} % Gold, ${le > 0 ? 'bessere' : 'schlechtere'} Beute${le !== lb ? ` (zählt bis ${sg(le)})` : ''}`, `${sg(le * 4)}% gold, ${le > 0 ? 'better' : 'worse'} loot${le !== lb ? ` (counts up to ${sg(le)})` : ''}`)}</div>` : '';
     const quest = r.quest ? `<div class="q">${ic('u_scroll', 22)}<span><b>${t(U.quest)}:</b> ${esc(t(r.quest.text))} <b class="${r.questDone ? 'up' : 'goldc'}">${r.questDone ? L('erfüllt', 'done') : Math.min(r.questProg || 0, r.quest.n) + '/' + r.quest.n}</b></span></div>` : '';
     const gear = buildHtml(r) + A.SLOTS.map(s => { const it = r.gear[s]; return it ? itemHtml(it) : emptySlot(s); }).join('');
     const bag = r.bag.length ? `<div class="mini" style="margin:-4px 0 8px">${L('Antippen: Vergleich mit dem, was du trägst.', 'Tap: compare with what you wear.')}</div>` + r.bag.map(it => itemHtml(it, `<button class="primary" data-eq="${it.uid}">${t(U.equip)}</button><button data-sell="${it.uid}">${coin(G.sellValue(it))}</button>`, vChip(it), 'tap', `data-cmp="${it.uid}"`)).join('') : `<div class="mini">${L('Leer.', 'Empty.')}</div>`;

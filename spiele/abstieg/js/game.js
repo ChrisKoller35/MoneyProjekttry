@@ -229,7 +229,9 @@ A.Game = (function () {
 
   // ---------- Abgeleitete Werte ----------
   // Glück (v49): je Punkt über dem Startwert +4 % Gold und +0.5 Beute-Glück (Seltenheit und Drop-Chance, siehe rollRarity und killReward)
-  const LUCK_GOLD = 4, LUCK_ITEM = 0.5;
+  // Es zählen höchstens LUCK_MAX Punkte: sonst bekäme der Braumeister mit «Automatisch» bis +120 % Gold, und wer alle Statpunkte auf Glück setzt, noch mehr
+  const LUCK_GOLD = 4, LUCK_ITEM = 0.5, LUCK_MAX = 6;
+  const luckEff = (x) => Math.max(-LUCK_MAX, Math.min(LUCK_MAX, x || 0));   // wirksamer Glücks-Bonus (Heldenblatt zeigt beides)
   function gearList() { return A.SLOTS.map(s => run.gear[s]).filter(Boolean); }
   function derived(r) {
     r = r || run;
@@ -237,7 +239,7 @@ A.Game = (function () {
     const s = r.stats;
     const sum = (k) => gearList().reduce((a, it) => a + (it.stats[k] || 0), 0);
     const mod = race.mod || {};
-    const cls = A.CLASSES.find(x => x.id === r.cls), luckX = s.luck - race.base.luck - (cls ? cls.base.luck : 0) + sum('luck');   // Glück über dem Startwert: Ausrüstung, Statpunkte, Statue, Brunnen
+    const cls = A.CLASSES.find(x => x.id === r.cls), luckX = s.luck - race.base.luck - (cls ? cls.base.luck : 0) + sum('luck'), luckE = luckEff(luckX);   // Glück über dem Startwert: Ausrüstung, Statpunkte, Statue, Wunschbrunnen, Spiegel
     const tm = A.Boons.mods(r), gm = A.Gear.mods(r), fm = A.Build.fateMods(r), pm = A.Pacts.mods(r), om = A.patronOf(r) ? A.PATRON_RULES[r.patron].fx : {}, dm = (A.dailyOf(r) || {}).p || {}, tv = (k) => (tm[k] || 0) + (gm[k] || 0) + (fm[k] || 0) + (pm[k] || 0) + (+om[k] || 0) + (+dm[k] || 0);   // om: Regel des Gönners (v43); dm: Dreh der Tageswelt (v45)   // passive Talente vom Schrein, Element-Boni der Ausrüstung, Schicksalspunkte, Pakte
     const rage = r.rageFloor != null && (r.floor === r.rageFloor || r.floor === r.rageFloor + 1) ? A.SPONSOR_RAGE : 0;   // Gräfin Gemetzel (v42): mehr Schaden auf dieser und der nächsten Ebene
     const atkPct = sum('atkPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.atkPct || 0) + (pm.atkPct || 0)) / 100 + rage, magPct = sum('magPct') / 100 + me.dmgMul + tv('dmgPct') / 100 + ((fm.magPct || 0) + (pm.magPct || 0)) / 100 + rage;
@@ -250,11 +252,11 @@ A.Game = (function () {
       crit: Math.round(5 + s.dex * 0.8 + s.luck * 0.6 + sum('crit') + (mod.crit || 0) + tv('crit') + me.crit),
       dodge: Math.round(s.dex * 0.5 + sum('dodge') + (mod.dodge || 0) + tv('dodge')),
       lifesteal: sum('lifesteal') + tv('lifesteal'), thorns: sum('thorns') + tv('thorns') + me.thorns, poisonOnHit: sum('poisonOnHit') + (mod.poisonOnHit || 0),
-      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct') + luckX * LUCK_GOLD,
+      regen: sum('regen') + (mod.regen || 0) + tv('regen'), startShield: sum('startShield'), goldPct: sum('goldPct') + ((mod.goldMul || 1) - 1) * 100 + tv('goldPct') + luckE * LUCK_GOLD,
       xpPct: sum('xpPct') + tv('xpPct'), revive: sum('revive'), trap: mod.trap || 0, luck: s.luck + sum('luck'), luckBonus: luckX, dropPct: tv('dropPct'),
       tro: Object.fromEntries(gearList().filter(it => it.trophy && A.TROPHIES[it.trophy]).map(it => [A.TROPHIES[it.trophy].power, true])),
       gear: A.Gear.summary(r),   // Element-Stufen und besondere Kräfte (wirken in gear.js)
-      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck') + luckX * LUCK_ITEM,
+      skillSlots: 4, talentSlots: 6 + (mod.talentSlots || 0) + me.talentSlots, itemLuck: me.itemLuck + (mod.itemLuck || 0) + tv('itemLuck') + luckE * LUCK_ITEM,
     };
     if (A.Pacts.val('noDodge', r)) d.dodge = 0;   // Glasknochen (pacts.js)
     A.Legends.apply(d, r);   // getragene Legenden: Merkmale für world.js (legends.js)
@@ -761,6 +763,6 @@ A.Game = (function () {
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
     makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, luckEff, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();
