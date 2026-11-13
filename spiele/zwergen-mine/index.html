@@ -172,7 +172,7 @@ const T = DE ? {
     magnet: ['Erz-Magnet', 'Truhen geben doppelt'], gluck: ['Glücksbringer', 'Volltreffer ×6 statt ×5'], lied: ['Zwergenlied', 'Zwerge +30 %'],
     bohrer: ['Diamantbohrer', 'Hacke ×2'], schicht: ['Doppelschicht', 'Zwerge +50 %'], kugel: ['Kristallkugel', 'Bosse geben doppelt Steine'],
   },
-  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine', heir: 'Sammle {n} Erbstücke', blocks: 'Schaffe {n} Blöcke', crowns: 'Sammle {n} Kronen', hero: 'Heuere {n} Helden an', gear: 'Fülle alle {n} Ausrüstungs-Plätze', rare: 'Finde ein episches Stück', rank: 'Erreiche Rang {n}' },
+  goals: { depth: 'Erreiche Tiefe {n}', taps: 'Tippe {n} Mal', dw: 'Heuere {n} Zwerge an', boss: 'Besiege {n} Bosse', chest: 'Öffne {n} Truhen', pick: 'Spitzhacke auf Stufe {n}', up: 'Kaufe {n} Werkzeuge', prest: 'Zieh {n} Mal in eine neue Mine', heir: 'Sammle {n} Erbstücke', blocks: 'Schaffe {n} Blöcke', crowns: 'Sammle {n} Kronen', hero: 'Heuere {n} Helden an', gear: 'Fülle alle {n} Ausrüstungs-Plätze', rare: 'Finde ein episches Stück', rank: 'Erreiche Rang {n}', mole: 'Erwische {n} Maulwürfe', set: 'Trage ein Set der Stufe {n}' },
   goals1: { hero: 'Heuere deinen ersten Helden an', boss: 'Besiege deinen ersten Boss', prest: 'Zieh zum ersten Mal in eine neue Mine', blocks: 'Schaffe deinen ersten Block' },
   records: 'Rekorde', bestDepth: 'Tiefster Punkt', thisMine: 'Diese Mine', mines: 'Minen', mine: 'Mine', show: 'Ansehen', close: 'Schliessen',
   record: 'Neuer Rekord!', recordSub: 'Dein alter Rekord war Tiefe {n}', ringNew: 'Ring {r} erreicht!', ringSub: 'Neue Farben, leuchtendes Erz',
@@ -223,7 +223,7 @@ const T = DE ? {
     magnet: ['Ore Magnet', 'Chests give double'], gluck: ['Lucky Charm', 'Crits ×6 instead of ×5'], lied: ['Dwarf Song', 'Dwarves +30%'],
     bohrer: ['Diamond Drill', 'Pickaxe ×2'], schicht: ['Double Shift', 'Dwarves +50%'], kugel: ['Crystal Ball', 'Bosses give double gems'],
   },
-  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times', heir: 'Collect {n} heirlooms', blocks: 'Clear {n} blocks', crowns: 'Collect {n} crowns', hero: 'Hire {n} heroes', gear: 'Fill all {n} gear slots', rare: 'Find an epic piece', rank: 'Reach rank {n}' },
+  goals: { depth: 'Reach depth {n}', taps: 'Tap {n} times', dw: 'Hire {n} dwarves', boss: 'Beat {n} bosses', chest: 'Open {n} chests', pick: 'Pickaxe to level {n}', up: 'Buy {n} tools', prest: 'Move to a new mine {n} times', heir: 'Collect {n} heirlooms', blocks: 'Clear {n} blocks', crowns: 'Collect {n} crowns', hero: 'Hire {n} heroes', gear: 'Fill all {n} gear slots', rare: 'Find an epic piece', rank: 'Reach rank {n}', mole: 'Catch {n} moles', set: 'Wear a level {n} set' },
   goals1: { hero: 'Hire your first hero', boss: 'Beat your first boss', prest: 'Move to a new mine for the first time', blocks: 'Clear your first block' },
   records: 'Records', bestDepth: 'Deepest point', thisMine: 'This mine', mines: 'Mines', mine: 'Mine', show: 'View', close: 'Close',
   record: 'New record!', recordSub: 'Your old record was depth {n}', ringNew: 'Ring {r} reached!', ringSub: 'New colors, glowing ore',
@@ -363,6 +363,9 @@ const GOALS = [
   { id: 'e1', type: 'hero', n: 1, gems: 2 }, { id: 'e3', type: 'hero', n: 3, gems: 6 }, { id: 'e5', type: 'hero', n: 5, gems: 15 },
   { id: 'g3', type: 'gear', n: 3, gems: 5 }, { id: 'q3', type: 'rare', n: 3, gems: 4 }, { id: 'q4', type: 'rare', n: 4, gems: 15 },
   { id: 'a3', type: 'rank', n: 3, gems: 10 }, { id: 'a6', type: 'rank', n: 6, gems: 30 },
+  // Maulwürfe und Ausrüstungs-Sets
+  { id: 'm5', type: 'mole', n: 5, gems: 3 }, { id: 'm25', type: 'mole', n: 25, gems: 10 }, { id: 'm50', type: 'mole', n: 50, gems: 25 },
+  { id: 's2', type: 'set', n: 2, gems: 8 }, { id: 's4', type: 'set', n: 4, gems: 40 },
 ];
 const GEM_UPS = [
   { key: 'power',   base: 2,  grow: 1.35, max: 999 },
@@ -394,7 +397,9 @@ const F = {
   shopLv: (s, k) => (s && s.shop && s.shop[k]) || 0,
   hero: (s, k) => (s && s.hero && s.hero.on === k && s.hero.lv[k]) || 0,   // Stufe des Helden, der gerade mitkommt (sonst 0)
   heroCost: (L) => 4 * Math.pow(2, L), heroMax: 5,
-  gear: (s, k) => (s && s.gear && s.gear[k] && s.gear[k].v) || 0,   // Ausrüstung: Bonus in Prozent je Platz (pick, helm, amu)
+  gearSet: (s) => { const g = (s && s.gear) || {}; if (!g.pick || !g.helm || !g.amu) return 0; return 1 + Math.min(g.pick.r, g.helm.r, g.amu.r); },   // Set-Stufe 0 bis 4: alle drei Plätze belegt, schwächste Seltenheit zählt
+  setPct: [0, 5, 10, 20, 40],   // Set-Bonus in Prozentpunkten auf jedes der drei Stücke
+  gear: (s, k) => { const v = (s && s.gear && s.gear[k] && s.gear[k].v) || 0; return v ? v + F.setPct[F.gearSet(s)] : 0; },   // Ausrüstung: Bonus in Prozent je Platz (pick, helm, amu)
   towerRate: (k, s) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate * (1 + 0.25 * F.shopLv(s, 'turm')),
   towerCap: (s) => F.towerMaxH + 6 * F.shopLv(s, 'lager'),
   startGold: (s) => { const L = F.shopLv(s, 'start'); return L ? 100 * Math.pow(10, L) : 0; },
@@ -438,7 +443,7 @@ const F = {
   canPrestige: (s) => s.maxDepth > 50 && !s.blockDone,
   heirGain: (s) => s.maxDepth > 50 ? Math.floor(Math.pow((s.maxDepth - 30) / 10, 2)) : 0,
   goalProgress: (g, s) => ({ depth: Math.max(s.maxDepth, s.best || 1), taps: s.taps, dw: s.dw.reduce((a, b) => a + b, 0), boss: s.st.bosses, chest: s.st.chests, pick: s.pick, up: Object.keys(s.up).filter(k => s.up[k]).length, prest: s.st.prest, heir: s.heir || 0, blocks: (s.towers || []).length, crowns: s.crownsAll || 0,
-    hero: Object.values((s.hero && s.hero.lv) || {}).filter(v => v > 0).length, gear: Object.keys(s.gear || {}).length, rare: Math.max(0, ...Object.values(s.gear || {}).map(x => x.r + 1)), rank: F.rank(s) + 1 })[g.type],
+    hero: Object.values((s.hero && s.hero.lv) || {}).filter(v => v > 0).length, gear: Object.keys(s.gear || {}).length, rare: Math.max(0, ...Object.values(s.gear || {}).map(x => x.r + 1)), rank: F.rank(s) + 1, mole: (s.st && s.st.moles) || 0, set: F.gearSet(s) })[g.type],
 };
 // FORMELN_ENDE
 // Tagesziele: je Typ drei Grössen (klein unter Tiefe 30, mittel unter 100, sonst gross), Lohn in Steinen
@@ -585,6 +590,7 @@ const RARITY = [{ col: '#c9c9c9', lo: 5, hi: 10 }, { col: '#57d2ff', lo: 12, hi:
 const GEAR_ODDS = { boss: [60, 28, 10, 2], big: [25, 42, 26, 7] }, GEAR_CHANCE = 0.4, FORGE_COST = 8;
 const TG = DE ? {
   forge: 'Schmieden', forgeInfo: 'Die Schmiede würfelt ein neues Stück für diesen Platz. Ist es besser, bleibt es. Sonst war es Schrott.', forgeWin: 'Besser!', forgeLose: 'Schrott. Der Schmied zuckt mit den Schultern.',
+  set: 'Set', setNone: 'Set: fülle alle drei Plätze für einen Bonus auf jedes Stück', setLine: 'Set Stufe {n}: +{p} % auf jedes Stück', setNext: 'nächste Stufe, wenn alle drei mindestens «{r}» sind', setUp: 'Set Stufe {n}!', setUpSub: '+{p} % auf jedes Stück',
   title: 'Ausrüstung', findLegend: 'Finde ein legendäres Stück', loot: 'Beute!', melt: 'Eingeschmolzen', empty: 'Noch leer. Bosse lassen Beute fallen.',
   info: 'Bosse lassen manchmal Ausrüstung fallen, Grossbosse immer. Das bessere Stück bleibt, schwächere werden zu einem Stein. Ausrüstung bleibt für immer.',
   rar: ['Gewöhnlich', 'Selten', 'Episch', 'Legendär'], slot: { pick: 'Hacke', helm: 'Helm', amu: 'Amulett' },
@@ -596,6 +602,7 @@ const TG = DE ? {
   },
 } : {
   forge: 'Forge', forgeInfo: 'The forge rolls a new piece for this slot. If it is better, it stays. Otherwise it was scrap.', forgeWin: 'Better!', forgeLose: 'Scrap. The smith shrugs.',
+  set: 'Set', setNone: 'Set: fill all three slots for a bonus on every piece', setLine: 'Set level {n}: +{p}% on every piece', setNext: 'next level when all three are at least “{r}”', setUp: 'Set level {n}!', setUpSub: '+{p}% on every piece',
   title: 'Gear', findLegend: 'Find a legendary piece', loot: 'Loot!', melt: 'Melted down', empty: 'Still empty. Bosses drop loot.',
   info: 'Bosses sometimes drop gear, big bosses always. The better piece stays, weaker ones turn into a gem. Gear stays forever.',
   rar: ['Common', 'Rare', 'Epic', 'Legendary'], slot: { pick: 'Pickaxe', helm: 'Helmet', amu: 'Amulet' },
@@ -617,7 +624,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 18;
+const VERSION = 19;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -629,6 +636,7 @@ const NEWS = DE ? [
   [14, '🌠', 'Neuer Block: der Sternenschacht (100 Kronen)'],
   [16, '🔨', 'Schmiede für Ausrüstung und Treue-Bonus für jeden Tag in Folge'],
   [18, '🐾', 'Mauli: erwische 5 Maulwürfe, dann arbeitet einer für dich'],
+  [19, '🧰', 'Ausrüstungs-Sets: drei Stücke gleicher Güte geben Bonus, dazu 5 neue Ziele'],
 ] : [
   [7, '⛏️', 'Special rocks, the cheeky mole and 42 finds'],
   [8, '🧊', 'Glacier, Grotto and the crown shop (map “Your Realm”)'],
@@ -640,6 +648,7 @@ const NEWS = DE ? [
   [14, '🌠', 'New block: the Star Shaft (100 crowns)'],
   [16, '🔨', 'Forge for gear and a loyalty bonus for every day in a row'],
   [18, '🐾', 'Mauli: catch 5 moles and one will work for you'],
+  [19, '🧰', 'Gear sets: three pieces of the same quality give a bonus, plus 5 new goals'],
 ];
 const TN = DE ? { title: 'Was ist neu?', ok: 'Los geht\'s' } : { title: 'What\'s new?', ok: 'Let\'s go' };
 
@@ -2037,7 +2046,7 @@ function dwarfIcon(i) {
 }
 const GEM_ICON_COLORS = { power: '#ff8a3d', gold: '#f5c542', crit: '#ff6b6b', offline: '#7f8cff', chest: '#6fdc7a' };
 const UP_EMOJI = { spitze: '⛏️', doppel: '✌️', band: '🛤️', laterne: '🏮', dyn: '🧨', zeit: '⏳', bier: '🍺', waage: '⚖️', kurs: '🎓', magnet: '🧲', gluck: '🍀', lied: '🎵', bohrer: '💎', schicht: '🌙', kugel: '🔮' };
-const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️', heir: '💜', blocks: '🏔️', crowns: '👑', hero: '🦸', gear: '🎒', rare: '✨', rank: '🎖' };
+const GOAL_EMOJI = { depth: '⬇️', taps: '👆', dw: '🧔', boss: '👹', chest: '🎁', pick: '⛏️', up: '🔧', prest: '⚱️', heir: '💜', blocks: '🏔️', crowns: '👑', hero: '🦸', gear: '🎒', rare: '✨', rank: '🎖', mole: '🐾', set: '🧰' };
 function emojiIcon(e) { return (g) => { g.font = '26px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, 20, 22); }; }
 function heirIcon(g) { g.translate(20, 20); g.fillStyle = '#c77dff'; g.beginPath(); g.moveTo(-8, -12); g.lineTo(8, -12); g.lineTo(11, 0); g.lineTo(6, 14); g.lineTo(-6, 14); g.lineTo(-11, 0); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(-5, -8, 3, 14); }
 function gemIcon(key) {
@@ -2120,7 +2129,7 @@ function rowData(r) {
   }
   if (r.kind === 'gear') {
     const parts = GEAR_SLOTS.filter(g => S.gear[g.k]).map(g => `<b style="color:${RARITY[S.gear[g.k].r].col}">${g.icon} +${S.gear[g.k].v} %</b>`);
-    return { name: TG.title, lvl: gearCount() + ' / 3', eff: parts.length ? parts.join(' · ') : TG.empty, cost: 0, cur: 'rec', locked: false, rec: true };
+    return { name: TG.title, lvl: gearCount() + ' / 3', eff: parts.length ? parts.join(' · ') + (F.gearSet(S) ? ` · 🧰 +${F.setPct[F.gearSet(S)]} %` : '') : TG.empty, cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'pet') {
     const lv = petLv();
@@ -2370,11 +2379,21 @@ function gearRoll(big, rnd = Math.random) {   // ein Stück würfeln: Platz, Sel
   const R = RARITY[r];
   return { k: GEAR_SLOTS[Math.floor(rnd() * 3)].k, r, v: Math.round(R.lo + rnd() * (R.hi - R.lo)) };
 }
+function setBanner(before) {   // Set-Stufe gestiegen: kurz feiern
+  const n = F.gearSet(S); if (n <= before) return;
+  showBanner({ text: '🧰 ' + TG.setUp.replace('{n}', n), sub: TG.setUpSub.replace('{p}', F.setPct[n]), life: 2.6, color: RARITY[n - 1].col });
+}
+function setLine() {
+  const n = F.gearSet(S);
+  if (!n) return TG.setNone;
+  return `<b style="color:${RARITY[n - 1].col}">🧰 ${TG.setLine.replace('{n}', n).replace('{p}', F.setPct[n])}</b>` + (n < 4 ? ` · ${TG.setNext.replace('{r}', TG.rar[n])}` : '');
+}
 function gearGive(it) {   // besser als das alte: anlegen; sonst einschmelzen (+1 Stein)
   const old = S.gear[it.k], col = RARITY[it.r].col;
   if (!old || it.v > old.v) {
-    S.gear[it.k] = { r: it.r, v: it.v };
+    const set0 = F.gearSet(S); S.gear[it.k] = { r: it.r, v: it.v };
     showBanner({ text: '🎒 ' + TG.loot + ' ' + TG.rar[it.r], sub: gearName(it.k, it) + ' · ' + TG.eff[it.k].replace('{p}', it.v), life: 3, color: col });
+    setBanner(set0);
     if (tab === 'pick') buildPanel();
     return true;
   }
@@ -2392,7 +2411,7 @@ function gearForge(k) {   // Schmiede: für Steine ein neues Stück für genau d
   S.gems -= FORGE_COST;
   const it = gearRoll(false); it.k = k;
   const old = S.gear[k], win = !old || it.v > old.v;
-  if (win) S.gear[k] = { r: it.r, v: it.v };
+  const set0 = F.gearSet(S); if (win) S.gear[k] = { r: it.r, v: it.v }; setBanner(set0);
   win ? sfx.chest() : sfx.fail();
   refreshPanel(true); save();
   return { win, it };
@@ -2407,6 +2426,7 @@ function showGear(again, msg) {
       <button data-forge="${g.k}" ${S.gems < FORGE_COST ? 'disabled ' : ''}style="flex:none;background:${S.gems < FORGE_COST ? '#4a3f60' : '#57d2ff'};color:#003449;padding:6px 8px;font-size:12px">🔨 ${GEM_S}${FORGE_COST}</button></div>`;
   }).join('');
   popup(`<div style="font-weight:900;font-size:18px">🎒 ${TG.title} · ${GEM_S}${fmt(S.gems)}</div><div class="small" style="max-width:300px">${TG.info}</div>${rowsG}
+    <div class="small" style="max-width:300px;margin-top:6px">${setLine()}</div>
     <div class="small" style="max-width:300px;margin-top:6px">🔨 ${TG.forgeInfo}</div>${msg ? `<div style="font-weight:800;margin-top:4px;color:${msg.col}">${msg.text}</div>` : ''}
     <div class="small" style="margin-top:6px">${TG.rar.map((n, i) => `<b style="color:${RARITY[i].col}">${n}</b>`).join(' · ')}</div><button id="tClose">${T.close}</button>`, true);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
