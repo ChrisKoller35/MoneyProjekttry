@@ -385,6 +385,8 @@ const SHOP = [
 const F = {
   blockEnd: 150, blockCrowns: 10, towerMaxH: 12,
   shopLv: (s, k) => (s && s.shop && s.shop[k]) || 0,
+  hero: (s, k) => (s && s.hero && s.hero.on === k && s.hero.lv[k]) || 0,   // Stufe des Helden, der gerade mitkommt (sonst 0)
+  heroCost: (L) => 4 * Math.pow(2, L), heroMax: 5,
   towerRate: (k, s) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate * (1 + 0.25 * F.shopLv(s, 'turm')),
   towerCap: (s) => F.towerMaxH + 6 * F.shopLv(s, 'lager'),
   startGold: (s) => { const L = F.shopLv(s, 'start'); return L ? 100 * Math.pow(10, L) : 0; },
@@ -398,18 +400,18 @@ const F = {
   ringGems: (r) => 30 * r,
   // Fels: ×1.21 je Tiefe, ab 40 zusätzlich ×1.025; ab Ring II (Tiefe 141) nur noch ×1.15, damit es endlos weitergeht
   rockHp: (d) => { const e = Math.min(d, 140); return Math.ceil(8 * Math.pow(1.21, e - 1) * Math.pow(1.025, Math.max(0, e - 40)) * Math.pow(1.15, Math.max(0, d - 140)) * (d % 50 === 0 ? 10 : d % 10 === 0 ? 7 : 1)); },
-  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s)),
+  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s) * (1 + 0.15 * F.hero(s, 'gundi'))),
   bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
-  bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0),
+  bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0) + 3 * F.hero(s, 'dvala'),
   heirMult: (s) => 1 + 0.05 * (s.heir || 0),
   powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s) * (1 + 0.2 * F.shopLv(s, 'kraft')),
   pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1),
   dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1),
   pickCost: (L) => Math.ceil(10 * Math.pow(1.19, L)),
-  pickDmg: (L, s) => Math.max(1, Math.floor((1 + L) * Math.pow(1.09, L))) * F.powerMult(s) * F.pickMult(s),
+  pickDmg: (L, s) => Math.max(1, Math.floor((1 + L) * Math.pow(1.09, L))) * F.powerMult(s) * F.pickMult(s) * (1 + 0.25 * F.hero(s, 'borin')),
   milestoneMult: (n) => Math.pow(2, [10, 25, 50, 100, 150, 200].filter(m => n >= m).length),
   dwarfCost: (i, n) => Math.ceil(DWARVES[i].cost * Math.pow(1.15, n)),
-  dwarfDps: (i, n, s) => DWARVES[i].dps * n * F.milestoneMult(n) * F.powerMult(s) * F.dwarfMult(s),
+  dwarfDps: (i, n, s) => DWARVES[i].dps * n * F.milestoneMult(n) * F.powerMult(s) * F.dwarfMult(s) * (1 + 0.15 * F.hero(s, 'thrain')),
   totalDps: (s) => DWARVES.reduce((a, _, i) => a + F.dwarfDps(i, s.dw[i], s), 0),
   critChance: (s) => 0.04 + 0.02 * s.gu.crit,
   critMult: (s) => s.up.gluck ? 6 : 5,
@@ -419,7 +421,7 @@ const F = {
   offlineMaxSec: 8 * 3600,
   chestEvery: (s) => Math.max(18, 60 - 5 * s.gu.chest) * (s.blk === 'wasser' ? 0.5 : 1),
   chestLife: (s) => s.up.laterne ? 18 : 9,
-  chestMult: (s) => s.up.magnet ? 2 : 1,
+  chestMult: (s) => (s.up.magnet ? 2 : 1) * (1 + 0.3 * F.hero(s, 'flinka')),
   dynCd: 90, dynTaps: 30, beerCd: 180, beerSec: 20, beerMult: 3,
   canPrestige: (s) => s.maxDepth > 50 && !s.blockDone,
   heirGain: (s) => s.maxDepth > 50 ? Math.floor(Math.pow((s.maxDepth - 30) / 10, 2)) : 0,
@@ -500,6 +502,56 @@ const TM = DE ? {
   tip: 'A mole! Tap him before he reaches the hole and he returns the gold, doubled.',
 };
 
+// Kobold-Krämer (seltener Besuch mit einem Handel)
+const TK = DE ? {
+  tap: 'Handel?', title: 'Kobold-Krämer',
+  hello: ['Psst. Hast du kurz? Ich hätte da was.', 'Nicht weitersagen: Sonderpreis, nur heute.', 'Ich bin kein Dieb. Der Maulwurf ist der Dieb.'],
+  offers: {
+    gems: ['Steine gegen Gold', 'Gib mir {g} Gold, du kriegst 💎 {n} Steine. Woher ich die habe? Frag nicht.'],
+    beer: ['Fass vom Laster', 'Ein Fass Zwergenbier, {s} Sekunden lang ×3 für deine Zwerge. Kostet {g} Gold. Ist noch kühl.'],
+    dice: ['Koboldwürfel', 'Einsatz {g} Gold, die Hälfte von allem. Gewinnst du ({p} %), kriegst du doppelt zurück. Verlierst du, lach ich.'],
+  },
+  accept: 'Annehmen', chase: 'Verjagen',
+  won: 'Gewonnen!', wonSub: '+{g}. Der Kobold weint.', lost: 'Verloren.', lostSub: '-{g}. Der Kobold kichert.',
+  gemsGot: 'Handel!', gemsSub: '💎 +{n} · der Kobold zählt nach', beerGot: 'Bierpause!', beerSub: 'Zwerge ×3 für {s} s, vom Kobold',
+  chased: 'Verjagt!', chasedSub: 'Er hat {g} Gold verloren. Hoppla.', poor: 'Zu wenig Gold. Komm wieder, wenn du reich bist.',
+} : {
+  tap: 'Trade?', title: 'Goblin Peddler',
+  hello: ['Psst. Got a minute? I have something.', 'Don\'t tell anyone: special price, today only.', 'I\'m no thief. The mole is the thief.'],
+  offers: {
+    gems: ['Gems for gold', 'Give me {g} gold, you get 💎 {n} gems. Where I got them? Don\'t ask.'],
+    beer: ['Fell off a cart', 'A barrel of dwarf beer, ×3 for your dwarves for {s} seconds. Costs {g} gold. Still cold.'],
+    dice: ['Goblin dice', 'Stake {g} gold, half of everything. Win ({p} %) and you get it back double. Lose and I laugh.'],
+  },
+  accept: 'Accept', chase: 'Shoo',
+  won: 'You won!', wonSub: '+{g}. The goblin weeps.', lost: 'You lost.', lostSub: '-{g}. The goblin giggles.',
+  gemsGot: 'Deal!', gemsSub: '💎 +{n} · the goblin counts twice', beerGot: 'Beer break!', beerSub: 'Dwarves ×3 for {s} s, from the goblin',
+  chased: 'Shooed!', chasedSub: 'He dropped {g} gold. Oops.', poor: 'Not enough gold. Come back when you\'re rich.',
+};
+
+// Helden-Zwerge: fünf Helden, mit Steinen anheuern und aufwerten; genau einer kommt mit
+const HEROES = [
+  { k: 'borin',  unlock: 20,  hat: '#e2483b', icon: '⛏️' },
+  { k: 'thrain', unlock: 40,  hat: '#e0a83a', icon: '🍺' },
+  { k: 'gundi',  unlock: 60,  hat: '#f5c542', icon: '🪙' },
+  { k: 'flinka', unlock: 80,  hat: '#6fdc7a', icon: '🎁' },
+  { k: 'dvala',  unlock: 100, hat: '#7f8cff', icon: '⏳' },
+];
+const TH = DE ? {
+  title: 'Helden', row: 'Helden-Zwerge', none: 'Noch keiner dabei', with: 'Dabei: {n}', from: 'ab Tiefe {n}',
+  info: 'Genau ein Held kommt mit in die Mine. Helden bleiben für immer, auch nach Umzug und neuem Block.',
+  hire: 'Anheuern', up: 'Stufe', take: 'Mitnehmen', on: '✓ Dabei', newHero: 'Neuer Held!', newSub: '{n} wartet im Reiter «Zwerge»',
+  names: { borin: 'Borin der Starke', thrain: 'Thrain Braumeister', gundi: 'Gundi Goldnase', flinka: 'Flinka Schatzsucherin', dvala: 'Dvala Stundenglas' },
+  eff: { borin: 'Tippen +{p} %', thrain: 'Zwerge +{p} %', gundi: 'Gold +{p} %', flinka: 'Truhen +{p} %', dvala: 'Boss-Zeit +{p} s' },
+} : {
+  title: 'Heroes', row: 'Hero dwarves', none: 'Nobody with you yet', with: 'With you: {n}', from: 'from depth {n}',
+  info: 'Exactly one hero joins you in the mine. Heroes stay forever, even after moving and new blocks.',
+  hire: 'Hire', up: 'Level', take: 'Take along', on: '✓ With you', newHero: 'New hero!', newSub: '{n} is waiting in the “Dwarves” tab',
+  names: { borin: 'Borin the Strong', thrain: 'Thrain Brewmaster', gundi: 'Gundi Goldnose', flinka: 'Flinka Treasure Hunter', dvala: 'Dvala Hourglass' },
+  eff: { borin: 'Tapping +{p}%', thrain: 'Dwarves +{p}%', gundi: 'Gold +{p}%', flinka: 'Chests +{p}%', dvala: 'Boss time +{p} s' },
+};
+const HERO_STEP = { borin: 25, thrain: 15, gundi: 15, flinka: 30, dvala: 3 };
+
 // ---------- Spielstand ----------
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
@@ -508,7 +560,7 @@ function freshState() {
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
     blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
-    daily: { day: '', goals: [], base: {}, done: {}, bonus: false } };
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 } };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -528,6 +580,8 @@ function load() {
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     S.shop = Object.assign({}, d.shop || {});
+    const dh = d.hero && typeof d.hero === 'object' ? d.hero : {};   // Spielstand von vor den Helden
+    S.hero = { lv: Object.assign({}, dh.lv || {}), on: HEROES.some(h => h.k === dh.on) ? dh.on : '', seen: dh.seen || 0 };
     S.daily = Object.assign(f.daily, d.daily && typeof d.daily === 'object' ? d.daily : {});   // Spielstand von vor den Tageszielen
     if (!Array.isArray(S.daily.goals) || !S.daily.base || !S.daily.done) S.daily = freshState().daily;
     if (!BLOCKS.some(b => b.k === S.blk)) S.blk = 'stein';
@@ -961,6 +1015,7 @@ cv.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   const r = cv.getBoundingClientRect();
   const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (trader && trader.ph === 'wait' && Math.hypot(x - trader.x, y - (trader.y - 14)) < 38) { openTrade(); return; }
   if (mole && mole.out && Math.hypot(x - mole.x, y - mole.y) < 36) { catchMole(); return; }
   if (chest && Math.hypot(x - chest.x, y - chest.y) < 40) { openChest(); return; }
   const now = performance.now();
@@ -1165,6 +1220,110 @@ function openChest() {
   chestTimer = F.chestEvery(S) * (0.7 + Math.random() * 0.6);
   refreshPanel(true);
 }
+
+// ---------- Kobold-Krämer: seltener Besuch mit einem Handel ----------
+let trader = null, traderTimer = 240, lastOffer = '';   // erster Besuch frühestens nach 4 Minuten Sitzung
+const TRADE_BEER = 30;
+function spawnTrader() {
+  const left = Math.random() < 0.5;
+  const offer = ['gems', 'beer', 'dice'].filter(o => o !== lastOffer)[Math.floor(Math.random() * 2)];
+  lastOffer = offer;
+  trader = { x: CW * (left ? 0.12 : 0.88), y: CH * 0.36, dir: left ? 1 : -1, ph: 'wait', life: 15, k: 0, offer, price: 0, n: 0 };
+}
+function traderStep(dt) {
+  if (!trader) {
+    if (window.__mineTrader.off || bossActive || lava > 0 || frost > 0 || toast.style.display === 'block' || tipNow || S.maxDepth < 12 || S.gold < 20 * F.rockGold(S.depth, S)) return;
+    traderTimer -= dt;
+    if (traderTimer <= 0) { spawnTrader(); traderTimer = 300 + Math.random() * 180; }
+    return;
+  }
+  if (trader.ph === 'talk') { if (toast.style.display !== 'block') { trader.ph = 'leave'; trader.k = 0; } return; }   // Fenster anders zu: er geht
+  if (trader.ph === 'wait') { trader.life -= dt; if (trader.life <= 0) { trader.ph = 'leave'; trader.k = 0; } return; }
+  trader.k += dt / 0.8; trader.x -= trader.dir * CW * 0.2 * dt / 0.8;
+  if (trader.k >= 1) trader = null;
+}
+function tradeChance() { return S.up.gluck ? 0.55 : 0.5; }
+function openTrade() {
+  if (!trader) return;
+  trader.ph = 'talk';
+  const o = trader.offer, g = Math.max(0, S.gold);
+  trader.price = Math.ceil(g * (o === 'gems' ? 0.3 : o === 'beer' ? 0.2 : 0.5));
+  trader.n = 2 + Math.floor(F.layerOf(S.depth) / 3);
+  const [name, text] = TK.offers[o];
+  const body = text.replace('{g}', fmt(trader.price)).replace('{n}', trader.n).replace('{s}', TRADE_BEER).replace('{p}', Math.round(tradeChance() * 100));
+  const poor = S.gold <= 0;
+  popup(`<div style="font-weight:900;font-size:18px">👺 ${TK.title}</div>
+    <div class="small" style="font-style:italic;max-width:270px">${TK.hello[Math.floor(Math.random() * TK.hello.length)]}</div>
+    <div style="font-weight:800;margin-top:4px">${name}</div><div style="max-width:270px">${body}</div>
+    ${poor ? `<div class="small" style="color:#ff6b6b">${TK.poor}</div>` : ''}
+    <div style="display:flex;gap:8px;justify-content:center"><button id="tChase" style="background:#4a3f60;color:#f3ead8">${TK.chase}</button><button id="tTrade" ${poor ? 'disabled ' : ''}style="background:${poor ? '#4a3f60' : '#6fdc7a'};color:#0f2a14">${TK.accept}</button></div>`);
+  document.getElementById('tChase').onclick = () => { toast.style.display = 'none'; tradeChase(); };
+  document.getElementById('tTrade').onclick = () => { toast.style.display = 'none'; tradeAccept(); };
+}
+function tradeAccept() {
+  if (!trader) return;
+  const p = trader.price, o = trader.offer;
+  if (S.gold < p || S.gold <= 0) return;
+  if (o === 'gems') {
+    S.gold -= p; S.gems += trader.n;
+    showBanner({ text: TK.gemsGot, sub: TK.gemsSub.replace('{n}', trader.n), life: 2.2, color: '#7fe3ff' }); sfx.chest();
+  } else if (o === 'beer') {
+    S.gold -= p; beer = Math.max(beer, TRADE_BEER);
+    showBanner({ text: TK.beerGot, sub: TK.beerSub.replace('{s}', TRADE_BEER), life: 2.2, color: '#f5c542' }); sfx.chest(); updateSkillBtns();
+  } else if (Math.random() < tradeChance()) {
+    S.gold += p;
+    for (let i = 0; i < 10; i++) coins.push({ x: trader.x, y: trader.y, t: -i * 0.03, sx: 0, sy: 0 });
+    showBanner({ text: TK.won, sub: TK.wonSub.replace('{g}', fmt(p)), life: 2.2, color: '#6fdc7a', coin: true }); sfx.chest();
+  } else {
+    S.gold -= p;
+    floats.push({ x: trader.x, y: trader.y - 40, text: 'Hihi!', life: 1.3, color: '#ff6b6b' });
+    showBanner({ text: TK.lost, sub: TK.lostSub.replace('{g}', fmt(p)), life: 2.2, color: '#ff6b6b' }); sfx.fail();
+  }
+  trader.ph = 'leave'; trader.k = 0;
+  refreshPanel(true); save();
+}
+function tradeChase() {
+  if (!trader) return;
+  const drop = Math.ceil(2 * F.rockGold(S.depth, S));
+  S.gold += drop;
+  for (let i = 0; i < 6; i++) coins.push({ x: trader.x, y: trader.y, t: -i * 0.03, sx: 0, sy: 0 });
+  floats.push({ x: trader.x, y: trader.y - 40, text: '+' + fmt(drop), life: 1.3, color: '#ffd447' });
+  showBanner({ text: TK.chased, sub: TK.chasedSub.replace('{g}', fmt(drop)), life: 2, color: '#f5c542', coin: true }); sfx.chest();
+  trader.ph = 'leave'; trader.k = 0;
+  refreshPanel(true); save();
+}
+function drawTrader(t) {
+  if (!trader) return;
+  const { x, y } = trader, hop = trader.ph === 'leave' ? Math.abs(Math.sin(t * 14)) * 4 : 0, bob = trader.ph === 'talk' ? 0 : Math.sin(t * 6) * 2;
+  ctx.save();
+  if (trader.ph === 'leave') ctx.globalAlpha = Math.max(0, 1 - trader.k);
+  ctx.translate(x, y - hop);
+  ctx.scale(trader.dir, 1);   // blickt zur Felsenmitte
+  const lx = 16, ly = -22 + bob;   // Laterne mit Schein
+  const glow = ctx.createRadialGradient(lx, ly, 2, lx, ly, 30);
+  glow.addColorStop(0, 'rgba(255,212,71,0.35)'); glow.addColorStop(1, 'rgba(255,212,71,0)');
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(lx, ly, 30, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8a6a3a'; roundRect(-17, -24, 10, 16, 3); ctx.fill();   // Rucksack
+  ctx.fillStyle = '#e8d29a'; ctx.fillRect(-14, -18, 4, 3);
+  ctx.fillStyle = '#2f4a2a'; ctx.fillRect(-7, 6, 5, 8); ctx.fillRect(2, 6, 5, 8);   // Beine
+  ctx.fillStyle = '#5aa84a'; roundRect(-9, -12, 18, 20, 6); ctx.fill();   // Körper
+  ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(8, -2); ctx.lineTo(lx, ly + 5); ctx.stroke();   // Stock
+  ctx.fillStyle = '#ffd447'; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5aa84a';   // Kopf mit spitzen Ohren
+  ctx.beginPath(); ctx.moveTo(-8, -22); ctx.lineTo(-18, -30); ctx.lineTo(-6, -28); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(8, -22); ctx.lineTo(18, -30); ctx.lineTo(6, -28); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -22, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3a2a4a'; ctx.beginPath(); ctx.arc(0, -24, 10, Math.PI, 0); ctx.fill();   // Kapuze
+  for (const ex of [-3, 4]) { ctx.fillStyle = '#ffd447'; ctx.beginPath(); ctx.arc(ex, -21, 2.6, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(ex + 0.8, -21, 1.1, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+  if (trader.ph === 'wait' && Math.sin(t * 8) > -0.3) {   // blinkendes «Handel?»
+    const ay = y - 50;
+    ctx.fillStyle = '#ffd447'; ctx.beginPath(); ctx.moveTo(x - 7, ay); ctx.lineTo(x + 7, ay); ctx.lineTo(x, ay + 9); ctx.closePath(); ctx.fill();
+    ctx.font = '900 14px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.strokeText(TK.tap, x, ay - 2); ctx.fillText(TK.tap, x, ay - 2);
+  }
+}
+window.__mineTrader = { off: false, spawn(offer) { spawnTrader(); if (offer) trader.offer = offer; }, open: openTrade, accept: tradeAccept, chase: tradeChase, get trader() { return trader; } };
 
 // ---------- Zeichnen ----------
 function rng(seed) { let s = seed; return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
@@ -1725,6 +1884,7 @@ function buildPanel() {
     const ups = UPGRADES.slice().sort((a, b) => (S.up[a.key] ? 1 : 0) - (S.up[b.key] ? 1 : 0) || a.unlock - b.unlock);
     ups.forEach((u) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(UP_EMOJI[u.key])), kind: 'up', key: u.key })));
   } else if (tab === 'dwarf') {
+    if (S.best >= HEROES[0].unlock || heroCount()) rows.push(makeRow({ icon: iconCanvas(emojiIcon('🦸')), kind: 'heroes' }));
     DWARVES.forEach((d, i) => rows.push(makeRow({ icon: iconCanvas(dwarfIcon(i)), kind: 'dwarf', i })));
   } else if (tab === 'gem') {
     GEM_UPS.forEach((u) => rows.push(makeRow({ icon: iconCanvas(gemIcon(u.key)), kind: 'gem', key: u.key })));
@@ -1782,6 +1942,10 @@ function rowData(r) {
   if (r.kind === 'rec') {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
   }
+  if (r.kind === 'heroes') {
+    const on = S.hero.on;
+    return { name: TH.row, lvl: heroCount() + ' / ' + HEROES.length, eff: on ? `<b>${TH.with.replace('{n}', TH.names[on])}</b> · ${heroEff(on, S.hero.lv[on])}` : TH.none, cost: 0, cur: 'rec', locked: false, rec: true };
+  }
   if (r.kind === 'finds') {
     return { name: TF.title, lvl: '', eff: `<b>${findCount()} / ${FINDS.length}</b>` + (S.depth <= 140 ? ` · ${layerAt(S.depth).name}: ${layerFinds(F.layerOf(S.depth)).length} / 3` : ''), cost: 0, cur: 'rec', locked: false, rec: true };
   }
@@ -1830,7 +1994,7 @@ function refreshPanel(force) {
 }
 function updateTabDots() {
   const canPick = S.gold >= F.pickCost(S.pick) || UPGRADES.some(u => !S.up[u.key] && S.maxDepth >= u.unlock && S.gold >= u.cost);
-  const canDwarf = DWARVES.some((d, i) => S.maxDepth >= d.unlock && S.gold >= F.dwarfCost(i, S.dw[i]));
+  const canDwarf = DWARVES.some((d, i) => S.maxDepth >= d.unlock && S.gold >= F.dwarfCost(i, S.dw[i])) || heroCanBuy();
   const canGem = GEM_UPS.some(u => S.gu[u.key] < u.max && S.gems >= F.gemCost(u.key, S.gu[u.key]));
   const dots = { pick: canPick, dwarf: canDwarf, gem: canGem, goal: ((F.canPrestige(S) || S.blockDone) && !seenPrest) || moveWorth() };
   document.querySelectorAll('.tab').forEach(b => b.querySelector('.dot').classList.toggle('show', dots[b.dataset.tab] && b.dataset.tab !== tab));
@@ -1843,6 +2007,7 @@ function buy(r) {
   if (r.kind === 'realm') { showRealm(); return; }
   if (r.kind === 'rec') { showRecords(); return; }
   if (r.kind === 'finds') { showFinds(); return; }
+  if (r.kind === 'heroes') { showHeroes(); return; }
   if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
@@ -2003,6 +2168,61 @@ function showFinds() {
     <div style="max-height:60vh;overflow:auto">${rows}</div>
     <button id="tClose">${T.close}</button>`, true);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+}
+
+// ---------- Helden-Zwerge ----------
+const GEM_S = GEM_SVG.replace('<svg ', '<svg style="width:14px;height:14px;vertical-align:-2px" ');
+function heroCount() { return HEROES.filter(h => S.hero.lv[h.k] > 0).length; }
+function heroEff(k, L) { return TH.eff[k].replace('{p}', HERO_STEP[k] * L); }
+function heroCanBuy() { return HEROES.some(h => S.best >= h.unlock && (S.hero.lv[h.k] || 0) < F.heroMax && S.gems >= F.heroCost(S.hero.lv[h.k] || 0)); }
+function heroBuy(k) {
+  const h = HEROES.find(x => x.k === k), L = S.hero.lv[k] || 0, cost = F.heroCost(L);
+  if (!h || S.best < h.unlock || L >= F.heroMax || S.gems < cost) return false;
+  S.gems -= cost; S.hero.lv[k] = L + 1;
+  if (!S.hero.on) S.hero.on = k;   // der erste Held kommt gleich mit
+  sfx.chest(); refreshPanel(true); save();
+  return true;
+}
+function heroTake(k) { if (!(S.hero.lv[k] > 0)) return; S.hero.on = k; sfx.chest(); refreshPanel(true); save(); }
+function heroCheck() {   // Hinweis, sobald ein neuer Held freigeschaltet ist
+  const n = HEROES.filter(h => S.best >= h.unlock).length;
+  if (n <= S.hero.seen) return;
+  const h = HEROES[n - 1]; S.hero.seen = n;
+  showBanner({ text: '🦸 ' + TH.newHero, sub: TH.newSub.replace('{n}', TH.names[h.k]), life: 3, color: h.hat });
+  if (tab === 'dwarf') buildPanel();
+}
+function showHeroes(again) {
+  if (!again && toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
+  const rowsH = HEROES.map((h) => {
+    const L = S.hero.lv[h.k] || 0, open = S.best >= h.unlock, on = S.hero.on === h.k, cost = F.heroCost(L), max = L >= F.heroMax;
+    const btnBuy = !open ? '' : max ? `<button disabled style="background:#2a2238;color:#8f86a0;padding:6px 8px;font-size:12px">MAX</button>`
+      : `<button data-buy="${h.k}" ${S.gems < cost ? 'disabled ' : ''}style="background:${S.gems < cost ? '#4a3f60' : '#57d2ff'};color:#003449;padding:6px 8px;font-size:12px">${L ? TH.up + ' ' + (L + 1) : TH.hire} ${GEM_S}${cost}</button>`;
+    const btnOn = !L ? '' : on ? `<span style="color:#6fdc7a;font-weight:800;font-size:12px">${TH.on}</span>` : `<button data-take="${h.k}" style="background:#f5c542;color:#3a2a00;padding:6px 8px;font-size:12px">${TH.take}</button>`;
+    return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px;background:${on ? '#33284a' : '#2a2238'};border:2px solid ${on ? h.hat : 'transparent'};border-radius:10px;padding:6px;text-align:left;opacity:${open ? 1 : 0.55}">
+      <span style="font-size:22px;flex:none">${h.icon}</span>
+      <span style="flex:1;min-width:0"><b style="color:${h.hat}">${TH.names[h.k]}</b>${L ? ' <span class="small">Lv ' + L + '</span>' : ''}<div class="small">${open ? heroEff(h.k, Math.max(1, L)) + (L && !max ? ' → ' + heroEff(h.k, L + 1) : '') : TH.from.replace('{n}', h.unlock)}</div></span>
+      <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none">${btnOn}${btnBuy}</span></div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🦸 ${TH.title} · ${GEM_S}${fmt(S.gems)}</div><div class="small" style="max-width:300px">${TH.info}</div>
+    <div style="max-height:60vh;overflow:auto">${rowsH}</div><button id="tClose">${T.close}</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+  toast.querySelectorAll('[data-buy]').forEach(b => { b.onclick = () => { heroBuy(b.dataset.buy); showHeroes(true); }; });
+  toast.querySelectorAll('[data-take]').forEach(b => { b.onclick = () => { heroTake(b.dataset.take); showHeroes(true); }; });
+}
+function drawHero(t) {   // der Held, der mitkommt: grösser, mit Umhang und Stern, vorne links am Felsen
+  const k = S.hero.on; if (!k || !(S.hero.lv[k] > 0)) return;
+  const h = HEROES.find(x => x.k === k), c = rockCenter();
+  const x = c.x - c.r * 0.62, y = c.y + c.r * 0.7 + (lava > 0 ? 10 : 0);
+  ctx.save(); if (lava > 0) ctx.globalAlpha = 0.6;
+  ctx.fillStyle = h.hat; ctx.globalAlpha *= 0.85; ctx.beginPath(); ctx.moveTo(x - 6, y - 6); ctx.lineTo(x - 22 + Math.sin(t * 3) * 2, y + 24); ctx.lineTo(x + 4, y + 20); ctx.closePath(); ctx.fill();   // Umhang
+  ctx.restore();
+  ctx.save(); if (lava > 0) ctx.globalAlpha = 0.6;
+  drawDwarf(x, y, 1.55, h.hat, lava > 0 ? 0 : t * 7, false);
+  const sy = y - 36 + Math.sin(t * 4) * 2;   // Stern über dem Helm
+  ctx.fillStyle = '#ffd447'; ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 3 : 7; ctx.lineTo(x + Math.cos(a) * r, sy + Math.sin(a) * r); }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
 }
 
 // ---------- Neue Mine (Umzug) ----------
@@ -2207,13 +2427,14 @@ function frame(now) {
   else if ((S.blk === 'vulkan' || S.blk === 'eis') && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) (S.blk === 'vulkan' ? startLava : startFrost)(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
-    goalTimer = 0.5; checkGoals(); ensureDaily(); checkDaily(); updateSkillBtns(); updateTip(); updateCrowns();
+    goalTimer = 0.5; checkGoals(); ensureDaily(); checkDaily(); heroCheck(); updateSkillBtns(); updateTip(); updateCrowns();
     if (S.farm && bossPower() >= 1) { retryBoss(); showBanner({ text: T.autoRetry, sub: T.autoRetrySub, life: 2.2, color: '#6fdc7a' }); }
   }
 
   // Truhe
   if (chest) { chest.life -= dt; if (chest.life <= 0) { chest = null; chestTimer = F.chestEvery(S); } }
   else { chestTimer -= dt; if (chestTimer <= 0) spawnChest(); }
+  traderStep(dt);
 
   // Effekte
   shake = Math.max(0, shake - dt * 4); hitFlash = Math.max(0, hitFlash - dt * 6); swingT = Math.max(0, swingT - dt * 7);
@@ -2230,7 +2451,9 @@ function frame(now) {
   // Zeichnen
   drawBackground(t);
   drawDwarves(t);
+  drawTrader(t);
   drawRock(t); specialStep(dt); drawSpecial(t); drawIce(t);
+  drawHero(t);
   drawPlayerPick();
   drawChest(t); moleStep(dt); drawMole(t);
   quoteStep(dt);
@@ -2269,7 +2492,7 @@ requestAnimationFrame(frame);
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes };
 </script>
 </body>
 </html>

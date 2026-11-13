@@ -15,7 +15,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const S = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__mine.S)));
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   // Zufall abschalten (besondere Felsen, Maulwurf), damit die Prüfungen gleich bleiben; eigene Prüfungen weiter unten
-  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; });
+  const calm = (pg) => pg.evaluate(() => { window.__mineSpecial.off = true; window.__mineMole.off = true; window.__mineQuote.off = true; window.__mineTrader.off = true; });
 
   await page.goto(file); await calm(page); await page.waitForTimeout(600);
   await shot('01-start');
@@ -369,6 +369,62 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.waitForTimeout(300); await shot('24-maulwurf');
   const mc = await page.evaluate(() => { const m = window.__mine, x = window.__mineMole, g = m.S.gold, sack = x.mole.sack; x.catch(); return { back: Math.abs(m.S.gold - g - 2 * sack) < 1, moles: m.S.st.moles }; });
   check(mc.back && mc.moles === 1, 'Maulwurf erwischt: Sack doppelt zurück');
+
+  // 9j2) Kobold-Krämer: Steine gegen Gold, Bier, Würfel; Verjagen lässt Münzen fallen
+  const kb = await page.evaluate(() => {
+    const m = window.__mine, x = window.__mineTrader; m.jump(25); m.S.gold = 1000; const gems = m.S.gems;
+    x.spawn('gems'); x.open();
+    return { open: document.getElementById('toast').style.display === 'block', talk: x.trader.ph === 'talk', gems, has: !!document.getElementById('tTrade') };
+  });
+  check(kb.open && kb.talk && kb.has, 'Kobold-Krämer: Angebot öffnet sich');
+  await shot('24b-kobold');
+  const kg = await page.evaluate((gems) => { const m = window.__mine, x = window.__mineTrader; document.getElementById('tTrade').click(); return { gems: m.S.gems - gems, gold: m.S.gold, ph: x.trader && x.trader.ph }; }, kb.gems);
+  check(kg.gems === 2 && Math.abs(kg.gold - 700) < 1 && kg.ph === 'leave', 'Kobold: 30 % Gold gegen 2 Steine (Tiefe 25)');
+  const kc = await page.evaluate(() => {
+    const m = window.__mine, x = window.__mineTrader;
+    m.S.gold = 1000; x.spawn('beer'); x.open(); document.getElementById('tChase').click();
+    const chased = m.S.gold > 1000 && x.trader && x.trader.ph === 'leave';
+    m.S.gold = 1000; x.spawn('dice'); x.open(); document.getElementById('tTrade').click(); const dice = [500, 1500].includes(Math.round(m.S.gold));
+    const offers = []; for (let i = 0; i < 30; i++) { x.spawn(); offers.push(x.trader.offer); }
+    const repeat = offers.some((o, i) => i && o === offers[i - 1]);
+    window.__mineTrader.trader && (window.__mineTrader.trader.ph = 'leave');
+    return { chased, dice, repeat };
+  });
+  check(kc.chased, 'Kobold verjagt: lässt Münzen fallen und geht');
+  check(kc.dice && !kc.repeat, 'Koboldwürfel: Gold ×1,5 oder ×0,5; nie zweimal dasselbe Angebot');
+  await page.waitForTimeout(1000);
+
+  // 9j3) Helden-Zwerge: mit Steinen anheuern, aufwerten, genau einer kommt mit
+  await page.click('[data-tab="dwarf"]'); await page.waitForTimeout(300);
+  check((await page.locator('.card', { hasText: 'Helden-Zwerge' }).count()) === 1, 'Zeile «Helden-Zwerge» im Reiter «Zwerge»');
+  const hz = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, F = m.F, keepG = S.gems, keepH = JSON.stringify(S.hero);
+    S.hero = { lv: {}, on: '', seen: 5 }; S.gems = 100; S.up.zeit = false;
+    const tap0 = F.pickDmg(5, S), dps0 = F.dwarfDps(0, 10, S), gold0 = F.rockGold(25, S), chest0 = F.chestMult(S), time0 = F.bossTime(10, S);
+    const b1 = m.heroBuy('borin'), on1 = S.hero.on, g1 = S.gems; m.heroBuy('borin');
+    const tap2 = F.pickDmg(5, S) / tap0, g2 = S.gems;
+    m.heroBuy('thrain'); const stillBorin = S.hero.on === 'borin', dpsOff = F.dwarfDps(0, 10, S) / dps0;
+    m.heroTake('thrain'); const dpsOn = F.dwarfDps(0, 10, S) / dps0, tapOff = F.pickDmg(5, S) / tap0;
+    S.gems = 1000; m.heroBuy('gundi'); m.heroTake('gundi'); const gold = F.rockGold(25, S) / gold0;
+    m.heroBuy('flinka'); m.heroTake('flinka'); const chest = F.chestMult(S) / chest0;
+    m.heroBuy('dvala'); m.heroTake('dvala'); const time = F.bossTime(10, S) - time0;
+    for (let i = 0; i < 9; i++) m.heroBuy('dvala'); const max = S.hero.lv.dvala, timeMax = F.bossTime(10, S) - time0;
+    const locked = (() => { const b = S.best; S.best = 10; S.hero.lv = {}; const r = m.heroBuy('borin'); S.best = b; return !r; })();
+    S.hero = { lv: { borin: 2, thrain: 1 }, on: 'borin', seen: 5 }; m.showHeroes();
+    return { b1, on1, g1, g2, tap2, stillBorin, dpsOff, dpsOn, tapOff, gold, chest, time, max, timeMax, locked, keepG, keepH };
+  });
+  const near = (a, b) => Math.abs(a - b) < 0.02;
+  check(hz.b1 && hz.on1 === 'borin' && hz.g1 === 96 && hz.g2 === 88 && near(hz.tap2, 1.5), 'Held anheuern (4 Steine), Stufe 2 (8 Steine): Borin Tippen +50 %');
+  check(hz.stillBorin && near(hz.dpsOff, 1) && near(hz.dpsOn, 1.15) && near(hz.tapOff, 1), 'Nur der Held, der mitkommt, wirkt (Thrain Zwerge +15 %)');
+  check(near(hz.gold, 1.15) && near(hz.chest, 1.3) && hz.time === 3 && hz.max === 5 && hz.timeMax === 15 && hz.locked, 'Gundi Gold, Flinka Truhen, Dvala Boss-Zeit; höchstens Stufe 5; gesperrt unter Tiefe 20');
+  await page.waitForTimeout(300);
+  check((await page.locator('#toast').textContent()).includes('Borin der Starke') && (await page.locator('#toast [data-take="thrain"]').count()) === 1, 'Helden-Fenster zeigt Helden und «Mitnehmen»');
+  await shot('24c-helden');
+  await page.click('#toast [data-take="thrain"]'); await page.waitForTimeout(200);
+  check(await page.evaluate(() => window.__mine.S.hero.on === 'thrain'), 'Klick auf «Mitnehmen» wechselt den Helden');
+  await page.click('#tClose'); await page.waitForTimeout(600);
+  await shot('24d-held-am-felsen');
+  await page.evaluate((h) => { const S = window.__mine.S; S.hero = JSON.parse(h.keepH); S.gems = h.keepG; window.__mine.buildPanel(); }, hz);
 
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
