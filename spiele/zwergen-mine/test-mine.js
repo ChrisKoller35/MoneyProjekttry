@@ -145,7 +145,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.locator('.card', { hasText: 'Rekorde' }).locator('.buy').click(); await page.waitForTimeout(200);
   check(await page.locator('#tClose').isVisible(), 'Rekorde auch im Reiter «Ziele»');
   await page.click('#tClose'); await page.waitForTimeout(200);
-  check((await page.evaluate(() => window.__mine.GOALS.length)) === 55, '55 Ziele');
+  check((await page.evaluate(() => window.__mine.GOALS.length)) === 60, '60 Ziele');
 
   // 9c) Alten Rekord in der neuen Mine knacken
   const rec = await page.evaluate(() => { const m = window.__mine; m.jump(100); m.S.hp = 1; m.tap(); return { best: m.S.best, b: m.banners() }; });
@@ -478,7 +478,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
     return { a, tap, b, melted, still, c, best, dps, gold, ok, seen, keep, keepG };
   });
   check(bt.a && near(bt.tap, 1.15) && !bt.b && bt.melted === 1 && bt.still === 15 && bt.c && bt.best === 50, 'Beute: besseres Stück bleibt (Tippen +15 %), schwächeres wird zu einem Stein');
-  check(near(bt.dps, 1.3) && near(bt.gold, 1.1) && bt.ok && bt.seen.every(n => n > 0) && bt.seen[0] > bt.seen[3], 'Helm stärkt Zwerge, Amulett Gold; Würfel bleibt in den Grenzen, Legendär ist am seltensten');
+  check(near(bt.dps, 1.35) && near(bt.gold, 1.15) && bt.ok && bt.seen.every(n => n > 0) && bt.seen[0] > bt.seen[3], 'Helm stärkt Zwerge, Amulett Gold (je mit Set +5 %); Würfel bleibt in den Grenzen, Legendär ist am seltensten');
   await page.waitForTimeout(300);
   check((await page.locator('#toast').textContent()).includes('Urgrossvaters Donnerhacke'), 'Ausrüstungs-Fenster zeigt die Stücke');
   await shot('24e-ausruestung');
@@ -550,6 +550,25 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check(await page.evaluate(() => window.__mine.S.gems === 12 && !!window.__mine.S.gear.amu), 'Schmieden füllt einen leeren Platz');
   await page.click('#tClose'); await page.waitForTimeout(200);
   await page.evaluate((k) => { const S = window.__mine.S; S.gear = JSON.parse(k[0]); S.gems = k[1]; S.daily = JSON.parse(k[2]); S.streak = k[3]; window.__mine.buildPanel(); }, fg.keep);
+
+  // 9j6) Ausrüstungs-Sets: drei Stücke, die schwächste Güte zählt
+  const st = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, F = m.F, G = window.__mineGear, keep = JSON.stringify(S.gear), keepG = S.gems;
+    document.getElementById('toast').style.display = 'none';
+    S.gear = { pick: { r: 3, v: 50 }, helm: { r: 1, v: 15 } }; const none = [F.gearSet(S), F.gear(S, 'pick'), F.gear(S, 'amu')];
+    G.give({ k: 'amu', r: 0, v: 6 }); const one = [F.gearSet(S), F.gear(S, 'pick'), F.gear(S, 'amu')], ban = m.banners().join('|');
+    S.gear.amu = { r: 2, v: 30 }; const two = [F.gearSet(S), F.gear(S, 'helm')];
+    S.gear.helm = { r: 3, v: 50 }; S.gear.amu = { r: 3, v: 50 }; const four = [F.gearSet(S), F.gear(S, 'helm')];
+    const goals = [F.goalProgress(m.GOALS.find(g => g.id === 's4'), S), F.goalProgress(m.GOALS.find(g => g.id === 'm5'), S) === S.st.moles];
+    S.gear = { pick: { r: 1, v: 15 }, helm: { r: 1, v: 15 }, amu: { r: 2, v: 30 } }; m.showGear();
+    const txt = document.getElementById('toast').textContent;
+    return { none, one, two, four, ban, goals, txt, keep, keepG, empty: F.gear({}, 'pick') + F.gearSet({}) };
+  });
+  check(st.none.join() === '0,50,0' && st.one.join() === '1,55,11' && st.ban.includes('Set Stufe 1'), 'Set: drei Plätze belegt gibt Stufe 1 und +5 % auf jedes Stück ' + JSON.stringify(st.one));
+  check(st.two.join() === '2,25' && st.four.join() === '4,90' && st.goals.join() === '4,true' && st.empty === 0, 'Set: schwächste Güte zählt, legendär +40 %, ohne Ausrüstung nichts');
+  check(st.txt.includes('Set Stufe 2') && st.txt.includes('Episch'), 'Ausrüstungs-Fenster zeigt die Set-Stufe und den nächsten Schritt');
+  await page.waitForTimeout(200); await shot('24h-set');
+  await page.evaluate((h) => { const S = window.__mine.S; document.getElementById('toast').style.display = 'none'; S.gear = JSON.parse(h.keep); S.gems = h.keepG; window.__mine.buildPanel(); }, st);
 
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
