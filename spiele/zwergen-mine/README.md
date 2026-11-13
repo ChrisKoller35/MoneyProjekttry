@@ -1,6 +1,6 @@
 # Zwergen-Mine
 
-**Stand 13.11.2026:** Version 16 spielbar: Schmiede und Treue-Serie. Version 15: acht neue Ziele für Helden, Beute und Ränge, Dauertest. Version 14: fünfter Block «Sternenschacht» und das Fenster «Was ist neu?». Version 13: Ränge nach Punktestand. Version 12: Beute (Ausrüstung von Bossen). Version 11: Helden-Zwerge und der Kobold-Krämer. Version 10: die Zwerge reden in Sprechblasen (Nacht-Bot, geprüft). Version 9: jede Schicht sieht anders aus und jeden Tag gibt es drei Tagesziele (Nacht-Bot, geprüft). Version 8: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
+**Stand 13.11.2026:** Version 17 spielbar: Vorbereitung für CrazyGames (Ordner `portal/`), Pause und Ton aus bei Portal-Werbung, fünf Kleinigkeiten aus einer zweiten Durchsicht behoben (Krämer-Mindestpreis, Heldenwechsel im Bosskampf, Krämer überdeckt kein offenes Fenster, Sternzähler, gehaltene Leertaste). Version 16: Schmiede und Treue-Serie. Version 15: acht neue Ziele für Helden, Beute und Ränge, Dauertest. Version 14: fünfter Block «Sternenschacht» und das Fenster «Was ist neu?». Version 13: Ränge nach Punktestand. Version 12: Beute (Ausrüstung von Bossen). Version 11: Helden-Zwerge und der Kobold-Krämer. Version 10: die Zwerge reden in Sprechblasen (Nacht-Bot, geprüft). Version 9: jede Schicht sieht anders aus und jeden Tag gibt es drei Tagesziele (Nacht-Bot, geprüft). Version 8: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
 
 ## Spielregel
 
@@ -48,7 +48,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 
 - `index.html` – das ganze Spiel in einer Datei (kein Internet nötig, ca. 80 KB), Texte Deutsch/Englisch je nach Browser-Sprache
 - `soak-mine.js` – Dauertest mit allem Zufall an (Maulwurf, Kobold, besondere Felsen, Sprüche, Beute, Helden) in allen fünf Blöcken: `node soak-mine.js`, am Ende muss «errors 0» stehen.
-- `test-mine.js` – Browser-Test mit 116 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
+- `test-mine.js` – Browser-Test mit 118 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
 - Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan) `bilder-v7/` (Felsen, Maulwurf, Fundstücke) und `bilder-v8/` (Gletscher, Grotte, Kronen-Laden)
 
 ## Bedienung
@@ -62,6 +62,13 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 ## Portal-Anbindung
 
 Objekt `Portal` oben im Code: `gameplayStart`, `gameplayStop`, `happytime` (Boss besiegt, Umzug), `showRewardedAd` (freiwillige Werbung für doppeltes Offline-Gold), `submitScore` (Punktestand = alle Kronen je, bei jedem geschafften Block und jedem Abholen; für die Rangliste des Portals, z. B. CrazyGames, die es nur für eingeladene Spiele gibt). Beim Einreichen durch die Portal-Schnittstelle ersetzen. Das Spiel nutzt keine Browser-Dialogfenster (Rückfrage beim Umzug ist ein eigenes Fenster im Spiel).
+
+### CrazyGames (Ordner `portal/`)
+
+- `portal/crazygames-adapter.js` setzt `window.ZwergenMinePortal` auf das CrazyGames-SDK (Version 3): Spielbeginn und Pause, «happytime», freiwillige Werbung mit Belohnung nur nach ganz gesehener Werbung.
+- `node portal/build-crazygames.js` schreibt die fertige Datei nach `portal/dist/crazygames/index.html` (SDK und Adapter vor dem Spiel eingefügt). `dist` wird nicht ins Repo gelegt.
+- Während Werbung läuft, schickt der Adapter `zm-ad-start` und `zm-ad-end`; das Spiel pausiert, ist stumm und läuft danach weiter (im Test geprüft).
+- **Noch nicht geprüft:** der Adapter ist nach der SDK-Beschreibung geschrieben, aber nicht auf dem echten Portal gelaufen. Vor dem Einreichen im CrazyGames-Prüfwerkzeug («QA Tool») testen. Rangliste (`submitScore`) hat bei CrazyGames kein Gegenstück und tut dort nichts.
 
 ## Formeln
 
