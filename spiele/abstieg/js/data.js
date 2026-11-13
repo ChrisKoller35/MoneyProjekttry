@@ -403,7 +403,8 @@ A.TROPHIES = {
 };
 
 // Legendäre Gegenstände (Regeln in js/legends.js): 20 Einzelstücke, die die Spielweise verändern, und eine Sammlung im Lager.
-// src: boss = vom Weltenboss (boss), elite = von Elite-Gegnern mit dieser Eigenschaft (trait), secret = Truhe im geheimen Raum dieser Welt (world, 0-5).
+// src: boss = vom Weltenboss (boss), elite = von Elite-Gegnern mit dieser Eigenschaft (trait), secret = Truhe im geheimen Raum dieser Welt (world, 0-5),
+// wild = überall (wild.js), grade = nur in Läufen ab diesem Grad (grade), bei Weltenbossen (v51).
 // base: Grund-Item ('weapon' = Waffe der eigenen Klasse), ico: eigenes Bildchen (art.js i_...), stats: kommen zu den Grundwerten dazu
 A.LEGENDS = {
   pudding: { src: 'boss', boss: 'schleimkoenig', base: 'amulett', ico: 'pudding', el: 'stein', stats: { hp: 25, regen: 1 },
@@ -530,6 +531,22 @@ Object.assign(A.LEGENDS, {
     text: { de: 'Jeder 4. normale Angriff ist eine riesige Fliegenklatsche: grosser Schaden in einer Linie vor dir. Gegner unter 30 % Leben werden plattgedrückt.', en: 'Every 4th basic attack is a giant fly swatter: big damage in a line in front of you. Enemies below 30% health get flattened.' },
     flavor: { de: 'Für sehr grosse Fliegen. Und kleine Drachen.', en: 'For very big flies. And small dragons.' } },
 });
+// Legenden der Grade (v51): nur ab grade (run.grade), bei Weltenbossen (game.js gradeLegend), Wirkung legends.js
+Object.assign(A.LEGENDS, {
+  klingel: { src: 'grade', grade: 3, base: 'ring', ico: 'ring', el: 'blitz', stats: { crit: 6, atkPct: 8, magPct: 8 },
+    name: { de: 'Türklingel-Ring', en: 'Doorbell Ring' },
+    text: { de: 'Zu Beginn jedes Kampfs klingelt es: Alle Gegner starren 1.5 Sekunden zur Tür (Bosse kurz).', en: 'At the start of every fight the doorbell rings: all enemies stare at the door for 1.5 seconds (bosses briefly).' },
+    flavor: { de: 'Ab Grad 3 kommt immer noch einer vorbei. Jetzt klingelt er wenigstens.', en: 'From grade 3 on, someone always drops by. Now at least they ring first.' } },
+  nashorn: { src: 'grade', grade: 6, base: 'leder', ico: 'leder', el: 'stein', stats: { def: 6, hp: 30 },
+    name: { de: 'Nashornleder-Wams', en: 'Rhino-Hide Jerkin' },
+    text: { de: 'Jeder 4. Treffer prallt an deiner dicken Haut ab.', en: 'Every 4th hit bounces off your thick skin.' },
+    flavor: { de: 'Grad 6 macht dir die Haut dünn. Ein Nashorn hat dir seine geliehen. Es will sie zurück.', en: 'Grade 6 thins your skin. A rhino lent you its own. It wants it back.' } },
+  behalteloeffel: { src: 'grade', grade: 9, base: 'weapon', ico: 'loeffel', el: 'schatten', stats: { atkPct: 15, magPct: 15, hp: 20 },
+    name: { de: 'Der Löffel, den du behältst', en: 'The Spoon You Keep' },
+    text: { de: 'Jeder besiegte Gegner heilt dich um 2 % deines Lebens.', en: 'Every enemy you defeat heals you for 2% of your health.' },
+    flavor: { de: 'Hier unten heisst «den Löffel abgeben» sterben. Den hier gibst du nicht ab.', en: 'Down here, "handing in your spoon" means dying. You are not handing this one in.' } },
+});
+A.GRADE_LEG_CHANCE = [0.35, 0.2];   // je Weltenboss: [noch nie gefunden, schon in der Sammlung]
 // Chance auf ein verrücktes Stück je Gelegenheit: [Welt 1, ab Welt 2]; noch nie gefundene Stücke 1.5-mal so oft
 A.WILD_CHANCE = { chest: [0.04, 0.12], elite: [0.02, 0.06], room: [0.01, 0.03], boss: [0, 0.25] };
 A.LEGEND_SPARKS = 20;   // Seelenfunken für jede Legende, die zum ersten Mal in die Sammlung kommt
@@ -953,7 +970,29 @@ A.EVENTS = [
       { text: { de: 'Zahlen', en: 'Pay up' }, needGold: 30, outcomes: [{ p: 1, gold: -30, xp: 70, potion: 1, msg: { de: 'Quittung gibt es keine. Teil des Angebots. +70 EP, 1 Trank.', en: 'No receipt. That\'s part of the deal. +70 XP, 1 potion.' } }] },
       { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet bis zu 40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes up to 40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
     ] },
+  // Die Sphinx (13.11.2026): ein Rätsel aus «riddles», die drei Antworten gemischt, dazu «Nichts sagen» (game.js, riddleEvent; kein Hauptwort, denn «das Schweigen brechen» löst das Versprechen-Rätsel auch). «choices» ist die feste Fassung mit dem ersten Rätsel, falls etwas das Ereignis direkt nimmt
+  { id: 'sphinx', title: { de: 'Die Sphinx', en: 'The Sphinx' }, text: { de: 'Die Statue blinzelt. Es ist eine Sphinx, und sie langweilt sich: «Rätselzeit. Richtig gibt Beute. Falsch gibt Bisse.»', en: 'The statue blinks. It\'s a sphinx, and it\'s bored: "Riddle time. Right means loot. Wrong means bites."' },
+    win: [{ p: 1, item: 'rare', xp: 40, msg: { de: 'Die Sphinx schmollt und rückt ein Stück heraus. +40 Erfahrung.', en: 'The sphinx sulks and hands over an item. +40 experience.' } }],
+    lose: [{ p: 1, dmg: 0.25, msg: { de: '«Falsch.» Die Sphinx knabbert an dir. −25 % Leben. Sie entschuldigt sich nicht.', en: '"Wrong." The sphinx nibbles on you. −25% health. It does not apologize.' } }],
+    quiet: { text: { de: 'Nichts sagen', en: 'Keep quiet' }, outcomes: [{ p: 1, msg: { de: 'Die Sphinx gähnt. Du darfst gehen. Sie ist enttäuscht, aber nicht überrascht.', en: 'The sphinx yawns. You may go. It is disappointed, but not surprised.' } }] },
+    riddles: [
+      { q: { de: 'Ich habe einen Hals, aber keinen Kopf. Was bin ich?', en: 'I have a neck but no head. What am I?' }, right: { de: 'Eine Flasche', en: 'A bottle' }, wrong: [{ de: 'Ein Hut', en: 'A hat' }, { de: 'Eine Wurst', en: 'A sausage' }] },
+      { q: { de: 'Je mehr du wegnimmst, desto grösser werde ich. Was bin ich?', en: 'The more you take away, the bigger I get. What am I?' }, right: { de: 'Ein Loch', en: 'A hole' }, wrong: [{ de: 'Ein Goldbeutel', en: 'A gold pouch' }, { de: 'Ein Kuchen', en: 'A cake' }] },
+      { q: { de: 'Es gehört dir, aber die anderen brauchen es öfter als du. Was ist es?', en: 'It belongs to you, but others use it more than you do. What is it?' }, right: { de: 'Dein Name', en: 'Your name' }, wrong: [{ de: 'Deine Tränke', en: 'Your potions' }, { de: 'Dein Schwert', en: 'Your sword' }] },
+      { q: { de: 'Was hat Zähne, aber beisst nie?', en: 'What has teeth but never bites?' }, right: { de: 'Ein Kamm', en: 'A comb' }, wrong: [{ de: 'Eine Mimik', en: 'A mimic' }, { de: 'Ein Schleim', en: 'A slime' }] },
+      { q: { de: 'Was wird nasser, je mehr es trocknet?', en: 'What gets wetter the more it dries?' }, right: { de: 'Ein Handtuch', en: 'A towel' }, wrong: [{ de: 'Die Wüste', en: 'The desert' }, { de: 'Ein Fisch', en: 'A fish' }] },
+      { q: { de: 'Ich habe Städte, aber keine Häuser, Wälder, aber keine Bäume, und Wasser, aber keine Fische. Was bin ich?', en: 'I have cities but no houses, forests but no trees, and water but no fish. What am I?' }, right: { de: 'Eine Landkarte', en: 'A map' }, wrong: [{ de: 'Die Versunkene Stadt', en: 'The Sunken City' }, { de: 'Ein sehr schlechter Zoo', en: 'A very bad zoo' }] },
+      { q: { de: 'Einmal in jeder Minute, zweimal in jedem Moment, aber nie in tausend Jahren. Was ist es?', en: 'Once in a minute, twice in a moment, but never in a thousand years. What is it?' }, right: { de: 'Der Buchstabe M', en: 'The letter M' }, wrong: [{ de: 'Ein Gähnen der Sphinx', en: 'A sphinx yawn' }, { de: 'Ein Schatz', en: 'A treasure' }] },
+      { q: { de: 'Was kann man brechen, ohne es je zu berühren?', en: 'What can you break without ever touching it?' }, right: { de: 'Ein Versprechen', en: 'A promise' }, wrong: [{ de: 'Einen Krug', en: 'A pot' }, { de: 'Eine Rippe', en: 'A rib' }] },
+    ],
+    choices: [
+      { text: { de: 'Eine Flasche', en: 'A bottle' }, outcomes: 'win' },
+      { text: { de: 'Ein Hut', en: 'A hat' }, outcomes: 'lose' },
+      { text: { de: 'Eine Wurst', en: 'A sausage' }, outcomes: 'lose' },
+    ] },
 ];
+// Die Sphinx: die feste Fassung (erstes Rätsel) zeigt auf dieselben Ergebnisse wie die gewürfelte, dazu «Nichts sagen»
+{ const sx = A.EVENTS.find(e => e.id === 'sphinx'); sx.choices = sx.choices.map(c => ({ text: c.text, outcomes: sx[c.outcomes] })).concat([sx.quiet]); }
 
 // ---------- Lager ----------
 // Völker (Rassen) schaltet man einzeln frei. Die übrigen Einträge gab es nur im alten Lager: wer sie gekauft hat, bekommt sie beim Laden als Gebäude-Stufen (game.js, migrateCamp)

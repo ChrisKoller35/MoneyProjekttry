@@ -434,6 +434,13 @@ A.Game = (function () {
     const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 1.5);
     return run.rng.chance(p * (meta.legFound[id] ? 1 : 1.5)) ? makeLegend(id) : null;
   }
+  // Legenden der Grade (v51): nur bei Weltenbossen und nur ab ihrem Grad; die Tageswelt hat Grad 0 (gradeOf, nicht gradeVal)
+  function gradeLegend() {
+    const g = A.gradeOf(run), ids = Object.keys(A.LEGENDS).filter(k => A.LEGENDS[k].src === 'grade' && g >= A.LEGENDS[k].grade && !legSeen(k));
+    if (!ids.length) return null;   // vor jedem Zufallswurf: Läufe auf Grad 0-2 würfeln gleich wie bisher
+    const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 2);
+    return run.rng.chance(A.GRADE_LEG_CHANCE[meta.legFound[id] ? 1 : 0]) ? makeLegend(id) : null;
+  }
   // Truhe im geheimen Raum: viel Gold, ein gutes Item und oft die Legende dieser Welt
   function secretChest() {
     const id = Object.keys(A.LEGENDS).find(k => A.LEGENDS[k].src === 'secret' && A.LEGENDS[k].world === A.worldIndex(run.floor) % A.WORLDS.length);
@@ -529,7 +536,7 @@ A.Game = (function () {
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
     if (kind === 'merchant' && !run.shopItems) run.shopItems = [fittingItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
-    if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
+    if (kind === 'statue' && !run.currentEvent) { const ev = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.currentEvent = ev.riddles ? riddleEvent(ev) : ev; run.lastEvent = ev.id; }
     save();
   }
   // kind: Ereignis ('kill', 'crit', 'pot', 'gold', 'potion', 'hurt', ...); n: Menge (z. B. Gold), Standard 1
@@ -565,7 +572,7 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++; A.Achieve.onKill(e);
     const items = []; let esparks = 0, book = null;
-    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); }
+    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); const gl = gradeLegend(); if (gl) items.push(gl); bossBanner(e.mid); }
     else if (e.elite) {
       items.push(randomItem(rollRarity(nt)));
       const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
@@ -650,6 +657,12 @@ A.Game = (function () {
 
   // ---------- Räume ----------
   function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else { run.points++; if (meta.autoPts) autoSpend(); } save(); }   // Harte Pritsche (Grad 9)
+  // Die Sphinx (v50): ein Rätsel aus der Liste, die Antworten gemischt, «Nichts sagen» zuletzt. Das fertige Ereignis steht wie jedes andere im Spielstand (run.currentEvent)
+  function riddleEvent(ev) {
+    const q = run.rng.pick(ev.riddles);
+    const answers = run.rng.shuffle([{ text: q.right, outcomes: ev.win }].concat(q.wrong.map(w => ({ text: w, outcomes: ev.lose }))));
+    return { id: ev.id, title: ev.title, text: ev.text, q: q.q, riddle: true, choices: answers.concat([ev.quiet]) };
+  }
   function doEvent(choiceIdx) {
     const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
     let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
@@ -761,8 +774,8 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, gradeLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, luckEff, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, luckEff, riddleEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();

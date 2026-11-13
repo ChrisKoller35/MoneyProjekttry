@@ -967,7 +967,8 @@ A.TROPHIES = {
 };
 
 // Legendäre Gegenstände (Regeln in js/legends.js): 20 Einzelstücke, die die Spielweise verändern, und eine Sammlung im Lager.
-// src: boss = vom Weltenboss (boss), elite = von Elite-Gegnern mit dieser Eigenschaft (trait), secret = Truhe im geheimen Raum dieser Welt (world, 0-5).
+// src: boss = vom Weltenboss (boss), elite = von Elite-Gegnern mit dieser Eigenschaft (trait), secret = Truhe im geheimen Raum dieser Welt (world, 0-5),
+// wild = überall (wild.js), grade = nur in Läufen ab diesem Grad (grade), bei Weltenbossen (v51).
 // base: Grund-Item ('weapon' = Waffe der eigenen Klasse), ico: eigenes Bildchen (art.js i_...), stats: kommen zu den Grundwerten dazu
 A.LEGENDS = {
   pudding: { src: 'boss', boss: 'schleimkoenig', base: 'amulett', ico: 'pudding', el: 'stein', stats: { hp: 25, regen: 1 },
@@ -1094,6 +1095,22 @@ Object.assign(A.LEGENDS, {
     text: { de: 'Jeder 4. normale Angriff ist eine riesige Fliegenklatsche: grosser Schaden in einer Linie vor dir. Gegner unter 30 % Leben werden plattgedrückt.', en: 'Every 4th basic attack is a giant fly swatter: big damage in a line in front of you. Enemies below 30% health get flattened.' },
     flavor: { de: 'Für sehr grosse Fliegen. Und kleine Drachen.', en: 'For very big flies. And small dragons.' } },
 });
+// Legenden der Grade (v51): nur ab grade (run.grade), bei Weltenbossen (game.js gradeLegend), Wirkung legends.js
+Object.assign(A.LEGENDS, {
+  klingel: { src: 'grade', grade: 3, base: 'ring', ico: 'ring', el: 'blitz', stats: { crit: 6, atkPct: 8, magPct: 8 },
+    name: { de: 'Türklingel-Ring', en: 'Doorbell Ring' },
+    text: { de: 'Zu Beginn jedes Kampfs klingelt es: Alle Gegner starren 1.5 Sekunden zur Tür (Bosse kurz).', en: 'At the start of every fight the doorbell rings: all enemies stare at the door for 1.5 seconds (bosses briefly).' },
+    flavor: { de: 'Ab Grad 3 kommt immer noch einer vorbei. Jetzt klingelt er wenigstens.', en: 'From grade 3 on, someone always drops by. Now at least they ring first.' } },
+  nashorn: { src: 'grade', grade: 6, base: 'leder', ico: 'leder', el: 'stein', stats: { def: 6, hp: 30 },
+    name: { de: 'Nashornleder-Wams', en: 'Rhino-Hide Jerkin' },
+    text: { de: 'Jeder 4. Treffer prallt an deiner dicken Haut ab.', en: 'Every 4th hit bounces off your thick skin.' },
+    flavor: { de: 'Grad 6 macht dir die Haut dünn. Ein Nashorn hat dir seine geliehen. Es will sie zurück.', en: 'Grade 6 thins your skin. A rhino lent you its own. It wants it back.' } },
+  behalteloeffel: { src: 'grade', grade: 9, base: 'weapon', ico: 'loeffel', el: 'schatten', stats: { atkPct: 15, magPct: 15, hp: 20 },
+    name: { de: 'Der Löffel, den du behältst', en: 'The Spoon You Keep' },
+    text: { de: 'Jeder besiegte Gegner heilt dich um 2 % deines Lebens.', en: 'Every enemy you defeat heals you for 2% of your health.' },
+    flavor: { de: 'Hier unten heisst «den Löffel abgeben» sterben. Den hier gibst du nicht ab.', en: 'Down here, "handing in your spoon" means dying. You are not handing this one in.' } },
+});
+A.GRADE_LEG_CHANCE = [0.35, 0.2];   // je Weltenboss: [noch nie gefunden, schon in der Sammlung]
 // Chance auf ein verrücktes Stück je Gelegenheit: [Welt 1, ab Welt 2]; noch nie gefundene Stücke 1.5-mal so oft
 A.WILD_CHANCE = { chest: [0.04, 0.12], elite: [0.02, 0.06], room: [0.01, 0.03], boss: [0, 0.25] };
 A.LEGEND_SPARKS = 20;   // Seelenfunken für jede Legende, die zum ersten Mal in die Sammlung kommt
@@ -1517,7 +1534,29 @@ A.EVENTS = [
       { text: { de: 'Zahlen', en: 'Pay up' }, needGold: 30, outcomes: [{ p: 1, gold: -30, xp: 70, potion: 1, msg: { de: 'Quittung gibt es keine. Teil des Angebots. +70 EP, 1 Trank.', en: 'No receipt. That\'s part of the deal. +70 XP, 1 potion.' } }] },
       { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet bis zu 40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes up to 40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
     ] },
+  // Die Sphinx (13.11.2026): ein Rätsel aus «riddles», die drei Antworten gemischt, dazu «Nichts sagen» (game.js, riddleEvent; kein Hauptwort, denn «das Schweigen brechen» löst das Versprechen-Rätsel auch). «choices» ist die feste Fassung mit dem ersten Rätsel, falls etwas das Ereignis direkt nimmt
+  { id: 'sphinx', title: { de: 'Die Sphinx', en: 'The Sphinx' }, text: { de: 'Die Statue blinzelt. Es ist eine Sphinx, und sie langweilt sich: «Rätselzeit. Richtig gibt Beute. Falsch gibt Bisse.»', en: 'The statue blinks. It\'s a sphinx, and it\'s bored: "Riddle time. Right means loot. Wrong means bites."' },
+    win: [{ p: 1, item: 'rare', xp: 40, msg: { de: 'Die Sphinx schmollt und rückt ein Stück heraus. +40 Erfahrung.', en: 'The sphinx sulks and hands over an item. +40 experience.' } }],
+    lose: [{ p: 1, dmg: 0.25, msg: { de: '«Falsch.» Die Sphinx knabbert an dir. −25 % Leben. Sie entschuldigt sich nicht.', en: '"Wrong." The sphinx nibbles on you. −25% health. It does not apologize.' } }],
+    quiet: { text: { de: 'Nichts sagen', en: 'Keep quiet' }, outcomes: [{ p: 1, msg: { de: 'Die Sphinx gähnt. Du darfst gehen. Sie ist enttäuscht, aber nicht überrascht.', en: 'The sphinx yawns. You may go. It is disappointed, but not surprised.' } }] },
+    riddles: [
+      { q: { de: 'Ich habe einen Hals, aber keinen Kopf. Was bin ich?', en: 'I have a neck but no head. What am I?' }, right: { de: 'Eine Flasche', en: 'A bottle' }, wrong: [{ de: 'Ein Hut', en: 'A hat' }, { de: 'Eine Wurst', en: 'A sausage' }] },
+      { q: { de: 'Je mehr du wegnimmst, desto grösser werde ich. Was bin ich?', en: 'The more you take away, the bigger I get. What am I?' }, right: { de: 'Ein Loch', en: 'A hole' }, wrong: [{ de: 'Ein Goldbeutel', en: 'A gold pouch' }, { de: 'Ein Kuchen', en: 'A cake' }] },
+      { q: { de: 'Es gehört dir, aber die anderen brauchen es öfter als du. Was ist es?', en: 'It belongs to you, but others use it more than you do. What is it?' }, right: { de: 'Dein Name', en: 'Your name' }, wrong: [{ de: 'Deine Tränke', en: 'Your potions' }, { de: 'Dein Schwert', en: 'Your sword' }] },
+      { q: { de: 'Was hat Zähne, aber beisst nie?', en: 'What has teeth but never bites?' }, right: { de: 'Ein Kamm', en: 'A comb' }, wrong: [{ de: 'Eine Mimik', en: 'A mimic' }, { de: 'Ein Schleim', en: 'A slime' }] },
+      { q: { de: 'Was wird nasser, je mehr es trocknet?', en: 'What gets wetter the more it dries?' }, right: { de: 'Ein Handtuch', en: 'A towel' }, wrong: [{ de: 'Die Wüste', en: 'The desert' }, { de: 'Ein Fisch', en: 'A fish' }] },
+      { q: { de: 'Ich habe Städte, aber keine Häuser, Wälder, aber keine Bäume, und Wasser, aber keine Fische. Was bin ich?', en: 'I have cities but no houses, forests but no trees, and water but no fish. What am I?' }, right: { de: 'Eine Landkarte', en: 'A map' }, wrong: [{ de: 'Die Versunkene Stadt', en: 'The Sunken City' }, { de: 'Ein sehr schlechter Zoo', en: 'A very bad zoo' }] },
+      { q: { de: 'Einmal in jeder Minute, zweimal in jedem Moment, aber nie in tausend Jahren. Was ist es?', en: 'Once in a minute, twice in a moment, but never in a thousand years. What is it?' }, right: { de: 'Der Buchstabe M', en: 'The letter M' }, wrong: [{ de: 'Ein Gähnen der Sphinx', en: 'A sphinx yawn' }, { de: 'Ein Schatz', en: 'A treasure' }] },
+      { q: { de: 'Was kann man brechen, ohne es je zu berühren?', en: 'What can you break without ever touching it?' }, right: { de: 'Ein Versprechen', en: 'A promise' }, wrong: [{ de: 'Einen Krug', en: 'A pot' }, { de: 'Eine Rippe', en: 'A rib' }] },
+    ],
+    choices: [
+      { text: { de: 'Eine Flasche', en: 'A bottle' }, outcomes: 'win' },
+      { text: { de: 'Ein Hut', en: 'A hat' }, outcomes: 'lose' },
+      { text: { de: 'Eine Wurst', en: 'A sausage' }, outcomes: 'lose' },
+    ] },
 ];
+// Die Sphinx: die feste Fassung (erstes Rätsel) zeigt auf dieselben Ergebnisse wie die gewürfelte, dazu «Nichts sagen»
+{ const sx = A.EVENTS.find(e => e.id === 'sphinx'); sx.choices = sx.choices.map(c => ({ text: c.text, outcomes: sx[c.outcomes] })).concat([sx.quiet]); }
 
 // ---------- Lager ----------
 // Völker (Rassen) schaltet man einzeln frei. Die übrigen Einträge gab es nur im alten Lager: wer sie gekauft hat, bekommt sie beim Laden als Gebäude-Stufen (game.js, migrateCamp)
@@ -2699,6 +2738,13 @@ A.Game = (function () {
     const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 1.5);
     return run.rng.chance(p * (meta.legFound[id] ? 1 : 1.5)) ? makeLegend(id) : null;
   }
+  // Legenden der Grade (v51): nur bei Weltenbossen und nur ab ihrem Grad; die Tageswelt hat Grad 0 (gradeOf, nicht gradeVal)
+  function gradeLegend() {
+    const g = A.gradeOf(run), ids = Object.keys(A.LEGENDS).filter(k => A.LEGENDS[k].src === 'grade' && g >= A.LEGENDS[k].grade && !legSeen(k));
+    if (!ids.length) return null;   // vor jedem Zufallswurf: Läufe auf Grad 0-2 würfeln gleich wie bisher
+    const id = run.rng.weighted(ids, k => meta.legFound[k] ? 1 : 2);
+    return run.rng.chance(A.GRADE_LEG_CHANCE[meta.legFound[id] ? 1 : 0]) ? makeLegend(id) : null;
+  }
   // Truhe im geheimen Raum: viel Gold, ein gutes Item und oft die Legende dieser Welt
   function secretChest() {
     const id = Object.keys(A.LEGENDS).find(k => A.LEGENDS[k].src === 'secret' && A.LEGENDS[k].world === A.worldIndex(run.floor) % A.WORLDS.length);
@@ -2794,7 +2840,7 @@ A.Game = (function () {
   // Raum betreten: Händler-Ware oder Ereignis festlegen (einmal pro Raum)
   function roomContent(kind) {
     if (kind === 'merchant' && !run.shopItems) run.shopItems = [fittingItem(), randomItem(), randomItem(rollRarity(1))].map(it => ({ it, price: Math.round(sellValue(it) * 2.5 * shopMul()) }));
-    if (kind === 'statue' && !run.currentEvent) { run.currentEvent = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.lastEvent = run.currentEvent.id; }
+    if (kind === 'statue' && !run.currentEvent) { const ev = run.rng.pick(A.EVENTS.filter(e => e.id !== run.lastEvent)); run.currentEvent = ev.riddles ? riddleEvent(ev) : ev; run.lastEvent = ev.id; }
     save();
   }
   // kind: Ereignis ('kill', 'crit', 'pot', 'gold', 'potion', 'hurt', ...); n: Menge (z. B. Gold), Standard 1
@@ -2830,7 +2876,7 @@ A.Game = (function () {
     const xp = Math.round((6 + f * 3) * (e.boss ? 6 : e.elite ? 1.5 + nt * 0.5 : 1) * (1 + d.xpPct / 100));
     run.kills++; run.floorKills++; meta.totalKills++; A.Achieve.onKill(e);
     const items = []; let esparks = 0, book = null;
-    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); bossBanner(e.mid); }
+    if (e.boss) { const tr = makeTrophy(e.mid), lg = bossLegend(e.mid); items.push(tr || randomItem('legendary'), randomItem(rollRarity(2))); if (lg) items.push(lg); const wl = wildLegend('boss'); if (wl) items.push(wl); const gl = gradeLegend(); if (gl) items.push(gl); bossBanner(e.mid); }
     else if (e.elite) {
       items.push(randomItem(rollRarity(nt)));
       const lg = eliteLegend(e) || wildLegend('elite'); if (lg) items.push(lg);
@@ -2915,6 +2961,12 @@ A.Game = (function () {
 
   // ---------- Räume ----------
   function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else { run.points++; if (meta.autoPts) autoSpend(); } save(); }   // Harte Pritsche (Grad 9)
+  // Die Sphinx (v50): ein Rätsel aus der Liste, die Antworten gemischt, «Nichts sagen» zuletzt. Das fertige Ereignis steht wie jedes andere im Spielstand (run.currentEvent)
+  function riddleEvent(ev) {
+    const q = run.rng.pick(ev.riddles);
+    const answers = run.rng.shuffle([{ text: q.right, outcomes: ev.win }].concat(q.wrong.map(w => ({ text: w, outcomes: ev.lose }))));
+    return { id: ev.id, title: ev.title, text: ev.text, q: q.q, riddle: true, choices: answers.concat([ev.quiet]) };
+  }
   function doEvent(choiceIdx) {
     const ev = run.currentEvent, ch = ev.choices[choiceIdx], rng = run.rng;
     let r = rng.next(), oc = ch.outcomes[ch.outcomes.length - 1];
@@ -3026,9 +3078,9 @@ A.Game = (function () {
   return {
     get run() { return run; }, get meta() { return meta; }, metaEffects, raceUnlocked, classUnlocked, campLevel, campRank, campOpen, campCost, campBuy, campAffordable, bookPages, eliteSeen, legCount, legendFound, comboCount, takeCombos, comboFresh,
     newRun, load, clearRun, resetAll, save, saveMeta, derived, monsterEntity, gradeWon, gradeMax, gradePick, canGoHome, goHome, candles, wishToday, wishProgress, wishCheck, dailyToday,
-    makeItem, makeLegend, wildLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
+    makeItem, makeLegend, wildLegend, gradeLegend, itemName, itemLines, randomItem, fittingItem, setFocus, fateSpend, fateLater, fateOpen, rollRarity, equip, sell, sellValue, addToBag, wouldSell, BAG_MAX,
     newFloor, descend, roomContent, questEvent, payQuest, killReward, roomCleared, xpNeed, spend, autoSpend, skillOffer, learnSkill, setActive, boonOffer, takeBoon, skipBoon, boonGold,
-    doRest, doEvent, luckEff, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
+    doRest, doEvent, luckEff, riddleEvent, treasure, secretChest, buy, buyPotion, potionPrice, potionPct, usePotion, finishRun, abandonRun, metaBuy, forgeCost, canForge, forge,
   };
 })();
 
@@ -8767,6 +8819,7 @@ A.Legends = (function () {
     if (g.src === 'boss') return L('Vom Weltenboss ', 'From the world boss ') + A.t(A.BOSSES[g.boss].name);
     if (g.src === 'elite') return L('Von Elite-Gegnern mit der Eigenschaft ', 'From elites with the trait ') + A.t(A.ELITE_TRAITS[g.trait].name);
     if (g.src === 'wild') return L('Kann überall auftauchen: in Truhen, bei Elite-Gegnern, nach Kämpfen und bei Weltenbossen. Ab Welt 2 viel öfter.', 'Can turn up anywhere: in chests, from elites, after fights and from world bosses. Much more often from world 2.');
+    if (g.src === 'grade') return L(`Nur ab Grad ${g.grade}, bei Weltenbossen (Grade gibt es nach dem Ausgang auf Ebene ${A.MAX_FLOOR}).`, `Only from grade ${g.grade}, from world bosses (grades unlock at the exit on floor ${A.MAX_FLOOR}).`);   // Legenden der Grade (v51)
     return L('Aus einem geheimen Raum in ', 'From a secret room in ') + A.t(A.WORLDS[g.world].name);
   }
 
@@ -8781,15 +8834,16 @@ A.Legends = (function () {
     if (from.leg.prahlhans && from.brag) mul *= 1 + 0.08 * from.brag;
     return mul === 1 && !crit ? null : { mul, crit };
   }
-  // Treffer am Helden abfangen: Tintenwolke (Gegner sieht nichts) und Bratpfannen (jeder dritte prallt ab)
+  // Treffer am Helden abfangen: Tintenwolke (Gegner sieht nichts), Bratpfannen (jeder dritte prallt ab) und Nashornleder (jeder vierte)
   function guard(from, to, opts) {
     const w = W(); if (!w || to !== w.hero || !from || from.side !== 'enemy' || (opts.kind !== 'phys' && opts.kind !== 'magic')) return null;
     if (from.blindUntil > w.t && Math.random() < 0.5) {
       api.float(to.x, to.y - to.r - 8, L('daneben', 'miss'), '#c0cbdc', 12); api.fx('miss', { to }); A.Gear.onDodge(to); A.Combos.onDodge(to);
       return -1;
     }
-    if (has(to, 'pfannen') && (to.panN = (to.panN || 0) + 1) % 3 === 0) {
-      api.float(to.x, to.y - to.r - 14, L('Klong!', 'Clang!'), '#c0cbdc', 16);
+    const pan = has(to, 'pfannen') ? 3 : has(to, 'nashorn') ? 4 : 0;   // beides Rüstung, nie zusammen getragen: panN teilen ist sicher
+    if (pan && (to.panN = (to.panN || 0) + 1) % pan === 0) {
+      api.float(to.x, to.y - to.r - 14, pan === 3 ? L('Klong!', 'Clang!') : L('Dicke Haut!', 'Thick skin!'), '#c0cbdc', 16);
       if (A.Sound.klong) A.Sound.klong();
       if (A.FX) A.FX.burst(to.x + (from.x - to.x) * 0.3, to.y - 14 + (from.y - to.y) * 0.3, 10, { color: ['#ffffff', '#fee761', '#c0cbdc'], smin: 60, smax: 180, life: 0.3, add: true, kind: 'spark', drag: 4 });
       to.flash = 0.06;
@@ -8852,6 +8906,7 @@ A.Legends = (function () {
       api.float(e.x, e.y - 40, L('Leerenloch!', 'Void rift!'), '#e0a4ff', 14);
       if (A.Sound.summon) A.Sound.summon();
     }
+    if (h.leg.behalteloeffel) api.heal(h, Math.max(1, Math.round(h.maxHp * 0.02)));   // Der Löffel, den du behältst (Grad 9): jeder besiegte Gegner heilt 2 %
   }
   // Held getroffen
   function onHurt(h, from, dmg) {
@@ -8907,7 +8962,11 @@ A.Legends = (function () {
     const w = W(); if (!h.leg) return;
     h.brag = 0; h.stopT = 4; h.anvT = 1.5; h.duckT = 2; h.ratT = 1; h.dice = null;
     if (h.leg.wuerfel) roll(h, 1 + Math.floor(Math.random() * 6));
-    void w;
+    if (h.leg.klingel) {   // Türklingel-Ring (Grad 3): alle Gegner starren zur Tür (fightStart läuft nach spawnRoom; stun zählt erst nach dem Erscheinen herunter)
+      for (const m of w.mons) if (m.alive) m.stun = Math.max(m.stun || 0, m.boss ? 0.5 : 1.5);
+      api.float(h.x, h.y - 96, L('Ding-Dong!', 'Ding-dong!'), '#fee761', 18);
+      if (A.Sound.buy) A.Sound.buy();
+    }
   }
   function roll(h, n) {
     const w = W(), run = A.Game.run;
@@ -14973,7 +15032,8 @@ window.A = window.A || {};
     const R = A.GRADES[g - 1], before = A.GRADES.slice(0, g - 1).map(x => t(x.name)), pc = (v) => Math.round(v * 100);
     return `<b>${L('Grad', 'Grade')} ${g}: ${esc(t(R.name))}.</b> ${esc(t(R.text))}`
       + (before.length ? ` <span class="mini">${L('Dazu gilt weiter', 'Still in force')}: ${esc(before.join(' · '))}.</span>` : '')
-      + `<br><span class="mini">${L(`Alle Gegner +${pc(A.GRADE_HP * g)} % Leben und +${pc(A.GRADE_ATK * g)} % Schaden.`, `All enemies +${pc(A.GRADE_HP * g)}% health and +${pc(A.GRADE_ATK * g)}% damage.`)}</span> ${spark('+' + pc(A.GRADE_SPARKS * g) + ' %', 12)}`;
+      + `<br><span class="mini">${L(`Alle Gegner +${pc(A.GRADE_HP * g)} % Leben und +${pc(A.GRADE_ATK * g)} % Schaden.`, `All enemies +${pc(A.GRADE_HP * g)}% health and +${pc(A.GRADE_ATK * g)}% damage.`)}</span> ${spark('+' + pc(A.GRADE_SPARKS * g) + ' %', 12)}`
+      + (Object.keys(A.LEGENDS).some(k => A.LEGENDS[k].src === 'grade' && A.LEGENDS[k].grade === g) ? `<br><span class="mini">${L('Ab hier fällt eine eigene Legende (bei Weltenbossen).', 'From here on, a legend of its own drops (from world bosses).')}</span>` : '');   // Legenden der Grade (v51): nur auf Grad 3, 6 und 9
   }
 
   // ---------- Held wählen ----------
@@ -15185,7 +15245,7 @@ window.A = window.A || {};
       <h3>${L('Wimpel der Weltenbosse', 'World boss pennants')}</h3><div class="card flags"><div class="mini">${L('Den ersten Sieg über einen Weltenboss feiert das Lager mit seinem Wimpel: Bonus für immer und 50 Seelenfunken. Der erste Sieg in den Welten II bringt den goldenen Wimpel: doppelter Bonus und 100 Funken.', 'The camp celebrates your first win over a world boss with its pennant: a bonus forever and 50 soul sparks. Your first win in the worlds II brings the golden pennant: double bonus and 100 sparks.')}</div><div class="fgrid">${flags}</div></div>
       <h3>${L('Elite-Buch', 'Elite book')} ${pages}/${NT}</h3><div class="card flags"><div class="mini">${L(`Besiegst du einen Elite-Gegner mit einer neuen Eigenschaft, kommt sie ins Buch: ${A.ELITE_BOOK_SPARKS} Seelenfunken und für immer +${Math.round(A.ELITE_BOOK_DMG * 100)} % Schaden gegen Elite-Gegner.`, `Defeat an elite with a new trait and it goes into the book: ${A.ELITE_BOOK_SPARKS} soul sparks and +${Math.round(A.ELITE_BOOK_DMG * 100)}% damage against elites, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(pages * A.ELITE_BOOK_DMG * 100)} %</b></div><div class="fgrid">${book}</div></div>
       <h3>${L('Hauptleute', 'Captains')} ${capN}/${A.CAPTAINS.length}</h3><div class="card flags"><div class="mini">${L(`Auf der dritten Ebene jeder Welt wartet ihr Offizier im Elite-Raum: eigene Masche, grosse Klappe, ${A.CAPTAIN_SPARKS} Seelenfunken und ein Stück extra.`, `On the third floor of every world its officer waits in the elite room: own trick, big mouth, ${A.CAPTAIN_SPARKS} soul sparks and an extra item.`)}</div><div class="caplist">${capts}</div></div>
-      <h3>${L('Legenden-Sammlung', 'Legend collection')} ${legs}/${NL}</h3><div class="card flags"><div class="mini">${L(`Legenden fallen bei Weltenbossen, bei Elite-Gegnern mit der passenden Eigenschaft und in geheimen Räumen (Geröll am Ende eines Gangs wegräumen). Die zehn verrückten Stücke können überall auftauchen, ab Welt 2 viel öfter. Jede neue bringt ${A.LEGEND_SPARKS} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `Legends drop from world bosses, from elites with the matching trait and in secret rooms (clear the rubble at the end of a corridor). The ten crazy pieces can turn up anywhere, much more often from world 2. Each new one gives ${A.LEGEND_SPARKS} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(legs * A.LEGEND_DMG * 100)} %</b></div><div class="fgrid one">${coll}</div></div>
+      <h3>${L('Legenden-Sammlung', 'Legend collection')} ${legs}/${NL}</h3><div class="card flags"><div class="mini">${L(`Legenden fallen bei Weltenbossen, bei Elite-Gegnern mit der passenden Eigenschaft und in geheimen Räumen (Geröll am Ende eines Gangs wegräumen). Die zehn verrückten Stücke können überall auftauchen, ab Welt 2 viel öfter. Drei gibt es nur in Läufen ab Grad 3, 6 und 9. Jede neue bringt ${A.LEGEND_SPARKS} Seelenfunken und für immer +${Math.round(A.LEGEND_DMG * 100)} % Schaden.`, `Legends drop from world bosses, from elites with the matching trait and in secret rooms (clear the rubble at the end of a corridor). The ten crazy pieces can turn up anywhere, much more often from world 2. Three only exist in runs from grade 3, 6 and 9. Each new one gives ${A.LEGEND_SPARKS} soul sparks and +${Math.round(A.LEGEND_DMG * 100)}% damage, forever.`)} <b class="goldc">${L('Jetzt', 'Now')}: +${Math.round(legs * A.LEGEND_DMG * 100)} %</b></div><div class="fgrid one">${coll}</div></div>
       <h3>${L('Kombo-Buch', 'Combo book')} ${cbn}/${NCB}</h3><div class="card flags"><div class="mini">${L(`Zwei passende Teile wecken am Schrein eine Kombo: eine neue Kraft, die es nur zusammen gibt. Jede neue bringt ${A.COMBO_SPARKS} Seelenfunken. Manche gibt es nur mit einer bestimmten Klasse.`, `Two matching pieces awaken a combo at the shrine: a new power that only exists together. Each new one gives ${A.COMBO_SPARKS} soul sparks. Some only exist for a certain class.`)}</div><div class="fgrid one">${cbook}</div></div>
       <button class="btn" id="bBack">${t(U.back)}</button></div>`, { camp: true });
     if (note) { delete m.campNote; G.saveMeta(); }
@@ -15874,7 +15934,7 @@ window.A = window.A || {};
   }
   function eventScreen() {
     const r = G.run, ev = r.currentEvent;
-    ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${(c.needItem && !r.bag.length) || (c.needGold && r.gold < c.needGold) ? 'disabled' : ''}>${t(c.text)}${c.needGold ? ' ' + coin(c.needGold) : ''}</button>`).join('')}`);
+    ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.q ? `<div class="msg"><b>${esc(L('«', '"') + t(ev.q) + L('»', '"'))}</b></div>` : ''}${ev.choices.map((c, i) => `<button class="btn ${i === 0 && !ev.riddle ? 'primary' : ''}" data-c="${i}" ${(c.needItem && !r.bag.length) || (c.needGold && r.gold < c.needGold) ? 'disabled' : ''}>${t(c.text)}${c.needGold ? ' ' + coin(c.needGold) : ''}</button>`).join('')}`);
     overlay.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); S.click(); r.currentEvent = null; Wd.W.hero.hp = r.hp; hudUpdate();
       const show = () => {
         ov(`<h2 class="mid">${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(lootRow).join('')}${res.items.length ? `<div class="mini">${L('Liegt im Beutel. Antippen zum Vergleichen und Anlegen.', 'Now in your bag. Tap to compare and equip.')}</div>` : ''}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);

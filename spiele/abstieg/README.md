@@ -251,6 +251,17 @@ Der Abstieg ist eine Show, und die Show hat Geldgeber.
 - Die Statue nimmt die 30 Gold nur noch, wenn du sie hast (vorher gab sie das Glück auch mit leerem Beutel). Das Glück aus Volk und Klasse beim Start zählt nicht, es gibt wie bisher nur Volltreffer. Das Heldenblatt zeigt unter den Werten «Glück +3: +12 % Gold, bessere Beute», sobald es einen Bonus gibt, und über der Grenze zum Beispiel «Glück +12: +24 % Gold, bessere Beute (zählt bis +6)». Das Lager schreibt beim Glücksbrunnen jetzt «Bessere Beute (+1 Beute-Glück)», weil er kein Glück gibt, sondern direkt Beute-Glück.
 - Code: `derived()` rechnet `luckBonus` (`LUCK_GOLD`, `LUCK_ITEM`, Grenze `LUCK_MAX` über `luckEff`) in `goldPct` und `itemLuck` ein, `rollRarity` klemmt das Beute-Glück bei −2. Spielstand-Format gleich.
 
+## Legenden der Grade (13.11.2026)
+- **Drei neue Legenden (33):** Sie fallen nur bei Weltenbossen und nur in Läufen ab ihrem Grad: **Türklingel-Ring** (ab Grad 3, Ring): Zu Beginn jedes Kampfs klingelt es, alle Gegner starren 1.5 Sekunden zur Tür (Bosse 0.5). **Nashornleder-Wams** (ab Grad 6, Rüstung): Jeder 4. Treffer prallt ab. **Der Löffel, den du behältst** (ab Grad 9, Waffe der Klasse): Jeder besiegte Gegner heilt 2 % deines Lebens.
+- **Chance:** ein Wurf je Weltenboss, 35 % für ein noch nie gefundenes Stück, 20 % für eines aus der Sammlung (noch nie gefundene werden doppelt so oft gewählt). Hauptleute geben keine. Die Tageswelt hat keinen Grad, dort fallen sie nie. Läufe auf Grad 0 bis 2 würfeln genau gleich wie bisher.
+- **Sammlung:** jetzt 33 Legenden, also bis +33 % Schaden; die neuen stehen am Ende als «???» mit «Nur ab Grad …». Der Erfolg «Alles meins» braucht jetzt alle 33 (wer ihn schon hat, behält ihn). In der Heldenwahl steht auf Grad 3, 6 und 9 «Ab hier fällt eine eigene Legende».
+- Code: `A.LEGENDS` mit `src: 'grade'` und `grade` und `A.GRADE_LEG_CHANCE` (data.js), `gradeLegend` (game.js, im Boss-Zweig von `killReward`), Wirkung in legends.js (`onRoomStart`, `guard`, `onKill`, `hint`). Spielstand-Format gleich: neue Kennungen nur in `run.seenLegends`, `item.legend` und `meta.legFound`; ältere Versionen überspringen sie.
+
+## Die Sphinx (13.11.2026)
+- **Neues Ereignis (15):** Im Statuen-Raum blinzelt manchmal die Statue. Es ist eine Sphinx mit einem von acht Rätseln (Flasche, Loch, Name, Kamm, Handtuch, Landkarte, Buchstabe M, Versprechen) und drei gemischten Antworten, dazu «Nichts sagen». Kein Knopf ist hervorgehoben, damit nichts verraten wird.
+- **Richtig:** ein seltenes Stück und +40 Erfahrung. **Falsch:** −25 % Leben (nie unter 1). **Nichts sagen:** nichts passiert.
+- Code: `A.EVENTS` Eintrag `sphinx` mit `riddles`, `win`, `lose`, `quiet`; `riddleEvent` in game.js baut daraus das Ereignis mit Frage (`q`) und gemischten Antworten, es steht wie jedes Ereignis in `run.currentEvent`. Spielstand-Format gleich.
+
 ## Schrift (06.11.2026)
 - Die Pixel-Schrift setzte «fi» und «fl» zu einem Zeichen zusammen, das wie ein «A» aussah («GräAn Gemetzel», «Anden», «Aiegt»). Jetzt sind diese Verbindungen überall aus (`font-variant-ligatures: none` in `index.html`, gilt auch für den Text im Canvas). Die Zierschrift sieht gleich aus wie vorher.
 
