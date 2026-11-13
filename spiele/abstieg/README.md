@@ -252,8 +252,8 @@ Der Abstieg ist eine Show, und die Show hat Geldgeber.
 - Code: `derived()` rechnet `luckBonus` (`LUCK_GOLD`, `LUCK_ITEM`, Grenze `LUCK_MAX` über `luckEff`) in `goldPct` und `itemLuck` ein, `rollRarity` klemmt das Beute-Glück bei −2. Spielstand-Format gleich.
 
 ## Die Sphinx (13.11.2026)
-- **Neues Ereignis (15):** Im Statuen-Raum blinzelt manchmal die Statue. Es ist eine Sphinx mit einem von acht Rätseln (Flasche, Loch, Name, Kamm, Handtuch, Landkarte, Buchstabe M, Versprechen) und drei gemischten Antworten. Kein Knopf ist hervorgehoben, damit nichts verraten wird.
-- **Richtig:** ein seltenes Stück und +40 Erfahrung. **Falsch:** −25 % Leben (nie unter 1). **Schweigen:** nichts passiert.
+- **Neues Ereignis (15):** Im Statuen-Raum blinzelt manchmal die Statue. Es ist eine Sphinx mit einem von acht Rätseln (Flasche, Loch, Name, Kamm, Handtuch, Landkarte, Buchstabe M, Versprechen) und drei gemischten Antworten, dazu «Nichts sagen». Kein Knopf ist hervorgehoben, damit nichts verraten wird.
+- **Richtig:** ein seltenes Stück und +40 Erfahrung. **Falsch:** −25 % Leben (nie unter 1). **Nichts sagen:** nichts passiert.
 - Code: `A.EVENTS` Eintrag `sphinx` mit `riddles`, `win`, `lose`, `quiet`; `riddleEvent` in game.js baut daraus das Ereignis mit Frage (`q`) und gemischten Antworten, es steht wie jedes Ereignis in `run.currentEvent`. Spielstand-Format gleich.
 
 ## Schrift (06.11.2026)

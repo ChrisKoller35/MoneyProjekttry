@@ -953,11 +953,11 @@ A.EVENTS = [
       { text: { de: 'Zahlen', en: 'Pay up' }, needGold: 30, outcomes: [{ p: 1, gold: -30, xp: 70, potion: 1, msg: { de: 'Quittung gibt es keine. Teil des Angebots. +70 EP, 1 Trank.', en: 'No receipt. That\'s part of the deal. +70 XP, 1 potion.' } }] },
       { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet bis zu 40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes up to 40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
     ] },
-  // Die Sphinx (13.11.2026): ein Rätsel aus «riddles», die drei Antworten gemischt, dazu «Schweigen» (game.js, riddleEvent). «choices» ist die feste Fassung mit dem ersten Rätsel, falls etwas das Ereignis direkt nimmt
+  // Die Sphinx (13.11.2026): ein Rätsel aus «riddles», die drei Antworten gemischt, dazu «Nichts sagen» (game.js, riddleEvent; kein Hauptwort, denn «das Schweigen brechen» löst das Versprechen-Rätsel auch). «choices» ist die feste Fassung mit dem ersten Rätsel, falls etwas das Ereignis direkt nimmt
   { id: 'sphinx', title: { de: 'Die Sphinx', en: 'The Sphinx' }, text: { de: 'Die Statue blinzelt. Es ist eine Sphinx, und sie langweilt sich: «Rätselzeit. Richtig gibt Beute. Falsch gibt Bisse.»', en: 'The statue blinks. It\'s a sphinx, and it\'s bored: "Riddle time. Right means loot. Wrong means bites."' },
     win: [{ p: 1, item: 'rare', xp: 40, msg: { de: 'Die Sphinx schmollt und rückt ein Stück heraus. +40 Erfahrung.', en: 'The sphinx sulks and hands over an item. +40 experience.' } }],
     lose: [{ p: 1, dmg: 0.25, msg: { de: '«Falsch.» Die Sphinx knabbert an dir. −25 % Leben. Sie entschuldigt sich nicht.', en: '"Wrong." The sphinx nibbles on you. −25% health. It does not apologize.' } }],
-    quiet: { text: { de: 'Schweigen', en: 'Keep quiet' }, outcomes: [{ p: 1, msg: { de: 'Die Sphinx gähnt. Du darfst gehen. Sie ist enttäuscht, aber nicht überrascht.', en: 'The sphinx yawns. You may go. It is disappointed, but not surprised.' } }] },
+    quiet: { text: { de: 'Nichts sagen', en: 'Keep quiet' }, outcomes: [{ p: 1, msg: { de: 'Die Sphinx gähnt. Du darfst gehen. Sie ist enttäuscht, aber nicht überrascht.', en: 'The sphinx yawns. You may go. It is disappointed, but not surprised.' } }] },
     riddles: [
       { q: { de: 'Ich habe einen Hals, aber keinen Kopf. Was bin ich?', en: 'I have a neck but no head. What am I?' }, right: { de: 'Eine Flasche', en: 'A bottle' }, wrong: [{ de: 'Ein Hut', en: 'A hat' }, { de: 'Eine Wurst', en: 'A sausage' }] },
       { q: { de: 'Je mehr du wegnimmst, desto grösser werde ich. Was bin ich?', en: 'The more you take away, the bigger I get. What am I?' }, right: { de: 'Ein Loch', en: 'A hole' }, wrong: [{ de: 'Ein Goldbeutel', en: 'A gold pouch' }, { de: 'Ein Kuchen', en: 'A cake' }] },
@@ -974,7 +974,7 @@ A.EVENTS = [
       { text: { de: 'Eine Wurst', en: 'A sausage' }, outcomes: 'lose' },
     ] },
 ];
-// Die Sphinx: die feste Fassung (erstes Rätsel) zeigt auf dieselben Ergebnisse wie die gewürfelte, dazu «Schweigen»
+// Die Sphinx: die feste Fassung (erstes Rätsel) zeigt auf dieselben Ergebnisse wie die gewürfelte, dazu «Nichts sagen»
 { const sx = A.EVENTS.find(e => e.id === 'sphinx'); sx.choices = sx.choices.map(c => ({ text: c.text, outcomes: sx[c.outcomes] })).concat([sx.quiet]); }
 
 // ---------- Lager ----------

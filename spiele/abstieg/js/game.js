@@ -650,7 +650,7 @@ A.Game = (function () {
 
   // ---------- Räume ----------
   function doRest(kind) { const d = derived(); if (kind === 'heal') run.hp = Math.min(d.maxHp, run.hp + Math.round(d.maxHp * 0.5 * (1 - A.gradeVal('restCut', run)))); else { run.points++; if (meta.autoPts) autoSpend(); } save(); }   // Harte Pritsche (Grad 9)
-  // Die Sphinx (v50): ein Rätsel aus der Liste, die Antworten gemischt, «Schweigen» zuletzt. Das fertige Ereignis steht wie jedes andere im Spielstand (run.currentEvent)
+  // Die Sphinx (v50): ein Rätsel aus der Liste, die Antworten gemischt, «Nichts sagen» zuletzt. Das fertige Ereignis steht wie jedes andere im Spielstand (run.currentEvent)
   function riddleEvent(ev) {
     const q = run.rng.pick(ev.riddles);
     const answers = run.rng.shuffle([{ text: q.right, outcomes: ev.win }].concat(q.wrong.map(w => ({ text: w, outcomes: ev.lose }))));
