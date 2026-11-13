@@ -307,6 +307,12 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   });
   check(cheap.price > 1 && cheap.dis && cheap.same, 'Krämer: mit leerem Beutel gibt es keine billigen Steine (Preis ' + cheap.price + ')');
 
+  // 9e4) In der Werbe-Pause tut die Leertaste nichts
+  await page.evaluate(() => window.dispatchEvent(new Event('zm-ad-start')));
+  const tp0 = await page.evaluate(() => window.__mine.S.taps); await page.keyboard.press('Space');
+  const tp1 = await page.evaluate(() => { const t = window.__mine.S.taps; window.dispatchEvent(new Event('zm-ad-end')); return t; });
+  check(tp1 === tp0, 'Werbe-Pause: Leertaste gräbt nicht');
+
   // 9f) Ganz neu anfangen (mit Rückfrage; Abbrechen lässt alles stehen)
   await page.evaluate(() => { const m = window.__mine; m.S.heir = 49; m.S.best = 230; });
   await page.click('#depthPill'); await page.waitForTimeout(300);
