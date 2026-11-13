@@ -953,7 +953,29 @@ A.EVENTS = [
       { text: { de: 'Zahlen', en: 'Pay up' }, needGold: 30, outcomes: [{ p: 1, gold: -30, xp: 70, potion: 1, msg: { de: 'Quittung gibt es keine. Teil des Angebots. +70 EP, 1 Trank.', en: 'No receipt. That\'s part of the deal. +70 XP, 1 potion.' } }] },
       { text: { de: 'Verweigern', en: 'Refuse' }, outcomes: [{ p: 0.5, gold: -40, msg: { de: 'Er pfändet bis zu 40 Gold. Rechtlich einwandfrei, sagt er.', en: 'He seizes up to 40 gold. Perfectly legal, he says.' } }, { p: 0.5, msg: { de: 'Er notiert deinen Namen. Falsch geschrieben.', en: 'He writes down your name. Misspelled.' } }] },
     ] },
+  // Die Sphinx (13.11.2026): ein Rätsel aus «riddles», die drei Antworten gemischt, dazu «Schweigen» (game.js, riddleEvent). «choices» ist die feste Fassung mit dem ersten Rätsel, falls etwas das Ereignis direkt nimmt
+  { id: 'sphinx', title: { de: 'Die Sphinx', en: 'The Sphinx' }, text: { de: 'Die Statue blinzelt. Es ist eine Sphinx, und sie langweilt sich: «Rätselzeit. Richtig gibt Beute. Falsch gibt Bisse.»', en: 'The statue blinks. It\'s a sphinx, and it\'s bored: "Riddle time. Right means loot. Wrong means bites."' },
+    win: [{ p: 1, item: 'rare', xp: 40, msg: { de: 'Die Sphinx schmollt und rückt ein Stück heraus. +40 Erfahrung.', en: 'The sphinx sulks and hands over an item. +40 experience.' } }],
+    lose: [{ p: 1, dmg: 0.25, msg: { de: '«Falsch.» Die Sphinx knabbert an dir. −25 % Leben. Sie entschuldigt sich nicht.', en: '"Wrong." The sphinx nibbles on you. −25% health. It does not apologize.' } }],
+    quiet: { text: { de: 'Schweigen', en: 'Keep quiet' }, outcomes: [{ p: 1, msg: { de: 'Die Sphinx gähnt. Du darfst gehen. Sie ist enttäuscht, aber nicht überrascht.', en: 'The sphinx yawns. You may go. It is disappointed, but not surprised.' } }] },
+    riddles: [
+      { q: { de: 'Ich habe einen Hals, aber keinen Kopf. Was bin ich?', en: 'I have a neck but no head. What am I?' }, right: { de: 'Eine Flasche', en: 'A bottle' }, wrong: [{ de: 'Ein Hut', en: 'A hat' }, { de: 'Eine Wurst', en: 'A sausage' }] },
+      { q: { de: 'Je mehr du wegnimmst, desto grösser werde ich. Was bin ich?', en: 'The more you take away, the bigger I get. What am I?' }, right: { de: 'Ein Loch', en: 'A hole' }, wrong: [{ de: 'Ein Goldbeutel', en: 'A gold pouch' }, { de: 'Ein Kuchen', en: 'A cake' }] },
+      { q: { de: 'Es gehört dir, aber die anderen brauchen es öfter als du. Was ist es?', en: 'It belongs to you, but others use it more than you do. What is it?' }, right: { de: 'Dein Name', en: 'Your name' }, wrong: [{ de: 'Deine Tränke', en: 'Your potions' }, { de: 'Dein Schwert', en: 'Your sword' }] },
+      { q: { de: 'Was hat Zähne, aber beisst nie?', en: 'What has teeth but never bites?' }, right: { de: 'Ein Kamm', en: 'A comb' }, wrong: [{ de: 'Eine Mimik', en: 'A mimic' }, { de: 'Ein Schleim', en: 'A slime' }] },
+      { q: { de: 'Was wird nasser, je mehr es trocknet?', en: 'What gets wetter the more it dries?' }, right: { de: 'Ein Handtuch', en: 'A towel' }, wrong: [{ de: 'Die Wüste', en: 'The desert' }, { de: 'Ein Fisch', en: 'A fish' }] },
+      { q: { de: 'Ich habe Städte, aber keine Häuser, Wälder, aber keine Bäume, und Wasser, aber keine Fische. Was bin ich?', en: 'I have cities but no houses, forests but no trees, and water but no fish. What am I?' }, right: { de: 'Eine Landkarte', en: 'A map' }, wrong: [{ de: 'Die Versunkene Stadt', en: 'The Sunken City' }, { de: 'Ein sehr schlechter Zoo', en: 'A very bad zoo' }] },
+      { q: { de: 'Einmal in jeder Minute, zweimal in jedem Moment, aber nie in tausend Jahren. Was ist es?', en: 'Once in a minute, twice in a moment, but never in a thousand years. What is it?' }, right: { de: 'Der Buchstabe M', en: 'The letter M' }, wrong: [{ de: 'Ein Gähnen der Sphinx', en: 'A sphinx yawn' }, { de: 'Ein Schatz', en: 'A treasure' }] },
+      { q: { de: 'Was kann man brechen, ohne es je zu berühren?', en: 'What can you break without ever touching it?' }, right: { de: 'Ein Versprechen', en: 'A promise' }, wrong: [{ de: 'Einen Krug', en: 'A pot' }, { de: 'Eine Rippe', en: 'A rib' }] },
+    ],
+    choices: [
+      { text: { de: 'Eine Flasche', en: 'A bottle' }, outcomes: 'win' },
+      { text: { de: 'Ein Hut', en: 'A hat' }, outcomes: 'lose' },
+      { text: { de: 'Eine Wurst', en: 'A sausage' }, outcomes: 'lose' },
+    ] },
 ];
+// Die Sphinx: die feste Fassung (erstes Rätsel) zeigt auf dieselben Ergebnisse wie die gewürfelte, dazu «Schweigen»
+{ const sx = A.EVENTS.find(e => e.id === 'sphinx'); sx.choices = sx.choices.map(c => ({ text: c.text, outcomes: sx[c.outcomes] })).concat([sx.quiet]); }
 
 // ---------- Lager ----------
 // Völker (Rassen) schaltet man einzeln frei. Die übrigen Einträge gab es nur im alten Lager: wer sie gekauft hat, bekommt sie beim Laden als Gebäude-Stufen (game.js, migrateCamp)

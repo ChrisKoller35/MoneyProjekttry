@@ -1092,7 +1092,7 @@ window.A = window.A || {};
   }
   function eventScreen() {
     const r = G.run, ev = r.currentEvent;
-    ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.choices.map((c, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-c="${i}" ${(c.needItem && !r.bag.length) || (c.needGold && r.gold < c.needGold) ? 'disabled' : ''}>${t(c.text)}${c.needGold ? ' ' + coin(c.needGold) : ''}</button>`).join('')}`);
+    ov(`<div class="bigicon">${ic('statue', 51)}</div><h2 class="mid">${t(ev.title)}</h2><div class="msg">${t(ev.text)}</div>${ev.q ? `<div class="msg"><b>${esc(L('«', '"') + t(ev.q) + L('»', '"'))}</b></div>` : ''}${ev.choices.map((c, i) => `<button class="btn ${i === 0 && !ev.riddle ? 'primary' : ''}" data-c="${i}" ${(c.needItem && !r.bag.length) || (c.needGold && r.gold < c.needGold) ? 'disabled' : ''}>${t(c.text)}${c.needGold ? ' ' + coin(c.needGold) : ''}</button>`).join('')}`);
     overlay.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { const res = G.doEvent(+b.dataset.c); S.click(); r.currentEvent = null; Wd.W.hero.hp = r.hp; hudUpdate();
       const show = () => {
         ov(`<h2 class="mid">${t(ev.title)}</h2><div class="msg">${esc(res.msg)}</div>${res.items.map(lootRow).join('')}${res.items.length ? `<div class="mini">${L('Liegt im Beutel. Antippen zum Vergleichen und Anlegen.', 'Now in your bag. Tap to compare and equip.')}</div>` : ''}<button class="btn primary" id="bClose">${t(U.leave)}</button>`);

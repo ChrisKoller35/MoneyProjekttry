@@ -251,6 +251,11 @@ Der Abstieg ist eine Show, und die Show hat Geldgeber.
 - Die Statue nimmt die 30 Gold nur noch, wenn du sie hast (vorher gab sie das Glück auch mit leerem Beutel). Das Glück aus Volk und Klasse beim Start zählt nicht, es gibt wie bisher nur Volltreffer. Das Heldenblatt zeigt unter den Werten «Glück +3: +12 % Gold, bessere Beute», sobald es einen Bonus gibt, und über der Grenze zum Beispiel «Glück +12: +24 % Gold, bessere Beute (zählt bis +6)». Das Lager schreibt beim Glücksbrunnen jetzt «Bessere Beute (+1 Beute-Glück)», weil er kein Glück gibt, sondern direkt Beute-Glück.
 - Code: `derived()` rechnet `luckBonus` (`LUCK_GOLD`, `LUCK_ITEM`, Grenze `LUCK_MAX` über `luckEff`) in `goldPct` und `itemLuck` ein, `rollRarity` klemmt das Beute-Glück bei −2. Spielstand-Format gleich.
 
+## Die Sphinx (13.11.2026)
+- **Neues Ereignis (15):** Im Statuen-Raum blinzelt manchmal die Statue. Es ist eine Sphinx mit einem von acht Rätseln (Flasche, Loch, Name, Kamm, Handtuch, Landkarte, Buchstabe M, Versprechen) und drei gemischten Antworten. Kein Knopf ist hervorgehoben, damit nichts verraten wird.
+- **Richtig:** ein seltenes Stück und +40 Erfahrung. **Falsch:** −25 % Leben (nie unter 1). **Schweigen:** nichts passiert.
+- Code: `A.EVENTS` Eintrag `sphinx` mit `riddles`, `win`, `lose`, `quiet`; `riddleEvent` in game.js baut daraus das Ereignis mit Frage (`q`) und gemischten Antworten, es steht wie jedes Ereignis in `run.currentEvent`. Spielstand-Format gleich.
+
 ## Schrift (06.11.2026)
 - Die Pixel-Schrift setzte «fi» und «fl» zu einem Zeichen zusammen, das wie ein «A» aussah («GräAn Gemetzel», «Anden», «Aiegt»). Jetzt sind diese Verbindungen überall aus (`font-variant-ligatures: none` in `index.html`, gilt auch für den Text im Canvas). Die Zierschrift sieht gleich aus wie vorher.
 
