@@ -401,11 +401,14 @@ const F = {
   ringGems: (r) => 30 * r,
   // Fels: ×1.21 je Tiefe, ab 40 zusätzlich ×1.025; ab Ring II (Tiefe 141) nur noch ×1.15, damit es endlos weitergeht
   rockHp: (d) => { const e = Math.min(d, 140); return Math.ceil(8 * Math.pow(1.21, e - 1) * Math.pow(1.025, Math.max(0, e - 40)) * Math.pow(1.15, Math.max(0, d - 140)) * (d % 50 === 0 ? 10 : d % 10 === 0 ? 7 : 1)); },
-  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s) * (1 + 0.15 * F.hero(s, 'gundi')) * (1 + F.gear(s, 'amu') / 100)),
+  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s) * F.rankMult(s) * (1 + 0.15 * F.hero(s, 'gundi')) * (1 + F.gear(s, 'amu') / 100)),
   bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
   bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0) + 3 * F.hero(s, 'dvala'),
   heirMult: (s) => 1 + 0.05 * (s.heir || 0),
-  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s) * (1 + 0.2 * F.shopLv(s, 'kraft')),
+  rankAt: [0, 10, 30, 60, 120, 250, 500, 1000, 2500, 6000],   // Rang nach Punktestand (alle je gesammelten Kronen)
+  rank: (s) => { const c = (s && s.crownsAll) || 0; let r = 0; while (r < F.rankAt.length - 1 && c >= F.rankAt[r + 1]) r++; return r; },
+  rankMult: (s) => 1 + 0.1 * F.rank(s),   // je Rang +10 % Gold und Graben
+  powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s) * F.rankMult(s) * (1 + 0.2 * F.shopLv(s, 'kraft')),
   pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1) * (1 + F.gear(s, 'pick') / 100),
   dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1) * (1 + F.gear(s, 'helm') / 100),
   pickCost: (L) => Math.ceil(10 * Math.pow(1.19, L)),
@@ -579,6 +582,15 @@ const TG = DE ? {
   },
 };
 
+// Ränge: der Punktestand (alle je gesammelten Kronen) gibt einen Titel, jeder Rang +10 % Gold und Graben
+const TR = DE ? {
+  rank: 'Rang', up: 'Neuer Rang!', bonus: '+{p} % Gold und Graben', next: 'Nächster Rang: {n} bei 👑 {c}', top: 'Höchster Rang erreicht',
+  names: ['Kieselklopfer', 'Stollenknecht', 'Hauer', 'Vorarbeiter', 'Schichtleiter', 'Minenmeister', 'Bergvogt', 'Zwergenfürst', 'Bergkönig', 'Legende des Berges'],
+} : {
+  rank: 'Rank', up: 'New rank!', bonus: '+{p}% gold and digging', next: 'Next rank: {n} at 👑 {c}', top: 'Highest rank reached',
+  names: ['Pebble Tapper', 'Tunnel Hand', 'Hewer', 'Foreman', 'Shift Boss', 'Mine Master', 'Mountain Reeve', 'Dwarf Prince', 'Mountain King', 'Legend of the Mountain'],
+};
+
 // ---------- Spielstand ----------
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
@@ -587,7 +599,7 @@ function freshState() {
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
     blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
-    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {} };
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {}, rankSeen: 0 };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -607,6 +619,7 @@ function load() {
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     S.shop = Object.assign({}, d.shop || {});
+    if (d.rankSeen == null) S.rankSeen = F.rank(S);   // Spielstand von vor den Rängen: kein Banner für alte Ränge
     S.gear = {}; for (const g of GEAR_SLOTS) { const x = d.gear && d.gear[g.k]; if (x && x.v > 0 && RARITY[x.r]) S.gear[g.k] = { r: x.r, v: x.v }; }   // Spielstand von vor der Beute
     const dh = d.hero && typeof d.hero === 'object' ? d.hero : {};   // Spielstand von vor den Helden
     S.hero = { lv: Object.assign({}, dh.lv || {}), on: HEROES.some(h => h.k === dh.on) ? dh.on : '', seen: dh.seen || 0 };
@@ -2244,6 +2257,20 @@ function showGear() {
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
 }
 
+// ---------- Ränge ----------
+function rankLine() {   // Titel, Bonus und nächster Rang (für Karte und Rekorde)
+  const r = F.rank(S), nx = r + 1 < F.rankAt.length;
+  return `<div style="margin-top:4px"><b style="color:#ffd447">🎖 ${TR.rank} ${r + 1}: ${TR.names[r]}</b>${r ? ` · ${TR.bonus.replace('{p}', r * 10)}` : ''}</div>
+    <div class="small">${nx ? TR.next.replace('{n}', TR.names[r + 1]).replace('{c}', F.rankAt[r + 1]) : TR.top}</div>`;
+}
+function rankCheck() {
+  const r = F.rank(S);
+  if (r <= (S.rankSeen || 0)) return;
+  S.rankSeen = r;
+  showBanner({ text: '🎖 ' + TR.up, sub: TR.names[r] + ' · ' + TR.bonus.replace('{p}', r * 10), life: 3.2, color: '#ffd447' });
+  sfx.boss(); refreshPanel(true); save();
+}
+
 // ---------- Helden-Zwerge ----------
 const GEM_S = GEM_SVG.replace('<svg ', '<svg style="width:14px;height:14px;vertical-align:-2px" ');
 function heroCount() { return HEROES.filter(h => S.hero.lv[h.k] > 0).length; }
@@ -2286,7 +2313,7 @@ function showHeroes(again) {
 function drawHero(t) {   // der Held, der mitkommt: grösser, mit Umhang und Stern, vorne links am Felsen
   const k = S.hero.on; if (!k || !(S.hero.lv[k] > 0)) return;
   const h = HEROES.find(x => x.k === k), c = rockCenter();
-  const x = c.x - c.r * 0.62, y = c.y + c.r * 0.7 + (lava > 0 ? 10 : 0);
+  const x = c.x - c.r * 0.8, y = c.y + c.r * 0.74 + (lava > 0 ? 10 : 0);
   ctx.save(); if (lava > 0) ctx.globalAlpha = 0.6;
   ctx.fillStyle = h.hat; ctx.globalAlpha *= 0.85; ctx.beginPath(); ctx.moveTo(x - 6, y - 6); ctx.lineTo(x - 22 + Math.sin(t * 3) * 2, y + 24); ctx.lineTo(x + 4, y + 20); ctx.closePath(); ctx.fill();   // Umhang
   ctx.restore();
@@ -2319,7 +2346,7 @@ function showRecords() {
   const row = (a, d, h, t, cls) => [a, `${T.depthW} <b>${d}</b>`, h, t].map(x => `<span class="${cls}">${x}</span>`).join('');
   const list = S.runs.slice().sort((a, b) => b.d - a.d).slice(0, 8).map((m) => row(m.k ? blkOf(m.k).icon + ' ' + T.blk[m.k] : `${T.mine} ${m.n}`, m.d, m.k ? '👑 +' + F.blockCrowns : '⚱ +' + m.h, m.t ? dur(m.t) : '', '')).join('');
   popup(`<div style="font-weight:900;font-size:18px">🏆 ${T.records}</div>
-    <div class="small">${T.score}</div><div class="big">👑 ${S.crownsAll}</div>
+    <div class="small">${T.score}</div><div class="big">👑 ${S.crownsAll}</div>${rankLine()}
     <div class="small">${T.blocksDone} <b>${S.towers.length}</b> · ${T.bestDepth} <b>${S.best}</b></div>
     <div class="runs">${row(`${T.thisMine} (${S.st.prest + 1})`, S.maxDepth, '', dur(S.runTime), 'cur')}${list || `<span class="note">${T.noRuns}</span>`}</div>
     <div class="small">${T.moves} ${S.st.prest} · ⚱ ${S.heir} ${T.heir} · ${T.playTime} ${dur(S.st.time)}</div>
@@ -2351,7 +2378,7 @@ function renderRealm() {
     return `<div class="bk${here ? ' here' : ''}${b.soon ? ' soon' : ''}"><span class="e">${b.icon}</span><span class="i"><b>${T.blk[b.k]}${doneN ? ' ✓' + (doneN > 1 ? '×' + doneN : '') : ''}</b>${info} · 👑 ${+F.towerRate(b.k, S).toFixed(2)}/h</span>${btn}</div>`;
   }).join('');
   popup(`<div style="font-weight:900;font-size:18px">👑 ${T.realm}</div>
-    <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.score} <b style="color:#ffd447">${S.crownsAll}</b></div>
+    <div class="small">${T.crowns} <b style="color:#ffd447">${S.crowns}</b> · ${T.score} <b style="color:#ffd447">${S.crownsAll}</b></div>${rankLine()}
     <button id="tShop" style="background:#c77dff;color:#2a0a40;margin-top:8px">🛒 ${T.shopT}</button>
     ${towers}<div class="small" style="margin-top:10px;text-align:left;font-weight:800">🗺 ${T.blocksT}</div><div class="realm" style="margin-top:4px">${blocks}</div>
     <button id="tClose">${T.close}</button>`, true);
@@ -2501,7 +2528,7 @@ function frame(now) {
   else if ((S.blk === 'vulkan' || S.blk === 'eis') && !S.blockDone && toast.style.display !== 'block') { lavaTimer -= dt; if (lavaTimer <= 0) (S.blk === 'vulkan' ? startLava : startFrost)(); }
   if (S.cdDyn > 0) S.cdDyn -= dt; if (S.cdBeer > 0) S.cdBeer -= dt;
   goalTimer -= dt; if (goalTimer <= 0) {
-    goalTimer = 0.5; checkGoals(); ensureDaily(); checkDaily(); heroCheck(); updateSkillBtns(); updateTip(); updateCrowns();
+    goalTimer = 0.5; checkGoals(); ensureDaily(); checkDaily(); heroCheck(); rankCheck(); updateSkillBtns(); updateTip(); updateCrowns();
     if (S.farm && bossPower() >= 1) { retryBoss(); showBanner({ text: T.autoRetry, sub: T.autoRetrySub, life: 2.2, color: '#6fdc7a' }); }
   }
 
@@ -2566,7 +2593,7 @@ requestAnimationFrame(frame);
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear, rankCheck };
 window.__mineGear = { off: false, roll: gearRoll, give: gearGive, RARITY, SLOTS: GEAR_SLOTS };
 </script>
 </body>
