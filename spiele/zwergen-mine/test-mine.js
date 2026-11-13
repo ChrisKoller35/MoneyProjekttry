@@ -145,7 +145,7 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await page.locator('.card', { hasText: 'Rekorde' }).locator('.buy').click(); await page.waitForTimeout(200);
   check(await page.locator('#tClose').isVisible(), 'Rekorde auch im Reiter «Ziele»');
   await page.click('#tClose'); await page.waitForTimeout(200);
-  check((await page.evaluate(() => window.__mine.GOALS.length)) === 47, '47 Ziele');
+  check((await page.evaluate(() => window.__mine.GOALS.length)) === 55, '55 Ziele');
 
   // 9c) Alten Rekord in der neuen Mine knacken
   const rec = await page.evaluate(() => { const m = window.__mine; m.jump(100); m.S.hp = 1; m.tap(); return { best: m.S.best, b: m.banners() }; });
@@ -479,6 +479,17 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   await shot('24f-sternenschacht');
   await page.evaluate((k) => { const m = window.__mine, o = JSON.parse(k); for (const key of Object.keys(m.S)) delete m.S[key]; Object.assign(m.S, o); m.jump(o.depth); m.buildPanel(); }, sn.keep);
   await page.waitForTimeout(300);
+
+  // 9j7) Ziele für Helden, Beute und Ränge
+  const zg = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, F = m.F, G = (id) => F.goalProgress(m.GOALS.find(g => g.id === id), S), keep = [JSON.stringify(S.hero), JSON.stringify(S.gear), S.crownsAll];
+    S.hero = { lv: {}, on: '', seen: 5 }; S.gear = {}; S.crownsAll = 0; const zero = [G('e1'), G('g3'), G('q4'), G('a3')];
+    S.hero.lv = { borin: 2, dvala: 1 }; S.gear = { pick: { r: 3, v: 50 }, amu: { r: 0, v: 6 } }; S.crownsAll = 60;
+    const now = [G('e3'), G('g3'), G('q4'), G('a3')];
+    S.hero = JSON.parse(keep[0]); S.gear = JSON.parse(keep[1]); S.crownsAll = keep[2];
+    return { zero, now };
+  });
+  check(zg.zero.join() === '0,0,0,1' && zg.now.join() === '2,2,4,4', 'Ziele zählen Helden, Ausrüstung, Seltenheit und Rang ' + JSON.stringify(zg));
 
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });

@@ -1,6 +1,6 @@
 # Zwergen-Mine
 
-**Stand 13.11.2026:** Version 14 spielbar: fünfter Block «Sternenschacht» und das Fenster «Was ist neu?». Version 13: Ränge nach Punktestand. Version 12: Beute (Ausrüstung von Bossen). Version 11: Helden-Zwerge und der Kobold-Krämer. Version 10: die Zwerge reden in Sprechblasen (Nacht-Bot, geprüft). Version 9: jede Schicht sieht anders aus und jeden Tag gibt es drei Tagesziele (Nacht-Bot, geprüft). Version 8: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
+**Stand 13.11.2026:** Version 15 spielbar: acht neue Ziele für Helden, Beute und Ränge, Dauertest. Version 14: fünfter Block «Sternenschacht» und das Fenster «Was ist neu?». Version 13: Ränge nach Punktestand. Version 12: Beute (Ausrüstung von Bossen). Version 11: Helden-Zwerge und der Kobold-Krämer. Version 10: die Zwerge reden in Sprechblasen (Nacht-Bot, geprüft). Version 9: jede Schicht sieht anders aus und jeden Tag gibt es drei Tagesziele (Nacht-Bot, geprüft). Version 8: Runde 2 mit Gletscher, Grotte und Kronen-Laden. Version 7: besondere Felsen, der freche Maulwurf und 42 Fundstücke (Nacht-Bot, geprüft). Version 6: Blöcke und Kronen (Runde 1). Jeder Block endet auf Tiefe 150 mit dem Endboss, danach fördert ein Förderturm Kronen über Zeit. Karte mit Altem Berg und Vulkan, Gletscher und Grotte kommen in Runde 2 (dazu ein Kronen-Laden). Im Browser geprüft (Handy-Grösse und PC, Deutsch und Englisch). Portal-Anbindung noch Platzhalter.
 
 ## Spielregel
 
@@ -21,7 +21,7 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 - **8 Zwerge**, der siebte ab Tiefe 60, der achte ab Tiefe 80. Bei 10, 25, 50, 100, 150, 200 Zwergen einer Sorte verdoppelt sich deren Leistung.
 - **15 Werkzeuge** (Reiter «Hacke»), freigeschaltet nach Tiefe: Stahlspitze, Doppelschlag, Förderband, Grosse Laterne, Dynamit, Zeitlupe, Bierfass, Goldwaage, Sprengkurs, Erz-Magnet, Glücksbringer, Zwergenlied, Diamantbohrer, Doppelschicht, Kristallkugel.
 - **Dynamit** (Knopf unten links, Taste D): 30 Tipps auf einmal, alle 90 Sekunden. **Bierfass** (Knopf unten rechts, Taste B): Zwerge 20 Sekunden lang dreifach, alle 3 Minuten.
-- **47 Ziele** (Reiter «Ziele»): Tiefe (bis 150), Tipps, Zwerge, Bosse, Truhen, Hacken-Stufe, Werkzeuge, Umzüge, Erbstücke, geschaffte Blöcke (1, 3, 6) und gesammelte Kronen (50, 200). Jedes Ziel gibt einmal Steine.
+- **55 Ziele** (Reiter «Ziele», seit 13.11. auch Helden, Ausrüstung und Ränge): Tiefe (bis 150), Tipps, Zwerge, Bosse, Truhen, Hacken-Stufe, Werkzeuge, Umzüge, Erbstücke, geschaffte Blöcke (1, 3, 6) und gesammelte Kronen (50, 200). Jedes Ziel gibt einmal Steine.
 - **Sternenschacht (2026-11-13):** fünfter Block, 100 Kronen, Turm 5 Kronen pro Stunde. Dünne Luft: Zwerge graben halb so schnell, dafür ist jeder 10. Tipp ein Sternschlag (×15); zehn Punkte über dem Felsen zeigen den Stand.
 - **Was ist neu? (2026-11-13):** wer mit einem älteren Spielstand zurückkommt, sieht einmal eine kurze Liste der Neuigkeiten seit seiner Version (Spielstand-Feld `ver`, Liste `NEWS`; bei jeder neuen Version `VERSION` erhöhen und eine Zeile ergänzen).
 - **Ränge (2026-11-13):** der Punktestand (alle je gesammelten Kronen) gibt einen von zehn Titeln, vom Kieselklopfer bis zur Legende des Berges (ab 0, 10, 30, 60, 120, 250, 500, 1000, 2500, 6000 Kronen). Jeder Rang gibt +10 % Gold und Graben. Zu sehen in der Karte «Dein Reich» und in den Rekorden. Spielstand-Feld `rankSeen`.
@@ -45,7 +45,8 @@ Tippen auf den Felsen baut ihn ab, jeder Felsen gibt Gold. Mit Gold kauft man ei
 ## Dateien
 
 - `index.html` – das ganze Spiel in einer Datei (kein Internet nötig, ca. 80 KB), Texte Deutsch/Englisch je nach Browser-Sprache
-- `test-mine.js` – Browser-Test mit 111 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
+- `soak-mine.js` – Dauertest mit allem Zufall an (Maulwurf, Kobold, besondere Felsen, Sprüche, Beute, Helden) in allen fünf Blöcken: `node soak-mine.js`, am Ende muss «errors 0» stehen.
+- `test-mine.js` – Browser-Test mit 112 Prüfungen (Zufall von Felsen und Maulwurf ist im Test abgeschaltet, eigene Prüfungen dafür) und Bildschirmfotos: `node test-mine.js <bilder-ordner>`
 - Bilder im Projektordner `inventar/moneyprojekt/spiele/zwergen-mine/bilder/` (erste Fassung), `bilder-v2/` (Ausbau 2), `bilder-v3/` (Ringe und Rekorde), `bilder-v5/` (Tipps, Boss-Hilfe, Umzugs-Hinweis) `bilder-v6/` (Endboss, Förderturm, Karte, Vulkan) `bilder-v7/` (Felsen, Maulwurf, Fundstücke) und `bilder-v8/` (Gletscher, Grotte, Kronen-Laden)
 
 ## Bedienung
