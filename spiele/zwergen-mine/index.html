@@ -387,6 +387,7 @@ const F = {
   shopLv: (s, k) => (s && s.shop && s.shop[k]) || 0,
   hero: (s, k) => (s && s.hero && s.hero.on === k && s.hero.lv[k]) || 0,   // Stufe des Helden, der gerade mitkommt (sonst 0)
   heroCost: (L) => 4 * Math.pow(2, L), heroMax: 5,
+  gear: (s, k) => (s && s.gear && s.gear[k] && s.gear[k].v) || 0,   // Ausrüstung: Bonus in Prozent je Platz (pick, helm, amu)
   towerRate: (k, s) => (BLOCKS.find(b => b.k === k) || BLOCKS[0]).rate * (1 + 0.25 * F.shopLv(s, 'turm')),
   towerCap: (s) => F.towerMaxH + 6 * F.shopLv(s, 'lager'),
   startGold: (s) => { const L = F.shopLv(s, 'start'); return L ? 100 * Math.pow(10, L) : 0; },
@@ -400,13 +401,13 @@ const F = {
   ringGems: (r) => 30 * r,
   // Fels: ×1.21 je Tiefe, ab 40 zusätzlich ×1.025; ab Ring II (Tiefe 141) nur noch ×1.15, damit es endlos weitergeht
   rockHp: (d) => { const e = Math.min(d, 140); return Math.ceil(8 * Math.pow(1.21, e - 1) * Math.pow(1.025, Math.max(0, e - 40)) * Math.pow(1.15, Math.max(0, d - 140)) * (d % 50 === 0 ? 10 : d % 10 === 0 ? 7 : 1)); },
-  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s) * (1 + 0.15 * F.hero(s, 'gundi'))),
+  rockGold: (d, s) => Math.ceil(4 * Math.pow(1.2, d - 1) * (d % 10 === 0 ? 5 * (s.up.waage ? 1.5 : 1) : 1) * (1 + 0.25 * s.gu.gold) * F.heirMult(s) * (1 + 0.15 * F.hero(s, 'gundi')) * (1 + F.gear(s, 'amu') / 100)),
   bossGems: (d, s) => (1 + Math.floor(d / 20)) * (d % 50 === 0 ? 3 : 1) * (s && s.up.kugel ? 2 : 1),
   bossTime: (d, s) => (d % 50 === 0 ? 40 : 30) + (s.up.zeit ? 10 : 0) + 3 * F.hero(s, 'dvala'),
   heirMult: (s) => 1 + 0.05 * (s.heir || 0),
   powerMult: (s) => (1 + 0.2 * s.gu.power) * F.heirMult(s) * (1 + 0.2 * F.shopLv(s, 'kraft')),
-  pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1),
-  dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1),
+  pickMult: (s) => (s.up.spitze ? 1.5 : 1) * (s.up.kurs ? 1.5 : 1) * (s.up.bohrer ? 2 : 1) * (1 + F.gear(s, 'pick') / 100),
+  dwarfMult: (s) => (s.up.band ? 1.25 : 1) * (s.up.lied ? 1.3 : 1) * (s.up.schicht ? 1.5 : 1) * (1 + F.gear(s, 'helm') / 100),
   pickCost: (L) => Math.ceil(10 * Math.pow(1.19, L)),
   pickDmg: (L, s) => Math.max(1, Math.floor((1 + L) * Math.pow(1.09, L))) * F.powerMult(s) * F.pickMult(s) * (1 + 0.25 * F.hero(s, 'borin')),
   milestoneMult: (n) => Math.pow(2, [10, 25, 50, 100, 150, 200].filter(m => n >= m).length),
@@ -552,6 +553,32 @@ const TH = DE ? {
 };
 const HERO_STEP = { borin: 25, thrain: 15, gundi: 15, flinka: 30, dvala: 3 };
 
+// Beute: Bosse lassen Ausrüstung fallen (drei Plätze, vier Seltenheiten); das bessere Stück bleibt, der Rest wird zu Steinen
+const GEAR_SLOTS = [{ k: 'pick', icon: '⛏️' }, { k: 'helm', icon: '🪖' }, { k: 'amu', icon: '📿' }];
+const RARITY = [{ col: '#c9c9c9', lo: 5, hi: 10 }, { col: '#57d2ff', lo: 12, hi: 20 }, { col: '#c77dff', lo: 25, hi: 35 }, { col: '#ffb13d', lo: 45, hi: 60 }];
+const GEAR_ODDS = { boss: [60, 28, 10, 2], big: [25, 42, 26, 7] }, GEAR_CHANCE = 0.4;
+const TG = DE ? {
+  title: 'Ausrüstung', loot: 'Beute!', melt: 'Eingeschmolzen', empty: 'Noch leer. Bosse lassen Beute fallen.',
+  info: 'Bosse lassen manchmal Ausrüstung fallen, Grossbosse immer. Das bessere Stück bleibt, schwächere werden zu einem Stein. Ausrüstung bleibt für immer.',
+  rar: ['Gewöhnlich', 'Selten', 'Episch', 'Legendär'], slot: { pick: 'Hacke', helm: 'Helm', amu: 'Amulett' },
+  eff: { pick: 'Tippen +{p} %', helm: 'Zwerge +{p} %', amu: 'Gold +{p} %' },
+  names: {
+    pick: ['Rostige Ersatzhacke', 'Hacke mit Griff (neu!)', 'Hacke «Felsenschreck»', 'Urgrossvaters Donnerhacke'],
+    helm: ['Kochtopf (verbeult)', 'Helm, fast passend', 'Helm des Vorarbeiters', 'Krone des Schichtleiters'],
+    amu: ['Glückskiesel', 'Hasenpfote vom Maulwurf', 'Amulett der Goldnase', 'Zahn des Bergkönigs'],
+  },
+} : {
+  title: 'Gear', loot: 'Loot!', melt: 'Melted down', empty: 'Still empty. Bosses drop loot.',
+  info: 'Bosses sometimes drop gear, big bosses always. The better piece stays, weaker ones turn into a gem. Gear stays forever.',
+  rar: ['Common', 'Rare', 'Epic', 'Legendary'], slot: { pick: 'Pickaxe', helm: 'Helmet', amu: 'Amulet' },
+  eff: { pick: 'Tapping +{p}%', helm: 'Dwarves +{p}%', amu: 'Gold +{p}%' },
+  names: {
+    pick: ['Rusty spare pickaxe', 'Pickaxe with handle (new!)', 'Pickaxe “Rock Fright”', 'Great-grandpa\'s Thunder Pick'],
+    helm: ['Cooking pot (dented)', 'Helmet, almost fits', 'Foreman\'s helmet', 'Crown of the Shift Boss'],
+    amu: ['Lucky pebble', 'Mole\'s rabbit foot', 'Amulet of the Goldnose', 'Tooth of the Mountain King'],
+  },
+};
+
 // ---------- Spielstand ----------
 const SAVE_KEY = 'zwergenmine.v1';
 function freshState() {
@@ -560,7 +587,7 @@ function freshState() {
     up: {}, goals: {}, heir: 0, st: { bosses: 0, chests: 0, prest: 0, time: 0, moles: 0 }, cdDyn: 0, cdBeer: 0,
     best: 1, recBase: 0, runs: [], runTime: 0, lastMaxAt: 0, tips: {}, finds: {},
     blk: 'stein', blockDone: false, blkBest: 1, towers: [], crowns: 0, crownsAll: 0, unl: {}, shop: {}, special: null, specialT: 0,
-    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 } };
+    daily: { day: '', goals: [], base: {}, done: {}, bonus: false }, hero: { lv: {}, on: '', seen: 0 }, gear: {} };
 }
 let S = freshState(), migrated = 0;
 function load() {
@@ -580,6 +607,7 @@ function load() {
     if (!Array.isArray(S.towers)) S.towers = [];
     S.unl = Object.assign({}, d.unl || {});
     S.shop = Object.assign({}, d.shop || {});
+    S.gear = {}; for (const g of GEAR_SLOTS) { const x = d.gear && d.gear[g.k]; if (x && x.v > 0 && RARITY[x.r]) S.gear[g.k] = { r: x.r, v: x.v }; }   // Spielstand von vor der Beute
     const dh = d.hero && typeof d.hero === 'object' ? d.hero : {};   // Spielstand von vor den Helden
     S.hero = { lv: Object.assign({}, dh.lv || {}), on: HEROES.some(h => h.k === dh.on) ? dh.on : '', seen: dh.seen || 0 };
     S.daily = Object.assign(f.daily, d.daily && typeof d.daily === 'object' ? d.daily : {});   // Spielstand von vor den Tageszielen
@@ -789,6 +817,7 @@ function breakRock() {
     S.gems += g; S.st.bosses++;
     showBanner({ text: T.bossWin, sub: '+' + g, gem: true, life: 2.4, color: '#57d2ff' });
     sfx.boss(); Portal.happytime();
+    if (!window.__mineGear.off) gearDrop();
     shake = 1;
     for (let i = 0; i < 40; i++) { const p = chip(c.x, c.y - c.r * 0.3, CONFETTI[i % CONFETTI.length]); p.vx *= 1.7; p.vy -= 4; p.size = 5 + Math.random() * 4; chips.push(p); }
   }
@@ -1881,6 +1910,7 @@ function buildPanel() {
   if (S.farm) rows.push(makeRow({ icon: iconCanvas(emojiIcon('⚔️')), kind: 'stuck' }));
   if (tab === 'pick') {
     rows.push(makeRow({ icon: iconCanvas(pickIcon), kind: 'pick' }));
+    if (S.st.bosses > 0 || gearCount()) rows.push(makeRow({ icon: iconCanvas(emojiIcon('🎒')), kind: 'gear' }));
     const ups = UPGRADES.slice().sort((a, b) => (S.up[a.key] ? 1 : 0) - (S.up[b.key] ? 1 : 0) || a.unlock - b.unlock);
     ups.forEach((u) => rows.push(makeRow({ icon: iconCanvas(emojiIcon(UP_EMOJI[u.key])), kind: 'up', key: u.key })));
   } else if (tab === 'dwarf') {
@@ -1941,6 +1971,10 @@ function rowData(r) {
   }
   if (r.kind === 'rec') {
     return { name: T.records, lvl: '', eff: `${T.bestDepth} <b>${S.best}</b> · ${T.mines} ${S.st.prest + 1}`, cost: 0, cur: 'rec', locked: false, rec: true };
+  }
+  if (r.kind === 'gear') {
+    const parts = GEAR_SLOTS.filter(g => S.gear[g.k]).map(g => `<b style="color:${RARITY[S.gear[g.k].r].col}">${g.icon} +${S.gear[g.k].v} %</b>`);
+    return { name: TG.title, lvl: gearCount() + ' / 3', eff: parts.length ? parts.join(' · ') : TG.empty, cost: 0, cur: 'rec', locked: false, rec: true };
   }
   if (r.kind === 'heroes') {
     const on = S.hero.on;
@@ -2008,6 +2042,7 @@ function buy(r) {
   if (r.kind === 'rec') { showRecords(); return; }
   if (r.kind === 'finds') { showFinds(); return; }
   if (r.kind === 'heroes') { showHeroes(); return; }
+  if (r.kind === 'gear') { showGear(); return; }
   if (r.kind === 'stuck') { retryBoss(); return; }
   if (d.locked || d.maxed || d.done) return;
   if (d.cur === 'gold') { if (S.gold < d.cost) return; S.gold -= d.cost; }
@@ -2167,6 +2202,45 @@ function showFinds() {
   popup(`<div style="font-weight:900;font-size:18px">🦴 ${TF.title} ${findCount()} / ${FINDS.length}</div>
     <div style="max-height:60vh;overflow:auto">${rows}</div>
     <button id="tClose">${T.close}</button>`, true);
+  document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
+}
+
+// ---------- Beute: Ausrüstung von Bossen ----------
+function gearCount() { return GEAR_SLOTS.filter(g => S.gear[g.k]).length; }
+function gearName(k, it) { return TG.names[k][it.r]; }
+function gearRoll(big, rnd = Math.random) {   // ein Stück würfeln: Platz, Seltenheit, Wert
+  const odds = GEAR_ODDS[big ? 'big' : 'boss']; let x = rnd() * 100, r = 0;
+  while (r < 3 && x >= odds[r]) { x -= odds[r]; r++; }
+  const R = RARITY[r];
+  return { k: GEAR_SLOTS[Math.floor(rnd() * 3)].k, r, v: Math.round(R.lo + rnd() * (R.hi - R.lo)) };
+}
+function gearGive(it) {   // besser als das alte: anlegen; sonst einschmelzen (+1 Stein)
+  const old = S.gear[it.k], col = RARITY[it.r].col;
+  if (!old || it.v > old.v) {
+    S.gear[it.k] = { r: it.r, v: it.v };
+    showBanner({ text: '🎒 ' + TG.loot + ' ' + TG.rar[it.r], sub: gearName(it.k, it) + ' · ' + TG.eff[it.k].replace('{p}', it.v), life: 3, color: col });
+    if (tab === 'pick') buildPanel();
+    return true;
+  }
+  S.gems += 1;
+  const c = rockCenter(); floats.push({ x: c.x, y: c.y - c.r - 34, text: TG.melt + ' 💎 +1', life: 1.6, color: col });
+  return false;
+}
+function gearDrop() {   // nach einem Boss-Sieg
+  const big = F.isBigBoss(S.depth);
+  if (!big && Math.random() >= GEAR_CHANCE) return;
+  gearGive(gearRoll(big));
+}
+function showGear() {
+  if (toast.style.display === 'block') { if (document.getElementById('tClose')) toast.style.display = 'none'; return; }   // Rückfragen nicht überdecken
+  const rowsG = GEAR_SLOTS.map((g) => {
+    const it = S.gear[g.k];
+    return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px;background:#2a2238;border:2px solid ${it ? RARITY[it.r].col : 'transparent'};border-radius:10px;padding:8px;text-align:left">
+      <span style="font-size:22px;flex:none">${g.icon}</span>
+      <span style="flex:1;min-width:0">${it ? `<b style="color:${RARITY[it.r].col}">${gearName(g.k, it)}</b><div class="small">${TG.rar[it.r]} · ${TG.eff[g.k].replace('{p}', it.v)}</div>` : `<b>${TG.slot[g.k]}</b><div class="small">${TG.empty}</div>`}</span></div>`;
+  }).join('');
+  popup(`<div style="font-weight:900;font-size:18px">🎒 ${TG.title}</div><div class="small" style="max-width:300px">${TG.info}</div>${rowsG}
+    <div class="small" style="margin-top:6px">${TG.rar.map((n, i) => `<b style="color:${RARITY[i].col}">${n}</b>`).join(' · ')}</div><button id="tClose">${T.close}</button>`, true);
   document.getElementById('tClose').onclick = () => { toast.style.display = 'none'; };
 }
 
@@ -2492,7 +2566,8 @@ requestAnimationFrame(frame);
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear };
+window.__mineGear = { off: false, roll: gearRoll, give: gearGive, RARITY, SLOTS: GEAR_SLOTS };
 </script>
 </body>
 </html>
