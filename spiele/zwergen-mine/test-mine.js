@@ -408,6 +408,8 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   });
   check(pt.lv0 === 0 && pt.none === 0 && pt.lv1 === 1 && pt.ban.includes('wechselt die Seite'), 'Mauli: der fünfte erwischte Maulwurf wechselt die Seite');
   check(pt.got > 0 && Math.abs(pt.up - pt.got) < 1 && pt.shown, `Mauli bringt einen Sack Gold (${pt.got})`);
+  const pq = await page.evaluate(() => { const q = window.__mineQuote; q.say('pet'); const t = q.quote && q.quote.text; return ['Der Maulwurf verdient mehr als ich.', 'Seit wann hat DER einen Helm?', 'Zählt mal nach. Ich trau ihm nicht.'].includes(t); });
+  check(pq, 'Zwerge haben Sprüche zu Mauli');
   check(pt.lv9 === 1 && pt.lv10 === 2 && pt.lvMax === 10 && pt.row, 'Mauli: Stufe steigt alle 5 Maulwürfe bis 10, Zeile im Reiter «Zwerge»');
   await page.waitForTimeout(500); await shot('24a-mauli');
   await page.evaluate(() => { window.__minePet.show(); }); await page.waitForTimeout(200); await shot('24a2-mauli-fenster');
