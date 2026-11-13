@@ -17,7 +17,7 @@ const path = require('path');
         if (i % 7 === 1) window.__mineMole.spawn();
         if (i % 7 === 3 && window.__mineMole.mole) window.__mineMole.catch();
         if (i % 9 === 2) { T.spawn(); }
-        if (i % 9 === 4 && T.trader && T.trader.ph === 'wait') { T.open(); document.getElementById(i % 2 ? 'tTrade' : 'tChase').click(); }
+        if (i % 9 === 4 && T.trader && T.trader.ph === 'wait') { t.style.display = 'none'; T.open(); document.getElementById(i % 2 ? 'tTrade' : 'tChase').click(); t.style.display = 'none'; }
         if (i % 5 === 0) window.__mineSpecial.spawn(['gold', 'kristall', 'panzer'][i % 3]);
         if (i % 6 === 0) window.__mineQuote.say(['mole','boss','lava','frost','idle','deep','many','rich','plain'][i % 9]);
         if (i % 8 === 5) m.useDyn(); if (i % 8 === 6) m.useBeer();

@@ -289,6 +289,24 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   const foc = await page.evaluate(() => { const m = window.__mine; window.dispatchEvent(new Event('blur')); const a = m.focus; window.dispatchEvent(new Event('focus')); return [a, m.focus]; });
   check(foc[0] === false && foc[1] === true, 'Ton aus, wenn man woanders hinklickt');
 
+  // 9e2) Werbung des Portals: Spiel pausiert und ist stumm, danach geht es weiter
+  const ad = await page.evaluate(async () => {
+    const m = window.__mine; window.dispatchEvent(new Event('zm-ad-start')); const on = m.paused && m.adOn, hp = m.S.hp, rt = m.S.runTime;
+    await new Promise(r => setTimeout(r, 300)); const still = m.S.runTime === rt;
+    window.dispatchEvent(new Event('zm-ad-end')); await new Promise(r => setTimeout(r, 300));
+    return { on, still, off: !m.paused && !m.adOn, runs: m.S.runTime > rt };
+  });
+  check(ad.on && ad.still && ad.off && ad.runs, 'Werbung des Portals: Pause und stumm, danach läuft das Spiel weiter');
+
+  // 9e3) Krämer: kein Schnäppchen mit leerem Beutel
+  const cheap = await page.evaluate(() => {
+    const m = window.__mine, x = window.__mineTrader, g = m.S.gold; m.S.gold = 1; x.spawn('gems'); x.open();
+    const price = x.trader.price, dis = document.getElementById('tTrade').disabled, gems = m.S.gems;
+    document.getElementById('tChase').click(); x.trader && (x.trader.ph = 'leave'); const same = m.S.gems === gems; m.S.gold = g;
+    return { price, dis, same };
+  });
+  check(cheap.price > 1 && cheap.dis && cheap.same, 'Krämer: mit leerem Beutel gibt es keine billigen Steine (Preis ' + cheap.price + ')');
+
   // 9f) Ganz neu anfangen (mit Rückfrage; Abbrechen lässt alles stehen)
   await page.evaluate(() => { const m = window.__mine; m.S.heir = 49; m.S.best = 230; });
   await page.click('#depthPill'); await page.waitForTimeout(300);
@@ -372,19 +390,19 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
 
   // 9j2) Kobold-Krämer: Steine gegen Gold, Bier, Würfel; Verjagen lässt Münzen fallen
   const kb = await page.evaluate(() => {
-    const m = window.__mine, x = window.__mineTrader; m.jump(25); m.S.gold = 1000; const gems = m.S.gems;
+    const m = window.__mine, x = window.__mineTrader; m.jump(25); m.S.gold = 1e9; const gems = m.S.gems;
     x.spawn('gems'); x.open();
     return { open: document.getElementById('toast').style.display === 'block', talk: x.trader.ph === 'talk', gems, has: !!document.getElementById('tTrade') };
   });
   check(kb.open && kb.talk && kb.has, 'Kobold-Krämer: Angebot öffnet sich');
   await shot('24b-kobold');
   const kg = await page.evaluate((gems) => { const m = window.__mine, x = window.__mineTrader; document.getElementById('tTrade').click(); return { gems: m.S.gems - gems, gold: m.S.gold, ph: x.trader && x.trader.ph }; }, kb.gems);
-  check(kg.gems === 2 && Math.abs(kg.gold - 700) < 1 && kg.ph === 'leave', 'Kobold: 30 % Gold gegen 2 Steine (Tiefe 25)');
+  check(kg.gems === 2 && Math.abs(kg.gold - 7e8) < 1 && kg.ph === 'leave', 'Kobold: 30 % Gold gegen 2 Steine (Tiefe 25)');
   const kc = await page.evaluate(() => {
     const m = window.__mine, x = window.__mineTrader;
-    m.S.gold = 1000; x.spawn('beer'); x.open(); document.getElementById('tChase').click();
-    const chased = m.S.gold > 1000 && x.trader && x.trader.ph === 'leave';
-    m.S.gold = 1000; x.spawn('dice'); x.open(); document.getElementById('tTrade').click(); const dice = [500, 1500].includes(Math.round(m.S.gold));
+    m.S.gold = 1e9; x.spawn('beer'); x.open(); document.getElementById('tChase').click();
+    const chased = m.S.gold > 1e9 && x.trader && x.trader.ph === 'leave';
+    m.S.gold = 1e9; x.spawn('dice'); x.open(); document.getElementById('tTrade').click(); const dice = [5e8, 1.5e9].includes(Math.round(m.S.gold));
     const offers = []; for (let i = 0; i < 30; i++) { x.spawn(); offers.push(x.trader.offer); }
     const repeat = offers.some((o, i) => i && o === offers[i - 1]);
     window.__mineTrader.trader && (window.__mineTrader.trader.ph = 'leave');

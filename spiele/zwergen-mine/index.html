@@ -605,7 +605,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 16;
+const VERSION = 17;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -738,6 +738,7 @@ function fmt(n) {
 // ---------- Ton ----------
 let actx = null;
 // Still, solange das Spiel nicht im Vordergrund ist (anderes Fenster, Chat daneben angeklickt)
+let adOn = false;   // Werbung des Portals läuft: Spiel pausiert und ist stumm
 let hasFocus = !document.hasFocus || document.hasFocus();
 window.addEventListener('blur', () => { hasFocus = false; });
 window.addEventListener('focus', () => { hasFocus = true; });
@@ -745,7 +746,7 @@ document.addEventListener('pointerdown', () => { hasFocus = true; }, true);
 document.addEventListener('keydown', () => { hasFocus = true; }, true);
 let lastBrk = 0;
 function beep(f, d, type, v) {
-  if (!S.sound || !hasFocus) return;
+  if (!S.sound || !hasFocus || adOn) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     if (actx.state === 'suspended') actx.resume();
@@ -960,7 +961,7 @@ function collectAll() {
 }
 // Neuen Block beginnen: alles ausser Kronen, Steinen, Zielen und Rekorden fängt neu an
 function startBlock(k) {
-  toast.style.display = 'none';
+  toast.style.display = 'none'; starN = 0;
   S.blk = k; S.blockDone = false;
   S.heir = 0; S.runTime = 0; S.lastMaxAt = 0; S.recBase = 0; S.blkBest = 1;
   dailyMove();
@@ -1130,7 +1131,7 @@ cv.addEventListener('pointerdown', (e) => {
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') {
-    e.preventDefault(); const c = rockCenter(); swingT = 1; S.taps++;
+    e.preventDefault(); if (e.repeat) return; const c = rockCenter(); swingT = 1; S.taps++;
     damage(F.pickDmg(S.pick, S) * tapMult() * starMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
   }
   if (e.code === 'KeyD') useDyn();
@@ -1347,14 +1348,14 @@ function traderStep(dt) {
 }
 function tradeChance() { return S.up.gluck ? 0.55 : 0.5; }
 function openTrade() {
-  if (!trader) return;
+  if (!trader || toast.style.display === 'block') return;
   trader.ph = 'talk';
   const o = trader.offer, g = Math.max(0, S.gold);
-  trader.price = Math.ceil(g * (o === 'gems' ? 0.3 : o === 'beer' ? 0.2 : 0.5));
+  trader.price = Math.ceil(Math.max(g * (o === 'gems' ? 0.3 : o === 'beer' ? 0.2 : 0.5), 10 * F.rockGold(S.depth, S)));   // Mindestpreis: kein Schnäppchen mit leerem Beutel
   trader.n = 2 + Math.floor(F.layerOf(S.depth) / 3);
   const [name, text] = TK.offers[o];
   const body = text.replace('{g}', fmt(trader.price)).replace('{n}', trader.n).replace('{s}', TRADE_BEER).replace('{p}', Math.round(tradeChance() * 100));
-  const poor = S.gold <= 0;
+  const poor = S.gold <= 0 || S.gold < trader.price;
   popup(`<div style="font-weight:900;font-size:18px">👺 ${TK.title}</div>
     <div class="small" style="font-style:italic;max-width:270px">${TK.hello[Math.floor(Math.random() * TK.hello.length)]}</div>
     <div style="font-weight:800;margin-top:4px">${name}</div><div style="max-width:270px">${body}</div>
@@ -2375,7 +2376,7 @@ function heroBuy(k) {
   sfx.chest(); refreshPanel(true); save();
   return true;
 }
-function heroTake(k) { if (!(S.hero.lv[k] > 0)) return; S.hero.on = k; sfx.chest(); refreshPanel(true); save(); }
+function heroTake(k) { if (!(S.hero.lv[k] > 0)) return; S.hero.on = k; if (bossActive) bossTimer = Math.min(bossTimer, F.bossTime(S.depth, S)); sfx.chest(); refreshPanel(true); save(); }
 function heroCheck() {   // Hinweis, sobald ein neuer Held freigeschaltet ist
   const n = HEROES.filter(h => S.best >= h.unlock).length;
   if (n <= S.hero.seen) return;
@@ -2525,12 +2526,13 @@ function buyShop(k) {
 function startOver() {
   const sound = S.sound;
   S = freshState(); S.sound = sound;
-  rage = 0; beer = 0; lava = 0; chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
+  starN = 0; rage = 0; beer = 0; lava = 0; chest = null; chestTimer = 25; layerShown = -1; seenPrest = false;
   floats = []; chips = []; coins = []; bannerQ.length = 0; banner = null;
   spawnRock(); buildPanel(); updateSkillBtns(); updateBossBtn(); save();
   showBanner({ text: T.resetDone, sub: T.resetSub, life: 2.6, color: '#f5c542' });
 }
 function doNewMine(gain) {
+  starN = 0;
   S.runs.unshift({ n: S.st.prest + 1, d: S.maxDepth, h: gain, t: Math.round(S.runTime) }); if (S.runs.length > 30) S.runs.length = 30;
   S.heir += gain; S.st.prest++; S.runTime = 0; S.lastMaxAt = 0; S.recBase = S.blkBest;
   dailyMove();
@@ -2594,7 +2596,10 @@ function offlineReward(since) {
 
 // ---------- Schleife ----------
 let last = performance.now(), t = 0, saveTimer = 0, panelTimer = 0, paused = false;
-document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); paused = true; Portal.gameplayStop(); } else { paused = false; last = performance.now(); Portal.gameplayStart(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); paused = true; Portal.gameplayStop(); } else if (!adOn) { paused = false; last = performance.now(); Portal.gameplayStart(); } });
+// Werbung des Portals (Ereignisse kommen aus portal/crazygames-adapter.js): pausieren und stumm, danach weiter
+window.addEventListener('zm-ad-start', () => { adOn = true; paused = true; save(); Portal.gameplayStop(); });
+window.addEventListener('zm-ad-end', () => { if (!adOn) return; adOn = false; paused = false; last = performance.now(); Portal.gameplayStart(); });
 window.addEventListener('pagehide', save);
 
 function frame(now) {
@@ -2696,7 +2701,7 @@ requestAnimationFrame(frame);
 // Für Tests von aussen (Playwright) erreichbar
 window.__mine = { get S() { return S; }, F, DWARVES, UPGRADES, GOALS, tap: () => { const c = rockCenter(); damage(F.pickDmg(S.pick, S) * tapMult() * starMult(), true, c.x, c.y); }, spawnChest, openChest, get chest() { return chest; }, useDyn, useBeer, newMine, buildPanel, reset: startOver, jump: (d) => { d = Math.min(d, F.blockEnd); S.depth = d; S.maxDepth = Math.max(S.maxDepth, d); S.best = Math.max(S.best, S.maxDepth); S.blkBest = Math.max(S.blkBest, S.maxDepth); S.farm = false; spawnRock(); buildPanel(); }, onNewMax, showRecords, layerAt, banners: () => [banner, ...bannerQ].filter(Boolean).map(b => b.text), get focus() { return hasFocus; }, get tip() { return tipNow && tipNow.id; }, failBoss, retryBoss, bossPower, moveWorth, movePct,
   showRealm, collectAll, startBlock, startLava, storeInfo, BLOCKS, get lava() { return lava; }, get bossActive() { return bossActive; },
-  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear, rankCheck, showNews, VERSION, get starN() { return starN; } };
+  startFrost, get frost() { return frost; }, get frozen() { return frozen; }, freeze: () => { frozen = iceGold = true; }, buyShop, renderShop, applyStart, SHOP, ensureDaily, checkDaily, dailyProgress, LOOKS, HEROES, heroBuy, heroTake, showHeroes, showGear, rankCheck, showNews, VERSION, get starN() { return starN; }, get paused() { return paused; }, get adOn() { return adOn; } };
 window.__mineGear = { off: false, roll: gearRoll, give: gearGive, forge: gearForge, FORGE_COST, RARITY, SLOTS: GEAR_SLOTS };
 </script>
 </body>
