@@ -515,13 +515,17 @@ A.Game = (function () {
   function wouldSell(x) { return x && run.bag.length >= BAG_MAX ? worstOf(run.bag.concat([x])) : null; }
 
   // ---------- Ebenen (Räume) ----------
+  // Gibt es auf dieser Ebene Elite-Gegner? Elite-Räume erst ab Ebene 2 (levels.js), Champions in normalen Kämpfen ab Ebene 3 oder mit «Champions überall» (Grad, Tageswelt; world.js)
+  function eliteOnFloor() { return run.floor >= 2 || A.gradeVal('champ', run) > 0; }
   function newFloor() {
     run.floorSeed = A.isDaily(run) ? A.dailySeed(run.daily.day, run.floor) : run.rng.int(1, 2e9); run.rooms = null;   // Tageswelt (v45): Räume aus Tag und Ebene, für alle gleich
     run.lvVer = 8;   // Ebenen-Bau mit Schmiede (2), geheimen Räumen (3), grossen Räumen (4), Käfigen (5), neuen Gegnern (6), Pakt-Altären (7) und Krügen mit Mimik (8); ältere Spielstände bauen ihre laufende Ebene wie bisher
     const keep = run.rng, day = A.isDaily(run), dr = (k) => { if (day) run.rng = new A.RNG(((run.floorSeed ^ k) >>> 0) || 3); };   // Tageswelt (v45): Käfig, Altar und Auftrag aus dem Tag, für alle gleich
     dr(0x3c6ef372); run.cage = A.Pets.cageOnFloor(run);   // steht auf dieser Ebene ein Käfig mit einem Begleiter?
     dr(0x510e527f); run.pact = A.Pacts.onFloor(run);   // und ein Pakt-Altar (pacts.js)?
-    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS); run.rng = keep; run.questProg = 0; run.questDone = false; run.questJustDone = false; run.floorKills = 0;
+    dr(0x1f83d9ab); run.quest = run.rng.pick(A.QUESTS);
+    if (run.quest.type === 'elite' && !eliteOnFloor()) { const alt = A.QUESTS.filter(q => q.type !== 'elite'); run.quest = alt[run.floorSeed % alt.length]; }   // v52: ohne Elite-Gegner auf der Ebene ein anderer Auftrag, aus dem Ebenen-Startwert (kein zusätzlicher Wurf, alles andere bleibt gleich)
+    run.rng = keep; run.questProg = 0; run.questDone = false; run.questJustDone = false; run.floorKills = 0;
     run.shopItems = null; run.currentEvent = null;
   }
   function descend() {
