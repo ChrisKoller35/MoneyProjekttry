@@ -462,6 +462,24 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check(rk.r0 === 0 && rk.r9 === 0 && rk.r10 === 1 && rk.r60 === 3 && rk.top === 9 && near(rk.tap, 1.3) && Math.abs(rk.gold - 1.3) < 0.05, 'Ränge: 10 Kronen = Rang 2, 60 = Rang 4 (+30 % Gold und Graben), höchstens Rang 10');
   check(rk.banner && rk.seen === 2 && rk.txt.includes('Rang 3: Hauer') && rk.txt.includes('Vorarbeiter'), 'Neuer Rang: Banner einmal, Rekorde zeigen Titel und nächsten Rang');
 
+  // 9j6) Sternenschacht: Zwerge halb so schnell, jeder 10. Tipp ist ein Sternschlag (×15)
+  const sn = await page.evaluate(() => {
+    const m = window.__mine, S = m.S, F = m.F, keep = JSON.stringify(S);
+    S.dw = [20, 5, 0, 0, 0, 0, 0, 0]; const dps0 = F.totalDps(S);
+    S.unl.stern = true; m.startBlock('stern'); S.dw = [20, 5, 0, 0, 0, 0, 0, 0];
+    const dps = F.totalDps(S) / dps0, name = m.layerAt(1).name, heart = m.layerAt(145).name;
+    S.gu.crit = 0; S.pick = 0; m.jump(60); const hp0 = S.hp, per = F.pickDmg(0, S); const hits = [];
+    for (let i = 0; i < 10; i++) { const h = S.hp; m.tap(); hits.push(Math.round((h - S.hp) / per)); }
+    const cost = m.BLOCKS.find(b => b.k === 'stern').cost;
+    return { dps, name, heart, hits, cost, n: m.starN, keep };
+  });
+  check(near(sn.dps, 0.5) && sn.name === 'Sternenstaub' && sn.heart === 'Herz des Sterns' && sn.cost === 100, 'Sternenschacht: 100 Kronen, Zwerge halb so schnell, eigene Schichten');
+  check(sn.hits.filter(h => h >= 15).length === 1 && sn.hits[9] >= 15 && sn.hits.slice(0, 9).every(h => h < 15) && sn.n === 0, 'Sternenschacht: der 10. Tipp ist ein Sternschlag (×15) ' + JSON.stringify(sn.hits));
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) window.__mine.tap(); }); await page.waitForTimeout(500);
+  await shot('24f-sternenschacht');
+  await page.evaluate((k) => { const m = window.__mine, o = JSON.parse(k); for (const key of Object.keys(m.S)) delete m.S[key]; Object.assign(m.S, o); m.jump(o.depth); m.buildPanel(); }, sn.keep);
+  await page.waitForTimeout(300);
+
   // 9k) Fundstücke: Sammlung im Reiter «Ziele», keine Fundstücke im Herz
   const fd = await page.evaluate(() => { const m = window.__mine; const n0 = Object.keys(m.S.finds).length; for (let i = 0; i < 40; i++) { m.S.maxDepth = 141 + (i % 9); m.onNewMax(); } m.jump(33); return { n: Object.keys(m.S.finds).length - n0 }; });
   check(fd.n === 0, 'Im Herz des Berges gibt es keine Fundstücke');
@@ -507,9 +525,9 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   }
 
   // 11) Offline-Belohnung (eigener Browser-Kontext, Spielstand vor dem Laden gesetzt)
-  const withSave = async (save) => {
+  const withSave = async (save, news) => {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'de-CH' });
-    await ctx.addInitScript((sv) => { if (!localStorage.getItem('zwergenmine.v1')) localStorage.setItem('zwergenmine.v1', sv); }, JSON.stringify(save));
+    await ctx.addInitScript(([sv, news]) => { window.__mineNoNews = !news; if (!localStorage.getItem('zwergenmine.v1')) localStorage.setItem('zwergenmine.v1', sv); }, [JSON.stringify(save), !!news]);
     const p = await ctx.newPage(); p.on('pageerror', e => errors.push('ctx pageerror: ' + e.message));
     await p.goto(file); await calm(p); await p.waitForTimeout(1200); return p;
   };
@@ -545,6 +563,15 @@ const check = (ok, what) => { console.log((ok ? 'OK   ' : 'FEHL ') + what); if (
   check(s.towers.length === 0 && s.blkBest === 120 && s.crowns === 0 && !(await mid.locator('#tMap').count()), 'Rekord 120: noch kein Block geschafft');
   await mid.waitForTimeout(600);
   await mid.screenshot({ path: `${out}/17e-tiefe-120.png` });
+
+  // 12c) Was ist neu: alter Spielstand sieht einmal die Neuigkeiten, danach nicht mehr
+  const nw = await withSave({ gold: 500, gems: 3, depth: 22, maxDepth: 22, pick: 12, dw: [10, 6, 2, 0, 0, 0, 0, 0], gu: { power: 0, gold: 0, crit: 0, offline: 0, chest: 0 }, taps: 900, saved: Date.now(), up: {}, goals: {}, heir: 0, st: { bosses: 2, chests: 1, prest: 0, time: 900 }, best: 22, tips: { tap: 1, dwarf: 1, boss: 1, gem: 1 }, ver: 10 }, true);
+  await nw.waitForTimeout(900);
+  const nt = await nw.locator('#toast').textContent();
+  check(await nw.locator('#toast').isVisible() && nt.includes('Was ist neu?') && nt.includes('Helden-Zwerge') && nt.includes('Ränge') && !nt.includes('Maulwurf'), 'Was ist neu: Spielstand von Version 10 sieht nur die neueren Sachen');
+  await nw.screenshot({ path: `${out}/17f-was-ist-neu.png` });
+  await nw.click('#tClose'); await nw.waitForTimeout(200);
+  check(await nw.evaluate(() => window.__mine.S.ver === window.__mine.VERSION && JSON.parse(localStorage.getItem('zwergenmine.v1')).ver === window.__mine.VERSION), 'Was ist neu: nach dem Schliessen gemerkt');
 
   // 13) Englisch
   const en = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'en-US' });
