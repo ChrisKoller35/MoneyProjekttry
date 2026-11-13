@@ -1,6 +1,6 @@
 # Zwergen-Mine bei CrazyGames einreichen
 
-Stand 13.11.2026, Version 20. Alles hier ist vorbereitet, eingereicht ist noch nichts.
+Stand 13.11.2026, Version 21. Alles hier ist vorbereitet, eingereicht ist noch nichts.
 
 ## Was schon bereit liegt
 

@@ -3,9 +3,9 @@
 // Stand: nach der öffentlichen SDK-Doku geschrieben, gegen das echte Portal noch NICHT getestet
 // (das geht erst mit einem Entwickler-Konto im QA-Werkzeug von CrazyGames).
 (function () {
-  let sdk = null, ready = false;
+  let sdk = null, ready = false, busy = false;
   const queue = [];
-  const run = (fn) => { if (ready) { try { fn(); } catch (e) {} } else queue.push(fn); };
+  const run = (fn) => { if (ready) { try { fn(); } catch (e) {} } else if (queue.length < 20) queue.push(fn); };
   const adEvent = (name) => window.dispatchEvent(new Event(name));   // 'zm-ad-start' / 'zm-ad-end': das Spiel pausiert und schaltet stumm
   (async () => {
     try {
@@ -21,13 +21,16 @@
     happytime() { run(() => sdk.game.happytime()); },
     // Freiwillige Werbung: Belohnung nur, wenn die Werbung zu Ende lief
     showRewardedAd(onReward) {
-      if (!ready) return;   // kein SDK: keine Werbung, keine Belohnung
+      if (!ready || busy) return;   // kein SDK oder schon eine Werbung unterwegs: nichts tun
+      busy = true;
       let done = false;
-      sdk.ad.requestAd('rewarded', {
-        adStarted: () => adEvent('zm-ad-start'),
-        adFinished: () => { adEvent('zm-ad-end'); if (!done) { done = true; onReward(); } },
-        adError: () => adEvent('zm-ad-end'),
-      });
+      try {
+        sdk.ad.requestAd('rewarded', {
+          adStarted: () => adEvent('zm-ad-start'),
+          adFinished: () => { busy = false; adEvent('zm-ad-end'); if (!done) { done = true; onReward(); } },
+          adError: () => { busy = false; adEvent('zm-ad-end'); },
+        });
+      } catch (e) { busy = false; adEvent('zm-ad-end'); }
     },
     // Rangliste gibt es bei CrazyGames nur für eingeladene Spiele; bis dahin tut das nichts.
     submitScore(points) {},

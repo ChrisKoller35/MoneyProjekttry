@@ -625,7 +625,7 @@ const TR = DE ? {
 };
 
 // Was ist neu: einmal beim Laden, wenn der Spielstand älter ist als diese Version
-const VERSION = 20;
+const VERSION = 21;
 const NEWS = DE ? [
   [7, '⛏️', 'Besondere Felsen, der freche Maulwurf und 42 Fundstücke'],
   [8, '🧊', 'Gletscher, Grotte und der Kronen-Laden (Karte «Dein Reich»)'],
@@ -1155,7 +1155,7 @@ cv.addEventListener('pointerdown', (e) => {
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') {
-    e.preventDefault(); if (e.repeat) return; const c = rockCenter(); swingT = 1; S.taps++;
+    e.preventDefault(); if (e.repeat || paused) return; const c = rockCenter(); swingT = 1; S.taps++;
     damage(F.pickDmg(S.pick, S) * tapMult() * starMult() * (Math.random() < F.doubleChance(S) ? 2 : 1), true, c.x, c.y);
   }
   if (e.code === 'KeyD') useDyn();
@@ -2677,7 +2677,8 @@ function offlineReward(since) {
   popup(`<div style="font-weight:800">${T.welcome}</div><div class="small">${T.away} ${h ? h + 'h ' : ''}${m}min</div>
     <div class="big">${COIN_SVG}+${fmt(gold)}</div>${inStore ? `<div class="small" style="color:#ffd447;font-weight:800">${T.inStore.replace('{n}', inStore)}</div>` : ''}<button id="tCollect">${T.collect}</button>
     <div><button id="tDouble" style="background:#57d2ff;color:#003449;margin-top:6px">${T.double}</button></div>`);
-  const done = (mult) => { S.gold += gold * mult; toast.style.display = 'none'; for (let i = 0; i < 10; i++) coins.push({ x: CW / 2, y: CH * 0.3, t: -i * 0.04, sx: 0, sy: 0 }); refreshPanel(true); save(); };
+  let paid = false;   // nur einmal auszahlen, auch wenn Werbung und «Einsammeln» sich kreuzen
+  const done = (mult) => { if (paid) return; paid = true; S.gold += gold * mult; toast.style.display = 'none'; for (let i = 0; i < 10; i++) coins.push({ x: CW / 2, y: CH * 0.3, t: -i * 0.04, sx: 0, sy: 0 }); refreshPanel(true); save(); };
   document.getElementById('tCollect').onclick = () => done(1);
   document.getElementById('tDouble').onclick = () => Portal.showRewardedAd(() => done(2));
 }
@@ -2686,8 +2687,9 @@ function offlineReward(since) {
 let last = performance.now(), t = 0, saveTimer = 0, panelTimer = 0, paused = false;
 document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); paused = true; Portal.gameplayStop(); } else if (!adOn) { paused = false; last = performance.now(); Portal.gameplayStart(); } });
 // Werbung des Portals (Ereignisse kommen aus portal/crazygames-adapter.js): pausieren und stumm, danach weiter
-window.addEventListener('zm-ad-start', () => { adOn = true; paused = true; save(); Portal.gameplayStop(); });
-window.addEventListener('zm-ad-end', () => { if (!adOn) return; adOn = false; paused = false; last = performance.now(); Portal.gameplayStart(); });
+let adGuard = 0;   // Sicherung: meldet das Portal das Ende der Werbung nie, geht es nach 2 Minuten von selbst weiter
+window.addEventListener('zm-ad-start', () => { adOn = true; paused = true; save(); Portal.gameplayStop(); clearTimeout(adGuard); adGuard = setTimeout(() => window.dispatchEvent(new Event('zm-ad-end')), 120000); });
+window.addEventListener('zm-ad-end', () => { if (!adOn) return; clearTimeout(adGuard); adOn = false; paused = document.hidden; last = performance.now(); if (!paused) Portal.gameplayStart(); });
 window.addEventListener('pagehide', save);
 
 function frame(now) {
